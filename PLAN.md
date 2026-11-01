@@ -21,12 +21,12 @@ Why this one of Fumadocs' frameworks (Next.js, TanStack Start, React Router, Wak
 TanStack Start (SPA plus prerender) would match the website's Vite stack, but the static path there is a config
 recipe rather than a template. Not worth it for a docs site.
 
-**Hosting: Cloudflare Pages, no Worker** (owner decision, Nov 1, 2026), project `echolot-docs`, custom domain
-`docs.echolot.dev` (proxied CNAME to `echolot-docs.pages.dev`; the zone is already in the account). The site is only
-static HTML, JS and Markdown, regenerated on each build. Because the repository is public, Pages can build it from Git:
-every push to `main` deploys, every pull request gets a preview address. Generated pages are committed (section 6), so
-the build never needs the private app repository. Direct upload, as the website does, stays possible:
-`bun run build && bunx wrangler pages deploy out --project-name echolot-docs --branch main`.
+**Hosting: Cloudflare static assets, no Worker code** (owner decision, Nov 1, 2026: static files only). Connecting the
+repository in the dashboard made a Worker (`echolot-docs`) rather than a Pages project, so `wrangler.jsonc` makes it an
+assets-only Worker: Cloudflare serves `out/` with no code running (free and unlimited, `_headers` as on Pages),
+unknown paths get `404.html`, custom domain `docs.echolot.dev`. Workers Builds deploys every push to `main`
+(`wrangler deploy` runs `bun run build` first); live since Nov 1, 2026. Generated pages are committed (section 6), so
+the build never needs the private app repository. By hand: `bunx wrangler deploy`.
 
 **Repository: public**, `staticdreams/echolot-docs` (owner decision, Nov 1, 2026): visible on GitHub, anyone can file a
 fix to a page. Only documentation lives here: never code, internal plans or audit notes from the app repository.
@@ -157,7 +157,8 @@ as the website).
 4. **Shots pipeline** and the Alpenglow downloads.
 5. **Content**: Get started, Workspaces, Requests first; then the rest.
 6. **Tutorials** on the demo API.
-7. **Launch**: Pages project, `docs.echolot.dev`, Search Console, links from the website and the app's Help menu.
+7. **Launch**: `docs.echolot.dev` is live (Nov 1) with a home page, an introduction and the demo API page; still to
+   come: Search Console, links from the website.
 
 ## 8. Pages the app links to
 
@@ -179,7 +180,8 @@ Help › Echolot Documentation (⌘?) opens `/docs`; Help › Help for This Page
 
 ## 9. Decisions (Nov 1, 2026)
 
-- Pages for the docs, no Worker; the demo API is the only Worker.
+- Static hosting for the docs with no Worker code (an assets-only Worker, see section 1); the demo API is the only
+  Worker that runs code.
 - Public repository `staticdreams/echolot-docs`.
 - A public demo API, rate limited.
 - The app's Help menu leads to the docs, and to the page about the current screen.
