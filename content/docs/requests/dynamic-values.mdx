@@ -71,6 +71,7 @@ token whose arguments are in single quotes, as in the last line.
 | **Hashes and Signatures** | `{{$sha256("{{$requestBody('')}}")}}`, `{{$hmacSha256('{{key}}', 'message', 'base64')}}`, `{{$md5('text')}}` | Hashes and HMACs, in hex unless you ask for `base64` or `base64url`. |
 | **Time** | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | The send time, in Unix seconds or milliseconds, ISO 8601, an HTTP date or your own format, moved by an offset in seconds and in a time zone. |
 | **Random** | `{{$uuid}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | New random values on every send. `$guid` and `$randomUUID` are other names for `$uuid`. |
+| **Fake Data** | `{{$randomFullName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomLoremSentence}}`, `{{$randomDatePast}}` | Made-up names, addresses, companies, prices, dates, lorem ipsum and more, new on every send, under Postman's names. The list groups them in submenus. See [fake data](/docs/reference/dynamic-values#fake-data). |
 | **Text** | `{{$lowercase('{{name}}')}}`, `{{$uppercase('chf')}}`, `{{$trim('{{code}}')}}` | Text changed. |
 | **Files and System** | `{{$file('data/order.json')}}`, `{{$env('HOME')}}` | A file's contents (a path relative to the workspace, or an absolute path), or an environment variable of the Echolot process. |
 

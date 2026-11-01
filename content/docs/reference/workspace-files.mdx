@@ -32,7 +32,7 @@ Alpenglow.echolot/
     shop.graphql                     a GraphQL schema
     inventory.proto                  a protobuf file
   mocks/
-    shop.toml                        a mock server
+    shop.toml                        a mock server: settings and routes
     shop.js                          its routes in JavaScript
   flows/
     place-test-order.flow.toml       a flow
@@ -485,21 +485,48 @@ delay = 200
 [[scenarios]]
 operation = "GET /products/{sku}"
 status = "404"
+
+[[routes]]
+id = "e5f6a7b8"
+method = "GET"
+path = "/users/{id}"
+summary = "One user"
+
+[[routes.responses]]
+name = "OK"
+status = 200
+content-type = "application/json"
+headers = [{ name = "X-Request-Id", value = "{{$randomUUID}}" }]
+body = """
+{
+  "id": "{{request.params.id}}",
+  "name": "{{$randomFullName}}"
+}"""
+
+[[routes.responses]]
+name = "Not found"
+status = 404
+content-type = "application/json"
+rules = [{ source = "path", name = "id", value = "0" }]
+body = """{ "error": "no user {{request.params.id}}" }"""
 ```
 
 | Key | Meaning |
 | --- | --- |
 | `name` | The mock's name. |
-| `spec` | The spec it serves. Required. |
+| `spec` | The spec it serves. Without it, only the mock's routes answer. |
 | `port` | The port. Default 4010. |
 | `share-on-network` | `true` answers on every network interface, not only this Mac. |
 | `delay` | Milliseconds before each answer. |
 | `failure-rate` | Percent of requests answered with an injected 500, 0 to 100. |
 | `validate-requests` | `false` answers requests that break the spec. Default `true`. |
-| `[[scenarios]]` | The answer chosen for an operation: `operation` (such as `GET /pets`), `status`, `example` (the example's name). |
+| `[[scenarios]]` | The answer chosen for an operation of the spec: `operation` (such as `GET /pets`), `status`, `example` (the example's name). |
+| `[[routes]]` | A route made by hand: `id` (stays the same while the route changes), `method` (or `ANY`), `path` (`{id}` for a parameter), `summary`, `enabled = false` for a route that is off, `response` (the name of the default response; the first when left out), `request-content-type` and `request-body` (what requests made from it send). |
+| `[[routes.responses]]` | One answer of the route above: `name`, `status`, `content-type`, `headers` (`name` and `value`), `rules` (`source` is `path`, `query`, `header` or `body`; `name`; `value`, with `*` for any and empty for none) and `body`. |
 
-`mocks/<slug>.js` holds the mock's routes in JavaScript, which answer before the spec. Responses never live in the
-mock: examples go into the spec. See [mocks](/docs/mocks) and [scripted routes](/docs/mocks/scripted-routes).
+`mocks/<slug>.js` holds the mock's routes in JavaScript, which answer before the routes made by hand and the spec. For
+the spec's operations, responses never live in the mock: examples go into the spec. See [mocks](/docs/mocks),
+[routes and fake data](/docs/mocks/routes) and [scripted routes](/docs/mocks/scripted-routes).
 
 ## flows/
 

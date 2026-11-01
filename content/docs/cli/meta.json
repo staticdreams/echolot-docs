@@ -12,6 +12,7 @@
     "grpc",
     "mqtt",
     "mock",
+    "fake",
     "flow",
     "agent",
     "ci"

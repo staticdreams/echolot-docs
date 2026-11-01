@@ -1,17 +1,18 @@
 ---
 title: Scripted routes
-description: Answer a mock's requests in JavaScript before the spec does, with state kept while the mock runs.
+description: Answer a mock's requests in JavaScript before its other routes and its spec, with state kept while the mock runs.
 ---
 
-A spec documents fixed responses. Sometimes a mock needs to do more: remember the order a client just placed, answer
-differently by a query parameter, or fail on the third call. **Routes** are small handlers in JavaScript that answer a
-mock's requests before the spec does. Their variables live as long as the mock runs, so they can keep state between
-requests. Anything a route doesn't handle, the spec answers as usual.
+[Routes made by hand](/docs/mocks/routes) and a spec answer with responses you write down. Sometimes a mock needs to
+do more: remember the order a client just placed, compute an answer, or fail on the third call. **Routes in
+JavaScript** are small handlers that answer a mock's requests first. Their variables live as long as the mock runs, so
+they can keep state between requests. Anything a route doesn't handle goes on to the mock's routes made by hand, then
+to its spec.
 
 ## Writing routes
 
-Open a mock on the Mocks page and scroll to the **Routes** card. Write the routes in the editor, then click **Save
-Routes**. **Revert** goes back to what was saved.
+Open a mock on the Mocks page and scroll to the **Routes in JavaScript** card. Write the routes in the editor, then
+click **Save Routes**. **Revert** goes back to what was saved.
 
 <Shot id="mocks-routes" alt="The Routes card of a mock with JavaScript that keeps orders in a list, and the line Running: POST /orders, GET /orders/:id below the editor" />
 
@@ -38,17 +39,19 @@ into Git with the workspace.
 
 ## When routes run
 
-- Routes answer **before the spec**. The first route whose method and path match answers.
-- Paths are **below the spec's server path**: write `/orders`, not `/v1/orders`.
-- A route that sets nothing and returns nothing **passes the request on** to the spec, which answers as usual. Use this
-  to handle only some requests, such as one query parameter.
+- Routes in JavaScript answer **first**, before routes made by hand and the spec. The first route whose method and
+  path match answers.
+- Paths are **below the spec's server path**, when the mock serves a spec: write `/orders`, not `/v1/orders`.
+- A route that sets nothing and returns nothing **passes the request on** to the routes made by hand and the spec,
+  which answer as usual. Use this to handle only some requests, such as one query parameter.
 - The script runs once when the mock starts. Its top-level variables, and the `state` object, live until the mock
   stops.
-- **Saving restarts the routes, with fresh state.** Changes to the spec or the mock's settings keep it.
+- **Saving restarts the routes, with fresh state.** Changes to the spec, the routes made by hand or the mock's
+  settings keep it.
 - Requests are handled one at a time, so state stays consistent.
 
 The mock's [log](/docs/mocks#the-log) marks each request a route handled with the route's name: rest the pointer on it
-for **Answered by this route** or **Passed on by this route to the spec**. What a route writes with `console.log`
+for **Answered by this route** or **Passed on by this route** (to the routes made by hand or the spec). What a route writes with `console.log`
 appears in the log under the request.
 
 ## The routes API
@@ -92,7 +95,7 @@ own:
 mock.get("/me", (req, res) => {
   state.calls = (state.calls ?? 0) + 1
   if (state.calls % 3 === 0) return res.status(503).json({ error: "try again" })
-  // Nothing set: the spec answers this request.
+  // Nothing set: the routes made by hand or the spec answer this request.
 })
 ```
 
@@ -113,5 +116,5 @@ Agents can read a mock's routes but never write them.
 
 ## From the command line
 
-`echolot mock -w <workspace> <mock>` runs a workspace's mock with its routes; `--routes <file>` runs routes from
-another file, also with a spec file. See [echolot mock](/docs/cli/mock).
+`echolot mock -w <workspace> <mock>` runs a workspace's mock with all its routes; `--routes <file>` runs routes in
+JavaScript from another file, also with a spec file. See [echolot mock](/docs/cli/mock).

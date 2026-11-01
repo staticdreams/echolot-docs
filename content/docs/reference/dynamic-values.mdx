@@ -144,6 +144,193 @@ A new value on every send.
 
 Alpenglow's **Create order** sends `Idempotency-Key: {{$uuid}}`, so every order it places is a new one.
 
+## Fake data
+
+Made-up values for request bodies, test data and [mock routes](/docs/mocks/routes#bodies-with-fake-data): names,
+addresses, companies, prices, dates, lorem ipsum and more, new on every send. The names are Postman's dynamic variables,
+so collections that use them send real values here. In the `{{` list they are under **Fake Data**, by group.
+
+Arguments are optional; numbers go from -10^15 to 10^15. Mock bodies can also use `$uuid` (as `$randomUUID`),
+`$randomInt`, `$randomString`, `$randomHex`, `$timestamp`, `$timestampMs` and `$isoTimestamp` from [Random](#random)
+and [Time](#time). From Terminal, [`echolot fake`](/docs/cli/fake) fills a template with them.
+
+### Common
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomFloat` | Minimum, Maximum, Decimals | A decimal number between the bounds (0 to 1000), with 2 decimals unless told otherwise. |
+| `$randomDigits` | Length | A string of random digits, 6 unless a length is given. |
+| `$randomBoolean` | none | true or false. |
+| `$randomElement` | Choices | One of the arguments, chosen at random: $randomElement(active, paused, closed). |
+| `$randomAlphaNumeric` | none | One letter or digit. |
+| `$randomColor` | none | A colour name: teal. |
+| `$randomHexColor` | none | A colour in hex: #3f8acb. |
+| `$randomAbbreviation` | none | A technical abbreviation: SQL. |
+
+### Names and jobs
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomFirstName` | none | A first name: Amelia. |
+| `$randomLastName` | none | A last name: Okafor. |
+| `$randomFullName` | none | A first and last name: Amelia Okafor. |
+| `$randomNamePrefix` | none | Mr., Ms., Dr.… |
+| `$randomNameSuffix` | none | Jr., PhD… |
+| `$randomJobArea` | none | Mobility, Security… |
+| `$randomJobDescriptor` | none | Lead, Senior… |
+| `$randomJobTitle` | none | Senior Security Engineer. |
+| `$randomJobType` | none | Engineer, Designer… |
+
+### Internet
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomEmail` | none | An email address: amelia.okafor@gmail.com. |
+| `$randomExampleEmail` | none | An email address at example.com, example.net or example.org. |
+| `$randomUserName` | none | A user name: amelia_okafor42. |
+| `$randomPassword` | none | 15 random letters and digits. |
+| `$randomUrl` | none | https://northwind.io |
+| `$randomDomainName` | none | northwind.io |
+| `$randomDomainSuffix` | none | com, io, dev… |
+| `$randomDomainWord` | none | northwind |
+| `$randomIP` | none | An IPv4 address: 192.168.14.7. |
+| `$randomIPV6` | none | An IPv6 address. |
+| `$randomMACAddress` | none | A MAC address: 3a:f1:0c:5e:92:b4. |
+| `$randomProtocol` | none | http or https. |
+| `$randomSemver` | none | A semantic version: 2.14.3. |
+| `$randomLocale` | none | A locale: de_CH. |
+| `$randomUserAgent` | none | A browser's User-Agent. |
+
+### Addresses and places
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomStreetName` | none | Maple Avenue |
+| `$randomStreetAddress` | none | 42 Maple Avenue |
+| `$randomCity` | none | Lisbon |
+| `$randomZipCode` | none | A five-digit postal code. Also `$randomZip`. |
+| `$randomCountry` | none | Portugal |
+| `$randomCountryCode` | none | An ISO 3166 country code: PT. |
+| `$randomLatitude` | none | A latitude: 38.7223. |
+| `$randomLongitude` | none | A longitude: -9.1393. |
+
+### Phone
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomPhoneNumber` | none | A phone number: 555-201-4417. |
+| `$randomPhoneNumberExt` | none | A phone number with a country code: +44 555-201-4417. |
+
+### Companies
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomCompanyName` | none | Northwind Labs |
+| `$randomCompanySuffix` | none | Inc, LLC, GmbH… |
+| `$randomBs` | none | streamline seamless platforms |
+| `$randomBsAdjective` | none | seamless |
+| `$randomBsBuzz` | none | streamline |
+| `$randomBsNoun` | none | platforms |
+| `$randomCatchPhrase` | none | Adaptive real-time framework |
+| `$randomCatchPhraseAdjective` | none | Adaptive |
+| `$randomCatchPhraseDescriptor` | none | real-time |
+| `$randomCatchPhraseNoun` | none | framework |
+
+### Finance
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomPrice` | Minimum, Maximum | A price with two decimals, 1 to 1000 unless bounds are given. |
+| `$randomCurrencyCode` | none | EUR |
+| `$randomCurrencyName` | none | Euro |
+| `$randomCurrencySymbol` | none | € |
+| `$randomBankAccount` | none | An 8-digit account number. |
+| `$randomBankAccountName` | none | Savings Account |
+| `$randomBankAccountIban` | none | An IBAN with valid check digits. |
+| `$randomBankAccountBic` | none | A BIC (SWIFT code). |
+| `$randomCreditCardMask` | none | The last four digits of a card. |
+| `$randomTransactionType` | none | deposit, payment, refund… |
+| `$randomBitcoin` | none | A made-up bitcoin address. |
+
+### Shops and products
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomProduct` | none | Chair |
+| `$randomProductName` | none | Ergonomic Wooden Chair |
+| `$randomProductAdjective` | none | Ergonomic |
+| `$randomProductMaterial` | none | Wooden |
+| `$randomDepartment` | none | Garden |
+
+### Dates
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomDatePast` | none | A moment in the past year, ISO 8601. |
+| `$randomDateFuture` | none | A moment in the next year, ISO 8601. |
+| `$randomDateRecent` | none | A moment in the past two days, ISO 8601. |
+| `$randomDate` | none | A day in the past year: 2026-03-14. |
+| `$randomWeekday` | none | Tuesday |
+| `$randomMonth` | none | March |
+
+### Words
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomWord` | none | A word. |
+| `$randomWords` | Count | A few words, 3 unless a count is given. |
+| `$randomNoun` | none | router |
+| `$randomVerb` | none | compile |
+| `$randomIngverb` | none | compiling |
+| `$randomAdjective` | none | wireless |
+| `$randomPhrase` | none | A short phrase made of the words above. |
+
+### Lorem ipsum
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomLoremWord` | none | dolor |
+| `$randomLoremWords` | Count | Lorem words, 3 unless a count is given. |
+| `$randomLoremSentence` | none | One sentence. |
+| `$randomLoremSentences` | Count | A few sentences, 2 to 6 unless a count is given. |
+| `$randomLoremParagraph` | none | One paragraph. |
+| `$randomLoremParagraphs` | Count | Paragraphs, 3 unless a count is given. |
+| `$randomLoremText` | none | A sentence or a few. |
+| `$randomLoremSlug` | none | dolor-sit-amet |
+| `$randomLoremLines` | none | A few sentences, one per line. |
+
+### Files
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomFileName` | none | router_matrix.pdf |
+| `$randomFileType` | none | image, text, video… |
+| `$randomFileExt` | none | pdf |
+| `$randomCommonFileName` | none | A file name with a common extension. |
+| `$randomCommonFileType` | none | image, video, text… |
+| `$randomCommonFileExt` | none | png |
+| `$randomFilePath` | none | /var/reports/router_matrix.pdf |
+| `$randomDirectoryPath` | none | /var/reports |
+| `$randomMimeType` | none | application/pdf |
+
+### Images
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomAvatarImage` | none | The address of an avatar picture. |
+| `$randomImageUrl` | none | The address of a 640×480 picture. |
+| `$randomAbstractImage` | none | The address of a 640×480 picture on the topic abstract. The other topics: `$randomAnimalsImage`, `$randomBusinessImage`, `$randomCatsImage`, `$randomCityImage`, `$randomFoodImage`, `$randomNightlifeImage`, `$randomFashionImage`, `$randomPeopleImage`, `$randomNatureImage`, `$randomSportsImage`, `$randomTransportImage`. |
+| `$randomImageDataUri` | none | A small SVG picture as a data: URI. |
+
+### Databases
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$randomDatabaseColumn` | none | createdAt |
+| `$randomDatabaseType` | none | varchar |
+| `$randomDatabaseCollation` | none | utf8mb4_unicode_ci |
+| `$randomDatabaseEngine` | none | InnoDB |
+
 ## Text
 
 | Value | Arguments | What it gives |

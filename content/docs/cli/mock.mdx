@@ -1,11 +1,12 @@
 ---
 title: echolot mock
-description: Serve a mock of an OpenAPI document from the terminal or in CI, with delays, injected failures and request checks.
+description: Serve a mock from the terminal or in CI, of a workspace's routes made by hand or of an OpenAPI document, with delays, injected failures and request checks.
 ---
 
-`echolot mock` serves a mock of an OpenAPI document: every operation answers with its documented examples, or with a
-body made from its schema. Use it to build a client before the API exists, or to give a CI job a server that always
-answers the same way. It serves the same mocks as the [Mocks page](/docs/mocks).
+`echolot mock` serves a mock: a mock saved in a workspace, with its [routes made by hand](/docs/mocks/routes) and its
+spec if it has one, or an OpenAPI document, whose operations answer with their documented examples or a body made from
+their schema. Use it to build a client before the API exists, or to give a CI job a server that answers the way you
+want. It serves the same mocks as the [Mocks page](/docs/mocks).
 
 ```sh
 echolot mock <source> [--workspace <workspace>] [--port <port>] [--share] [--delay <ms>] [--failure-rate <percent>] [--no-validate] [--routes <file>]
@@ -51,14 +52,31 @@ what is wrong:
 request can ask for another one with `Prefer: code=404, example=empty`, or with Postman's `x-mock-response-code` and
 `x-mock-response-name` headers.
 
-**A mock of a workspace.** With `--workspace`, `<source>` names a mock saved on the Mocks page (its file name in
-`mocks/` without `.toml`, or its name). Its port, delay, failure rate, request checks and chosen responses apply, and
-the options you give override them. Its routes in JavaScript (`mocks/<name>.js`) answer before the spec; see
-[scripted routes](/docs/mocks/scripted-routes).
+## Mock a workspace's mock
+
+With `--workspace`, `<source>` names a mock saved on the Mocks page (its file name in `mocks/` without `.toml`, or its
+name). Its port, delay, failure rate, request checks, chosen responses and routes apply, and the options you give
+override them. Its routes in JavaScript (`mocks/<name>.js`) answer first, then its routes made by hand, then its spec;
+see [scripted routes](/docs/mocks/scripted-routes) and [routes and fake data](/docs/mocks/routes).
 
 ```sh
 echolot mock shop -w Alpenglow.echolot --delay 300
 ```
+
+A mock of routes needs no spec:
+
+```sh
+echolot mock storefront -w Shop.echolot
+```
+
+```text
+Mock of Storefront: 3 routes at http://127.0.0.1:4321 (Ctrl-C stops it)
+200 GET /users/42  → GET /users/{id} (OK)  1 ms
+404 GET /users/0  → GET /users/{id} (Not found)  0 ms
+```
+
+Each line names the route that answered and, in parentheses, the response it gave. Fake values in the bodies are made
+again for every request. To make fake data without a server, see [echolot fake](/docs/cli/fake).
 
 ## Options
 

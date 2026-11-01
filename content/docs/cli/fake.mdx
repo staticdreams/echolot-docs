@@ -1,0 +1,88 @@
+---
+title: echolot fake
+description: Make fake data from a template in the terminal, for fixtures, seed data and mock bodies, with the same fake values as mock routes.
+---
+
+`echolot fake` fills a template with fake data: names, emails, addresses, prices, dates, lorem ipsum and about 120
+other values. It uses the same templates as the bodies of [routes made by hand](/docs/mocks/routes#bodies-with-fake-data),
+so you can try a body, or write fixtures and seed data for tests.
+
+```sh
+echolot fake [<template>] [--file <file>] [--count <count>] [--seed <seed>] [--type <type>]
+echolot fake list
+```
+
+The template comes from the argument, from `--file`, or from standard input. The result goes to standard output.
+
+## Make a list
+
+`--count` makes the template one item of a JSON list:
+
+```sh
+echolot fake '{"id": {{@number}}, "name": "{{$randomFullName}}", "email": "{{$randomEmail}}"}' --count 3
+```
+
+```json
+[
+{"id": 1, "name": "Henry Adams", "email": "stella.meyer.45@yahoo.com"},
+{"id": 2, "name": "Jack Grant", "email": "bianca.ivanova.11@icloud.com"},
+{"id": 3, "name": "Theo Sato", "email": "samuel.lee.88@yahoo.com"}
+]
+```
+
+With `--type xml` or `--type text` the items come one after another:
+
+```sh
+echolot fake '<city>{{$randomCity}}</city>' --count 2 --type xml
+```
+
+```xml
+<city>Kyoto</city>
+<city>Athens</city>
+```
+
+A template can make lists of its own with `{{#repeat 10}}` … `{{/repeat}}`; see
+[lists](/docs/mocks/routes#lists).
+
+## The same data again
+
+`--seed` makes the same data every time, for fixtures that shouldn't change between runs:
+
+```sh
+echolot fake --file user.json.template --count 50 --seed 7 > users.json
+```
+
+## Escaping
+
+`--type` decides how values are escaped: `json` (the default) escapes values inside JSON strings, `xml` escapes `&`,
+`<`, `>` and quotes for XML and HTML, `text` escapes nothing. See [escaping](/docs/mocks/routes#escaping).
+
+## The values
+
+`echolot fake list` prints every value by group, with its arguments:
+
+```text
+COMMON
+  $randomUUID  A random UUID: 3f2c1e0a-…
+  $randomInt(Minimum, Maximum)  A whole number, 0 to 1000 unless bounds are given.
+  $randomFloat(Minimum, Maximum, Decimals)  A decimal number between the bounds (0 to 1000), with 2 decimals unless told otherwise.
+…
+```
+
+[Dynamic values](/docs/reference/dynamic-values#fake-data) lists them all. Tokens about the request, such as
+`{{request.params.id}}`, belong to mock routes and stay as written here.
+
+## Options
+
+| Option | Meaning |
+| --- | --- |
+| `<template>` | The template, or `list` to list the fake values. |
+| `-f`, `--file <file>` | Read the template from a file. |
+| `-c`, `--count <count>` | Make this many items, up to 10,000: a JSON list, or one item after another for `--type xml` and `text`. |
+| `--seed <seed>` | Make the same data every time. |
+| `--type <type>` | `json` (default), `xml` or `text`. |
+
+## Exit codes
+
+`0` when every value was made. `1` when a value couldn't be made, such as `{{$randomInt(9, 1)}}`: the reason goes to
+standard error, and the token stays as written in the output. `64` for a wrong option.

@@ -61,9 +61,9 @@ which were typed into the collection. The requests now refer to them as `{{passw
 | `pm.*` | The same API: `pm.test`, `pm.expect`, `pm.response`, `pm.request`, `pm.environment`, `pm.variables`, `pm.collectionVariables`, `pm.globals`, `pm.iterationData`, `pm.sendRequest`, `pm.cookies`, `pm.setNextRequest`, `pm.visualizer`, and the older `postman.*` and `tests[…]` |
 | `require()` | `lodash`, `ajv`, `tv4`, `crypto-js`, `uuid`, `atob` and `btoa` |
 | Auth | The same types: Basic, Digest, Bearer Token, API Key, OAuth 2.0, AWS Signature, JWT Bearer, Hawk, Akamai EdgeGrid, NTLM. OAuth 2.0 client credentials stays as it is; other OAuth grants become authorization code with PKCE |
-| `{{$guid}}`, `{{$timestamp}}`, `{{$randomInt}}` | Dynamic values with the same names, and many more |
+| `{{$guid}}`, `{{$timestamp}}`, `{{$randomInt}}`, `{{$randomFirstName}}` and the other `$random…` values | Dynamic values with the same names, fake data included, and many more |
 | Collection Runner, Newman | The [Runner](/docs/requests/runner) and [`echolot run`](/docs/cli/run) |
-| Mock servers | [Mocks](/docs/mocks) of an OpenAPI spec, on your Mac |
+| Mock servers | [Mocks](/docs/mocks) on your Mac: routes with examples and fake data, or an OpenAPI spec |
 | Monitors | [Flows](/docs/flows) on a schedule, or `echolot run` in CI |
 
 File bodies and file fields of form-data don't come in, since the file is on another computer: the report names each
