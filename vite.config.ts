@@ -57,6 +57,10 @@ export default defineConfig({
     react(),
     // please see https://tanstack.com/start/latest/docs/framework/react/guide/hosting#nitro for guides on hosting
     nitro({
+      // Always the plain Node preset. On Cloudflare's build machines Nitro would otherwise pick its cloudflare-module
+      // preset, whose preview server for prerendering runs Wrangler, which runs this build again: builds hung for
+      // 30 minutes. The site is static files either way.
+      preset: 'node-server',
       // TanStack Start pre-renders responses as text, which breaks images
       prerender: { routes: imageRoutes },
     }),
