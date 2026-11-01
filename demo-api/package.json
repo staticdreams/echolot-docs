@@ -1,0 +1,20 @@
+{
+  "name": "echolot-demo-api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "export": "bun scripts/make-export.ts",
+    "dev": "bun run export && wrangler dev",
+    "types": "wrangler types",
+    "typecheck": "wrangler types && tsc --noEmit",
+    "test": "bun run export && bun test",
+    "deploy": "bun run export && wrangler deploy"
+  },
+  "dependencies": {
+    "graphql": "^17.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "wrangler": "^4.156.0"
+  }
+}

@@ -1,0 +1,2 @@
+# Copy to .dev.vars for wrangler dev. In production: wrangler secret put TOKEN_KEY (any long random string).
+TOKEN_KEY=local-development-key
