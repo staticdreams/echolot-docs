@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // docs.echolot.dev: static files only. No Worker code runs; Cloudflare serves out/ as assets (free and unlimited).
+  // Deployed by Workers Builds on every push to main (the Git connection in the dashboard), or by `bunx wrangler deploy`.
+  "name": "echolot-docs",
+  "compatibility_date": "2026-10-01",
+  // wrangler deploy builds the static site first, wherever it runs.
+  "build": { "command": "bun run build" },
+  "assets": {
+    "directory": "./out",
+    // /docs serves docs.html; /docs/ redirects to /docs.
+    "html_handling": "drop-trailing-slash",
+    // Unknown paths get out/404.html with status 404.
+    "not_found_handling": "404-page"
+  },
+  "routes": [{ "pattern": "docs.echolot.dev", "custom_domain": true }]
+}

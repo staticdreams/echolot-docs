@@ -1,0 +1,91 @@
+---
+title: The demo API
+description: Alpenglow, a pretend outdoor-gear shop on demo.echolot.dev, for trying every part of Echolot.
+---
+
+**https://demo.echolot.dev** is an API made for learning Echolot: Alpenglow, an outdoor-gear shop in Zurich and Bern.
+Nothing in it is private, and nothing you send to it is stored. `GET https://demo.echolot.dev/` lists every endpoint.
+
+## Sign in
+
+The demo account is `heidi@alpenglow.ch` with the password `alpenglow`:
+
+```http
+POST https://demo.echolot.dev/v1/auth/token
+Content-Type: application/json
+
+{ "email": "heidi@alpenglow.ch", "password": "alpenglow" }
+```
+
+The answer carries an `access_token` (a JWT, valid for an hour). Send it as `Authorization: Bearer <token>` to
+`/v1/me` and `/v1/orders`. The same endpoint also takes OAuth 2 client credentials: client ID `alpenglow-demo`,
+client secret `demo-secret`.
+
+## The shop
+
+| Endpoint | What it does |
+| --- | --- |
+| `GET /v1/products` | Products, with `q`, `category`, `tag`, `in_stock=true`, `sort` (`name`, `price`, `-price`, `rating`), `page` and `per_page`. Paging in the `Link` and `X-Total-Count` headers. |
+| `GET /v1/products/{sku}` | One product, such as `TNT-MH-2P`, with an `ETag` (send `If-None-Match` for a 304). |
+| `GET /v1/products/export` | 40,000 products, about 14 MB: try the viewers on a large response. |
+| `GET /v1/categories` | Categories with their product counts. |
+| `GET /v1/me` | The signed-in user. |
+| `GET /v1/orders` | Heidi's orders; `?status=shipped`. |
+| `POST /v1/orders` | `{"lines": [{"sku": "TNT-MH-2P", "quantity": 1}]}`. Answers 201 with a `Location`, 422 with what is wrong, and the same order again for the same `Idempotency-Key`. |
+| `GET /v1/orders/{id}` | One order, such as `ord_7Hk2Lw`. |
+| `DELETE /v1/orders/{id}` | Cancel: 204, or 409 once it has shipped. Nothing really changes. |
+
+Errors come as problem details (`application/problem+json`) that say what went wrong.
+
+## GraphQL
+
+`POST https://demo.echolot.dev/v1/graphql`, with introspection, so Echolot completes fields as you type. The schema
+is at `/shop.graphql`.
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } stock { warehouse available } }
+  }
+}
+```
+
+## Live events
+
+- **WebSocket** `wss://demo.echolot.dev/v1/orders`: an order event every 1.5 seconds. Send
+  `{"op": "subscribe", "channel": "orders"}`, `{"op": "ping"}`, or any JSON with an `id` to get an acknowledgement.
+  A session lasts three minutes.
+- **Server-Sent Events** `GET https://demo.echolot.dev/v1/orders/events`: 20 events a second apart, then `end`.
+  Send `Last-Event-ID` to resume.
+
+## MCP
+
+`https://demo.echolot.dev/mcp` is an MCP server over Streamable HTTP. Add it on the MCP Servers page to try its tools
+(`search_catalog`, `get_product`, `order_status`), a resource and a prompt.
+
+## Echo
+
+Endpoints for trying the request editor:
+
+| Endpoint | What it does |
+| --- | --- |
+| `/echo/anything` | Returns the method, query, headers and body you sent. |
+| `/echo/status/{code}` | Answers with that status. |
+| `/echo/delay/{seconds}` | Waits up to 5 seconds, then echoes. |
+| `/echo/redirect/{n}` | `n` redirects, then `/echo/anything`. |
+| `/echo/cookies`, `/echo/cookies/set?name=value` | Shows and sets cookies. |
+| `/echo/basic-auth/{user}/{password}` | 200 with matching Basic auth, otherwise 401. |
+| `/echo/bearer` | 200 with any Bearer token, otherwise 401. |
+| `/echo/bytes/{n}` | `n` random bytes, up to 1 MB. |
+| `/echo/xml`, `/echo/html` | An XML document and an HTML page. |
+
+## Limits
+
+The demo is shared, so it has limits per address: 120 requests a minute, and 10 a minute for the export, `bytes`,
+`delay`, WebSocket and SSE. Over a limit you get `429 Too Many Requests` with `Retry-After`. Bodies can be up to
+64 KB.
+
+gRPC, Socket.IO and MQTT can't run there; their tutorials use small servers you run on your Mac.
+
+The demo API's source is in [the docs repository](https://github.com/staticdreams/echolot-docs/tree/main/demo-api).
