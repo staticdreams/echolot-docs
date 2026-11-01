@@ -10,10 +10,10 @@
     "includes": [
       "**",
       "!node_modules",
-      "!.next",
-      "!dist",
-      "!build",
-      "!.source"
+      "!.output",
+      "!.tanstack",
+      "!.source",
+      "!src/routeTree.gen.ts"
     ]
   },
   "formatter": {
@@ -27,7 +27,6 @@
       "recommended": true
     },
     "domains": {
-      "next": "recommended",
       "react": "recommended"
     }
   },

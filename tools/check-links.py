@@ -1,6 +1,6 @@
 # Checks that every /docs link in the pages, and every path the app's Help menu opens, exists in the built site (out/).
 import pathlib, re, sys
-out = pathlib.Path('out')
+out = pathlib.Path(".output/public")
 def exists(path):
     path = path.split('#')[0].split('?')[0].rstrip('/')
     return (out / (path.lstrip('/') + '.html')).exists() or (out / path.lstrip('/') / 'index.html').exists()

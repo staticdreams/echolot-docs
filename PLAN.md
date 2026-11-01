@@ -3,23 +3,16 @@
 docs.echolot.dev: the user documentation for Echolot (the Mac app, both editions, the CLI and CI).
 A sibling of `echolot-website`, its own repository, deployed the same way.
 
-## 1. Stack (decided by a test build, Nov 1, 2026)
+## 1. Stack (owner decision, Nov 1, 2026)
 
-**Fumadocs on Next.js, static export** (`create-fumadocs-app --template +next+fuma-docs-mdx+static`), served as plain
-files from Cloudflare.
+**Fumadocs on TanStack Start, prerendered to static files** (`create-fumadocs-app --template tanstack-start-spa`,
+Vite). The site started on Next.js (static export) the same day and moved to TanStack Start, the owner's choice:
+both give the same static output; TanStack Start builds with Vite like the website.
 
-Why this one of Fumadocs' frameworks (Next.js, TanStack Start, React Router, Waku, Astro):
-
-- It is the only one with an official *static* template; Fumadocs itself runs on Next.js, so features land there first.
-- Everything we want comes out of `next build` as files, verified on the scaffold under `wrangler pages dev`:
-  pages (`docs/x.html`, served at `/docs/x`), the Orama search index (`/api/search`, searched in the browser), the
-  OG images (`/og/docs/…/image.png`), `llms.txt`, `llms-full.txt` and a Markdown copy of every page for AI assistants.
-- No server at run time, so no Cloudflare adapter (OpenNext needs Workers and would be the only reason to leave Pages).
-- What static export costs us: no `next/image` optimisation (we size screenshots ourselves, below), no middleware,
-  no redirects in Next (use `public/_redirects`). None matters for docs.
-
-TanStack Start (SPA plus prerender) would match the website's Vite stack, but the static path there is a config
-recipe rather than a template. Not worth it for a docs site.
+`bun run build` writes `.output/public`: every page as `docs/<page>/index.html` (rendered at build time, so crawlers
+read it), a Markdown copy of each page (`/docs/<page>.md`), the Orama search index (`/api/search`, searched in the
+browser), link-preview images (`/og/docs/<page>/image.webp`, takumi), `llms.txt` and `llms-full.txt`. The app shell
+renders from `/404` and doubles as `404.html`; `/` is a page of its own.
 
 **Hosting: Cloudflare static assets, no Worker code** (owner decision, Nov 1, 2026: static files only). Connecting the
 repository in the dashboard made a Worker (`echolot-docs`) rather than a Pages project, so `wrangler.jsonc` makes it an
