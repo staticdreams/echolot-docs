@@ -17,6 +17,11 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  // The prerender asks the preview server for every page at 127.0.0.1: make it listen there (on Linux build machines
+  // "localhost" can mean IPv6 only, and the prerender then never reaches it).
+  preview: {
+    host: '127.0.0.1',
+  },
   plugins: [
     fumadocsMdx(),
     tailwindcss(),
