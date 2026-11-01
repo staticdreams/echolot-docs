@@ -1,5 +1,4 @@
 import { Callout } from 'fumadocs-ui/components/callout';
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
 const labels = {
@@ -16,9 +15,9 @@ export function Edition({ only, children }: { only: keyof typeof labels; childre
   return (
     <Callout type={only === 'direct' ? 'info' : 'warn'} title={labels[only]}>
       {children}{' '}
-      <Link href="/docs/get-started/editions" className="whitespace-nowrap">
+      <a href="/docs/get-started/editions" className="whitespace-nowrap">
         Compare the editions
-      </Link>
+      </a>
     </Callout>
   );
 }
