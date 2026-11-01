@@ -1,0 +1,171 @@
+---
+title: Settings
+description: Every pane of Echolot's Settings, each option in it, what it does and its default.
+---
+
+Echolot's settings are for the app on this Mac: how it looks, the proxy, how much it keeps, the AI providers and
+whether agents may come in. Settings that belong to a workspace (its auth, variables, proxy, certificates and agent
+rules) live in **Workspace Settings…** in the workspace menu at the foot of the sidebar, and travel with the
+workspace; see [Workspaces](/docs/workspaces).
+
+Open Settings with **Echolot › Settings…** or <kbd>⌘</kbd><kbd>,</kbd>. The panes are listed on the left. The
+search field above them (<kbd>⌘</kbd><kbd>F</kbd>) keeps only the panes holding a matching setting; <kbd>↩</kbd>
+opens the first. Settings opens on the pane you used last.
+
+<Shot id="settings-general" alt="Settings on the General pane: appearance, code and responses, Quick Send, Echo, the command-line tool and updates" />
+
+## General
+
+Appearance and how code and responses are shown.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Appearance** | **System**, **Light** or **Dark**, for every Echolot window, whatever macOS uses. | System |
+| **Code font size** | The size of response bodies, the hex view, the JSON tree and code editors, from 10 to 22 pt. **View** menu: <kbd>⌘</kbd><kbd>+</kbd> and <kbd>⌘</kbd><kbd>−</kbd> change it too. | 12 pt |
+| **Wrap long lines in responses** | Wraps long lines in the response's **Body**, **Raw** and **Wire** views instead of scrolling sideways. | Off |
+
+### Quick Send
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Show Quick Send in the menu bar** | A menu bar item and a shortcut that works in any app open a panel to send a saved request of your open and recent workspaces. See [Quick Send](/docs/mac/quick-send). | Off |
+| **Shortcut** | Click and press the keys to change it; **Reset** goes back to the default. Settings says when another app holds the keys. | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> |
+
+### Echo
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Show Echo's status screen in the page header** | The small screen that tells what is going on in the window. See [Echo](/docs/ai/echo). | Off |
+| **Humor** | **Facts only**, **A little** or **Plenty**. | A little |
+| **Let AI write some of Echo's comments** | A model writes some lines: Apple's on-device model where the Mac has it, otherwise the model chosen in Settings › Assistant. Not available with **Facts only**. **Written by** shows which model, and asks its permission if needed. | Off |
+
+### Command-line tool
+
+<Edition only="direct">
+  This section is in the direct download only. The App Store edition can't install the tool; install it on its own
+  from the downloads page, see [The command-line tool](/docs/cli).
+</Edition>
+
+- **Bundled tool**: where the `echolot` tool inside the app is.
+- **On your PATH**: **Not installed** with **Install Command-Line Tool…**, or the link's path with **Reinstall** and
+  **Remove**. Installing puts an `echolot` link to the bundled tool in `/opt/homebrew/bin` or `/usr/local/bin`, so
+  `echolot run` and `echolot mcp setup` work in Terminal. Where neither folder is writable, macOS asks for an
+  administrator's password. A link to another copy of Echolot is marked in orange with **Reinstall**; a file Echolot
+  didn't put there shows **Replace…**, which asks before replacing it.
+
+**Echolot › Install Command-Line Tool…** does the same.
+
+### Updates
+
+<Edition only="appstore">
+  In the App Store edition this section says **The App Store keeps Echolot up to date.**
+</Edition>
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Check for updates automatically** | Looks for a new version once a day on GitHub and asks before installing it. | On |
+| **Download and install updates automatically** | Installs updates without asking. Needs the setting above. | Off |
+| **Last checked** | When Echolot last looked, with **Check Now**. | |
+
+Updates are signed, and Echolot installs only ones signed by its developer. **Echolot › Check for Updates…** looks
+right away. Builds you made yourself don't look for updates.
+
+## Network
+
+The proxy requests go through.
+
+| **Proxy** | What happens |
+| --- | --- |
+| **System Settings** (the default) | HTTP, HTTPS and SOCKS proxies from System Settings › Network, with their exceptions. Automatic proxy configuration (PAC) is not used. |
+| **None** | Every request connects directly. |
+| **Manual** | One HTTP, HTTPS (TLS to the proxy) or SOCKS5 proxy, set in the fields below. |
+
+With **Manual**:
+
+- **Proxy**: the proxy's address, such as `http://proxy:3128` or `socks5://host:1080`.
+- **User name**: optional.
+- **Password**: kept in the Keychain. Available once there is a user name.
+- **Go direct to**: hosts that skip the proxy, separated by commas, such as `localhost, *.internal`.
+
+A workspace can set its own proxy in **Workspace Settings › Proxy**, which comes first. HTTP/3 doesn't work
+through a proxy: such a request fails and says why. See [Request settings](/docs/requests/settings).
+
+## Storage
+
+How much of the responses and their history is kept. See
+[Storage and encryption](/docs/workspaces/storage-and-encryption).
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Encrypt response bodies on disk** | Encrypts bodies, wire captures and formatted copies with a key kept in your login Keychain. Bodies already stored are encrypted in the background, and turned back when you turn it off; the line below shows the progress and how many bodies are encrypted. While it is on, history search finds requests by name, address and headers, not by what their bodies say. Workspaces are not affected. | Off |
+| **Keep response bodies up to** | 1, 2, 5, 10, 20 or 50 GB. Bodies are stored once however often they arrive; above this size the least recently used ones are removed. Bodies open in a tab are always kept. | 5 GB |
+| **History per request** | 10, 25, 50, 100 or 200 responses kept in each request's history. Older entries go first; the newest response of each request keeps its body. | 50 responses |
+
+## Assistant
+
+The agent built into Echolot: model providers and keys. See [The Assistant](/docs/ai/assistant).
+
+<Shot id="settings-assistant" alt="Settings on the Assistant pane: two providers with their models, the providers allowed to receive data, the patterns hidden from the model and the form to add a provider" />
+
+- **Providers**: every provider you added. The checked one is the one the Assistant uses. Each has a **Model** menu
+  (or field), **Load Models** to fetch the list again, and **Remove…**, which deletes its key from the Keychain.
+  Anthropic accounts also have **Effort**: **Model's default**, `low`, `medium`, `high`, `xhigh` or `max`. A CLI
+  agent has its **Command** instead.
+- **Allowed to receive your data**: the providers you gave the one-time permission, and what it covers (**The
+  Assistant and Echo's comments**, or **Echo's comments** alone). **Revoke** takes it back; the next message asks
+  again. Apple's on-device model and servers on this Mac never ask.
+- **Hidden from the model**: one regular expression a line. What matches in tool results is replaced by `[hidden]`
+  before the model sees it. Secret variables are always hidden; these are for the rest.
+- **Add a provider**: **Provider** (**Anthropic**, **OpenAI**, **Google Gemini**, **OpenAI-compatible**, or **CLI
+  agent (ACP)**), then **API key**, **Address** (OpenAI-compatible, `http://127.0.0.1:11434/v1` when empty) or
+  **Agent** and **Command** (CLI agent), and **Add**.
+
+Keys stay in the Keychain on this Mac and are sent only to the provider's own address.
+
+<Edition only="direct">
+  **CLI agent (ACP)** is in the direct download only: the App Store edition can't start programs on your Mac.
+</Edition>
+
+## Agents
+
+Let AI agents work with your open workspaces. See [External agents](/docs/ai/agents).
+
+<Shot id="settings-agents" alt="Settings on the Agents pane: the switch that lets agents use open workspaces, Claude Desktop with recent workspaces, and the toolsets" />
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Let agents use open workspaces** | While a workspace is open, agents' calls run in Echolot: you approve sends that may change data, new hosts and changes to the workspace, and see every call under **Agents** in the window. Secret values never reach an agent. | Off |
+| **Claude Desktop** | Your recent workspaces, each with **Add to Claude**, which turns agents on and adds the workspace to Claude Desktop. **Added** when Claude Desktop has it. Direct download only. | |
+| **Tools for agents** | The toolsets agents get: **Requests** (always on), **Flows**, **Workspace**, **Environments**, **Specs**, **Mocks**, **MCP servers**, **History**, **Flow editing**. | Requests and Flows |
+| **Other apps** | Claude Code, Cursor, VS Code and Codex connect from the **Agents** button at the top of a workspace window. | |
+
+<Edition only="appstore">
+  Instead of the Claude Desktop section, the App Store edition shows **Command-line tool**: clients connect through
+  the `echolot` tool installed on its own, with **Get the Command-Line Tool** leading to the downloads. While the
+  workspace is open, their calls run in the app.
+</Edition>
+
+## Privacy
+
+What Echolot may collect, always off until you say so. See [Privacy and security](/docs/privacy-and-security).
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Share anonymous usage data** | Tells Echolot's developers which features are used (sending a request, a run, an MCP check) with small facts such as the request kind and status code, and reports errors with their stack traces. Never URLs, headers, bodies, variables, secrets or responses. | Off |
+| **Collect crash reports** | macOS hands Echolot its crash and hang reports on the next launch, and Echolot saves them on this Mac so you can attach them to feedback. Stack traces only. They are not sent anywhere. The count of saved reports is shown, with **Show in Finder**. | Off |
+| **Update checks** | Shows how often Echolot asks GitHub for the list of releases: **Once a day**, **Only when you ask**, or **By the App Store**. GitHub sees the app's version and your IP address, nothing about you or your workspaces. | |
+
+## About
+
+Version and where Echolot keeps its data.
+
+- **Version**: the version and build, with **What's New** for the release notes.
+- **Website**: echolot.dev. **Releases**: all releases and their notes.
+- **Responses and history**: **Show in Finder** opens Echolot's own data folder: response bodies, history and
+  crash reports. Workspaces live where you keep them; deleting this folder loses history only, never requests.
+- **Credits**: Echo's font, Departure Mono by Helena Zhang, under the SIL Open Font License 1.1.
+
+<Edition only="appstore">
+  The App Store edition keeps its data in its own container instead of the Application Support folder; **Show in
+  Finder** opens it there.
+</Edition>

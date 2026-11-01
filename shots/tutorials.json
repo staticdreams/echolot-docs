@@ -1,0 +1,104 @@
+[
+  {
+    "id": "tutorials-alpenglow-window",
+    "page": "tutorials",
+    "scene": "Alpenglow, No Environment. Requests module (⌘1), every folder in the sidebar expanded except Inventory and Agent tools. Open Catalog › List products and send it (⌘R). Response pane on Body, view JSON Tree.",
+    "frame": "window"
+  },
+  {
+    "id": "tutorials-first-workspace-environment",
+    "page": "tutorials/first-workspace",
+    "scene": "Alpenglow. View › Environments (⌥⌘E). Select Staging in the list, so the table shows baseURL, wsURL and the secret password (Not set on this Mac).",
+    "frame": "window"
+  },
+  {
+    "id": "tutorials-chain-store-variable",
+    "page": "tutorials/chain-requests",
+    "scene": "Alpenglow, No Environment. Open Auth › Sign in and send it. Response Body tab, view JSON Tree. Rest the pointer on the access_token row and choose its Store in a Variable… button, so the popover is open (Workspace scope, Secret ticked). Don't choose Store.",
+    "frame": "the response pane with the popover",
+    "crop": [
+      828,
+      178,
+      540,
+      440
+    ]
+  },
+  {
+    "id": "tutorials-chain-create-order",
+    "page": "tutorials/chain-requests",
+    "scene": "Alpenglow, No Environment. Send Auth › Sign in, then open Orders › Create order and send it (201 Created). Request on its Headers tab (Content-Type and Idempotency-Key {{$uuid}}), response on its Headers tab showing Location and Idempotency-Key.",
+    "frame": "window"
+  },
+  {
+    "id": "tutorials-ci-tests-tab",
+    "page": "tutorials/test-in-ci",
+    "scene": "Alpenglow, No Environment. Open Catalog › List products, request on its Tests tab, and send it, so the four checks show as passed and the response's Tests tab badge reads 4/4.",
+    "frame": "window",
+    "crop": [
+      304,
+      100,
+      1008,
+      345
+    ]
+  },
+  {
+    "id": "tutorials-ci-runner",
+    "page": "tutorials/test-in-ci",
+    "scene": "Alpenglow, No Environment. Right-click the Catalog folder › Run Folder and wait until it finishes: Runner page with the stats (Requests, Passed, Failed, Failing checks, Duration) and the Results card, all passed.",
+    "frame": "window"
+  },
+  {
+    "id": "tutorials-spec-visual-editor",
+    "page": "tutorials/spec-first",
+    "scene": "Alpenglow. Specs module (⌘3), open alpenglow.yaml, toolbar switch on Visual, Group by Paths. Select GET /products so its editor (Summary, Operation ID, Parameters, Responses) shows. The problems button reads No problems.",
+    "frame": "window"
+  },
+  {
+    "id": "tutorials-spec-mock-running",
+    "page": "tutorials/spec-first",
+    "scene": "Alpenglow. Mocks module (⌘4), + › Mock of Alpenglow demo shop, then Start. In Terminal run `echolot send http://127.0.0.1:4010/v1/products` and `echolot send 'http://127.0.0.1:4010/v1/products?sort=cheapest'` so the LOG has a 200 and a refused 400. Toolbar shows the green dot, http://127.0.0.1:4010/v1, Use in Environment and Stop. Delete the mock afterwards.",
+    "frame": "window"
+  },
+  {
+    "id": "tutorials-flows-canvas",
+    "page": "tutorials/automate-with-flows",
+    "scene": "Alpenglow, No Environment. Flows module (⌘5), open Morning stock check, choose Fit (⌥⌘0), then Run (⌘R). Wait until the blocks show Done and the run log is open under the canvas. No block selected.",
+    "frame": "window"
+  },
+  {
+    "id": "tutorials-mcp-server-checked",
+    "page": "tutorials/inspect-an-mcp-server",
+    "scene": "Alpenglow. MCP Servers module (⌘2), select Alpenglow MCP and choose Check. Scroll so the Server card, the Tools card (search_catalog, get_product, order_status) and the top of How a model sees this server are visible.",
+    "frame": "window"
+  },
+  {
+    "id": "tutorials-agents-connect",
+    "page": "tutorials/agents-safely",
+    "scene": "Alpenglow, direct download. Settings › Agents › Let agents use open workspaces on. In the workspace window choose Agents in the page header, so its popover shows Connect a client with Claude Desktop, Claude Code, Cursor, VS Code, Codex and Copy JSON.",
+    "frame": "the page header and the Agents popover",
+    "crop": [
+      700,
+      0,
+      620,
+      460
+    ]
+  },
+  {
+    "id": "tutorials-agents-approval",
+    "page": "tutorials/agents-safely",
+    "scene": "Alpenglow, No Environment, agents on, Claude Code connected with the copied command. Send Auth › Sign in in the app first. In claude, ask: \"Using echolot-alpenglow, place an order for one TNT-MH-2P with Create order.\" Capture the approval sheet (Claude Code wants to send a request that may change data, with the preview and Deny / Allow for This Session / Allow Once). Then Deny.",
+    "frame": "the approval sheet over the window"
+  },
+  {
+    "id": "tutorials-postman-import-report",
+    "page": "tutorials/coming-from-postman",
+    "scene": "From Alpenglow: File › Export Workspace… › Postman Collection v2.1, Include environments on, Export… to a folder. Make a new empty workspace named From Postman, File › Import… and pick Alpenglow.postman_collection.json and Staging.postman_environment.json together. Capture the Imported … report (rows per file, the notes about 19 scripts and the secret values saved to the Keychain).",
+    "frame": "the import report sheet"
+  },
+  {
+    "id": "tutorials-realtime-websocket",
+    "page": "tutorials/realtime",
+    "scene": "Alpenglow, No Environment. Open Realtime › Order updates, request on its Messages tab, Connect (⌘R), choose Send on the saved Subscribe message, and wait for four or five order events. Response on Messages, direction chips on All.",
+    "frame": "window"
+  }
+]

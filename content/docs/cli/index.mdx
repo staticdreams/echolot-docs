@@ -1,0 +1,147 @@
+---
+title: Command-line tool
+description: "Install the echolot command, and learn what every command shares: secrets, environment variables and exit codes."
+---
+
+`echolot` runs what you build in the app from a terminal or a CI job: it sends requests, runs a workspace with its
+checks and writes reports, imports and exports collections, lints specs, serves mocks, runs flows and serves a
+workspace to AI agents over MCP. It reads the same workspace files as the app, so nothing needs converting.
+
+## Get the command-line tool
+
+<Tabs items={["In the app", "Zip from the releases"]}>
+  <Tab value="In the app">
+    The direct download carries the tool inside the app. To put it on your `PATH`:
+
+    1. Choose **Echolot › Install Command-Line Tool…**, or open **Settings › General** and click **Install
+       Command-Line Tool…** under **Command-line tool**.
+    2. Echolot puts an `echolot` link to the tool inside the app in `/opt/homebrew/bin` or `/usr/local/bin`. Where
+       neither folder is writable, macOS asks for an administrator's password.
+    3. Open a new Terminal window and type `echolot --help`.
+
+    **Settings › General › Command-line tool** shows where the bundled tool is and the link on your `PATH`. Use
+    **Reinstall** after you move the app, and **Remove** to take the link away. If a file named `echolot` that Echolot
+    did not put there is in the way, Echolot asks before it replaces it, and the file goes to the Trash.
+
+    Because the link points into the app, the tool updates with the app.
+
+    <Shot id="cli-settings-command-line-tool" alt="Settings, General pane, the Command-line tool section with the bundled tool's path and the link on your PATH" />
+  </Tab>
+  <Tab value="Zip from the releases">
+    Every release has the tool on its own, `echolot-<version>-macos.zip`, on
+    [the releases page](https://github.com/staticdreams/echolot-public/releases). It holds one file, `echolot`,
+    signed and notarized like the app. Unzip it and move it to a folder on your `PATH`:
+
+    ```sh
+    unzip echolot-0.5.0-macos.zip
+    sudo mv echolot /usr/local/bin/
+    echolot --version
+    ```
+
+    Use the zip on a Mac without the app, on a CI runner, or with the App Store edition.
+  </Tab>
+</Tabs>
+
+<Edition only="appstore">
+  The App Store edition has no tool inside it and no **Install Command-Line Tool…** item. Install the tool from the
+  zip on the releases page instead. It works with the same workspaces.
+</Edition>
+
+The command-line tool never expires, also in beta builds of the app. It needs macOS 15 or later on a Mac.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| [`echolot send`](/docs/cli/send) | Sends one request, a URL or a saved request file, and writes the body to standard output. |
+| [`echolot run`](/docs/cli/run) | Runs a workspace, some of its folders or requests, or a Postman collection, with checks and reports. |
+| [`echolot validate`](/docs/cli/validate) | Checks that every file of a workspace reads and every request resolves. |
+| [`echolot import`, `echolot export`](/docs/cli/import-export) | Brings collections into a workspace and writes a workspace out as Postman, Insomnia, Bruno or Echolot. |
+| [`echolot mcp`](/docs/cli/mcp) | Checks MCP servers, signs in to them, serves a workspace to agents and prints client setups. |
+| [`echolot spec`](/docs/cli/spec) | Lints OpenAPI documents, and checks and applies spec changes to the folder that follows the spec. |
+| [`echolot graphql diff`](/docs/cli/graphql) | Compares two GraphQL schemas and grades every change. |
+| [`echolot grpc`](/docs/cli/grpc) | Describes gRPC services and calls their methods. |
+| [`echolot mqtt`](/docs/cli/mqtt) | Subscribes at and publishes to MQTT brokers. |
+| [`echolot mock`](/docs/cli/mock) | Serves a mock of an OpenAPI document. |
+| [`echolot flow`](/docs/cli/flow) | Lists, runs, creates and serves a workspace's flows. |
+| [`echolot agent`](/docs/cli/agent) | Runs the built-in agent on a task, with a policy instead of approvals. |
+
+`echolot help <command>` and `echolot <command> --help` print every option of a command. Commands with
+subcommands take them the same way: `echolot mcp serve --help`.
+
+## Options every command has
+
+| Option | Meaning |
+| --- | --- |
+| `--version` | Prints the version and build, such as `0.5.0 (8)`. |
+| `-h`, `--help` | Prints the command's options. |
+
+## Workspaces and environments
+
+Commands that work on a workspace take its folder, the one with `workspace.toml` in it. Some take it as an argument
+(`echolot run Alpenglow.echolot`), others with `-w` or `--workspace` (`echolot flow list -w Alpenglow.echolot`); each
+command's page says which. Where it is optional, the current folder is used.
+
+`--env` chooses an environment by its file name without `.toml` (`staging`). `run`, `validate` and `flow` also take
+its name (`Staging`). Without `--env`, requests resolve with the workspace's own variables. See
+[environments](/docs/workspaces/environments).
+
+## Secrets
+
+Secret values never live in workspace files: a file names the secret variable and nothing more. The command-line tool
+finds each value in this order:
+
+1. An environment variable `ECHOLOT_SECRET_<NAME>`. The name is the variable's name in capitals, with every
+   character that isn't a letter or a digit turned into `_`: `token` is `ECHOLOT_SECRET_TOKEN`, `me_password` is
+   `ECHOLOT_SECRET_ME_PASSWORD`.
+2. For `echolot run`, a file given with `--secrets`: one `NAME=value` per line, `#` for comments, quotes around a
+   value are taken off. `NAME` is the variable's name (`token=…`) or the whole environment variable name
+   (`ECHOLOT_SECRET_TOKEN=…`). Values in the file win over environment variables.
+3. On a Mac, the Keychain items the app keeps. A secret you set in the app, or an MCP server you signed in to, works
+   in Terminal too.
+
+```sh
+export ECHOLOT_SECRET_PASSWORD="$(op read 'op://Shop/Alpenglow staging/password')"
+echolot run Alpenglow.echolot --env staging
+```
+
+The Keychain is never used when `CI` is set (to anything but empty, `0` or `false`), or when `ECHOLOT_KEYCHAIN=0`.
+That keeps a CI job from waiting on a Keychain prompt. See [secrets](/docs/workspaces/secrets).
+
+## Environment variables
+
+| Variable | Used by | Meaning |
+| --- | --- | --- |
+| `ECHOLOT_SECRET_<NAME>` | Every command that resolves requests | The value of the secret variable `<NAME>`. |
+| `ECHOLOT_KEYCHAIN=0` | Every command | Don't read or write the Keychain. |
+| `CI` | Every command | When set, the Keychain is off, as with `ECHOLOT_KEYCHAIN=0`. |
+| `HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`, `NO_PROXY` | `send`, `run`, `mqtt` and others | Proxies, read as curl reads them. `--proxy` and `--no-proxy` override them; a workspace's own proxy setting comes first. |
+| `ECHOLOT_CERT_PASSPHRASE` | `send`, `run`, `mqtt` | The passphrase of the key or PKCS#12 file given with `--cert` or `--key`. |
+| `ECHOLOT_MQTT_PASSWORD` | `mqtt` | The broker password. |
+| `ECHOLOT_MCP_TOKEN` | `mcp serve --http` | The bearer token clients send; a random one otherwise. |
+| `ECHOLOT_WEBHOOK_TOKEN` | `flow serve` | The token webhook callers send; a random one otherwise. |
+| `ECHOLOT_BROWSER` | `mcp sign-in` | The command that opens the sign-in page instead of the default browser. |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | `agent` | The model provider's API key. |
+| `NO_COLOR` | `run` | Plain console output. |
+
+## Output and exit codes
+
+Results go to standard output: a response body, a report, the lines a subscription prints. Progress, warnings, test
+results and timings go to standard error, so you can pipe the output on:
+
+```sh
+echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
+```
+
+| Exit code | Meaning |
+| --- | --- |
+| `0` | Everything worked and every check passed. |
+| `1` | Something failed: no response, a failing check or test, problems found (`validate`, `spec lint`), breaking changes (`graphql diff`), a gRPC status other than OK, a refused MQTT connection, an agent that didn't finish. |
+| `22` | `echolot send` only: the response's status was 400 or more, as with `curl --fail`. |
+| `64` | The command line itself was wrong: an unknown option, a missing file, an environment that doesn't exist. The reason is printed. |
+
+## Next
+
+- [Run a workspace](/docs/cli/run) and [run it in CI](/docs/cli/ci).
+- [Serve a workspace to agents](/docs/cli/mcp).
+- [Test an API in CI](/docs/tutorials/test-in-ci), a tutorial.

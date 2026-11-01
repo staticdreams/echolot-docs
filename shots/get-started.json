@@ -1,0 +1,74 @@
+[
+  {
+    "id": "get-started-welcome",
+    "page": "get-started/install",
+    "scene": "Launch Echolot with no workspace window (no -open). Alpenglow.echolot and Examples.echolot should be in Recent workspaces (open each once, then close their windows). The welcome window shows New Workspace…, Open Workspace…, Open Examples and the recent list.",
+    "frame": "the welcome window only"
+  },
+  {
+    "id": "get-started-whats-new",
+    "page": "get-started/install",
+    "scene": "Launch with -open /tmp/Alpenglow.echolot -page home -showWhatsNew YES. Click the What's New button (sparkles, first of the buttons at the top right of the page header) so its popover opens with the latest release's notes.",
+    "frame": "the top right of the window: the page header's buttons and the open popover",
+    "crop": [
+      690,
+      0,
+      630,
+      600
+    ]
+  },
+  {
+    "id": "get-started-first-response",
+    "page": "get-started/first-request",
+    "scene": "Alpenglow, no environment, side-by-side layout. Make (or use) a request named List products at the top level with the address https://demo.echolot.dev/v1/products?category=tents&per_page=5 (method GET, no headers). Send it. Request side on the Params tab (category and per_page listed); response side on Body with View: JSON. Pointer away from the status line.",
+    "frame": "window"
+  },
+  {
+    "id": "get-started-window",
+    "page": "get-started/the-window",
+    "scene": "Alpenglow, no environment, side-by-side layout, Requests module (⌘1). Folders Auth and Catalog expanded in the sidebar. Open Auth › Sign in, then Catalog › List products so both are tabs; List products active and sent, response on Body › JSON Tree with the first item expanded. Echo on (Settings › General › Echo › Show Echo's status screen in the page header) so it shows in the header.",
+    "frame": "window"
+  },
+  {
+    "id": "get-started-command-palette",
+    "page": "get-started/the-window",
+    "scene": "Alpenglow, no environment, on Catalog › List products (sent once, so history has responses). Press ⌘K and type: prod",
+    "frame": "the command palette and the part of the window around it",
+    "crop": [
+      310,
+      90,
+      900,
+      440
+    ]
+  },
+  {
+    "id": "get-started-import-report",
+    "page": "get-started/importing",
+    "scene": "Make the collection first: echolot export /tmp/shots-export -w /tmp/Alpenglow.echolot --format postman (it writes Alpenglow.postman_collection.json and the environments into that folder). Open a fresh copy of Alpenglow, select nothing (top level), File › Import… (⇧⌘I) and choose /tmp/shots-export/Alpenglow.postman_collection.json. The import report opens: Imported 22 requests, 7 folders, a note on the 19 imported scripts, and the line on secret values saved to the Keychain.",
+    "frame": "the import report sheet"
+  },
+  {
+    "id": "privacy-protected-send",
+    "page": "privacy-and-security",
+    "scene": "Alpenglow, environment Production (protected) chosen in the page header's Environment menu. Open Catalog › List products; the Send button reads Send to Production…. Click it so the question opens: Send to Production?, with Cancel as the default button and the Don't ask again until I switch environments checkbox.",
+    "frame": "the alert sheet and the request header above it",
+    "crop": [
+      304,
+      96,
+      1016,
+      480
+    ]
+  },
+  {
+    "id": "troubleshooting-no-echo",
+    "page": "troubleshooting",
+    "scene": "Alpenglow, no environment. New request (⌘N) named Local server with the address http://localhost:9/health; send it (nothing listens on port 9). The response pane shows No echo, Connection refused: nothing is listening on localhost:9. Is the server running on that port?, and Try Again.",
+    "frame": "the response pane",
+    "crop": [
+      828,
+      96,
+      484,
+      560
+    ]
+  }
+]

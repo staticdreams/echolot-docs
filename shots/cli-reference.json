@@ -1,0 +1,8 @@
+[
+  {
+    "id": "cli-settings-command-line-tool",
+    "page": "cli",
+    "scene": "Direct download build (Release, with the bundled tool). Open Settings (⌘,) › General and scroll to the Command-line tool section. Install the tool first (Install Command-Line Tool…) so On your PATH shows the link with Reinstall and Remove; the footer text below the section should be visible.",
+    "frame": "the Command-line tool section of Settings › General, with its header and footer"
+  }
+]

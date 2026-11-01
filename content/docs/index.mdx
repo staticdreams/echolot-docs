@@ -1,15 +1,47 @@
 ---
 title: Echolot
-description: The native Mac API client for HTTP, GraphQL, gRPC, WebSocket, Socket.IO, MQTT and MCP.
+description: What Echolot is, what it does, and where to start in these docs.
 ---
 
-Echolot sends and inspects requests over HTTP/1.1, HTTP/2 and HTTP/3, GraphQL, gRPC, WebSocket, Server-Sent Events,
-Socket.IO, MQTT and MCP. It keeps your work in plain files you can put in Git, tests and automates APIs, designs and
-mocks them, and lets AI agents use your workspace with your approval.
+Echolot is a native Mac app for sending, testing and building APIs. It speaks HTTP/1.1, HTTP/2 and HTTP/3, GraphQL,
+gRPC, WebSocket, Server-Sent Events, Socket.IO, MQTT and MCP, and shows exactly what went over the wire: the raw
+bytes, every redirect, and the time each step took.
 
-These pages are being written. Start with the demo API: it works with nothing installed but Echolot.
+What it does:
+
+- **Keeps your work in plain files.** A workspace is a folder of readable TOML files, one per request, that you can
+  keep in Git. Secret values stay in the macOS Keychain, never in the files.
+- **Tests and runs.** Add checks to any request, run a folder or the whole workspace in the Runner, and run the same
+  workspace in CI with the `echolot` command-line tool.
+- **Designs and mocks.** Write OpenAPI specs visually or as text, and serve any spec as a local mock server.
+- **Automates.** Chain requests, conditions and loops into flows on a canvas, and run them by hand, on a schedule or
+  from a webhook.
+- **Works with AI.** The built-in Assistant sends, tests and fixes requests with the model you choose. External AI
+  agents can use your workspace through Echolot's own MCP server. Anything that changes data asks you first.
+- **Reads huge responses.** Bodies stream to disk, so a 500 MB JSON response opens at once.
+
+Echolot needs macOS 15 or later on a Mac with Apple silicon. It has no account and no sign-in.
+
+## Start here
 
 <Cards>
-  <Card title="The demo API" href="/docs/tutorials/demo-api" description="A pretend shop to practise on: REST, GraphQL, WebSocket, SSE and MCP." />
-  <Card title="Download Echolot" href="https://echolot.dev" description="The direct download, or the Mac App Store edition." />
+  <Card title="Install Echolot" href="/docs/get-started/install" description="Download it, open it, keep it up to date." />
+  <Card title="Your first request" href="/docs/get-started/first-request" description="From nothing to a sent request and a read response in a few minutes." />
+  <Card title="The window" href="/docs/get-started/the-window" description="A tour of the sidebar, the pages, tabs and shortcuts." />
+  <Card title="Bring what you have" href="/docs/get-started/importing" description="Import from Postman, Insomnia, OpenAPI, HAR, cURL, Paw and Bruno." />
+  <Card title="The demo API" href="/docs/tutorials/demo-api" description="A pretend shop on demo.echolot.dev to practise on: REST, GraphQL, WebSocket, SSE and MCP." />
+  <Card title="Editions" href="/docs/get-started/editions" description="The direct download and the Mac App Store edition, side by side." />
+</Cards>
+
+## The main parts
+
+<Cards>
+  <Card title="Workspaces" href="/docs/workspaces" description="Folders, environments, secrets, history and Git." />
+  <Card title="Requests" href="/docs/requests" description="Every protocol, auth, responses, scripts, tests and the Runner." />
+  <Card title="MCP Servers" href="/docs/mcp-servers" description="Inspect, check and call any MCP server." />
+  <Card title="Specs" href="/docs/specs" description="Design OpenAPI documents and keep requests in step with them." />
+  <Card title="Mocks" href="/docs/mocks" description="Local servers that answer a spec's operations." />
+  <Card title="Flows" href="/docs/flows" description="Requests, conditions and loops chained on a canvas." />
+  <Card title="Assistant" href="/docs/ai/assistant" description="The AI agent built into Echolot." />
+  <Card title="Command-line tool" href="/docs/cli" description="Send, run, import, mock and more from Terminal and CI." />
 </Cards>

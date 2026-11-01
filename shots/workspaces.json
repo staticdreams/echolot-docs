@@ -1,0 +1,164 @@
+[
+  {
+    "id": "workspaces-welcome",
+    "page": "workspaces/index",
+    "scene": "Close every workspace window so the welcome window shows. Recent workspaces lists Alpenglow (open /tmp/Alpenglow.echolot once beforehand so it is in the list) and Examples.",
+    "frame": "the welcome window"
+  },
+  {
+    "id": "workspaces-switcher",
+    "page": "workspaces/index",
+    "scene": "Alpenglow, no environment, Requests module. Click the workspace switcher at the foot of the sidebar (Alpenglow, All changes saved) so its menu is open: Recent Workspaces, New Workspace…, Open Workspace…, Workspace Settings…, Show in Finder.",
+    "frame": "the sidebar with the open menu",
+    "cropPx": [
+      60,
+      610,
+      300,
+      180
+    ]
+  },
+  {
+    "id": "workspaces-multi-select-menu",
+    "page": "workspaces/folders",
+    "scene": "Alpenglow, no environment, Requests module, Orders folder open. Click Orders › List orders, ⌘-click Orders › Get order, then Control-click Get order so the multi-selection menu shows: Run 2 Items, Edit 2 Requests…, New Folder with 2 Items, Move 2 Items To, Move 2 Items to Trash….",
+    "frame": "the sidebar with the context menu",
+    "cropPx": [
+      0,
+      0,
+      760,
+      1600
+    ]
+  },
+  {
+    "id": "workspaces-bulk-edit",
+    "page": "workspaces/folders",
+    "scene": "Alpenglow, Catalog folder open. Select Catalog › List products, ⌘-click Catalog › Search and Catalog › Get product, Control-click one and choose Edit 3 Requests…. Stay on the Headers tab (Accept and Accept-Language appear only on List products, so they show as 1 of 3 with Add to All).",
+    "frame": "the Edit 3 Requests sheet",
+    "crop": [
+      320,
+      128,
+      680,
+      598
+    ]
+  },
+  {
+    "id": "workspaces-folder-settings",
+    "page": "workspaces/folders",
+    "scene": "Alpenglow. Control-click the Orders folder and choose Folder Settings…. Auth tab: Bearer Token with {{token}}.",
+    "frame": "the folder settings sheet",
+    "crop": [
+      350,
+      154,
+      620,
+      544
+    ]
+  },
+  {
+    "id": "workspaces-environment-menu",
+    "page": "workspaces/environments",
+    "scene": "Alpenglow, no environment, request page on Catalog › List products. Click the environment menu in the page header so it is open: No Environment, Local, Staging, Production (shield), Manage Environments….",
+    "frame": "the page header with the open menu",
+    "cropPx": [
+      1180,
+      70,
+      1340,
+      450
+    ]
+  },
+  {
+    "id": "workspaces-environments-page",
+    "page": "workspaces/environments",
+    "scene": "Alpenglow, no environment. Launch with -page environments, select Staging in the list on the left: its name field, the Protected switch (off), and the variables baseURL, wsURL and password (Secret, Not set on this Mac).",
+    "frame": "window"
+  },
+  {
+    "id": "workspaces-variables-panel",
+    "page": "workspaces/environments",
+    "scene": "Alpenglow, no environment, request page on Catalog › Get product. Choose View › Show Variables (⌥⌘V) so the floating Variables panel shows the Global, Workspace, Local, Staging, Production, Catalog and Request columns, the value in use marked.",
+    "frame": "the Variables panel and the request page behind it"
+  },
+  {
+    "id": "workspaces-secret-variable",
+    "page": "workspaces/secrets",
+    "scene": "Alpenglow, no environment. Send Auth › Sign in once so {{token}} has a value in the Keychain. Then open the Environments page (-page environments), select Workspace: the token row has Secret checked and its value field reads Stored in the Keychain, with the green key.",
+    "frame": "the variables table on the Environments page",
+    "crop": [
+      572,
+      80,
+      716,
+      540
+    ]
+  },
+  {
+    "id": "workspaces-protected-send-button",
+    "page": "workspaces/protected-environments",
+    "scene": "Alpenglow, environment Production (choose it in the page header's environment menu). Request page on Catalog › List products, not sent. The Send button reads Send to Production… in red.",
+    "frame": "the request page's address bar with the Send button and the environment menu",
+    "crop": [
+      304,
+      0,
+      1016,
+      175
+    ]
+  },
+  {
+    "id": "workspaces-protected-send-question",
+    "page": "workspaces/protected-environments",
+    "scene": "As workspaces-protected-send-button, then click Send to Production…. The sheet Send to Production? shows with the resolved GET address, Cancel as the default button, Send, and the checkbox Don't ask again until I switch environments. Don't send (Production is a pretend .example host).",
+    "frame": "window"
+  },
+  {
+    "id": "workspaces-history-page",
+    "page": "workspaces/history",
+    "scene": "Alpenglow, no environment. Send Catalog › List products twice, Catalog › Get product, Auth › Sign in and Orders › List orders; run the Catalog folder in the Runner (Run Folder) so Runner rows appear. Then open View › History (⌘Y), Sent by All.",
+    "frame": "window"
+  },
+  {
+    "id": "workspaces-request-history",
+    "page": "workspaces/history",
+    "scene": "Alpenglow, no environment. Send Catalog › List products five times. Click the clock button with the count in the response pane's strip so the history popover lists the five responses.",
+    "frame": "the response pane with the open popover",
+    "crop": [
+      760,
+      96,
+      656,
+      560
+    ]
+  },
+  {
+    "id": "workspaces-history-compare",
+    "page": "workspaces/history",
+    "scene": "As workspaces-request-history (at least two responses of Catalog › List products). In the popover, rest on the older row and click its compare arrows; the Compare Responses sheet shows on Body. If the two bodies are identical, send Auth › Sign in, then Orders › Create order twice and compare those (each answer has a new order ID).",
+    "frame": "the Compare Responses sheet"
+  },
+  {
+    "id": "workspaces-settings-storage",
+    "page": "workspaces/storage-and-encryption",
+    "scene": "Echolot › Settings…, Storage pane. Encrypt response bodies on disk off, Keep response bodies up to 5 GB, History per request 50 responses (the defaults).",
+    "frame": "the Settings window"
+  },
+  {
+    "id": "workspaces-export-sheet",
+    "page": "workspaces/exporting",
+    "scene": "Alpenglow. File › Export Workspace… (⇧⌘E). The sheet lists the four formats with Postman Collection v2.1 suggested (21 of 29 requests · MCP, MQTT, Socket.IO, WebSocket, and gRPC stay behind); Include environments (3) checked.",
+    "frame": "the Export Workspace sheet",
+    "crop": [
+      380,
+      214,
+      560,
+      424
+    ]
+  },
+  {
+    "id": "workspaces-export-report",
+    "page": "workspaces/exporting",
+    "scene": "As workspaces-export-sheet, Postman Collection v2.1, click Export… and save to /tmp. The report: Exported 21 requests, 7 folders, 3 environments as Postman Collection v2.1 to … with Left out (8 requests) and Changed on the way (captures, $randomInt kept as written, 1 password written in clear).",
+    "frame": "the Export Workspace sheet showing the report",
+    "crop": [
+      380,
+      214,
+      560,
+      424
+    ]
+  }
+]

@@ -1,0 +1,170 @@
+---
+title: echolot flow
+description: List, run and create a workspace's flows from the terminal, and serve their schedules and webhooks.
+---
+
+`echolot flow` runs [flows](/docs/flows) without the app: once from a terminal or a CI job, or as a service that runs
+scheduled flows when they are due and answers webhooks.
+
+| Subcommand | What it does |
+| --- | --- |
+| `echolot flow list` | Lists the workspace's flows with their inputs and problems. |
+| `echolot flow run` | Runs a flow, prints each block as it finishes, then the flow's output. |
+| `echolot flow new` | Creates a flow, empty or from a template; without a name, lists the templates. |
+| `echolot flow serve` | Runs scheduled flows when due and answers webhooks, until stopped. |
+
+Every subcommand takes the workspace with `-w` or `--workspace`.
+
+## echolot flow list
+
+```sh
+echolot flow list --workspace <workspace> [--json]
+```
+
+```sh
+echolot flow list -w Alpenglow.echolot
+```
+
+```text
+morning-stock-check  Morning stock check
+order-status-webhook  Order status on webhook
+place-test-order  Place a test order  MCP tool place_test_order
+```
+
+Each line has the flow's slug (its file name in `flows/` without `.flow.toml`) and its name, then, when it has them,
+its inputs in parentheses (optional ones in square brackets), the MCP tool it is offered as, and the number of problems. `--json` prints each flow with its `slug`, `name`,
+`description`, `inputs`, `blockCount`, `errors`, `warnings`, and its `schedule` or `webhook`.
+
+## echolot flow run
+
+```sh
+echolot flow run <flow> --workspace <workspace> [--env <env>] [--input <name=value> ...] [--json] [--no-input]
+```
+
+`<flow>` is the flow's slug or name.
+
+```sh
+echolot flow run morning-stock-check -w Alpenglow.echolot
+```
+
+```text
+✓ start  Start  0 ms
+✓ list  List products  148 ms
+✓ low  Running low?  4 ms
+notification: Restock Bern — A tent is under five in Bern.
+✓ notify  Restock  0 ms
+Morning stock check: passed in 152 ms
+```
+
+- Each block prints a line when it finishes: `✓` or `✗`, its ID, its title and its time, with the error when it
+  failed. What Log blocks write, and each test's result, follow on lines of their own.
+- Notifications go to standard error.
+- The flow's output prints at the end, as JSON, followed by a summary on standard error.
+- `--input name=value` sets an input, as text converted to the input's type. Give it once per input.
+- When a flow needs a person (an input without a value, an **Approve** block), Echolot asks in the terminal.
+  `--no-input` never asks: the flow fails there instead, which is what you want in CI.
+- `--json` prints the whole run record as JSON instead of the progress lines.
+
+```sh
+echolot flow run "Place a test order" -w Alpenglow.echolot --env staging --no-input
+```
+
+| Option | Meaning |
+| --- | --- |
+| `-w`, `--workspace <folder>` | The workspace folder. Required. |
+| `--env <env>` | The environment the flow's requests use: its file name without `.toml`, or its name. |
+| `--input <name=value>` | An input; text is converted to the input's type. Repeatable. |
+| `--json` | Print the run record as JSON instead of progress. |
+| `--no-input` | Never ask: a flow that needs a person fails there. |
+
+The run fails, and exits with 1, when the flow fails or one of its tests does.
+
+## echolot flow new
+
+```sh
+echolot flow new [<name>] [--workspace <workspace>] [--template <template>]
+```
+
+Without a name, it lists the templates:
+
+```text
+device-sign-in  OAuth device sign-in: shows the code and link (with a QR code), waits until the person approves, saves the tokens to the Keychain.
+refresh-token  Trades the refresh token for a new access token and saves both to the Keychain; says so when it fails.
+paginate-and-export  Fetches a number of pages, gathers their items into one list and writes it to a JSON file in the workspace.
+smoke-monitor  Every hour, checks that a request answers 200 quickly; a notification when it does not.
+seed-and-clean-up  Creates a few records, leaves room for what needs them, then deletes each one again.
+```
+
+With a name, it writes a new flow file:
+
+```sh
+echolot flow new "Export tents" --template paginate-and-export -w Alpenglow.echolot
+```
+
+```text
+Created flows/export-tents.flow.toml.
+```
+
+Templates leave their requests for you to pick, in the app or in the flow's file; a note on the canvas says which.
+See [templates](/docs/flows/templates).
+
+| Option | Meaning |
+| --- | --- |
+| `-w`, `--workspace <folder>` | The workspace folder. |
+| `--template <template>` | The template to start from: `device-sign-in`, `refresh-token`, `paginate-and-export`, `smoke-monitor` or `seed-and-clean-up`. Without it, the flow is empty. |
+
+## echolot flow serve
+
+```sh
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+```
+
+Runs every flow with a schedule when it is due, and answers the webhooks of flows that have one, until you stop it
+with <kbd>⌃</kbd><kbd>C</kbd>. Run it on a server or in a container to keep a workspace's automations going without the
+app.
+
+```sh
+echolot flow serve -w Alpenglow.echolot --port 4100
+```
+
+```text
+Serving Alpenglow (Ctrl-C stops it)
+  schedule  Morning stock check: 0 6 * * *
+  webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
+  token     3f9a…
+```
+
+Each run prints a line with the time, the flow, how it ended and how long it took.
+
+**Webhooks.** A caller sends the method and path of the flow's webhook, with the token as
+`Authorization: Bearer <token>`, an `X-Echolot-Token` header, or `?token=` in the URL. The flow's inputs come from the query and from a JSON
+body; an input named `body` gets the whole body. The answer is the flow's output as JSON, `500` with the error when
+the flow failed, `401` without the right token, and `404` with the paths there are for a path no flow has.
+
+```sh
+curl -X POST http://127.0.0.1:4100/order-status \
+  -H "Authorization: Bearer $ECHOLOT_WEBHOOK_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"orderId": "ord_7Hk2Lw"}'
+```
+
+The token is `--token`, else `ECHOLOT_WEBHOOK_TOKEN`, else a new one that Echolot prints. A webhook run may take up to
+two minutes; a body over 8 MB is refused whole.
+
+| Option | Meaning |
+| --- | --- |
+| `-w`, `--workspace <folder>` | The workspace folder. Required. |
+| `--env <env>` | The environment the flows' requests use. |
+| `--port <port>` | The webhook port; `0` picks a free one. Default 4100. |
+| `--share` | Answer webhooks on every network interface, not only this machine: for containers. |
+| `--token <token>` | The webhook token. Default: `ECHOLOT_WEBHOOK_TOKEN`, else a new one, printed. |
+
+See [running flows and triggers](/docs/flows/running-and-triggers) for schedules and webhooks in the app.
+
+## Exit codes
+
+| Code | When |
+| --- | --- |
+| `0` | `run`: the flow passed with every test. `list`, `new`: done. |
+| `1` | `run`: the flow failed, or a test failed. |
+| `64` | A wrong option, a flow or environment that doesn't exist, or an `--input` that isn't `name=value`. |

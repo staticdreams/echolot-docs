@@ -1,0 +1,94 @@
+---
+title: echolot mock
+description: Serve a mock of an OpenAPI document from the terminal or in CI, with delays, injected failures and request checks.
+---
+
+`echolot mock` serves a mock of an OpenAPI document: every operation answers with its documented examples, or with a
+body made from its schema. Use it to build a client before the API exists, or to give a CI job a server that always
+answers the same way. It serves the same mocks as the [Mocks page](/docs/mocks).
+
+```sh
+echolot mock <source> [--workspace <workspace>] [--port <port>] [--share] [--delay <ms>] [--failure-rate <percent>] [--no-validate] [--routes <file>]
+```
+
+`<source>` is a spec file (YAML or JSON), or with `--workspace` the name of a mock saved in that workspace.
+
+## Mock a spec
+
+```sh
+echolot mock Alpenglow.echolot/specs/alpenglow.yaml --port 4010
+```
+
+```text
+Mock of Alpenglow demo shop: 9 operations at http://127.0.0.1:4010/v1 (Ctrl-C stops it)
+```
+
+The mock answers at the path of the spec's first server (here `/v1`). Each request it answers is a line on standard
+output: the status, the method and path, the operation it matched, where the answer came from, and the time.
+Problems with the request are listed below it.
+
+```text
+200 GET /v1/products/TNT-MH-2P  → GET /products/{sku} (generated)  0 ms
+400 POST /v1/orders  → POST /orders  0 ms
+    body $.lines: expected array, got string
+```
+
+**Requests are checked against the spec.** A request whose parameters or body break the spec gets a `400` that says
+what is wrong:
+
+```json
+{
+  "error" : "The request does not match the spec (POST /orders).",
+  "problems" : [
+    "body $.lines: expected array, got string"
+  ]
+}
+```
+
+`--no-validate` answers such requests anyway.
+
+**Choosing an answer.** By default an operation answers with its first success response and its first example. A
+request can ask for another one with `Prefer: code=404, example=empty`, or with Postman's `x-mock-response-code` and
+`x-mock-response-name` headers.
+
+**A mock of a workspace.** With `--workspace`, `<source>` names a mock saved on the Mocks page (its file name in
+`mocks/` without `.toml`, or its name). Its port, delay, failure rate, request checks and chosen responses apply, and
+the options you give override them. Its routes in JavaScript (`mocks/<name>.js`) answer before the spec; see
+[scripted routes](/docs/mocks/scripted-routes).
+
+```sh
+echolot mock shop -w Alpenglow.echolot --delay 300
+```
+
+## Options
+
+| Option | Meaning |
+| --- | --- |
+| `-w`, `--workspace <folder>` | The workspace folder holding the mock. |
+| `--port <port>` | The port. Default: the mock's own, or 4010. |
+| `--share` | Answer on every network interface, not only this Mac: for containers and phones. |
+| `--delay <ms>` | Milliseconds before each answer. |
+| `--failure-rate <percent>` | Percent of requests answered with an injected `500`. |
+| `--no-validate` | Answer requests that break the spec instead of refusing them with `400`. |
+| `--routes <file>` | Routes in JavaScript that answer before the spec. Default: the workspace mock's `mocks/<name>.js`. |
+
+Without `--share` the mock listens on 127.0.0.1 only, so nothing else on the network can reach it. With `--share`,
+anyone who can reach your Mac can.
+
+A request body over the mock's limit gets a `413` and never reaches a route.
+
+## In CI
+
+Start the mock in the background and run against it. Alpenglow's **Local** environment points `{{baseURL}}` at
+`http://localhost:8787/v1`, so a mock on port 8787 answers its requests:
+
+```sh
+echolot mock Alpenglow.echolot/specs/alpenglow.yaml --port 8787 &
+echolot run Alpenglow.echolot --env local --folder catalog
+kill %1
+```
+
+## Exit codes
+
+The mock runs until you stop it. It exits with `64` for a wrong option or a mock name the workspace doesn't have,
+and with `1` when the spec can't be read or the port is taken.

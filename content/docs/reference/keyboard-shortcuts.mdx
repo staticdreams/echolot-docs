@@ -1,0 +1,182 @@
+---
+title: Keyboard shortcuts
+description: Every keyboard shortcut in Echolot, from the menus and from the pages, grouped by where you use it.
+---
+
+Every action in the menus has its shortcut beside it. This page gathers them, with the keys that work on a page or in
+a list. <kbd>⌘</kbd> is Command, <kbd>⌥</kbd> Option, <kbd>⇧</kbd> Shift, <kbd>⌃</kbd> Control.
+
+## Workspaces and files
+
+| Action | Keys | Menu |
+| --- | --- | --- |
+| New Request | <kbd>⌘</kbd><kbd>N</kbd> | File |
+| New Folder | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd> | File (while the sidebar shows Requests) |
+| New Workspace… | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd> | File |
+| Open Workspace… | <kbd>⌘</kbd><kbd>O</kbd> | File |
+| Switch Workspace… | <kbd>⌘</kbd><kbd>P</kbd> | File |
+| Close Tab | <kbd>⌘</kbd><kbd>W</kbd> | File |
+| Close Window | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd> | File |
+| Import… | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd> | File |
+| Export Workspace… | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd> | File |
+| Duplicate | <kbd>⌘</kbd><kbd>D</kbd> | Edit |
+| Undo, Redo | <kbd>⌘</kbd><kbd>Z</kbd>, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd> | Edit |
+| Settings | <kbd>⌘</kbd><kbd>,</kbd> | Echolot |
+
+<kbd>⌘</kbd><kbd>W</kbd> closes the tab on screen, never the workspace window; <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd>
+closes the window. In other windows, such as Settings, <kbd>⌘</kbd><kbd>W</kbd> closes the window.
+
+The **New GraphQL Request**, **New WebSocket Request**, **New Socket.IO Request**, **New MQTT Request** and **New gRPC
+Request** items in the File menu, **Export Folder…** and **Rename** have no shortcut.
+
+## Tabs
+
+| Action | Keys | Menu |
+| --- | --- | --- |
+| Show Next Tab | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> | Tabs |
+| Show Previous Tab | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> | Tabs |
+| Reopen Closed Tab | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> | Tabs |
+
+## Pages and panels
+
+| Action | Keys | Menu |
+| --- | --- | --- |
+| Requests | <kbd>⌘</kbd><kbd>1</kbd> | View |
+| MCP Servers | <kbd>⌘</kbd><kbd>2</kbd> | View |
+| Specs | <kbd>⌘</kbd><kbd>3</kbd> | View |
+| Mocks | <kbd>⌘</kbd><kbd>4</kbd> | View |
+| Flows | <kbd>⌘</kbd><kbd>5</kbd> | View |
+| Home | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd> | View |
+| Tests | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> | View |
+| Runner | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd> | View |
+| Environments | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd> | View |
+| History | <kbd>⌘</kbd><kbd>Y</kbd> | View |
+| Show Sidebar, Hide Sidebar | <kbd>⌘</kbd><kbd>B</kbd> | View |
+| Show Assistant, Hide Assistant | <kbd>⌘</kbd><kbd>J</kbd> | View |
+| Show Variables, Hide Variables | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>V</kbd> | View |
+| Command Palette… | <kbd>⌘</kbd><kbd>K</kbd> | Request |
+
+<kbd>⌘</kbd><kbd>1</kbd> to <kbd>⌘</kbd><kbd>5</kbd> switch the sidebar's module and go back to what it showed
+last. See [the window](/docs/get-started/the-window).
+
+## Requests and responses
+
+| Action | Keys | Menu |
+| --- | --- | --- |
+| Send | <kbd>⌘</kbd><kbd>R</kbd> or <kbd>⌘</kbd><kbd>↩</kbd> | Request |
+| Cancel | <kbd>⌘</kbd><kbd>.</kbd> | Request |
+| Copy as cURL | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> | Request |
+| Generate Code… | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> | Request |
+| Find in Body | <kbd>⌘</kbd><kbd>F</kbd> | Request |
+| Next match, previous match | <kbd>⌘</kbd><kbd>G</kbd>, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> | (in the find bar) |
+
+While a [protected environment](/docs/workspaces/protected-environments) is active, the item reads **Send to
+&lt;Environment&gt;…** and asks first. **Cancel** is the default button there, so <kbd>↩</kbd> never sends by accident.
+
+**Export Exchange as HAR…** in the Request menu has no shortcut.
+
+## Code size
+
+| Action | Keys | Menu |
+| --- | --- | --- |
+| Bigger Code | <kbd>⌘</kbd><kbd>+</kbd> | View |
+| Smaller Code | <kbd>⌘</kbd><kbd>-</kbd> | View |
+| Actual Code Size | <kbd>⌘</kbd><kbd>0</kbd> | View |
+
+**Wrap Long Lines** and **Panes › Reset Pane Sizes** in the View menu have no shortcut.
+
+## Editing text
+
+| Action | Keys | Where |
+| --- | --- | --- |
+| Suggestions | <kbd>⌃</kbd><kbd>Space</kbd> | Code editors: bodies, scripts, queries |
+| Insert a variable or dynamic value | Type `{{` | Fields and editors that take variables |
+| Bold, italic | <kbd>⌘</kbd><kbd>B</kbd>, <kbd>⌘</kbd><kbd>I</kbd> | The docs editor of a request or folder |
+
+## Sessions
+
+| Action | Keys | Where |
+| --- | --- | --- |
+| Send a message | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | WebSocket: the message box |
+| Emit an event | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | Socket.IO: the event box |
+| Publish a message | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | MQTT: the payload box |
+
+## The sidebar
+
+| Action | Keys |
+| --- | --- |
+| Move the selection | <kbd>↑</kbd>, <kbd>↓</kbd> |
+| Open a folder | <kbd>→</kbd> |
+| Close a folder, or go to the folder above | <kbd>←</kbd> |
+| Rename the selection | <kbd>↩</kbd> |
+| Stop renaming | <kbd>Esc</kbd> |
+| Move a request to the Trash | <kbd>⌫</kbd> (asks first) |
+
+<kbd>⌫</kbd> only works on one request. No key deletes a folder or several items: use **Move to Trash…** (or **Move N Items
+to Trash…**) in the context menu, which asks first. On the MCP Servers page, <kbd>⌫</kbd> offers to delete the selected server.
+
+## Lists
+
+| Action | Keys | Where |
+| --- | --- | --- |
+| Move the selection | <kbd>↑</kbd>, <kbd>↓</kbd> | History, response headers, the command palette, Quick Send |
+| Open the selected exchange | <kbd>↩</kbd> | History |
+| Quick look, and close it | <kbd>Space</kbd>, <kbd>Esc</kbd> | History, response headers |
+| Run the highlighted command | <kbd>↩</kbd> | The command palette |
+| Send the selected request | <kbd>↩</kbd> | Quick Send |
+| Close | <kbd>Esc</kbd> | The command palette, Quick Send |
+
+## Runner and mocks
+
+| Action | Keys | Where |
+| --- | --- | --- |
+| Run, or **Run in &lt;Environment&gt;…** | <kbd>⌘</kbd><kbd>R</kbd> | Runner |
+| Stop | <kbd>⌘</kbd><kbd>.</kbd> | Runner |
+| Start the mock | <kbd>⌘</kbd><kbd>R</kbd> | Mocks |
+
+## Flows
+
+| Action | Keys |
+| --- | --- |
+| Run, or **Run in &lt;Environment&gt;…** | <kbd>⌘</kbd><kbd>R</kbd> |
+| Stop the run | <kbd>⌘</kbd><kbd>.</kbd> |
+| Add a block | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd> |
+| Duplicate the selected blocks | <kbd>⌘</kbd><kbd>D</kbd> |
+| Fit: show the whole flow | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd> |
+| Copy, cut, paste blocks (with the links between them) | <kbd>⌘</kbd><kbd>C</kbd>, <kbd>⌘</kbd><kbd>X</kbd>, <kbd>⌘</kbd><kbd>V</kbd> |
+| Delete the selection | <kbd>⌫</kbd> |
+| Select the nearest block in a direction | <kbd>↑</kbd>, <kbd>↓</kbd>, <kbd>←</kbd>, <kbd>→</kbd> |
+| Clear the selection | <kbd>Esc</kbd> |
+| Draw a selection box | <kbd>⇧</kbd> or <kbd>⌘</kbd> and drag on the canvas |
+
+A plain drag on empty canvas pans. See [flows](/docs/flows).
+
+## Assistant
+
+| Action | Keys |
+| --- | --- |
+| Show or hide the Assistant | <kbd>⌘</kbd><kbd>J</kbd> |
+| Stop the Assistant | <kbd>⌘</kbd><kbd>.</kbd> |
+
+## Quick Send
+
+| Action | Keys |
+| --- | --- |
+| Open Quick Send from any app | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> |
+
+Quick Send is off until you turn it on in **Settings › General**, where you can also record another shortcut. See
+[Quick Send](/docs/mac/quick-send).
+
+## Settings and help
+
+| Action | Keys | Where |
+| --- | --- | --- |
+| Search the settings | <kbd>⌘</kbd><kbd>F</kbd> | Settings |
+| Echolot Documentation | <kbd>⌘</kbd><kbd>?</kbd> | Help menu |
+
+**Help for This Page** opens the docs page about the page in the front window.
+
+## Sheets and dialogs
+
+<kbd>↩</kbd> chooses the default button and <kbd>Esc</kbd> cancels. A dialog that deletes something has no key for its
+red button, so you always click it.

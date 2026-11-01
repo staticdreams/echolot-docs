@@ -1,0 +1,121 @@
+---
+title: Importing
+description: Bring requests from cURL, Postman, Insomnia, OpenAPI, Swagger, HAR, Paw and Bruno into a workspace, and read the import report.
+---
+
+Echolot imports what you already have from other tools into a workspace: requests, folders, auth, variables,
+environments and scripts. It works out the format from the content, moves credentials into the Keychain, and tells
+you in a report what it could not bring across.
+
+## What Echolot imports
+
+| Format | Files | What comes across |
+| --- | --- | --- |
+| **cURL** | A `curl …` command, pasted or in a text file | One request: method, address, headers, body, Basic auth and settings such as redirects and TLS checks. |
+| **Postman** | Collection v2.0 and v2.1, environments (`.json`) | Folders, requests, auth, collection variables, pre-request and test scripts; environments become [environments](/docs/workspaces/environments). |
+| **Insomnia** | v4 JSON exports, v5 YAML collections | Folders, requests, auth, environments. |
+| **OpenAPI** | OpenAPI 3.0 and 3.1, Swagger 2.0, JSON or YAML | A request for every operation, with its parameters, an example body and the auth of its security scheme. The server address becomes the variable `{{baseUrl}}`. |
+| **HAR** | HTTP Archive 1.2 from a browser or a proxy (`.har`) | The API calls of the session, one folder per host when there were several. |
+| **Paw** | Paw and RapidAPI for Mac documents (`.paw`) | Groups, requests, environments; Paw's dynamic values become Echolot's [variables and dynamic values](/docs/requests/dynamic-values) where they can. |
+| **Bruno** | A collection folder (with `bruno.json` or `.bru` files) | Folders, requests, auth, environments, scripts and tests as written. |
+
+A collection, a spec, a HAR file or a Bruno folder lands in a folder of its own, named after it. A cURL command
+becomes one request.
+
+MCP server configs from Claude Desktop, Claude Code, Cursor, VS Code and Codex import too, as MCP servers: see
+[Adding servers](/docs/mcp-servers/adding-servers).
+
+## Import in the app
+
+Pick any of these ways. The import goes into the folder selected in the sidebar, or the top of the workspace.
+
+- **File › Import…** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd>), or **Import…** in the **+** menu of the sidebar or the
+  [command palette](/docs/get-started/the-window#the-command-palette). Choose one or several files, or a Bruno
+  collection folder.
+- **Drop** files or a Bruno folder anywhere on the window's content panel, or onto a folder in the sidebar.
+- **Paste** a cURL command, or the text of a collection or a spec, into the sidebar (<kbd>⌘</kbd><kbd>V</kbd> with the
+  sidebar focused).
+- **Paste a cURL command into a request's address field.** This one doesn't create a request: it replaces the open
+  request's method, address, headers, body, auth and settings, and keeps its name and place. What it could not use is
+  listed under the address bar as **cURL notes**.
+
+<Shot id="get-started-import-report" alt="The import report after importing a Postman collection: the number of requests and folders imported, notes on what could not be imported as is, and the secrets moved to the Keychain" />
+
+### The import report
+
+After an import, a report opens. Its title says what came in ("Imported 22 requests, 7 folders"); below it, which
+formats it came from and whether everything was imported. Then, for each file:
+
+- **Notes** on everything that could not come across as is. Nothing is dropped without a note.
+- **Secrets**: the names of the values saved to the Keychain instead of the files. Never the values.
+
+**Show in Sidebar** selects what was imported; **Done** closes the report. A single cURL command with nothing to note
+opens straight away, without a report.
+
+## Secrets go to the Keychain
+
+Workspace files never get a password, token or key in clear, so you can commit them to Git.
+
+- **Credentials typed into requests** (in auth, in an `Authorization` header, in an API key header) become secret
+  variables, named after the request and the field. For example, `curl -u heidi:alpenglow
+  https://demo.echolot.dev/echo/basic-auth/heidi/alpenglow` makes a request named `heidi-alpenglow` whose password is
+  `{{heidi_alpenglow_password}}`; the value goes to the Keychain.
+- **Secret values of environments and collections** go to the Keychain the same way.
+
+Credentials inside address query strings, in bodies, and in `user:password@` addresses are not moved yet: check those
+before you commit an imported workspace. See [Secrets](/docs/workspaces/secrets).
+
+## Scripts
+
+Pre-request and test scripts from Postman come across and run in Echolot's `pm.*` sandbox. The app runs imported
+scripts only after you trust them: the report says how many there were, and the first send that needs them asks you to
+review them (**Review Scripts…**). Bruno's scripts and tests come across as written, but Bruno's `bru`, `req` and `res`
+are not Postman's `pm`, so they may need edits before they run. See [Scripts and tests](/docs/requests/scripts-and-tests).
+
+## What doesn't come across
+
+The report names each of these when it happens:
+
+| Format | Left out or changed |
+| --- | --- |
+| cURL | Cookie files, options Echolot has no setting for, headers without a colon. A body or form field read from a file (`-d @file`, `-F field=@file`) is read from that file when the request is sent. |
+| Postman | Auth types Echolot doesn't have. File bodies and file fields: choose the files again. |
+| Insomnia | Items of kinds Echolot doesn't have. Template tags (`{% … %}`) Echolot has no equivalent for stay as text. Auth types Echolot doesn't have. File bodies and fields. An OAuth 2.0 grant Echolot doesn't offer becomes an authorization code grant. |
+| OpenAPI | Parameters in places a request can't hold, request bodies of types it can't hold, OAuth flows (set up the auth by hand), API keys sent as cookies (add a `Cookie` header). A spec without servers or with a relative server address: set `{{baseUrl}}` before sending. Deprecated operations are imported anyway. |
+| HAR | Images, fonts, scripts and stylesheets. Repeated requests come in once. Headers that carry the browser's session credentials: set auth on the folder instead. |
+| Paw | Dynamic values of types Echolot doesn't have become empty text. File references and client certificates: set them again. |
+| Bruno | Body and auth modes Echolot doesn't have. Headers shared by a whole folder (Echolot folders have none): add them to the requests or a pre-request script. Assertions with an operator Echolot has no equivalent for. |
+
+## OpenAPI files stay linked
+
+Importing an OpenAPI or Swagger file also keeps a copy of it in the workspace's `specs/` folder, and the new requests
+folder follows that spec: when the spec changes, Echolot can show what changed and apply it to the requests. Edit the
+spec on the [Specs](/docs/specs) page.
+
+## Import from the command line
+
+`echolot import` takes the same formats into a workspace folder, so you can script a migration or import in CI:
+
+```sh
+echolot import Alpenglow.postman_collection.json -w "Alpenglow.echolot"
+echolot import staging.postman_environment.json -w "Alpenglow.echolot"
+echolot import openapi.yaml -w "Alpenglow.echolot" --folder catalog
+pbpaste | echolot import - -w "Alpenglow.echolot"       # a cURL command from the clipboard
+```
+
+It detects the format from the content; `--format` skips detection (`curl`, `postman-collection`,
+`postman-environment`, `openapi`, `swagger`, `insomnia`, `har`, `paw` or `mcp-config`). It prints the same report:
+
+```txt
+Imported 22 requests, 7 folders from Postman collection v2.1.
+warning: 19 pre-request or test scripts were imported; Echolot runs them once you trust them.
+```
+
+On a Mac, secrets go to the Keychain as in the app. Where there is no Keychain (Linux, or `ECHOLOT_KEYCHAIN=0`),
+they stay out of the files, and the tool says which `ECHOLOT_SECRET_<NAME>` variables to set where you send. The
+command-line tool itself runs every script without asking, as Newman does.
+
+You don't have to import a Postman collection to run it: `echolot run collection.json` runs it as it is. See
+[Import and export](/docs/cli/import-export) and [`echolot run`](/docs/cli/run).
+
+To go the other way, see [Exporting](/docs/workspaces/exporting).

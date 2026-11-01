@@ -1,0 +1,29 @@
+---
+title: Quick Look
+description: Preview an Echolot workspace in the Finder with the space bar, without opening it.
+---
+
+Select an `.echolot` workspace in the Finder and press <kbd>Space</kbd>: Quick Look shows what the workspace holds,
+without opening Echolot. Use it to find the right workspace among several, or to see what a teammate's workspace
+contains before you open it.
+
+<Shot id="mac-quick-look" alt="Quick Look over the Finder showing the Alpenglow workspace: its name, file, when it changed, its request kinds, counts and environments" />
+
+## What the preview shows
+
+- **Echolot Workspace** and the workspace's name.
+- The file name, and when any of its files last changed, with how long ago.
+- Its requests by kind, most first, such as `18 HTTP · 3 GraphQL · 2 WebSocket`.
+- Counts of its **Requests**, **Folders**, **Environments**, **Variables** and **Checks**, and of its **Flows**,
+  **MCP Servers**, **Specs** and **Mocks** when it has any.
+- The names of its environments.
+
+The preview follows your Mac's light or dark appearance.
+
+## What it doesn't do
+
+The preview only reads the workspace's files. It sends nothing, runs no scripts and opens no connections. Secret
+values aren't in the workspace's files (they live in the Keychain), so they never show in a preview.
+
+The preview comes with Echolot, in both editions; there is nothing to install. To open the workspace, double-click it,
+or choose **Open with Echolot** at the top of the Quick Look window.

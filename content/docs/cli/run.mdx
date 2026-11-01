@@ -1,0 +1,176 @@
+---
+title: echolot run
+description: Run a workspace, some of its folders or requests, or a Postman collection, with checks, data files and reports.
+---
+
+`echolot run` sends a workspace's requests in their order, runs their scripts and checks, and reports what passed. It
+is the [runner](/docs/requests/runner) without the window, made for CI. It also runs a Postman collection as it is,
+without importing it.
+
+```sh
+echolot run [<options>] <source>
+```
+
+`<source>` is a workspace folder (the one with `workspace.toml` in it) or a Postman collection file.
+
+## Run a workspace
+
+```sh
+echolot run Alpenglow.echolot --folder auth/sign-in --folder catalog
+```
+
+```text
+catalog, auth/sign-in
+
+✓ POST   auth/sign-in  200 150 ms
+    ✓ Status equals 200
+    ✓ JSON value $.access_token exists
+✓ GET    catalog/list-products  200 74 ms
+    ✓ Status equals 200
+    ✓ JSON value $.items.length is greater than 0
+    ✓ Header Content-Type contains json
+    ✓ Response time (ms) is less than 1000
+✓ GET    catalog/search  200 69 ms
+    ✓ Status equals 200
+✓ GET    catalog/get-product  200 70 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ GET    catalog/categories  200 73 ms
+    ✓ Status equals 200
+✓ GQL    catalog/search-products  200 37 ms
+✓ GET    catalog/export  200 410 ms
+    ✓ Status equals 200
+
+All 7 requests passed  11/11 checks passed · 0.90 s
+```
+
+- Without `--folder`, everything runs. `--folder` takes a folder (`catalog`) or a request (`auth/sign-in`), as paths
+  of slugs under `requests/`, and can be given more than once. Requests run in the workspace's order.
+- `--env` takes the environment's file name without `.toml` (`staging`) or its name (`Staging`).
+- Each request's checks and its `pm.test` results count. A request fails when it gets no response or a check fails;
+  the run then exits with 1.
+- Responses captured into variables, tokens from OAuth 2 client credentials, and values scripts set carry on to the
+  later requests of the run, as in the app. Script values last for the run only and are never written to files.
+
+<Callout type="warn">
+  Without a Keychain (in CI, on Linux, or with `ECHOLOT_KEYCHAIN=0`), a response capture into a **secret** variable
+  isn't kept for the next request. In Alpenglow, **Sign in** captures `{{token}}` as a secret, so **Who am I** and
+  the Orders folder get a 401 in such a run. Set `ECHOLOT_SECRET_TOKEN` yourself, or capture into a variable that
+  isn't secret, for runs like these.
+</Callout>
+
+## Data-driven runs
+
+`--data` runs everything once per row of a data file:
+
+- A CSV file with a header row: each column is a variable for its row.
+- A JSON file holding an array of objects: each key is a variable.
+
+```sh
+echolot run Alpenglow.echolot --folder catalog/get-product --data skus.csv
+```
+
+```text
+catalog/get-product · skus.csv, 2 rows
+
+✓ #1 GET    catalog/get-product  200 133 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ #2 GET    catalog/get-product  200 88 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+
+All 2 requests passed  4/4 checks passed · 0.22 s
+```
+
+Scripts read the row with `pm.iterationData`. Without a data file, `--iterations` repeats the run. `--concurrency`
+runs that many iterations side by side; what one iteration's scripts set stays its own.
+
+## Reports
+
+`--reporter` chooses a report and can be given more than once. `--out` names the file for each report that isn't
+`console`, in the order of the `--reporter` options; a report without a file goes to standard output.
+
+| Reporter | What it writes |
+| --- | --- |
+| `console` | The lines above, with colour in a terminal. The default when you give no `--reporter`. |
+| `junit` | JUnit XML: one test suite per request, one test case per check. Most CI systems read it. |
+| `json` | The whole run as JSON: every request with its status, time, size, attempts and each check's result. |
+| `html` | A report to open in a browser. |
+| `har` | Every exchange of the run as an HTTP Archive. |
+
+```sh
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out results.xml \
+  --reporter html --out report.html
+```
+
+A JUnit report of a run with a failing check:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Alpenglow" tests="4" failures="1" errors="0" time="0.377" timestamp="2026-11-01T09:23:04Z">
+  <testsuite name="auth/sign-in" tests="2" failures="0" errors="0" skipped="0" time="0.155">
+    <testcase name="Status equals 200" classname="auth.sign-in" time="0"/>
+    <testcase name="JSON value $.access_token exists" classname="auth.sign-in" time="0"/>
+  </testsuite>
+  <testsuite name="auth/who-am-i" tests="1" failures="1" errors="0" skipped="0" time="0.083">
+    <testcase name="Status equals 200" classname="auth.who-am-i" time="0">
+      <failure message="expected “200”, got “401”" type="AssertionFailure"/>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+Every report masks secret values, in URLs, headers, check messages and logs, so a report is safe to keep as a CI
+artifact.
+
+## Run a Postman collection
+
+```sh
+echolot run shop.postman_collection.json --env-file staging.postman_environment.json --data users.csv
+```
+
+The collection runs as it is: Echolot reads it into a scratch workspace that is thrown away afterwards, and its
+credentials stay in memory. Its pre-request and test scripts run, as in Newman. `--env-file` takes a Postman
+environment file; `--env` is for workspaces. `--folder` may name a folder of the collection without the
+collection's own top folder.
+
+To keep working with a collection, [import it](/docs/cli/import-export) instead.
+
+## Options
+
+| Option | Meaning |
+| --- | --- |
+| `-e`, `--env <env>` | The environment: its file name without `.toml`, or its name. |
+| `--env-file <file>` | A Postman environment file to use with a collection. |
+| `--folder <path>` | A folder or request to run, such as `users` or `users/list-users`. Repeatable; all when omitted. |
+| `-d`, `--data <file>` | A CSV file with a header row or a JSON array of objects: one iteration per row. |
+| `-n`, `--iterations <n>` | How often to run everything, without a data file. Default 1. |
+| `--delay <ms>` | Milliseconds to wait between requests. Default 0. |
+| `--retries <n>` | Extra attempts for a request that fails. Default 0. |
+| `--bail` | Stop at the first failing request. |
+| `--concurrency <n>` | How many iterations run side by side; 1 runs them one after another. Default 1. |
+| `--reporter <name>` | `console`, `junit`, `json`, `html` or `har`. Repeatable; `console` when omitted. |
+| `-o`, `--out <file>` | The file for each non-console reporter, in the order of `--reporter`; standard output when missing. |
+| `--secrets <file>` | A file of `NAME=value` lines with secret values, in addition to `ECHOLOT_SECRET_<NAME>` variables. |
+| `-k`, `--insecure` | Skip TLS certificate verification. |
+| `--proxy <url>` | Send through this proxy: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
+| `--no-proxy` | Connect directly, ignoring `HTTP_PROXY` and the others. |
+| `--cacert <file>` | Also trust the CA certificates in this PEM file. Repeatable. |
+| `--cert <file>` | Send this client certificate: a PEM file (with `--key`) or a `.p12`/`.pfx` file. |
+| `--key <file>` | The client certificate's PEM private key, when the certificate file has none. |
+| `--pass <passphrase>` | The passphrase of the key or PKCS#12 file. Prefer `ECHOLOT_CERT_PASSPHRASE`. |
+| `--timeout <seconds>` | Timeout for each request. Default 60. |
+| `--no-color` | Plain console output. Also when `NO_COLOR` is set or the output isn't a terminal. |
+
+## Exit codes
+
+| Code | When |
+| --- | --- |
+| `0` | Every request got a response and every check passed. |
+| `1` | A request failed: no response, or a failing check. |
+| `64` | A wrong option, a source that is neither a workspace nor a Postman collection, an unknown environment, or a data file with no rows. |
+
+See [CI](/docs/cli/ci) for complete pipelines, and [secrets](/docs/cli#secrets) for where secret values come from.

@@ -35,7 +35,8 @@ client secret `demo-secret`.
 | `GET /v1/orders/{id}` | One order, such as `ord_7Hk2Lw`. |
 | `DELETE /v1/orders/{id}` | Cancel: 204, or 409 once it has shipped. Nothing really changes. |
 
-Errors come as problem details (`application/problem+json`) that say what went wrong.
+Errors come as problem details (`application/problem+json`) that say what went wrong. The shop's OpenAPI spec is at
+`https://demo.echolot.dev/openapi.yaml`.
 
 ## GraphQL
 
@@ -55,7 +56,7 @@ query SearchProducts($text: String!, $first: Int = 10) {
 
 - **WebSocket** `wss://demo.echolot.dev/v1/orders`: an order event every 1.5 seconds. Send
   `{"op": "subscribe", "channel": "orders"}`, `{"op": "ping"}`, or any JSON with an `id` to get an acknowledgement.
-  A session lasts three minutes.
+  A session lasts three minutes; messages can be up to 8 KB, at most 20 in ten seconds.
 - **Server-Sent Events** `GET https://demo.echolot.dev/v1/orders/events`: 20 events a second apart, then `end`.
   Send `Last-Event-ID` to resume.
 
@@ -71,10 +72,11 @@ Endpoints for trying the request editor:
 | Endpoint | What it does |
 | --- | --- |
 | `/echo/anything` | Returns the method, query, headers and body you sent. |
+| `/echo/headers` | Returns the headers you sent. |
 | `/echo/status/{code}` | Answers with that status. |
 | `/echo/delay/{seconds}` | Waits up to 5 seconds, then echoes. |
 | `/echo/redirect/{n}` | `n` redirects, then `/echo/anything`. |
-| `/echo/cookies`, `/echo/cookies/set?name=value` | Shows and sets cookies. |
+| `/echo/cookies`, `/echo/cookies/set?name=value`, `/echo/cookies/delete?name` | Shows, sets and deletes cookies. |
 | `/echo/basic-auth/{user}/{password}` | 200 with matching Basic auth, otherwise 401. |
 | `/echo/bearer` | 200 with any Bearer token, otherwise 401. |
 | `/echo/bytes/{n}` | `n` random bytes, up to 1 MB. |

@@ -1,0 +1,11 @@
+{
+  "title": "Get started",
+  "pages": [
+    "install",
+    "editions",
+    "first-request",
+    "the-window",
+    "importing"
+  ],
+  "defaultOpen": true
+}

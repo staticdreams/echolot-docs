@@ -1,0 +1,16 @@
+{
+  "title": "Tutorials",
+  "pages": [
+    "index",
+    "demo-api",
+    "first-workspace",
+    "chain-requests",
+    "test-in-ci",
+    "spec-first",
+    "automate-with-flows",
+    "inspect-an-mcp-server",
+    "agents-safely",
+    "realtime",
+    "coming-from-postman"
+  ]
+}

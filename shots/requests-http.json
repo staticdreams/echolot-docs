@@ -1,0 +1,100 @@
+[
+  {
+    "id": "requests-http-page",
+    "page": "requests",
+    "scene": "Alpenglow, no environment. Open Catalog › List products, request pane on the Headers tab, and send it (⌘R). Panes side by side (View › Panes › Side by Side), response pane on Body › JSON Tree with the top level expanded.",
+    "frame": "window"
+  },
+  {
+    "id": "requests-http-exchange-card",
+    "page": "requests",
+    "scene": "Alpenglow, no environment. Open Catalog › List products and send it. Rest the pointer on the status-and-timeline line under the URL bar until the details card opens (status 200, Time, Size, Encoding if any, the TLS badge, the address and the phase timeline).",
+    "frame": "the URL bar, the line under it and the open details card, with a little of the response pane around it",
+    "foreground": true,
+    "crop": [
+      304,
+      96,
+      1012,
+      260
+    ]
+  },
+  {
+    "id": "requests-http-body-json",
+    "page": "requests/body",
+    "scene": "Alpenglow, no environment. Open Orders › Create order, Body tab, with JSON chosen in the Body type row, so the order lines show in the editor and Beautify sits at the right of the row. No send needed.",
+    "frame": "the request pane: the tab bar, the Body type row and the editor",
+    "crop": [
+      304,
+      178,
+      522,
+      300
+    ]
+  },
+  {
+    "id": "requests-http-auth-oauth",
+    "page": "requests/auth",
+    "scene": "Alpenglow, no environment. Open Auth › Orders with OAuth 2 and send it once (Client Credentials gets a token by itself), then open the Auth tab: Type OAuth 2.0, Grant Client Credentials, Token URL, Client ID, Scope, and the token bar at the bottom saying Access token in the Keychain with Get New Token and Forget.",
+    "frame": "the request pane with the Auth tab, from the tab bar down to the token bar",
+    "crop": [
+      304,
+      178,
+      522,
+      665
+    ]
+  },
+  {
+    "id": "requests-http-settings",
+    "page": "requests/settings",
+    "scene": "Alpenglow, no environment. Open Catalog › List products and choose its Settings tab, with every setting at its default (Raw mode off, HTTP version Automatic with its note, Verify TLS certificates on, Follow redirects on with Maximum redirects 10, Send and store cookies on, Decompress responses on, Timeout 60 s).",
+    "frame": "the request pane with the Settings tab",
+    "crop": [
+      304,
+      178,
+      522,
+      530
+    ]
+  },
+  {
+    "id": "requests-http-response-tree",
+    "page": "requests/responses",
+    "scene": "Alpenglow, no environment. Open Catalog › List products and send it. Response pane on Body › JSON Tree, expand items and items[0], and rest the pointer on the value of sku so its hover buttons (Copy Value, Store in a Variable…) show.",
+    "frame": "the response pane",
+    "crop": [
+      828,
+      178,
+      484,
+      575
+    ]
+  },
+  {
+    "id": "requests-http-response-history",
+    "page": "requests/responses",
+    "scene": "Alpenglow, no environment. Open Catalog › List products and send it three or four times, then click the clock button with the count at the right end of the line under the URL bar, so the response history popover lists the responses with status, time, origin, duration and size.",
+    "frame": "the line under the URL bar and the open history popover",
+    "crop": [
+      304,
+      96,
+      1112,
+      560
+    ]
+  },
+  {
+    "id": "requests-http-token-editor",
+    "page": "requests/dynamic-values",
+    "scene": "Alpenglow, no environment. Send Auth › Sign in once. Open Echo › Echo anything, Headers tab, add a header X-Token with the value {{$response('auth/sign-in', '$.access_token')}}, then double-click its pill to open the token editor (Request: Sign in, JSONPath: $.access_token, Send it first: When it has no response yet, and the Value from the latest response). Remove the header after the shot.",
+    "frame": "the Headers tab with the open token editor popover"
+  },
+  {
+    "id": "requests-http-store-variable",
+    "page": "requests/captures",
+    "scene": "Alpenglow, no environment. Open Auth › Sign in and send it. Response pane on Body › JSON Tree; rest the pointer on access_token and click Store in a Variable…, then type token as the name and choose Save to Workspace, so the panel shows the path $.access_token, Replaces token, Secret and Update on every send ticked. Click Cancel after the shot.",
+    "frame": "the response pane with the Store in a Variable panel",
+    "foreground": true,
+    "crop": [
+      828,
+      178,
+      540,
+      440
+    ]
+  }
+]

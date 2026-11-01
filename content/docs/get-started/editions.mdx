@@ -1,0 +1,97 @@
+---
+title: Editions
+description: The direct download and the Mac App Store edition compared, which one to choose, and how to move between them.
+---
+
+Echolot comes in two editions built from the same code: the **direct download** from
+[echolot.dev](https://echolot.dev), and a **Mac App Store** edition. The App Store edition runs in Apple's App
+Sandbox. The sandbox lets an app use the network, read and write the files you choose, and keep its own data. It does
+not let an app start other programs on your Mac or read and write other apps' files. Nearly every difference below
+comes from that.
+
+The App Store edition is not in the App Store yet. Everything on this page describes how it is built.
+
+## What each edition has
+
+| | Direct download | Mac App Store |
+| --- | --- | --- |
+| Every protocol: HTTP/1.1, HTTP/2, HTTP/3, GraphQL, gRPC, WebSocket, SSE, Socket.IO, MQTT | ✓ | ✓ |
+| Workspaces as files, Git, environments, secrets in the Keychain | ✓ | ✓ |
+| Scripts, tests, the Runner, data-driven runs | ✓ | ✓ |
+| History, stored responses, encryption at rest | ✓ | ✓ |
+| Specs, mocks, flows with schedules and webhooks | ✓ | ✓ |
+| Imports and exports | ✓ | ✓ |
+| Quick Send, its global shortcut, Shortcuts actions, Quick Look | ✓ | ✓ |
+| MCP servers over HTTP | ✓ | ✓ |
+| MCP servers that run as a local program (stdio: `npx`, `uvx` …) | ✓ | Kept in the workspace, but not started. Use the command-line tool or the direct download. |
+| The Assistant with API keys, Ollama and other compatible servers, Apple's on-device model | ✓ | ✓ |
+| The Assistant with command-line agents (Claude Code, Codex, Gemini CLI) | ✓ | ✗ |
+| Echo and its AI comments | ✓ | ✓ |
+| Echolot's MCP server for external agents | ✓ | ✓, through the separately installed command-line tool |
+| Importing MCP servers from other apps' configs | Found automatically | You pick the config file; the panel opens in the right folder |
+| Connecting Claude Code, Cursor, VS Code, Codex | ✓ | ✓, through the separately installed command-line tool |
+| Claude Desktop extension (`.mcpb`), **Add to Claude** | ✓ | ✗ |
+| The command-line tool | Inside the app; **Echolot › Install Command-Line Tool…** | Installed on its own (zip from the releases page) |
+| Updates | In the app, **Echolot › Check for Updates…** | The App Store |
+| Beta builds expire | Yes, 30 days after release | Never (betas go through TestFlight) |
+
+Files outside a workspace work differently too. In the App Store edition, Echolot can read a file only after you
+choose it in an open panel. It remembers every workspace you open and every file you pick for a request (a body
+streamed from a file, a form part, a client certificate), also after a restart and when the file moves. A send that
+needs a file Echolot was never given, such as a path written into a request file by hand, fails with
+`Echolot is not allowed to read “…”`; choose **Allow Access…** on the failed response and pick the file. See
+[Troubleshooting](/docs/troubleshooting).
+
+## Which to choose
+
+Choose the **direct download** if you:
+
+- use MCP servers that run as local programs (most servers started with `npx`, `uvx`, `docker` or a binary),
+- want the Assistant to drive Claude Code, Codex or Gemini CLI,
+- want the command-line tool installed and updated with the app, or the one-click Claude Desktop extension.
+
+Choose the **App Store edition** if you prefer apps from the App Store, with its updates and the sandbox around the
+app, and your MCP servers are reachable over HTTP.
+
+Both open the same workspaces, so you can change your mind later.
+
+## Moving between editions
+
+Both editions are the same app to macOS, so install one of them at a time: quit and remove the one you leave
+([Uninstall](/docs/get-started/install#uninstall)), then install the other.
+
+- **Workspaces** are plain folders and open in both. In the App Store edition, open each one once with **File › Open
+  Workspace…** or from the Finder, so the sandbox lets Echolot read it; after that it stays in **File › Open Recent**.
+- **Secrets** stay in your login keychain and are shared. The first time the other edition reads a secret it did not
+  create, macOS asks once for each item; choose **Always Allow**. The command-line tool asks the same way.
+- **Model keys** for the Assistant are asked for once in the other edition as well, or add them again in
+  **Settings › Assistant**.
+- **History and stored responses** stay with the edition that recorded them: each edition has its own storage
+  folder. Requests are never lost, only their past responses.
+
+## Where each edition keeps its data
+
+Workspaces live where you save them, in both editions. Echolot's own data (stored response bodies, history, crash
+reports, Assistant conversations and the Examples workspace) lives here:
+
+| Edition | Folder |
+| --- | --- |
+| Direct download | `~/Library/Application Support/Echolot` |
+| Mac App Store | `~/Library/Containers/com.staticdreams.Echolot/Data/Library/Application Support/Echolot` |
+
+**Settings › About › Responses and history › Show in Finder** opens the right one. Deleting it loses history and
+stored responses, never requests.
+
+## The command-line tool for App Store users
+
+The App Store edition carries no command-line tool, because the App Store does not allow installing code outside the
+app. Install the tool on its own: download `echolot-<version>-macos.zip` from the
+[releases page](https://github.com/staticdreams/echolot-public/releases). The tool never
+expires. See [Command-line tool](/docs/cli).
+
+You need it to:
+
+- run workspaces in Terminal and CI,
+- run MCP servers that start as local programs (`echolot mcp check`, `echolot mcp serve`),
+- connect external agents such as Claude Code, Cursor, VS Code and Codex. Their configs name the tool; while the
+  workspace is open in the app, their calls run in the app, where you approve them. See [Agents](/docs/ai/agents).

@@ -1,0 +1,134 @@
+---
+title: echolot agent
+description: Run the built-in agent on a task without the app, with a policy file instead of approvals, for scripts and CI.
+---
+
+`echolot agent` gives a task to the built-in agent, the same one as the [Assistant](/docs/ai/assistant), and lets it
+work through the workspace's tools until it is done. Nobody is there to approve anything, so a policy decides what it
+may do. Use it in CI ("check every request and report what fails") or in scripts.
+
+```sh
+echolot agent [<options>] <task>
+```
+
+`<task>` is what the agent should do, in plain words.
+
+## Run a task
+
+```sh
+export ANTHROPIC_API_KEY=…
+echolot agent "Check every request of the Catalog folder and report what fails" -w Alpenglow.echolot
+```
+
+The model's answer streams to standard output as it writes. A summary goes to standard error at the end:
+
+```text
+Agent finished: 9 tool calls, 18234 in, 1210 out.
+```
+
+`-v` also prints every tool call and its result to standard error (`→ send_request …`, `← send_request ok in 82 ms`).
+`--json` prints the whole session as JSON instead: every message, tool call and result, the token use and how it
+ended.
+
+## Providers and models
+
+| `--provider` | Key from | Model |
+| --- | --- | --- |
+| `anthropic` (default) | `ANTHROPIC_API_KEY` | `claude-opus-5-5` unless `--model` says otherwise. |
+| `openai` | `OPENAI_API_KEY` | `--model` is required. |
+| `gemini` | `GEMINI_API_KEY` | `--model` is required. |
+| `openai-compatible` | `OPENAI_API_KEY` if set; none needed | `--model` is required. For Ollama, LM Studio, OpenRouter and other servers with the OpenAI API. `--base-url` is the server; Ollama on this Mac (`http://127.0.0.1:11434/v1`) by default. |
+
+`--key-env` names another environment variable for the key. Keep keys in your CI's secrets, or fetch them when the
+command runs:
+
+```sh
+op run --env-file agent-keys.env -- echolot agent "Save every product as CSV" \
+  -w Alpenglow.echolot --provider openai --model gpt-5.5 --policy-file ci-policy.toml --json
+```
+
+A free run on your own Mac:
+
+```sh
+echolot agent "List the requests that have no checks" -w Alpenglow.echolot \
+  --provider openai-compatible --model qwen3:4b
+```
+
+## Policies
+
+The agent's tools are those of Echolot's MCP server, with the same safety: secret values never reach the model, and
+everything the model sees goes through the same redaction. What each kind of action may do comes from the policy:
+
+| `--policy` | What runs |
+| --- | --- |
+| `standard` (default) | Reads and safe sends (such as `GET`). Other sends, new hosts and changes to the workspace are refused. |
+| `readonly` | Reads only. |
+| `permissive` | Sends and changes to the workspace. Deleting, hosts the workspace doesn't know and sends in protected environments are refused. |
+
+Without a person, "ask" means "refuse".
+
+**A policy file** loosens or tightens the base policy per kind of action. It takes the same rules as a workspace's
+`[agents]` section, with or without the `[agents]` around them:
+
+```toml
+# ci-policy.toml: let the agent send anything to the workspace's hosts, but never change the workspace
+[rules]
+unsafe-send = "allow"
+workspace-write = "refuse"
+destructive = "refuse"
+```
+
+| Action | Covers |
+| --- | --- |
+| `read` | Reading requests, responses, environments and the rest. |
+| `safe-send` | Sending requests that change nothing, such as `GET`. |
+| `unsafe-send` | Sending requests that may change something, such as `POST` or `DELETE`. |
+| `protected-send` | Sending in a [protected environment](/docs/workspaces/protected-environments). |
+| `new-host` | Sending to a host the workspace doesn't know. |
+| `workspace-write` | Creating and changing requests, folders, environments and other files. |
+| `destructive` | Deleting. |
+
+Each takes `allow`, `ask` or `refuse`. `protected-send` and `new-host` can be made stricter but never allowed
+outright.
+
+The policy file counts as yours, so it may loosen the policy. The workspace's own `[agents]` rules only tighten it,
+unless you pass `--trust-workspace-policy`.
+
+## Limits
+
+`--max-steps` stops the run after that many model turns (30 by default). `--token-budget` stops it once it has used
+that many tokens. A run stopped by a limit exits with 1.
+
+## Options
+
+| Option | Meaning |
+| --- | --- |
+| `-w`, `--workspace <folder>` | The workspace folder. Default: the current folder. |
+| `--env <env>` | The environment calls use when they name none: its file name without `.toml`. |
+| `--provider <provider>` | `anthropic`, `openai`, `gemini` or `openai-compatible`. Default `anthropic`. |
+| `--model <model>` | The model; required for every provider but `anthropic`. |
+| `--base-url <url>` | The provider's URL, for `openai-compatible` servers. Default: Ollama's. |
+| `--key-env <name>` | The environment variable holding the API key, when it isn't the provider's usual one. |
+| `--policy <policy>` | The base policy: `standard`, `readonly` or `permissive`. Default `standard`. |
+| `--policy-file <file>` | A TOML file with rules per action (`allow`, `ask`, `refuse`), like a workspace's `[agents]` section. |
+| `--trust-workspace-policy` | Let the workspace's `[agents]` rules loosen the policy, not only tighten it. |
+| `--toolsets <list>` | Tool groups to offer, comma-separated, or `all`: `requests` (always), `flows`, `workspace`, `environments`, `specs`, `mocks`, `mcp-servers`, `history`, `flow-editing`. Default `all`. |
+| `--max-steps <n>` | Model turns before the run stops. Default 30. |
+| `--token-budget <n>` | Tokens the run may use before it stops. |
+| `--json` | Print the whole session as JSON instead of the transcript. |
+| `-v`, `--verbose` | Print every tool call and its result to standard error. |
+
+The toolsets are described on the [`echolot mcp`](/docs/cli/mcp#echolot-mcp-serve) page.
+
+## Exit codes
+
+| Code | When |
+| --- | --- |
+| `0` | The model finished the task. |
+| `1` | The run failed, the model refused, or it hit the step limit, the token budget or the output limit. |
+| `64` | A wrong option, an unknown provider or policy, a missing `--model`, no API key, or an unknown environment. |
+
+<Callout>
+  Your workspace data goes to the model provider you choose. Use `openai-compatible` with a server on your own Mac when
+  it must stay there.
+</Callout>

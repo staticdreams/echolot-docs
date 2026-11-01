@@ -1,0 +1,92 @@
+[
+  {
+    "id": "ai-assistant-panel",
+    "page": "ai/assistant",
+    "scene": "Alpenglow, no environment. A provider set up and checked in Settings › Assistant (an Ollama model through OpenAI-compatible works offline; it needs the one-time permission only for a non-local server). Open Catalog › List products on the request page and send it. Open the Assistant with ⌘J and ask: \"Write checks for the open request from its latest response.\" Wait for the answer, so the panel shows the question, two or three tool-call cards (get_request, send_request, update_request) and the reply. Approve the change if the sheet comes up, then take the shot without the sheet.",
+    "frame": "window"
+  },
+  {
+    "id": "ai-assistant-approval",
+    "page": "ai/assistant",
+    "scene": "Alpenglow, no environment, provider as for ai-assistant-panel. Open Orders › Create order. In the Assistant ask: \"Send the open request.\" The approval sheet comes up: \"The agent wants to send a request that may change data\" with the POST preview and Deny, Allow for This Session, Allow Once. Take the shot while the sheet is open, then Deny.",
+    "frame": "the approval sheet with the window behind it dimmed; crop to the sheet and some margin"
+  },
+  {
+    "id": "ai-agents-popover",
+    "page": "ai/agents",
+    "scene": "Alpenglow, no environment. Settings › Agents › Let agents use open workspaces on. In Terminal, connect a client once so the popover lists it, for example `echolot mcp check -- <Echolot.app>/Contents/Helpers/echolot mcp serve /tmp/Alpenglow.echolot` (it relays to the app and calls tools/list). Click Agents in the page header so the popover shows the client, Recent calls and Connect a client.",
+    "frame": "the Agents popover and the page header above it",
+    "crop": [
+      700,
+      0,
+      620,
+      460
+    ]
+  },
+  {
+    "id": "ai-agents-workspace-rules",
+    "page": "ai/agents",
+    "scene": "Alpenglow. Workspace menu at the foot of the sidebar › Workspace Settings…, Agents tab. Leave every rule on Default; type demo.echolot.dev in Allowed hosts and 60 in Sends per minute.",
+    "frame": "the Workspace Settings sheet"
+  },
+  {
+    "id": "ai-echo-screen",
+    "page": "ai/echo",
+    "scene": "Alpenglow, no environment. Settings › General › Echo: Show Echo's status screen in the page header on, Humor A little, AI comments off. Open Catalog › List products and send it; take the shot once Echo shows the status and time of the response.",
+    "frame": "the page header across the window's width, with Echo in its middle",
+    "crop": [
+      304,
+      0,
+      1016,
+      60
+    ]
+  },
+  {
+    "id": "ai-echo-report",
+    "page": "ai/echo",
+    "scene": "As for ai-echo-screen. Send four or five Alpenglow requests (Catalog › List products, Catalog › Get product, Echo › Echo anything, and Orders › List orders before signing in, so one fails with 401) and run the Catalog folder in the Runner once, so the report has sends, a failure, a run and a log. Click Echo to open the SESSION REPORT.",
+    "frame": "the report and the page header above it",
+    "crop": [
+      560,
+      0,
+      500,
+      500
+    ]
+  },
+  {
+    "id": "mac-quick-send-panel",
+    "page": "mac/quick-send",
+    "scene": "Alpenglow open in a window, no environment. Settings › General › Show Quick Send in the menu bar on. Bring another app to the front (Finder or TextEdit), press ⌃⌥Space, type \"prod\", select Catalog › List products and press ↩; take the shot once the status, time and size show at the panel's foot.",
+    "frame": "the Quick Send panel with a little of the app behind it"
+  },
+  {
+    "id": "mac-shortcuts-action",
+    "page": "mac/shortcuts",
+    "scene": "The Shortcuts app (not Echolot's window). A new shortcut named \"Check the shop\" with Echolot's Run Folder action: Workspace Alpenglow, Folder Catalog, Environment empty; then an If action on Run Outcome › Passed is false, with Show Notification of the Summary inside it.",
+    "frame": "the Shortcuts editor window"
+  },
+  {
+    "id": "mac-quick-look",
+    "page": "mac/quick-look",
+    "scene": "A Finder window showing the folder that holds Alpenglow.echolot. Select it and press Space so Quick Look shows the preview (name, file, Changed …, request kinds, counts, environments Local, Staging, Production).",
+    "frame": "the Quick Look window with a little of the Finder behind it"
+  },
+  {
+    "id": "settings-general",
+    "page": "settings",
+    "scene": "Echolot › Settings… (⌘,), General pane, every setting at its default except Show Quick Send in the menu bar on. Direct download build, so Command-line tool and Updates show.",
+    "frame": "the Settings window"
+  },
+  {
+    "id": "settings-assistant",
+    "page": "settings",
+    "scene": "Settings › Assistant with two providers added (Anthropic with a model chosen and Effort at Model's default, and OpenAI-compatible at http://127.0.0.1:11434/v1 with an Ollama model), Anthropic checked, one entry under Allowed to receive your data, and one pattern under Hidden from the model, such as [a-z0-9._%+-]+@alpenglow\\.ch. Never show a real key.",
+    "frame": "the Settings window"
+  },
+  {
+    "id": "settings-agents",
+    "page": "settings",
+    "scene": "Settings › Agents in the direct download: Let agents use open workspaces on, Alpenglow among the recent workspaces under Claude Desktop, Tools for agents at the default (Requests and Flows). Retake in the App Store edition, where Command-line tool replaces Claude Desktop.",
+    "frame": "the Settings window"
+  }
+]

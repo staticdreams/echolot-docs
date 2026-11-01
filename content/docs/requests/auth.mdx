@@ -1,0 +1,182 @@
+---
+title: Authentication
+description: Sign requests in with Basic, Digest, Bearer, API keys, OAuth 2.0, AWS Signature, JWT, Hawk, Akamai EdgeGrid or NTLM, and share auth through folders.
+---
+
+The **Auth** tab says how a request proves who it is. Choose a **Type**, fill in its fields, and Echolot adds the
+credentials each time the request is sent. Set auth once on a folder or the workspace and every request inside it
+can use it.
+
+<Shot id="requests-http-auth-oauth" alt="The Auth tab of Orders with OAuth 2: OAuth 2.0 with the Client Credentials grant, the token URL, client ID and scope, and the token bar with Get Token at the bottom" />
+
+## Keep credentials out of files
+
+Every field takes `{{variables}}`. Put passwords, tokens and keys in [secret variables](/docs/workspaces/secrets),
+which live in the Keychain, and write `{{password}}` in the field. That way the request file holds no secret and
+you can commit it.
+
+When you type a literal value into a credential field, a warning appears under it: **Saved as plain text in the
+workspace file.** Click **Move to Keychain** and Echolot stores the value as a secret variable of the workspace and
+writes `{{name}}` in its place.
+
+The credentials Echolot adds are masked where the request page shows them: in the **AUTO-GENERATED** headers and
+the URL preview under the URL bar.
+
+## Inherit from folders and the workspace
+
+**Inherit** is the default. A request that inherits uses the auth of the nearest folder above it that sets one,
+then the workspace's. Under **Uses**, the tab says which one applies, such as `Folder “Orders”: Bearer Token`. When
+nothing above sets auth, the request sends none.
+
+To set auth for many requests at once:
+
+1. In the sidebar, right-click a folder and choose **Folder Settings…**. For the workspace, click the workspace
+   switcher at the foot of the sidebar and choose **Workspace Settings…** (it's also in the command palette,
+   <kbd>⌘</kbd><kbd>K</kbd>).
+2. Open the **Auth** tab and choose a type. A folder can inherit too; the workspace can't.
+3. Click **Done**.
+
+In the Alpenglow example, the **Orders** folder sets **Bearer Token** with `{{token}}`, and every order request
+inherits it. **Auth › Sign in** fills `{{token}}` from its response with a
+[capture](/docs/requests/captures).
+
+## Choose a type
+
+| Type | What Echolot does |
+| --- | --- |
+| **Inherit** | Uses the folder's or the workspace's auth. |
+| **No Auth** | Sends no credentials, even when a folder sets some. |
+| **Basic** | Adds `Authorization: Basic …` from a username and password. |
+| **Digest** | Answers the server's Digest challenge. |
+| **Bearer Token** | Adds `Authorization: Bearer <token>`. |
+| **API Key** | Adds a key as a header or a query parameter. |
+| **OAuth 2.0** | Gets an access token and sends it as a bearer token. |
+| **AWS Signature** | Signs each request with AWS Signature Version 4. |
+| **JWT Bearer** | Signs a new JSON Web Token for each send. |
+| **Hawk** | Signs each request with Hawk. |
+| **Akamai EdgeGrid** | Signs each request with EG1-HMAC-SHA256. |
+| **NTLM** | Answers the server's NTLM challenge. |
+
+An `Authorization` header you add yourself in the **Headers** tab is sent instead of the one the **Auth** tab would
+add.
+
+### Basic
+
+Fill in **Username** and **Password**. Echolot sends them Base64-encoded in the `Authorization` header. Try it with
+**Echo › Basic auth** in Alpenglow.
+
+### Digest
+
+Fill in **Username** and **Password**. The first send goes without credentials; when the server answers 401 with a
+Digest challenge, Echolot answers it once with a second request. Both show in the exchange as hops.
+
+### Bearer Token
+
+Fill in **Token**, usually `{{token}}`. **Prefix** is `Bearer` by default; change it for a server that wants another
+word, or clear it to send the token alone.
+
+### API Key
+
+Fill in **Key** (the header or parameter name, `X-API-Key` by default) and **Value**, then choose where it goes under
+**Add to**: **Header** or **Query**.
+
+### OAuth 2.0
+
+Echolot gets the access token for you and adds it as `Authorization: Bearer <token>`.
+
+| Field | Meaning |
+| --- | --- |
+| **Grant** | **Authorization Code**, **Client Credentials** or **Device Code**. |
+| **Authorization URL** | Where you sign in (Authorization Code). |
+| **Device URL** | Where the device code comes from (Device Code). |
+| **Token URL** | Where tokens come from. |
+| **Client ID**, **Client Secret** | The client's credentials. Public clients leave the secret empty. |
+| **Scope** | The scopes to ask for, separated by spaces, such as `read write`. |
+| **Audience** | For servers that want one. |
+| **Redirect URI** | Authorization Code. Empty means automatic: a loopback address, `http://127.0.0.1:<port>/callback`, on a free port. |
+| **PKCE (S256)** | Authorization Code. On by default. |
+| **Client authentication** | How the client ID and secret reach the token URL: **HTTP Basic** (default) or **In the body**. |
+| **Header prefix** | The word before the token in the header, `Bearer` by default. |
+
+At the bottom of the tab, the token bar shows whether there is a token. Click **Get Token**:
+
+- **Authorization Code** opens your browser at the authorization URL. Sign in there; Echolot catches the redirect
+  and says **Finish signing in in your browser…** until you do.
+- **Device Code** shows **Sign in on another device** with a code. Click **Open** (with the page's host name), enter
+  the code there and approve; Echolot waits with **Waiting for approval…**.
+- **Client Credentials** asks the token URL directly. You don't need to click **Get Token** for this grant: the first
+  send gets a token by itself.
+
+Once there is a token, the bar says **Access token in the Keychain**, with its type, when it expires, whether it
+**refreshes automatically** and its scope. **Get New Token** replaces it; **Forget** deletes it.
+
+How tokens are kept and used:
+
+- Tokens are stored in the Keychain, never in workspace files.
+- A token belongs to the request, folder or workspace that sets the auth. Requests that inherit OAuth from a folder
+  share one token.
+- When a token has expired, the next send refreshes it with its refresh token. A Client Credentials token is fetched
+  again. Otherwise the send stops with **This request needs an OAuth token: get one in the Auth tab first.** or
+  **The OAuth token expired and could not be refreshed: get a new one in the Auth tab.**
+
+To try it, send **Auth › Orders with OAuth 2** in Alpenglow: it uses Client Credentials against the demo API.
+
+### AWS Signature
+
+Fill in **Access key ID**, **Secret access key**, **Region** (`us-east-1` by default) and **Service** (`execute-api`
+by default; `s3`, `lambda`, `es` and so on). **Session token** is only for temporary credentials. Each request is
+signed as it is sent, with the time, host and body it goes out with.
+
+### JWT Bearer
+
+Echolot signs a new token for every send.
+
+1. Choose the **Algorithm**: **HS256**, **HS384** or **HS512** (HMAC with a secret), **RS256**, **RS384**, **RS512**,
+   **PS256**, **PS384** or **PS512** (RSA private key), or **ES256** or **ES384** (elliptic curve private key).
+2. For HMAC, fill in **Secret**; tick **Secret is Base64** when the provider gave it to you that way. For a private
+   key, paste it into **Private key**, or click **Choose PEM File…**: the key goes straight into the Keychain and the
+   field refers to it by name. Keys can be PKCS #8, PKCS #1 or SEC 1 PEM.
+3. Write the **Claims** as JSON. They can hold variables: `{"sub": "{{userID}}"}`.
+4. Add **Header fields** such as `kid` if the server needs them. `alg` and `typ` are set for you.
+5. **Add “iat” (issued at)** is on by default. **Expires after** adds `exp` that many seconds ahead (300 by default);
+   0 adds none. Claims you set yourself in the JSON are kept as written.
+6. Under **Add to**, choose **Header** (with a **Prefix**, `Bearer` by default) or **Query** (with a **Parameter**
+   name, `token` by default).
+
+### Hawk
+
+Fill in **ID** and **Key**, choose the **Algorithm** (**SHA-256** or **SHA-1**), and add **App data (ext)** if the
+server wants it. Tick **Hash the body into the signature** to include the payload hash. Each request is signed with
+the time, a nonce, the method, the path, host and port.
+
+### Akamai EdgeGrid
+
+Fill in **Client token**, **Client secret** and **Access token**. **Headers to sign** is a comma-separated list,
+usually empty. **Body bytes signed** limits how much of a POST body is hashed (131072 by default).
+
+### NTLM
+
+Fill in **Username** and **Password**, and **Domain** and **Workstation** if your server needs them. Echolot speaks
+NTLMv2: it answers the server's challenge on the same connection, and the 401s stay in the exchange as hops.
+
+NTLM authenticates a connection, not a request, so it needs HTTP/1.1. With the HTTP version on **Automatic**, Echolot
+uses HTTP/1.1 for NTLM requests; with **HTTP/2** or **HTTP/3** chosen, the send is refused. See
+[Request settings](/docs/requests/settings#http-version).
+
+## Credentials stay with their origin
+
+When a redirect leads to another origin (a different scheme, host or port), Echolot doesn't carry your credentials
+there. It drops:
+
+- the `Authorization`, `Proxy-Authorization` and `Cookie` headers,
+- common API key headers (`X-API-Key`, `Api-Key`, `Apikey`, `X-Auth-Token`, `X-Access-Token`, `Private-Token`,
+  `X-Functions-Key`), the header your **API Key** auth uses, and any header whose value holds a secret variable,
+- Digest, AWS Signature, Hawk, EdgeGrid and NTLM signing, and the client certificate chosen for the first host.
+
+The certificates and proxy of the new host apply to the hop that goes there. See
+[Request settings](/docs/requests/settings#redirects).
+
+## Protected environments
+
+**Get Token** sends a request too. When the window's environment is protected, it asks first, like **Send**. See
+[Protected environments](/docs/workspaces/protected-environments).

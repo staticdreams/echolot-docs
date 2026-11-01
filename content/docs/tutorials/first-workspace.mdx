@@ -1,0 +1,147 @@
+---
+title: Your first workspace
+description: Make a workspace from nothing against the demo API, with requests, a folder, an environment, a secret and Git.
+---
+
+In this tutorial you make a workspace of your own for the Alpenglow shop: two requests in a folder, an environment
+that holds the server's address, a password kept in the Keychain, and a Git repository for all of it.
+
+- **Time:** 15 minutes.
+- **You need:** Echolot, and Git for the last part (`git --version` in Terminal; macOS offers to install it).
+- **You learn:** how a workspace is laid out on disk, and why it is safe to commit.
+
+## 1. Make the workspace
+
+1. In the **Welcome to Echolot** window, choose **New Workspace…**. From a workspace window, choose **File › New
+   Workspace…** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>).
+2. In the **New Workspace** panel, name it `Alpenglow Shop` and pick a folder, such as `~/Projects`. Echolot adds
+   the `.echolot` extension.
+3. Choose **Create**.
+
+A window opens with **This workspace is empty**. On disk, `Alpenglow Shop.echolot` is a folder that holds
+`workspace.toml` and an empty `requests` folder. In the Finder it looks like one file, and double-clicking it opens
+the workspace.
+
+## 2. Send your first request
+
+1. Choose **New Request** on the empty page, or **File › New Request** (<kbd>⌘</kbd><kbd>N</kbd>). The request
+   appears in the sidebar with its name ready to edit.
+2. Type `List products` and press <kbd>↩</kbd>.
+3. Leave the method on **GET**. In the URL field, type:
+
+   ```text
+   https://demo.echolot.dev/v1/products?category=tents
+   ```
+
+   The query parameter also shows up in the **Params** tab, where you can edit it as a table.
+4. Choose **Send** (<kbd>⌘</kbd><kbd>R</kbd>, or <kbd>⌘</kbd><kbd>↩</kbd>).
+
+The response pane shows `200 OK`, the time and the size. The **Body** tab holds the products as JSON. Switch its
+view to **JSON Tree** to fold and unfold the list. The [responses page](/docs/requests/responses) explains every tab.
+
+There is no Save command: Echolot saves a request a moment after you stop typing. The foot of the sidebar says
+**All changes saved**.
+
+## 3. Put requests in a folder
+
+1. Choose **File › New Folder** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>), type `Catalog` and press <kbd>↩</kbd>.
+2. Drag **List products** onto **Catalog**.
+3. Right-click **Catalog** and choose **New Request**. Name it `Get product`.
+4. Set its URL to `https://demo.echolot.dev/v1/products/TNT-MH-2P` and send it.
+
+You get one tent, the Matterhorn 2P, with its price and stock in Zurich and Bern. Each request is its own file:
+`requests/catalog/get-product.req.toml`. Folders can also carry auth, variables and scripts for every request in
+them; see [folders](/docs/workspaces/folders).
+
+## 4. Move the address into an environment
+
+Typing the server's address into every request makes switching servers hard. Put it in an environment instead.
+
+1. Choose **View › Environments** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>), or open the environment menu in the page
+   header and choose **Manage Environments…**.
+2. Choose **+** (**Add Environment**). A **New Environment** appears. Change its **Name** to `Demo`.
+3. Choose **Add Variable**. Set **Name** to `baseURL` and **Value** to `https://demo.echolot.dev/v1`.
+4. Add a second environment named `Local` with `baseURL` set to `http://localhost:8787/v1`. That is the demo API run
+   on your own Mac; you don't need it running for this tutorial.
+5. In the page header's environment menu, choose **Demo**.
+6. Go back to **List products** and change its URL to `{{baseURL}}/products?category=tents`. Do the same for
+   **Get product**: `{{baseURL}}/products/TNT-MH-2P`.
+
+While you type `{{`, a list offers your variables. In the URL, `{{baseURL}}` shows as a token; rest the pointer on it
+to see its value in the current environment. Send both requests again: they still reach the demo API. Choose
+**Local** and they would go to your Mac instead, with no other change.
+
+<Shot id="tutorials-first-workspace-environment" alt="The Environments page with an environment selected: its baseURL and wsURL variables, and a secret password" />
+
+## 5. Keep a password secret
+
+Signing in to the shop takes a password. A password must never go into a file you commit.
+
+1. On the **Environments** page, select **Demo** and choose **Add Variable**.
+2. Name it `password` and tick its **Secret** box. The value field changes to a password field that says **Not set on
+   this Mac**.
+3. Type `alpenglow` and press <kbd>↩</kbd> (or choose **Save**). A key icon shows that the value is in the Keychain.
+4. Make a folder `Auth` and a request `Sign in` in it. Set its method to **POST** and its URL to
+   `{{baseURL}}/auth/token`.
+5. In the **Body** tab, choose **JSON** and type:
+
+   ```json
+   { "email": "heidi@alpenglow.ch", "password": "{{password}}" }
+   ```
+
+6. Send it.
+
+The answer is `200 OK` with an `access_token`. Echolot adds `Content-Type: application/json` for a JSON body by
+itself. Look at `environments/demo.toml`: the `password` variable is there with `secret = true` and no value. The
+value lives only in this Mac's Keychain, so each person who opens the workspace sets their own; see
+[secrets](/docs/workspaces/secrets).
+
+The [next tutorial](/docs/tutorials/chain-requests) uses that token for the requests that need it.
+
+## 6. Put the workspace in Git
+
+Echolot has no Git commands of its own: a workspace is plain TOML files, so you use Git as you do for code.
+
+1. In the sidebar's foot, open the workspace menu and choose **Show in Finder**. Drag the `Alpenglow Shop.echolot`
+   folder onto Terminal's icon, or `cd` into it.
+2. Run:
+
+   ```sh
+   git init
+   git add .
+   git commit -m "Alpenglow Shop: catalog and sign-in"
+   ```
+
+What you committed:
+
+```text
+Alpenglow Shop.echolot/
+├── workspace.toml
+├── environments/
+│   ├── demo.toml
+│   └── local.toml
+└── requests/
+    ├── _folder.toml
+    ├── auth/
+    │   ├── _folder.toml
+    │   ├── sign-in.req.toml
+    │   └── sign-in.body.json
+    └── catalog/
+        ├── _folder.toml
+        ├── get-product.req.toml
+        └── list-products.req.toml
+```
+
+Nothing in it is secret, and nothing needs a `.gitignore`: responses and history are kept outside the workspace, in
+Echolot's own storage. Each file is written the same way every time, so a diff shows only what you changed.
+
+When someone else pulls changes, an open window picks them up by itself. If a file changes on disk while you have
+unsaved edits to it, a bar says **This request changed on disk**: choose **Use Theirs** or **Keep Mine**. More in
+[Git and teams](/docs/workspaces/git-and-teams).
+
+## Next steps
+
+- [Chain requests](/docs/tutorials/chain-requests): send the token from **Sign in** to every request that needs it.
+- [Protected environments](/docs/workspaces/protected-environments): make Echolot ask before every send to a server
+  that matters.
+- [Workspace files](/docs/reference/workspace-files): every file and field.

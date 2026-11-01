@@ -43,6 +43,7 @@ function index(origin: string) {
       'WebSocket /v1/orders': `order events every 1.5 s; send {"op":"subscribe"}, {"op":"ping"} or JSON with an id; ${WS_SESSION_MS / 60_000} minutes per session`,
       'GET /v1/orders/events': `Server-Sent Events: ${SSE_EVENTS} order events, then end; resumes after Last-Event-ID`,
     },
+    openapi: `${origin}/openapi.yaml`,
     mcp: { url: `${origin}/mcp`, transport: 'Streamable HTTP', tools: ['search_catalog', 'get_product', 'order_status'] },
     echo: {
       'ANY /echo/anything': 'the method, query, headers and body you sent',
@@ -98,6 +99,10 @@ async function route(req: Request, env: Env, ctx: ExecutionContext): Promise<Res
 
   if (path === '/') return req.method === 'GET' ? json(index(url.origin)) : problem(405, 'Method Not Allowed', 'Use GET.')
   if (path === '/shop.graphql') return new Response(sdl.trimStart(), { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+  if (path === '/openapi.yaml') {
+    const spec = await env.ASSETS.fetch(new URL('/openapi.yaml', req.url))
+    return new Response(spec.body, { status: spec.status, headers: { 'Content-Type': 'application/yaml; charset=utf-8' } })
+  }
   if (path === '/health') return json({ ok: true })
   if (path === '/mcp') return handleMCP(req)
   if (path === '/v1' || path.startsWith('/v1/')) return handleShop(req, path.slice('/v1'.length) || '/', env, ctx)

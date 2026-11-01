@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package alpenglow.inventory.v1;
+
+service Inventory {
+  rpc ListWarehouses (ListWarehousesRequest) returns (ListWarehousesResponse);
+  rpc WatchStock (WatchStockRequest) returns (stream StockLevel);
+  rpc Reserve (ReserveRequest) returns (Reservation);
+}
+
+message ListWarehousesRequest {}
+
+message Warehouse {
+  string id = 1;
+  string name = 2;
+  string canton = 3;
+}
+
+message ListWarehousesResponse {
+  repeated Warehouse warehouses = 1;
+}
+
+message WatchStockRequest {
+  repeated string skus = 1;
+}
+
+message StockLevel {
+  string sku = 1;
+  string warehouse = 2;
+  int32 available = 3;
+}
+
+message ReserveRequest {
+  string sku = 1;
+  int32 quantity = 2;
+  string order_id = 3;
+}
+
+message Reservation {
+  string id = 1;
+  string expires_at = 2;
+}

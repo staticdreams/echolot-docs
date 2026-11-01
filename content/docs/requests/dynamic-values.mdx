@@ -1,0 +1,138 @@
+---
+title: Dynamic values
+description: Fill requests with values worked out at send time, such as timestamps, UUIDs, hashes, encodings, files and values from other requests and their responses.
+---
+
+A dynamic value is a token that Echolot works out each time the request is sent: the current time, a new UUID, a
+signature over the body, or a value from another request's latest response. You write it like a variable, with a `$`
+in front: `{{$uuid}}`, `{{$sha256('{{password}}')}}`. Dynamic values work wherever variables do: the URL, parameters,
+headers, the body, form fields and auth fields.
+
+This page shows how to add and edit them. Every dynamic value, with its arguments, is listed in the
+[dynamic values reference](/docs/reference/dynamic-values).
+
+## Add one from the list
+
+1. In any field that takes variables, type `{{`. A list opens with the variables in scope first, then the dynamic
+   values by category.
+2. Keep typing to narrow it: `uuid`, `time`, `hmac`. Each entry says what it gives.
+3. Move with <kbd>↑</kbd> and <kbd>↓</kbd> and press <kbd>↩</kbd> or <kbd>⇥</kbd> to insert it; <kbd>Esc</kbd>
+   closes the list.
+
+A value that takes arguments opens its editor as soon as you insert it, so you fill them in a form instead of
+typing them. To open the list without typing `{{`, right-click the field and choose **Insert Variable or Value…**.
+
+In the field, a dynamic value shows as a pill with a readable label: the value's title (`HMAC-SHA256`), or for a
+response value, the request and what it reads (`Sign in › $.access_token`). The text underneath stays as written.
+
+<Shot id="requests-http-token-editor" alt="The token editor for a JSONPath Filtered Response value: the request Sign in, the JSONPath $.access_token, Send it first set to When it has no response yet, and the value from the latest response" />
+
+## Edit a token
+
+Double-click a pill, or right-click it and choose **Edit Token…**. The token editor opens:
+
+- The button at the top says what the token is and changes it: a variable or a dynamic value.
+- The fields are the value's arguments. A request argument is a menu of the workspace's requests by folder; a query
+  argument (a JSONPath, an XPath, a header name) has a button that lists what the latest response holds, so you can
+  pick a value instead of typing its path.
+- **Value** shows what the token gives now, with the current environment, or **Does not resolve with the current
+  environment** and why.
+- For a variable, **Use Another Variable** swaps it for another one, and **Use a Response Value Instead** turns it
+  into a response value.
+- **Remove** deletes the token; **Done** keeps your changes.
+
+## Quick look
+
+Rest the pointer on a pill to see what it gives without opening it: the value (masked for a secret, marked
+**Secret**), where it comes from, and how it is written. For dynamic values, quick look says when they are worked out:
+time and random values are **Made again on every send; above is an example.** Its buttons are **Edit…**,
+**Copy Value** and **All Variables…**, which opens the variables panel.
+
+## Writing them by hand
+
+```text
+{{$name}}                       no arguments
+{{$name('text', 42)}}           text in single or double quotes, numbers as they are
+{{$base64(user)}}               a bare name is a variable
+{{$base64('{{user}}:{{pass}}')}} variables inside text
+{{$sha256("{{$requestBody('')}}")}} a dynamic value inside another one
+```
+
+A token inside a quoted argument must use the other kind of quote for its own arguments: double quotes around a
+token whose arguments are in single quotes, as in the last line.
+
+## What you can use
+
+| Category | Examples | Gives |
+| --- | --- | --- |
+| **Responses** | `{{$response('auth/sign-in', '$.access_token')}}`, `{{$responseHeader('orders/create-order', 'Location')}}`, `{{$responseStatus('auth/sign-in')}}` | Values from another request's latest response. |
+| **Requests** | `{{$requestHeader('', 'Content-Type')}}`, `{{$requestURL('auth/sign-in')}}`, `{{$requestJSONPath('', '$.lines[0].sku')}}` | Parts of this request (empty first argument) or another one, as they would be sent. |
+| **Encoding** | `{{$base64('heidi:alpenglow')}}`, `{{$urlEncode('a b&c')}}`, `{{$jsonEscape('say "hi"')}}`, `{{$basicAuth('heidi', '{{password}}')}}`, `{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`, `{{$newline}}` | Encoded or decoded text, escapes, a Basic auth value, a signed JWT. |
+| **Hashes and Signatures** | `{{$sha256("{{$requestBody('')}}")}}`, `{{$hmacSha256('{{key}}', 'message', 'base64')}}`, `{{$md5('text')}}` | Hashes and HMACs, in hex unless you ask for `base64` or `base64url`. |
+| **Time** | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | The send time, in Unix seconds or milliseconds, ISO 8601, an HTTP date or your own format, moved by an offset in seconds and in a time zone. |
+| **Random** | `{{$uuid}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | New random values on every send. `$guid` and `$randomUUID` are other names for `$uuid`. |
+| **Text** | `{{$lowercase('{{name}}')}}`, `{{$uppercase('chf')}}`, `{{$trim('{{code}}')}}` | Text changed. |
+| **Files and System** | `{{$file('data/order.json')}}`, `{{$env('HOME')}}` | A file's contents (a path relative to the workspace, or an absolute path), or an environment variable of the Echolot process. |
+
+`$env` isn't available to agents: when an AI agent sends a request, an environment variable of your Mac stays out of
+it.
+
+The Alpenglow example uses one in **Orders › Create order**: its `Idempotency-Key` header is `{{$uuid}}`, so every
+order is new.
+
+## Values from other requests' responses
+
+The **Responses** values read another saved request's latest response. The first argument is that request's path in
+the workspace, its folder and its name as in the files: `auth/sign-in` for **Auth › Sign in**.
+
+| Value | Reads |
+| --- | --- |
+| `$response(request, query)` | Anything, by the query's form: `$.token` (JSONPath), `/feed/entry[1]/id` (XPath), `header:Location`, `cookie:session`, `regex:token=(\w+)`, `jq:.data.token`, `keypath:data.items.0.id`. |
+| `$responseJSONPath`, `$responseKeyPath`, `$responseJq`, `$responseXPath`, `$responseRegex` | The body, with that kind of query. A regex gives its first group, if it has one. |
+| `$responseHeader`, `$responseCookie` | A header, or a cookie the response set. |
+| `$responseStatus`, `$responseBody`, `$responseBodyLength` | The status code, the body as text, its size in bytes. |
+
+When the request a value reads has no response yet, Echolot sends it first. The line under the URL bar says so
+before you send: **Sends “Sign in” first**. The optional last argument decides when that happens; in the token
+editor it is **Send it first**:
+
+| Argument | In the editor | What happens |
+| --- | --- | --- |
+| (none) or `'if-missing'` | **When it has no response yet** | Sends the other request only if it has no response. |
+| `'fresh'` | **Every time** | Sends it before every send of this request (once per run in the Runner). |
+| `'latest'` | **Never: use the latest response** | Never sends it; uses its latest response. |
+
+```text
+{{$response('auth/sign-in', '$.access_token', 'fresh')}}
+```
+
+Requests that read each other in a circle are refused with the requests named.
+
+To keep a value from a response in a variable that every request reads, rather than pointing at one request, use a
+[response capture](/docs/requests/captures).
+
+## Values from this request
+
+The **Requests** values read a request as it would be sent, with its variables and auth filled in. Leave the first
+argument empty for the request being sent: `{{$requestHeader('', 'X-Request-Id')}}`. Echolot works out only the part
+you ask for, so a header can sign the body:
+
+```text
+X-Signature: {{$hmacSha256('{{signingKey}}', "{{$requestBody('')}}")}}
+```
+
+## jq
+
+jq filters work in `$responseJq`, `$requestJq` and `$response(…, 'jq:…')`, with nothing to install. A filter with
+several results gives them one per line:
+
+```text
+{{$responseJq('catalog/list-products', '.items[0].sku')}}
+{{$responseJq('catalog/list-products', '[.items[].price.amount] | add')}}
+```
+
+## When a value doesn't resolve
+
+A token that can't be worked out (a missing variable, a request with no response that can't be sent, a JSONPath that
+finds nothing) is sent as written, and the line under the URL bar shows **1 problem**. Click it to see which. The
+token editor and quick look say the same.

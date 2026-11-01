@@ -1,0 +1,70 @@
+---
+title: echolot graphql diff
+description: Compare two GraphQL schemas and fail a build on breaking changes.
+---
+
+`echolot graphql diff` lists what changed from one GraphQL schema to another and grades each change, so a build can
+stop before a change breaks the clients of an API.
+
+```sh
+echolot graphql diff <old> <new> [--fail-on <level>] [--json]
+```
+
+`<old>` and `<new>` are the schema before and after: SDL files (`.graphql`) or introspection results (JSON), in any
+mix.
+
+## Compare two schemas
+
+```sh
+git show main:specs/shop.graphql > before.graphql
+echolot graphql diff before.graphql Alpenglow.echolot/specs/shop.graphql
+```
+
+```text
+Breaking (1)
+  The field Product.weightGrams was removed
+Dangerous (1)
+  The argument inStock was added to Query.search
+Safe (1)
+  The field Product.colors was added
+```
+
+| Grade | Means |
+| --- | --- |
+| Breaking | Queries that worked before can fail now: a type, field, input field, argument, enum value or directive removed; a required argument or input field added; a field's type changed (other than making an output non-null); a union member or an interface taken away. |
+| Dangerous | Queries keep working, but may behave differently: an optional argument added, a default changed, an enum value or union member added, a new interface, something deprecated. |
+| Safe | Nothing an existing query can notice: a type, field, optional input field or directive added, a description changed, a deprecation lifted. |
+
+`--json` prints the changes as a JSON array, each with its `severity`, `path` and `message`:
+
+```json
+[
+  {
+    "message" : "The field Product.weightGrams was removed",
+    "path" : "Product.weightGrams",
+    "severity" : "breaking"
+  },
+  {
+    "message" : "The argument inStock was added to Query.search",
+    "path" : "Query.search(inStock)",
+    "severity" : "dangerous"
+  }
+]
+```
+
+## Options
+
+| Option | Meaning |
+| --- | --- |
+| `--fail-on <level>` | `breaking` (the default) exits with 1 on breaking changes; `dangerous` on breaking and dangerous ones; `none` never. |
+| `--json` | Print the changes as JSON. |
+
+## Exit codes
+
+| Code | When |
+| --- | --- |
+| `0` | No change at the `--fail-on` level or above. |
+| `1` | Changes at the `--fail-on` level or above, or a schema that couldn't be read. |
+
+To fetch a schema from a running server, send the introspection query with the app's GraphQL request, or see
+[GraphQL requests](/docs/requests/graphql).

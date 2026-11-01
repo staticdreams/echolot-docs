@@ -1,0 +1,104 @@
+---
+title: echolot spec
+description: Lint OpenAPI documents in CI, and keep a folder that follows a spec up to date with it.
+---
+
+`echolot spec` brings two things from the [Specs page](/docs/specs) to the terminal: the linter, and the link between
+a spec and the folder of requests made from it.
+
+| Subcommand | What it does |
+| --- | --- |
+| `echolot spec lint` | Lints an OpenAPI or Swagger document; exits with 1 when it has errors (or warnings, with `--strict`). |
+| `echolot spec check` | Lists what changed in the spec a folder follows; exits with 1 when the folder isn't up to date. |
+| `echolot spec apply` | Applies the spec's changes to the folder, keeping edits made in the workspace. |
+
+## echolot spec lint
+
+```sh
+echolot spec lint <file> [--strict] [--hints]
+```
+
+`<file>` is the spec, YAML or JSON. Files it refers to with `$ref` are read from beside it.
+
+```sh
+echolot spec lint Alpenglow.echolot/specs/alpenglow.yaml
+```
+
+```text
+0 errors, 0 warnings.
+```
+
+Each problem is one line on standard output, with the file, line and column, the severity, the message and the rule
+in brackets, so editors and CI can point at it. The count goes to standard error:
+
+```text
+api.yaml:2:1: error: info needs a version (of the API, such as 1.0.0). [info]
+api.yaml:7:7: error: GET /x documents no responses. [responses]
+api.yaml:6:5: hint: GET /x has no operationId; code generators and agents name it from one. [operation-id]
+2 errors, 0 warnings.
+```
+
+| Option | Meaning |
+| --- | --- |
+| `--strict` | Fail on warnings too. |
+| `--hints` | Also list hints: good practice, such as operationIds and descriptions. Hints never fail. |
+
+The rules are the same as on the Specs page; see [editing specs](/docs/specs/editing).
+
+## echolot spec check
+
+```sh
+echolot spec check [--workspace <workspace>] <folder> [--refresh]
+```
+
+A folder made by importing a spec, or linked to one in the app, follows that spec. `check` compares the folder with
+the spec as it is now and lists each operation that was `added`, `changed` (with the fields) or `removed`. A change to
+something you edited in the workspace says so: those edits are kept.
+
+```sh
+echolot spec check -w Shop.echolot pets
+```
+
+```text
+added    POST /pets
+changed  GET /pets/{id}  (parameters, responses)
+removed  DELETE /pets/{id}
+3 changes, 12 unchanged.
+```
+
+| Option | Meaning |
+| --- | --- |
+| `-w`, `--workspace <folder>` | The workspace folder. Default: the current folder. |
+| `--refresh` | Fetch the spec again from its URL first. |
+
+`<folder>` is the linked folder's path, such as `pets`. Use `check` in CI to fail a build when the requests have
+fallen behind the spec.
+
+## echolot spec apply
+
+```sh
+echolot spec apply [--workspace <workspace>] <folder> [--operation <operation> ...]
+```
+
+Writes the spec's changes into the folder: new operations become requests, changed ones are updated, removed ones are
+removed. What you edited in a request is kept. A request you edited whose operation the spec no longer has is kept
+too, and stops following the spec. Each line says what happened:
+
+```text
+added    pets/create-pet
+updated  pets/get-pet  kept edits to headers
+removed  pets/delete-pet
+```
+
+| Option | Meaning |
+| --- | --- |
+| `-w`, `--workspace <folder>` | The workspace folder. Default: the current folder. |
+| `--operation <operation>` | Only this operation, such as `"GET /pets"`. Repeatable; every change when omitted. |
+
+## Exit codes
+
+| Code | When |
+| --- | --- |
+| `0` | `lint`: no errors (and no warnings, with `--strict`). `check`: the folder is up to date. `apply`: applied. |
+| `1` | `lint`: errors, or warnings with `--strict`. `check`: there are changes to apply. |
+| `64` | A wrong option, or a folder that doesn't follow a spec. |

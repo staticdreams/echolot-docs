@@ -1,0 +1,75 @@
+[
+  {
+    "id": "flows-canvas",
+    "page": "flows",
+    "scene": "Alpenglow, no environment. Launch with -page flows. In the sidebar, click the flow Place a test order. Click Fit (⌥⌘0) in the toolbar. Click empty canvas so nothing is selected: the inspector on the right shows Flow with Name, Description and Inputs. Run log hidden.",
+    "frame": "window"
+  },
+  {
+    "id": "flows-block-picker",
+    "page": "flows",
+    "scene": "Alpenglow, no environment. Flows page, Place a test order open and fitted. Click Block in the toolbar (⇧⌘B) so the block picker popover opens with an empty search field, scrolled to the top (Triggers, Actions, People groups visible).",
+    "frame": "the canvas toolbar and the block picker popover below it",
+    "crop": [
+      440,
+      56,
+      680,
+      500
+    ]
+  },
+  {
+    "id": "flows-run-log",
+    "page": "flows",
+    "scene": "Alpenglow, no environment. Flows page, Place a test order open and fitted. Click Run. When the sheet Keep the order? appears, click Approve. After the run ends (run log says Finished in …), click the block Create order: the inspector shows Last run with Show on Output and the success port's response. Run log open under the canvas.",
+    "frame": "window"
+  },
+  {
+    "id": "flows-approve-sheet",
+    "page": "flows/blocks",
+    "scene": "Alpenglow, no environment. Flows page, Place a test order open. Click Run and wait for the Approve sheet Keep the order? (Flow Place a test order, the message with the new order id and CHF total, Decline and Approve). Capture before answering, then click Decline so the order is cancelled.",
+    "frame": "the sheet",
+    "crop": [
+      430,
+      348,
+      460,
+      155
+    ]
+  },
+  {
+    "id": "flows-triggers-start",
+    "page": "flows/running-and-triggers",
+    "scene": "Alpenglow, no environment. Flows page, open Order status on webhook. Click the Start block. In the inspector's Triggers, Webhook is ticked with POST and /order-status; click Allow under it so it shows the address POST http://127.0.0.1:<port>/order-status with Copy URL and Copy Token, and Allowed with Revoke. Afterwards click Revoke to undo the permission.",
+    "frame": "the inspector of the Start block, from its title down to the end of Triggers",
+    "crop": [
+      1012,
+      56,
+      300,
+      500
+    ]
+  },
+  {
+    "id": "flows-new-from-template",
+    "page": "flows/templates",
+    "scene": "Alpenglow, no environment. Flows page. Click + next to Flows in the sidebar so its menu is open: Empty Flow, then the section From a Template with the five templates.",
+    "frame": "the sidebar with the open menu",
+    "foreground": true,
+    "cropPx": [
+      0,
+      180,
+      800,
+      480
+    ]
+  },
+  {
+    "id": "flows-template-device-sign-in",
+    "page": "flows/templates",
+    "scene": "A copy of Alpenglow, no environment. Flows page, + next to Flows › From a Template › Device sign-in. The new flow opens fitted to the view, with its problems count in the toolbar and the note under Ask for a device code. Nothing selected. Delete the flow afterwards (− next to Flows).",
+    "frame": "the canvas with its toolbar",
+    "crop": [
+      10,
+      56,
+      1000,
+      600
+    ]
+  }
+]

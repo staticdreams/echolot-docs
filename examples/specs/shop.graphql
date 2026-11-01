@@ -1,0 +1,41 @@
+"""The Alpenglow shop."""
+type Query {
+  """Products whose name, category or tags contain every word of text."""
+  search(text: String!, first: Int = 10): ProductConnection!
+  """One product by SKU, such as TNT-MH-2P."""
+  product(sku: ID!): Product
+  """Every category with its product count."""
+  categories: [Category!]!
+}
+
+type ProductConnection {
+  totalCount: Int!
+  nodes: [Product!]!
+}
+
+type Product {
+  sku: ID!
+  name: String!
+  category: String!
+  price: Money!
+  weightGrams: Int!
+  rating: Float
+  reviews: Int!
+  tags: [String!]!
+  stock: [Stock!]!
+}
+
+type Money {
+  amount: Float!
+  currency: String!
+}
+
+type Stock {
+  warehouse: String!
+  available: Int!
+}
+
+type Category {
+  id: ID!
+  productCount: Int!
+}

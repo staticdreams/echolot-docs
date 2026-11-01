@@ -1,0 +1,90 @@
+---
+title: echolot grpc
+description: List a gRPC server's services and methods, and call them with JSON messages.
+---
+
+`echolot grpc` describes gRPC services and calls their methods, with messages written as JSON. It learns the services
+from the server's reflection, or from a `.proto` file. See [gRPC requests](/docs/requests/grpc) for the same in the
+app.
+
+| Subcommand | What it does |
+| --- | --- |
+| `echolot grpc describe` | Lists the services and methods of a server or a `.proto` file, with each method's fields. |
+| `echolot grpc call` | Calls a method and prints the answer as JSON. |
+
+The examples use the Alpenglow inventory service, `specs/inventory.proto` in the Alpenglow workspace. It runs on your
+Mac at `localhost:50051`; the demo API can't serve gRPC.
+
+## echolot grpc describe
+
+```sh
+echolot grpc describe [<url>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>] [--json]
+```
+
+```sh
+echolot grpc describe --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+```text
+Alpenglow.echolot/specs/inventory.proto: 1 service
+alpenglow.inventory.v1.Inventory
+  ListWarehouses (unary): alpenglow.inventory.v1.ListWarehousesRequest → alpenglow.inventory.v1.ListWarehousesResponse
+  WatchStock (server streaming): alpenglow.inventory.v1.WatchStockRequest → alpenglow.inventory.v1.StockLevel
+    skus: repeated string
+  Reserve (unary): alpenglow.inventory.v1.ReserveRequest → alpenglow.inventory.v1.Reservation
+    sku: string
+    quantity: int32
+    orderId: string
+```
+
+Give a server instead (`echolot grpc describe http://localhost:50051`) to ask its reflection service. Each method shows
+whether it is unary, server streaming, client streaming or bidirectional, its request and response types, and the
+fields of its request.
+
+| Option | Meaning |
+| --- | --- |
+| `<url>` | The server, `http://host:port` or `https://host:port`. Not needed with `--proto`. |
+| `--proto <file>` | A `.proto` file describing the service, with its imports beside it. Without it, the server's reflection is asked. |
+| `-H`, `--header <header>` | Metadata as `'Name: value'`. Repeatable. |
+| `-k`, `--insecure` | Skip TLS certificate verification. |
+| `--timeout <seconds>` | Seconds to wait for the whole call. Default 30. |
+| `--json` | Print the description as JSON. |
+
+## echolot grpc call
+
+```sh
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+```
+
+`<method>` is `package.Service/Method`. The message is JSON, `{}` by default; `-d -` reads it from standard input. For a
+client-streaming method, give an array: each element is one message. The answer prints as JSON on standard output.
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserve \
+  -d '{"sku": "TNT-MH-2P", "quantity": 1, "orderId": "ord_7Hk2Lw"}' \
+  --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+The status, the number of messages received and the time go to standard error. A status other than `OK` exits
+with 1.
+
+| Option | Meaning |
+| --- | --- |
+| `-d`, `--data <json>` | The message as JSON; `-` reads it from standard input. Default `{}`. |
+| `--deadline <ms>` | The deadline in milliseconds, sent as `grpc-timeout`. |
+| `--compress <algorithm>` | Compress the messages sent: `gzip` or `deflate`. Compressed answers are read either way. |
+| `--proto <file>` | A `.proto` file describing the service, with its imports beside it. Without it, the server's reflection is asked. |
+| `-H`, `--header <header>` | Metadata as `'Name: value'`. Repeatable. |
+| `-k`, `--insecure` | Skip TLS certificate verification. |
+| `--timeout <seconds>` | Seconds to wait for the whole call. Default 30. |
+
+`http://` speaks HTTP/2 without TLS; `https://` uses TLS. The well-known types (`google.protobuf.Timestamp` and the
+others) are built in, so a `.proto` file that imports them needs nothing beside it.
+
+## Exit codes
+
+| Code | When |
+| --- | --- |
+| `0` | `describe` found the services; `call` ended with status `OK`. |
+| `1` | The server couldn't be reached or described, or the call's status wasn't `OK`. |
+| `64` | A wrong option. |

@@ -1,0 +1,119 @@
+---
+title: echolot import and export
+description: Bring cURL commands, collections, specs and HAR files into a workspace, and write a workspace out for other tools.
+---
+
+`echolot import` turns what you have into workspace files: a cURL command, a Postman, Insomnia, Paw or Bruno
+collection, an OpenAPI or Swagger spec, a HAR file. `echolot export` writes a workspace, or one of its folders, as a
+Postman, Insomnia or Bruno collection, or as a copy of the Echolot workspace. They do what **File › Import…** and
+**File › Export Workspace…** do in the app; see [importing](/docs/get-started/importing) and
+[exporting](/docs/workspaces/exporting).
+
+## echolot import
+
+```sh
+echolot import <file> [--workspace <workspace>] [--folder <folder>] [--format <format>]
+```
+
+`<file>` is the file to import, a Bruno collection folder, or `-` to read standard input.
+
+The format is found from the content. A collection or a spec lands in a folder of its own; a cURL command becomes
+one request. The paths of what was written go to standard output, one per line, and a summary to standard error:
+
+```sh
+pbpaste | echolot import - -w Alpenglow.echolot --folder auth
+```
+
+```text
+Imported 1 request from cURL.
+note: 1 credential kept out of the workspace files but not saved, as there is no Keychain here: auth_token_token. Set ECHOLOT_SECRET_AUTH_TOKEN_TOKEN where Echolot sends.
+auth/auth-token
+```
+
+| What you import | Format name |
+| --- | --- |
+| A cURL command | `curl` |
+| A Postman collection | `postman-collection` |
+| A Postman environment | `postman-environment` |
+| An OpenAPI 3 document (YAML or JSON) | `openapi` |
+| A Swagger 2 document | `swagger` |
+| An Insomnia export | `insomnia` |
+| A HAR file | `har` |
+| A Paw file | `paw` |
+| An MCP client's configuration (its servers) | `mcp-config` |
+| A Bruno collection | the folder itself, no format needed |
+
+**Credentials never go into the files.** Passwords, tokens, API keys and other secret values found in auth settings
+and credential headers become secret variables, named after the request and the field (`me_password`), and the file
+keeps `{{me_password}}`. On a Mac they go to the Keychain. Without one (Linux, CI, `ECHOLOT_KEYCHAIN=0`), the value
+is left out and Echolot names the `ECHOLOT_SECRET_<NAME>` variable to set. The report names the secrets, never their
+values.
+
+A spec import makes a folder that follows the spec. Echolot says so (`note: the folder follows …`); keep it up to date
+with [`echolot spec check` and `apply`](/docs/cli/spec).
+
+### Options
+
+| Option | Meaning |
+| --- | --- |
+| `-w`, `--workspace <folder>` | The workspace folder (the one with `workspace.toml`). Default: the current folder. |
+| `--folder <path>` | Import into this folder of the workspace, such as `users/admin`. |
+| `--format <format>` | Skip detection: `curl`, `postman-collection`, `postman-environment`, `openapi`, `swagger`, `insomnia`, `har`, `paw` or `mcp-config`. |
+
+## echolot export
+
+```sh
+echolot export <output> [--workspace <workspace>] [--folder <folder>] --format <format> [--no-environments] [--force]
+```
+
+`<output>` is where to write: a file for Postman and Insomnia, a folder for Bruno, for an Echolot workspace, and for
+Postman with environments.
+
+```sh
+echolot export /tmp/alpenglow.postman_collection.json -w Alpenglow.echolot --format postman
+```
+
+```text
+Exported 21 requests, 7 folders, 3 environments as Postman Collection v2.1.
+warning: 8 requests left out: Postman Collection v2.1 has no MCP requests. …
+  left out: realtime/order-updates
+  left out: inventory/reserve-stock
+  …
+warning: Response captures (Store in a Variable) are not exported; other tools set variables from scripts.
+warning: 1 password, token or key is written in clear: it is typed into an auth or header field rather than kept in a secret variable. Move it to the Keychain before sharing the file.
+/tmp/alpenglow.postman_collection.json
+```
+
+| Format | Takes | Writes |
+| --- | --- | --- |
+| `echolot` | Every kind of request | A new workspace folder with its own ID. A folder export keeps the folders above it. |
+| `postman` | HTTP and GraphQL | A Postman Collection v2.1 file, or a folder with the collection and its environments. |
+| `insomnia` | HTTP, GraphQL, WebSocket, Socket.IO and gRPC | An Insomnia v5 file. |
+| `bruno` | HTTP and GraphQL | A Bruno collection folder. |
+
+What a format has no place for is named on standard error: requests it can't hold (`left out:`), and parts that
+change on the way, such as response captures or dynamic values the other tool doesn't have.
+
+**Secret values are never written.** Secret variables go out by name only. Echolot warns about any credential that is
+typed into an auth or header field rather than kept in a secret variable, since that one is written as it is.
+
+Echolot never writes over, into or around the workspace you export from, and it never replaces anything at the
+output path unless you pass `--force`; what it replaces goes to the Trash.
+
+### Options
+
+| Option | Meaning |
+| --- | --- |
+| `-w`, `--workspace <folder>` | The workspace folder. Default: the current folder. |
+| `--folder <path>` | Export only this folder of the workspace, such as `users/admin`. |
+| `--format <format>` | `echolot`, `postman`, `insomnia` or `bruno`. Required. |
+| `--no-environments` | Leave the environments out. |
+| `--force` | Replace what is at the output path. |
+
+## Exit codes
+
+| Code | When |
+| --- | --- |
+| `0` | Imported or exported. Warnings don't change it. |
+| `1` | The file couldn't be read or written. |
+| `64` | An unknown format, or an output path that exists without `--force`. |

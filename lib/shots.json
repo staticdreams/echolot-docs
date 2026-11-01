@@ -1,0 +1,314 @@
+{
+  "ai-agents-popover": {
+    "width": 620,
+    "height": 460
+  },
+  "ai-assistant-panel": {
+    "width": 1200,
+    "height": 775
+  },
+  "ai-echo-report": {
+    "width": 500,
+    "height": 500
+  },
+  "ai-echo-screen": {
+    "width": 1016,
+    "height": 60
+  },
+  "flows-approve-sheet": {
+    "width": 460,
+    "height": 155
+  },
+  "flows-block-picker": {
+    "width": 680,
+    "height": 500
+  },
+  "flows-canvas": {
+    "width": 1200,
+    "height": 775
+  },
+  "flows-new-from-template": {
+    "width": 400,
+    "height": 240
+  },
+  "flows-run-log": {
+    "width": 1200,
+    "height": 775
+  },
+  "flows-template-device-sign-in": {
+    "width": 1000,
+    "height": 600
+  },
+  "flows-triggers-start": {
+    "width": 300,
+    "height": 500
+  },
+  "get-started-command-palette": {
+    "width": 900,
+    "height": 441
+  },
+  "get-started-first-response": {
+    "width": 1200,
+    "height": 775
+  },
+  "get-started-welcome": {
+    "width": 820,
+    "height": 500
+  },
+  "get-started-whats-new": {
+    "width": 630,
+    "height": 600
+  },
+  "get-started-window": {
+    "width": 1200,
+    "height": 775
+  },
+  "mcp-add-server": {
+    "width": 560,
+    "height": 560
+  },
+  "mcp-quality-card": {
+    "width": 1008,
+    "height": 350
+  },
+  "mcp-server-detail": {
+    "width": 1200,
+    "height": 775
+  },
+  "mocks-routes": {
+    "width": 872,
+    "height": 380
+  },
+  "mocks-running": {
+    "width": 1200,
+    "height": 775
+  },
+  "privacy-protected-send": {
+    "width": 1016,
+    "height": 480
+  },
+  "requests-graphql-builder": {
+    "width": 1200,
+    "height": 775
+  },
+  "requests-graphql-query": {
+    "width": 1200,
+    "height": 775
+  },
+  "requests-grpc-message": {
+    "width": 1200,
+    "height": 775
+  },
+  "requests-http-auth-oauth": {
+    "width": 522,
+    "height": 665
+  },
+  "requests-http-body-json": {
+    "width": 522,
+    "height": 300
+  },
+  "requests-http-exchange-card": {
+    "width": 1012,
+    "height": 260
+  },
+  "requests-http-page": {
+    "width": 1200,
+    "height": 775
+  },
+  "requests-http-response-history": {
+    "width": 1112,
+    "height": 560
+  },
+  "requests-http-response-tree": {
+    "width": 484,
+    "height": 575
+  },
+  "requests-http-settings": {
+    "width": 522,
+    "height": 530
+  },
+  "requests-http-store-variable": {
+    "width": 492,
+    "height": 440
+  },
+  "requests-mcp-call": {
+    "width": 1200,
+    "height": 775
+  },
+  "requests-mcp-call-panel": {
+    "width": 632,
+    "height": 602
+  },
+  "requests-mqtt-log": {
+    "width": 1200,
+    "height": 775
+  },
+  "requests-runner-results": {
+    "width": 1200,
+    "height": 775
+  },
+  "requests-socketio-events": {
+    "width": 1200,
+    "height": 775
+  },
+  "requests-sse-events": {
+    "width": 584,
+    "height": 710
+  },
+  "requests-tests-generate": {
+    "width": 576,
+    "height": 476
+  },
+  "requests-tests-tab": {
+    "width": 1008,
+    "height": 345
+  },
+  "requests-websocket-log": {
+    "width": 1200,
+    "height": 775
+  },
+  "settings-agents": {
+    "width": 900,
+    "height": 532
+  },
+  "settings-assistant": {
+    "width": 900,
+    "height": 532
+  },
+  "settings-general": {
+    "width": 900,
+    "height": 532
+  },
+  "specs-from-responses": {
+    "width": 560,
+    "height": 346
+  },
+  "specs-page": {
+    "width": 1200,
+    "height": 711
+  },
+  "specs-problems": {
+    "width": 580,
+    "height": 200
+  },
+  "specs-proto": {
+    "width": 1200,
+    "height": 696
+  },
+  "specs-visual-endpoint": {
+    "width": 872,
+    "height": 668
+  },
+  "troubleshooting-no-echo": {
+    "width": 484,
+    "height": 560
+  },
+  "tutorials-agents-connect": {
+    "width": 620,
+    "height": 460
+  },
+  "tutorials-alpenglow-window": {
+    "width": 1200,
+    "height": 775
+  },
+  "tutorials-chain-create-order": {
+    "width": 1200,
+    "height": 775
+  },
+  "tutorials-chain-store-variable": {
+    "width": 492,
+    "height": 440
+  },
+  "tutorials-ci-runner": {
+    "width": 1200,
+    "height": 775
+  },
+  "tutorials-ci-tests-tab": {
+    "width": 1008,
+    "height": 345
+  },
+  "tutorials-first-workspace-environment": {
+    "width": 1200,
+    "height": 775
+  },
+  "tutorials-flows-canvas": {
+    "width": 1200,
+    "height": 775
+  },
+  "tutorials-mcp-server-checked": {
+    "width": 1200,
+    "height": 775
+  },
+  "tutorials-realtime-websocket": {
+    "width": 1200,
+    "height": 775
+  },
+  "tutorials-spec-mock-running": {
+    "width": 1200,
+    "height": 775
+  },
+  "tutorials-spec-visual-editor": {
+    "width": 1200,
+    "height": 711
+  },
+  "workspaces-bulk-edit": {
+    "width": 680,
+    "height": 598
+  },
+  "workspaces-environment-menu": {
+    "width": 670,
+    "height": 240
+  },
+  "workspaces-environments-page": {
+    "width": 1200,
+    "height": 775
+  },
+  "workspaces-export-sheet": {
+    "width": 560,
+    "height": 424
+  },
+  "workspaces-folder-settings": {
+    "width": 620,
+    "height": 544
+  },
+  "workspaces-history-page": {
+    "width": 1200,
+    "height": 775
+  },
+  "workspaces-multi-select-menu": {
+    "width": 380,
+    "height": 800
+  },
+  "workspaces-protected-send-button": {
+    "width": 1016,
+    "height": 175
+  },
+  "workspaces-protected-send-question": {
+    "width": 1200,
+    "height": 775
+  },
+  "workspaces-request-history": {
+    "width": 656,
+    "height": 560
+  },
+  "workspaces-secret-variable": {
+    "width": 716,
+    "height": 540
+  },
+  "workspaces-settings-storage": {
+    "width": 900,
+    "height": 532
+  },
+  "workspaces-switcher": {
+    "width": 309,
+    "height": 186
+  },
+  "workspaces-variables-panel": {
+    "width": 1200,
+    "height": 775
+  },
+  "workspaces-welcome": {
+    "width": 820,
+    "height": 500
+  }
+}

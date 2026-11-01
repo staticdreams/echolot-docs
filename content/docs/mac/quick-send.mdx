@@ -1,0 +1,72 @@
+---
+title: Quick Send
+description: Send a saved request from any app with a keyboard shortcut or the menu bar, and see the response without switching to Echolot.
+---
+
+Quick Send sends one of your saved requests from wherever you are. Press its shortcut in any app, type a few letters
+of the request's name, press <kbd>↩</kbd>, and the status, time and size come back in a small panel. The app you
+were in stays in front.
+
+<Shot id="mac-quick-send-panel" alt="The Quick Send panel over another app, with a search for products, the Alpenglow requests that match, and the response status of the one just sent" />
+
+## Turn it on
+
+Quick Send is off until you turn it on.
+
+1. Open **Settings › General**.
+2. Under **Quick Send**, turn on **Show Quick Send in the menu bar**.
+
+A paper plane appears in the menu bar, and the shortcut starts working in every app.
+
+### Change the shortcut
+
+The shortcut is <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> unless you choose another. To change it, click the shortcut
+next to **Shortcut** and press the new keys. <kbd>Esc</kbd> keeps the old one, and **Reset** goes back to
+<kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd>.
+
+A shortcut that works in every app needs <kbd>⌘</kbd>, <kbd>⌃</kbd> or <kbd>⌥</kbd>, or a function key, so typing
+never sets it off. While it is registered, no other app gets those keys. If another app already holds them, Settings
+says the shortcut could not be registered; choose another.
+
+<Callout title="Input sources">
+  macOS can use <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> to switch to the next input source when that is turned on
+  in System Settings › Keyboard › Keyboard Shortcuts. If you use it, choose another shortcut for Quick Send.
+</Callout>
+
+## Send a request
+
+1. Press the shortcut, or click the paper plane in the menu bar.
+2. Type in **Send a saved request…** to narrow the list. Each row shows the request's method, name, and its
+   workspace and folder.
+3. Use <kbd>↑</kbd> and <kbd>↓</kbd> to pick one, and press <kbd>↩</kbd>, or click it.
+
+The foot of the panel shows the outcome: the status code, the reason (or the request's name), the time and the size,
+or why the send failed. **Open in Echolot** brings the request up in its workspace window, opening the workspace if it
+isn't open.
+
+The panel closes with <kbd>Esc</kbd> or when you click elsewhere.
+
+## Which requests it offers
+
+The panel lists every saved request of the workspaces open in Echolot first, then of your recent workspaces (the
+last ten you opened), in the order of each workspace's sidebar. A workspace doesn't need to be open to send its
+requests.
+
+A request sent from Quick Send goes out as it would from its window:
+
+- With the environment the workspace uses in its window, or the one it used last.
+- With its scripts and checks.
+- Into the request's [history](/docs/workspaces/history), so the response is there when you open the request.
+
+<Edition only="appstore">
+  Quick Send works the same in the App Store edition. A workspace that isn't open is reached through the access you
+  gave Echolot when you opened it from **File › Open Workspace…**.
+</Edition>
+
+## Protected environments
+
+When the request's environment is [protected](/docs/workspaces/protected-environments), the panel asks first:
+**Send to *Environment*?**, with the method and address it would send to, secrets masked. **Cancel** is the default
+button, so <kbd>↩</kbd> doesn't send; click **Send** (or **Connect** for a WebSocket, Socket.IO or MQTT request) to
+go on. If you chose not to be asked again for that environment in the workspace's open window, Quick Send doesn't
+ask either.

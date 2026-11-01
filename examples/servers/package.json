@@ -1,0 +1,15 @@
+{
+  "name": "alpenglow-local-servers",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "grpc": "bun grpc.ts",
+    "realtime": "bun realtime.ts"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.7",
+    "@grpc/proto-loader": "^0.8.1",
+    "aedes": "^1.2.0",
+    "socket.io": "^4.8.4"
+  }
+}

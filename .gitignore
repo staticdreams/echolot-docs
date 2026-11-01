@@ -26,3 +26,6 @@ yarn-error.log*
 next-env.d.ts
 # wrangler pages dev
 .wrangler/
+
+# generated example workspaces and captures
+.work/

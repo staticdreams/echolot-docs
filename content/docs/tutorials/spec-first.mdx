@@ -1,0 +1,158 @@
+---
+title: Design spec-first and mock it
+description: Bring in or design an OpenAPI spec, lint it, serve a mock of it, send requests to the mock and check real responses against the spec.
+---
+
+Spec-first means the OpenAPI document comes before the code: you agree on the API, try it against a mock, and check
+the real server against the same document once it exists. In this tutorial you add the Alpenglow shop's spec to a
+workspace, design an endpoint the shop doesn't have yet, serve both from a mock on your Mac, and check the real API's
+answers against the spec.
+
+- **Time:** 20 minutes.
+- **You need:** Echolot and a workspace, such as the one from [Your first workspace](/docs/tutorials/first-workspace)
+  or a new empty one.
+- **You learn:** the Specs page, lint, requests that follow a spec, mocks, and the **OpenAPI spec** check.
+
+## 1. Add the spec
+
+The demo shop publishes its spec at `https://demo.echolot.dev/openapi.yaml`.
+
+1. Save it to your Mac. In Terminal:
+
+   ```sh
+   curl -o ~/Downloads/openapi.yaml https://demo.echolot.dev/openapi.yaml
+   ```
+
+   Or open the address in Safari and choose **File › Save As…**.
+2. In the workspace window, switch to **Specs** (<kbd>⌘</kbd><kbd>3</kbd>).
+3. Choose **Add Spec File…** (on the empty page, or in the sidebar's **+** menu) and pick `openapi.yaml`. A copy goes
+   into the workspace's `specs` folder.
+
+The spec opens in the **Visual** editor: its servers, its endpoints grouped by path or tag, and its schemas. The
+toolbar's switch goes between **Visual** and **Code**. Both edit the same text, and the text is what is saved.
+
+<Callout title="Starting from nothing">
+  Choose **New Spec** instead. You get an OpenAPI 3.1 document titled **New API** with one endpoint, `GET /items`, to
+  rename and build on. The rest of this tutorial works the same way.
+</Callout>
+
+## 2. Design an endpoint the shop doesn't have
+
+The shop wants a list of its stores. Design it before anyone writes it.
+
+1. In the **Visual** editor, choose **Add Endpoint**.
+2. In **New Endpoint**, leave **Method** on **GET**, type the path `/stores`, the summary `List stores`, and the tag
+   `Catalog`. Choose **Add Endpoint**. Echolot adds the operation with a `200` response to start from.
+3. In the endpoint's editor, set **Operation ID** to `listStores`.
+4. Choose **Show in Code**. Replace the endpoint's `responses` with a body and an example:
+
+   ```yaml
+         responses:
+           '200':
+             description: The shop's stores.
+             content:
+               application/json:
+                 schema:
+                   type: array
+                   items:
+                     type: object
+                     required: [id, city]
+                     properties:
+                       id: { type: string }
+                       city: { type: string }
+                       address: { type: string }
+                 example:
+                   - { id: zrh, city: Zürich, address: Bahnhofstrasse 1 }
+                   - { id: brn, city: Bern, address: Spitalgasse 4 }
+   ```
+
+Edits are saved as you make them, and <kbd>⌘</kbd><kbd>Z</kbd> undoes them. Visual edits change only the lines of
+the entry you touch, so the rest of the file, comments included, stays as you wrote it. More in
+[editing specs](/docs/specs/editing).
+
+<Shot id="tutorials-spec-visual-editor" alt="The Specs page in the Visual editor with an endpoint of the Alpenglow spec selected" />
+
+## 3. Lint the spec
+
+The toolbar's problems button shows a green check and **No problems**, or a count of errors and warnings.
+
+1. Choose it. The **Problems** popover says the document follows the OpenAPI specification and every reference
+   resolves.
+2. Break something to see a problem: in **Code**, change `$ref: '#/components/schemas/Product'` on one line to
+   `'#/components/schemas/Produkt'`. The button turns red. Choose it and pick the problem: the editor jumps to its
+   line.
+3. Undo the change (<kbd>⌘</kbd><kbd>Z</kbd>).
+
+The same lint runs in CI with the command-line tool. `--strict` fails on warnings too, and `--hints` adds advice such
+as missing operation IDs:
+
+```sh
+echolot spec lint specs/openapi.yaml --strict
+```
+
+## 4. Make requests that follow the spec
+
+1. In the Specs toolbar, choose **Generate Requests**. A folder **Alpenglow demo shop** appears under
+   **Requests**, with a folder per tag (**Catalog**, **Auth**, **Orders**) and a request for every endpoint, **List
+   stores** included.
+2. Look at **Catalog › List products**. Its URL is `{{baseUrl}}/products`. Its **Tests** tab already has two checks
+   from the spec: **Status** equals `200`, and a **JSON Schema** of the documented body.
+
+The folder follows the spec. When the spec changes later, the Specs toolbar's **Requests** menu offers **Check
+"Alpenglow demo shop" for Changes…**: it lists what is new, changed and gone in the spec and applies it without
+overwriting your own edits to the requests. See [OpenAPI sync](/docs/specs).
+
+The generated requests start with `{{baseUrl}}` (lowercase `rl`). You give it a value in the next two steps.
+
+## 5. Serve a mock of the spec
+
+1. Switch to **Mocks** (<kbd>⌘</kbd><kbd>4</kbd>). Open the **+** menu and choose **Mock of Alpenglow demo shop**.
+2. Choose **Start** (<kbd>⌘</kbd><kbd>R</kbd>). The toolbar shows a green dot and the address,
+   `http://127.0.0.1:4010/v1`: the first free port from 4010, and the base path from the spec's server.
+3. Choose **Use in Environment**. Echolot makes an environment **Mock: Alpenglow demo shop** whose `{{baseUrl}}` is
+   the mock's address, and chooses it.
+
+The **Settings** card holds the mock's **Port**, **Answer other devices on the network**, a **Delay** before each
+answer, a share of **Failures** (injected 500s), and **Checks**: **Refuse requests that break the spec (400 with the
+reasons)**. The mock runs while the window is open.
+
+<Shot id="tutorials-spec-mock-running" alt="The Mocks page with the mock of Alpenglow demo shop running on 127.0.0.1:4010, its settings and a log of requests" />
+
+## 6. Send requests to the mock
+
+1. Back in **Requests**, send **Catalog › List stores**. The mock answers `200` with the two stores from your example.
+   The **Headers** tab shows `Server: Echolot mock`.
+2. Send **Catalog › List products**. The mock has no example for it, so it makes a body from the schema: the right
+   shape with placeholder values. Both of the request's checks pass.
+3. In **List products**' **Params**, add `sort` with the value `cheapest` and send. The mock refuses it: `400` with
+   `query “sort”: not one of the allowed values`. The spec allows `name`, `price`, `-price` and `rating`. Remove the
+   parameter.
+4. In **Get a product**, add the header `Prefer: code=404` and send. The mock answers with the documented `404`
+   problem instead. Remove the header.
+
+The Mocks page's **LOG** lists every request the mock answered, with the operation it matched and any problem. In
+the **Responses** card you can make an operation answer with another documented status or example for every
+request. JavaScript routes for answers that need state are in [scripted routes](/docs/mocks/scripted-routes).
+
+## 7. Check the real API against the spec
+
+1. On the **Environments** page, add an environment `Demo` with a variable `baseUrl` set to
+   `https://demo.echolot.dev/v1`, and choose it in the page header.
+2. Open **List products**, open **Add Test** in its **Tests** tab and choose **OpenAPI spec**. It has nothing to fill
+   in: it checks the body against the schema the spec documents for the status that came back.
+3. Send it. All three checks pass: the real shop matches its spec.
+4. Send **List stores**. The real shop answers `404`: the endpoint exists only in the spec. That is the point of
+   spec-first: the mock lets you build against it now.
+
+To run the same checks in CI, run the folder with [`echolot run`](/docs/cli/run), and serve the mock there with
+`echolot mock`:
+
+```sh
+echolot mock specs/openapi.yaml --port 4010
+```
+
+## Next steps
+
+- [Specs from traffic](/docs/specs/specs-from-traffic): write a spec from requests you already send.
+- [Mocks](/docs/mocks): examples saved from history, delays, failures and sharing on the network.
+- [`echolot spec`](/docs/cli/spec): `check` fails CI when a folder is behind its spec.

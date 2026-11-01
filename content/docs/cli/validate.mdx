@@ -1,0 +1,66 @@
+---
+title: echolot validate
+description: "Check a workspace before a run: every file reads, and every request resolves with the chosen environment."
+---
+
+`echolot validate` reads every file of a workspace and resolves every request, without sending anything. Run it
+first in CI, or before you commit, to catch a broken file, a variable that is missing in one environment, or a
+GraphQL query that no longer fits its schema.
+
+```sh
+echolot validate [<workspace>] [--env <env>]
+```
+
+`<workspace>` is the workspace folder; the current folder when you leave it out.
+
+## Check a workspace
+
+```sh
+echolot validate Alpenglow.echolot
+```
+
+```text
+auth/who-am-i: note: {{token}} is captured from a response during the run
+auth/client-credentials: note: the OAuth 2.0 token comes from the token URL (client credentials) when the request is sent
+orders/list-orders: note: {{token}} is captured from a response during the run
+orders/create-order: note: {{token}} is captured from a response during the run
+orders/get-order: note: {{token}} is captured from a response during the run
+orders/cancel-order: note: {{token}} is captured from a response during the run
+29 requests, 3 environments: no problems
+```
+
+Each problem is one line on standard error, starting with the request's path. What a run produces as it goes
+(OAuth client-credentials tokens, captured variables, other requests' responses) can't be known beforehand, so it is
+only noted, never counted as a problem. The last line, on standard output, counts the requests, the environments and
+the problems.
+
+What is checked:
+
+- Every file of the workspace reads: TOML that parses, values Echolot knows (such as an auth type), no file saved
+  by a newer version of Echolot.
+- Every request resolves with the environment: each `{{variable}}` and each dynamic value gets a value.
+- GraphQL requests that name a schema are checked against it, with the line and column of each problem. Warnings,
+  such as deprecated fields, don't fail.
+
+## Options
+
+| Option | Meaning |
+| --- | --- |
+| `-e`, `--env <env>` | The environment to resolve with: its file name without `.toml`, or its name. |
+
+Validate once per environment you run with:
+
+```sh
+echolot validate Alpenglow.echolot --env staging
+```
+
+Secret variables resolve as in a run: from `ECHOLOT_SECRET_<NAME>` variables, and the Keychain on a Mac. See
+[secrets](/docs/cli#secrets).
+
+## Exit codes
+
+| Code | When |
+| --- | --- |
+| `0` | No problems. Notes don't count. |
+| `1` | At least one problem, or the workspace could not be read. |
+| `64` | An environment that doesn't exist. |

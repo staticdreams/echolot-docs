@@ -1,0 +1,132 @@
+---
+title: Coming from Postman
+description: Import a Postman collection and its environments, learn what maps to what, run it, and export back to Postman.
+---
+
+Echolot reads Postman collections and environments as they are, scripts included. In this tutorial you import a
+collection, see where each part went, run it, and export a workspace back to Postman.
+
+- **Time:** 15 minutes.
+- **You need:** a Postman collection (v2.0 or v2.1) and its environments, exported as JSON. No collection at hand? Make
+  one from Alpenglow in step 1.
+- **You learn:** importing, what maps to what, trusting imported scripts, running a collection with or without
+  importing it, and exporting.
+
+## 1. Get a collection
+
+From Postman: open the collection's **⋯** menu, choose **Export**, and keep **Collection v2.1**. Export each
+environment from its own menu the same way.
+
+To practise with Alpenglow instead:
+
+1. Open the [Alpenglow workspace](/docs/tutorials#the-alpenglow-workspace) and choose **File › Export Workspace…**
+   (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd>).
+2. Choose **Postman Collection v2.1**. Its row says that 21 of the 29 requests fit: Postman collections have no
+   WebSocket, Socket.IO, MQTT, gRPC or MCP requests, so those stay behind.
+3. Leave **Include environments (3)** on and choose **Export…**. With environments, the export is a folder of files:
+   name it and choose **Export**.
+
+The folder holds `Alpenglow.postman_collection.json` and one `.postman_environment.json` per environment. The report lists
+what was **Left out** and what **Changed on the way**: Echolot's checks became `pm.test()` scripts, response captures
+aren't exported, and secret variables go out by name only, without their values.
+
+## 2. Import it
+
+1. Make a new workspace: **File › New Workspace…** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>), named `From Postman`.
+2. Choose **File › Import…** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd>). Select the collection and the environment files
+   together and choose **Import**.
+
+   You can also drag the files onto the window, or copy a collection's JSON and paste it into the sidebar
+   (<kbd>⌘</kbd><kbd>V</kbd>).
+3. The report, **Imported …**, lists each file with its format (**Postman collection v2.1**, **Postman environment**)
+   and what came in. Notes say what could not come in as it was.
+
+For the Alpenglow export, the notes say that 19 test scripts were imported and run once you trust them, and that 2
+secret values were saved to the Keychain, not to the workspace files: the demo password and the OAuth client secret,
+which were typed into the collection. The requests now refer to them as `{{password}}` and
+`{{orders_with_oauth_2_clientSecret}}`. Choose **Show in Sidebar**.
+
+<Shot id="tutorials-postman-import-report" alt="The import report: a Postman collection and an environment imported, with notes about scripts and secrets saved to the Keychain" />
+
+## 3. Find your way around
+
+| In Postman | In Echolot |
+| --- | --- |
+| Collection | A folder named after the collection. Its variables, auth and scripts are in the folder's **Folder Settings…** |
+| Folder | A folder, with its description in **Docs**, and its own variables, auth and scripts |
+| Request | A request, saved as its own file. Raw bodies keep their type; urlencoded becomes **URL-encoded**, form-data **Multipart**; a GraphQL body becomes a GraphQL request |
+| Environment | An environment on the Environments page (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>). Values of type secret go to the Keychain |
+| Collection variables | The collection folder's variables. They apply to every request in it and win over the environment's |
+| Pre-request Script, Tests | The **Scripts** tab's **Pre-request** and **Tests** scripts, on the request, folder or workspace |
+| `pm.*` | The same API: `pm.test`, `pm.expect`, `pm.response`, `pm.request`, `pm.environment`, `pm.variables`, `pm.collectionVariables`, `pm.globals`, `pm.iterationData`, `pm.sendRequest`, `pm.cookies`, `pm.setNextRequest`, `pm.visualizer`, and the older `postman.*` and `tests[…]` |
+| `require()` | `lodash`, `ajv`, `tv4`, `crypto-js`, `uuid`, `atob` and `btoa` |
+| Auth | The same types: Basic, Digest, Bearer Token, API Key, OAuth 2.0, AWS Signature, JWT Bearer, Hawk, Akamai EdgeGrid, NTLM. OAuth 2.0 client credentials stays as it is; other OAuth grants become authorization code with PKCE |
+| `{{$guid}}`, `{{$timestamp}}`, `{{$randomInt}}` | Dynamic values with the same names, and many more |
+| Collection Runner, Newman | The [Runner](/docs/requests/runner) and [`echolot run`](/docs/cli/run) |
+| Mock servers | [Mocks](/docs/mocks) of an OpenAPI spec, on your Mac |
+| Monitors | [Flows](/docs/flows) on a schedule, or `echolot run` in CI |
+
+File bodies and file fields of form-data don't come in, since the file is on another computer: the report names each
+one, so you can choose the file again in the **Body** tab.
+
+## 4. Trust the scripts
+
+Scripts can do anything a script can, so imported ones don't run until you say so.
+
+1. Open a request that has a test script, such as **Catalog › List products**, and its **Scripts** tab. A banner
+   says **These scripts came from outside Echolot**.
+2. Read the script and choose **Trust Scripts**. If you send first, Echolot asks, and **Trust and Send** trusts and
+   sends at once.
+3. Send. The script's `pm.test()` results appear in the response's **Tests** tab under **Scripts**.
+
+Scripts run in Echolot's own JavaScript sandbox, not in Node. See [scripts and tests](/docs/requests/scripts-and-tests)
+and the [scripting API](/docs/reference/scripting-api).
+
+## 5. Run it
+
+1. Choose the environment you imported in the page header, such as **Staging**, or **No Environment** for Alpenglow's
+   demo API.
+2. Right-click the collection's folder and choose **Run Folder**. The [Runner](/docs/requests/runner) runs every
+   request with its scripts and checks.
+
+The command-line tool runs a collection without importing it, as Newman does. Scripts run there without asking:
+
+```sh
+echolot run Alpenglow.postman_collection.json --folder catalog --reporter console --reporter junit --out results.xml
+```
+
+`--env-file` takes a Postman environment file, `--folder` a folder's name in lowercase with hyphens (`catalog`,
+`agent-tools`), and `--data users.csv` runs once per row. Secret values come from
+`ECHOLOT_SECRET_<NAME>` environment variables.
+
+## 6. What works differently
+
+- **Everything is a file.** A workspace is a folder of TOML files, one per request, ready for Git. There is no
+  account and no sync service; teams share through Git. See [Git and teams](/docs/workspaces/git-and-teams).
+- **Saving is automatic.** There is no <kbd>⌘</kbd><kbd>S</kbd>; the foot of the sidebar says **All changes saved**.
+- **Secrets never go into files.** A secret variable's value lives in this Mac's Keychain; the file holds only its
+  name.
+- **Checks without code.** The **Tests** tab checks the status, headers, JSON values, the time, a JSON Schema or an
+  OpenAPI spec with no script. See [scripts and tests](/docs/requests/scripts-and-tests).
+- **Captures without code.** Instead of `pm.environment.set("token", …)` in a test script, hover the value in the
+  response and choose **Store in a Variable…**. See [Chain requests](/docs/tutorials/chain-requests).
+- **More than HTTP.** The same workspace holds WebSocket, Socket.IO, MQTT, gRPC and MCP requests, specs, mocks and
+  flows.
+
+## 7. Export back to Postman
+
+1. Choose **File › Export Workspace…**, or right-click a folder and choose **Export Folder…**.
+2. Choose **Postman Collection v2.1**. The sheet says how many requests fit; WebSocket and the other session kinds
+   stay behind. **Insomnia v5** carries WebSocket, Socket.IO and gRPC too, and **Bruno collection** writes a folder of
+   `.bru` files.
+3. Choose whether to **Include environments**, then **Export…**.
+
+Credentials you typed into auth or header fields are written in clear, and the report says how many: move them into
+secret variables first. Secret variables go out by name, without their values. See
+[exporting](/docs/workspaces/exporting).
+
+## Next steps
+
+- [Your first workspace](/docs/tutorials/first-workspace): how a workspace is laid out.
+- [Importing](/docs/get-started/importing): Insomnia, OpenAPI, HAR, cURL, Paw and Bruno too.
+- [Test an API and run it in CI](/docs/tutorials/test-in-ci): replace Newman in your pipeline.

@@ -1,0 +1,117 @@
+---
+title: Scripted routes
+description: Answer a mock's requests in JavaScript before the spec does, with state kept while the mock runs.
+---
+
+A spec documents fixed responses. Sometimes a mock needs to do more: remember the order a client just placed, answer
+differently by a query parameter, or fail on the third call. **Routes** are small handlers in JavaScript that answer a
+mock's requests before the spec does. Their variables live as long as the mock runs, so they can keep state between
+requests. Anything a route doesn't handle, the spec answers as usual.
+
+## Writing routes
+
+Open a mock on the Mocks page and scroll to the **Routes** card. Write the routes in the editor, then click **Save
+Routes**. **Revert** goes back to what was saved.
+
+<Shot id="mocks-routes" alt="The Routes card of a mock with JavaScript that keeps orders in a list, and the line Running: POST /orders, GET /orders/:id below the editor" />
+
+This example, for a mock of the Alpenglow spec, keeps the orders a client places and returns them by ID:
+
+```js
+let orders = []
+
+mock.post("/orders", (req, res) => {
+  const order = { id: "ord_" + (orders.length + 1), status: "pending", ...req.json() }
+  orders.push(order)
+  res.status(201).header("Location", "/v1/orders/" + order.id).json(order)
+})
+
+mock.get("/orders/:id", (req, res) => {
+  const order = orders.find(o => o.id === req.params.id)
+  return order ?? res.status(404).json({ error: "no such order" })
+})
+```
+
+After a save, the card lists the routes the script registered (`Running: POST /orders, GET /orders/:id`), or, in
+orange, why the script didn't load. The routes are kept in `mocks/<name>.js` beside the mock's settings, so they go
+into Git with the workspace.
+
+## When routes run
+
+- Routes answer **before the spec**. The first route whose method and path match answers.
+- Paths are **below the spec's server path**: write `/orders`, not `/v1/orders`.
+- A route that sets nothing and returns nothing **passes the request on** to the spec, which answers as usual. Use this
+  to handle only some requests, such as one query parameter.
+- The script runs once when the mock starts. Its top-level variables, and the `state` object, live until the mock
+  stops.
+- **Saving restarts the routes, with fresh state.** Changes to the spec or the mock's settings keep it.
+- Requests are handled one at a time, so state stays consistent.
+
+The mock's [log](/docs/mocks#the-log) marks each request a route handled with the route's name: rest the pointer on it
+for **Answered by this route** or **Passed on by this route to the spec**. What a route writes with `console.log`
+appears in the log under the request.
+
+## The routes API
+
+Register routes with `mock` and a method:
+
+| Function | Matches |
+| --- | --- |
+| `mock.get(path, handler)` | `GET` |
+| `mock.post`, `mock.put`, `mock.patch`, `mock.delete`, `mock.head`, `mock.options` | That method |
+| `mock.any(path, handler)` | Every method |
+
+In a path, `:name` matches one segment and puts it in `req.params.name`; `*` matches the rest.
+
+A handler gets `req` and `res`:
+
+| `req` | What it holds |
+| --- | --- |
+| `req.method` | The method, in capitals. |
+| `req.path` | The path, below the spec's server path. |
+| `req.params` | The path's `:name` segments. |
+| `req.query` | The query parameters, the last value of each name. |
+| `req.headers` | The headers, with lower-case names. |
+| `req.body` | The body as text. |
+| `req.json()` | The body parsed as JSON, or `null` when there is none. |
+
+| `res` | What it does |
+| --- | --- |
+| `res.status(code)` | Sets the status. The default is `200`. |
+| `res.header(name, value)` | Adds a header. |
+| `res.json(value)` | Sends the value as JSON, with `Content-Type: application/json` unless you set one. |
+| `res.send(text)` | Sends text, with `Content-Type: text/plain; charset=utf-8` unless you set one. |
+
+Each `res` function returns `res`, so calls chain: `res.status(201).json(order)`. A value the handler returns is sent as
+JSON, so `return order` is the same as `res.json(order)`. Handlers may be `async`.
+
+`state` (also `mock.state`) is an object kept between requests, for what you'd rather not keep in a variable of your
+own:
+
+```js
+mock.get("/me", (req, res) => {
+  state.calls = (state.calls ?? 0) + 1
+  if (state.calls % 3 === 0) return res.status(503).json({ error: "try again" })
+  // Nothing set: the spec answers this request.
+})
+```
+
+## Limits
+
+Routes run in the same sandbox as [request scripts](/docs/requests/scripts-and-tests), not in Node: no file system and
+no network. Each request may run JavaScript for 2 seconds, and the script has 2 seconds to start. A handler that throws
+answers `500` with the error, which also shows in the log.
+
+## Trusting routes
+
+Routes are code that runs on your Mac, so they follow the same rule as request scripts. Routes you write and save in
+Echolot run. Routes that came from outside, through Git, an import or another app editing the file, don't: the card
+says **These scripts came from outside Echolot**, and the mock doesn't start until you read them and click **Trust
+Scripts**. If they change outside Echolot again, Echolot asks again.
+
+Agents can read a mock's routes but never write them.
+
+## From the command line
+
+`echolot mock -w <workspace> <mock>` runs a workspace's mock with its routes; `--routes <file>` runs routes from
+another file, also with a spec file. See [echolot mock](/docs/cli/mock).

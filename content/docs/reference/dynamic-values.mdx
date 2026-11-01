@@ -1,0 +1,166 @@
+---
+title: Dynamic values
+description: Every dynamic value Echolot has, with its arguments and an example, grouped as the {{ list groups them.
+---
+
+A dynamic value is a function inside `{{ }}`: `{{$uuid}}`, `{{$base64('heidi:alpenglow')}}`,
+`{{$responseJSONPath('auth/sign-in', '$.access_token')}}`. Echolot works it out when the request is sent. Dynamic values
+work wherever variables do: the URL, headers, bodies, auth fields, messages and settings. For how to pick and edit them
+in the app, see [dynamic values](/docs/requests/dynamic-values).
+
+## Writing them
+
+- A dynamic value starts with `$`: `{{$timestamp}}`. Without arguments the parentheses are optional.
+- Arguments go in parentheses, separated by commas: text in quotes (`'…'` or `"…"`), numbers, variable names without
+  quotes, or other dynamic values.
+- Text arguments can hold tokens of their own: `{{$base64('{{email}}:{{password}}')}}`. `}}` inside quotes doesn't end
+  the token.
+- Anything that doesn't parse stays as you wrote it and is reported, so a stray `{{` never breaks a request.
+
+```text
+{{$sha256('{{body}}', 'base64')}}
+{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}
+{{$hmacSha256(apiSecret, $timestamp)}}
+```
+
+## Responses
+
+These read the latest response of another saved request, given by its path (`folder/request`, as in `auth/sign-in`).
+Every one takes an optional last argument that says whether that request is sent first:
+
+| Last argument | Means |
+| --- | --- |
+| `'if-missing'` (default) | Send it first when it has no response yet. |
+| `'fresh'` | Send it first every time; in a run, once per run. |
+| `'latest'` | Never send it; use the latest response. |
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$responseJSONPath` | Request, JSONPath | A value from the response body, chosen with JSONPath. `{{$responseJSONPath('auth/sign-in', '$.access_token')}}` |
+| `$responseKeyPath` | Request, key path | A value chosen with a key path such as `data.items.0.id`. `{{$responseKeyPath('orders/list-orders', 'items.0.id')}}` |
+| `$responseJq` | Request, jq filter | What a jq filter makes of the body; several results come one per line. `{{$responseJq('catalog/list-products', '.items[0].sku')}}` |
+| `$responseXPath` | Request, XPath | A value from an XML response. `{{$responseXPath('echo/xml', '/catalog/product[1]/@sku')}}` |
+| `$responseRegex` | Request, pattern | The first match of a regular expression in the body: its first group if it has one. `{{$responseRegex('echo/html', '<title>(\\w+)</title>')}}` |
+| `$responseHeader` | Request, header | A response header. `{{$responseHeader('orders/create-order', 'Location')}}` |
+| `$responseCookie` | Request, cookie | The value of a cookie the response set. `{{$responseCookie('echo/set-cookie', 'flavour')}}` |
+| `$responseStatus` | Request | The status code. `{{$responseStatus('auth/sign-in')}}` |
+| `$responseBody` | Request | The whole body, as text. `{{$responseBody('auth/who-am-i')}}` |
+| `$responseBodyLength` | Request | The body's size in bytes. `{{$responseBodyLength('catalog/export')}}` |
+| `$response` | Request, query | Any of the above by the query's form: a JSONPath (`$.token`), an XPath (`/a/b`, or `xpath:…`), `regex:…`, `jq:…`, `keypath:…`, `header:Name` or `cookie:Name`. `{{$response('auth/sign-in', 'header:Content-Type')}}` |
+
+For example, **Who am I** could take its token straight from **Sign in**, sending it first if needed:
+
+```text
+Authorization: Bearer {{$responseJSONPath('auth/sign-in', '$.access_token')}}
+```
+
+A request that reads another one's response in a circle is refused with the circle named.
+[Response captures](/docs/requests/captures) are the other way to carry values between requests.
+
+## Requests
+
+These read a request as it would be sent, resolved. The first argument is a saved request's path, or empty (`''`) for
+the request being sent.
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$requestURL` | Request | Its URL, resolved. `{{$requestURL('')}}` |
+| `$requestMethod` | Request | Its method. `{{$requestMethod('')}}` |
+| `$requestHeader` | Request, header | A header, resolved, including what its auth adds. `{{$requestHeader('', 'Content-Type')}}` |
+| `$requestQuery` | Request, parameter | A query parameter of its URL, decoded. `{{$requestQuery('', 'page')}}` |
+| `$requestBody` | Request | Its body, resolved, as text. `{{$requestBody('')}}` |
+| `$requestJSONPath` | Request, JSONPath | A value from its JSON body. `{{$requestJSONPath('orders/create-order', '$.lines[0].sku')}}` |
+| `$requestJq` | Request, jq filter | What a jq filter makes of its JSON body. `{{$requestJq('', '.lines[0].quantity')}}` |
+| `$requestVariable` | Request, variable | A variable as that request sees it. `{{$requestVariable('auth/sign-in', 'email')}}` |
+
+Signing a request with what it sends is the usual use:
+
+```text
+X-Signature: {{$hmacSha256(apiSecret, $requestBody(''))}}
+```
+
+## Encoding
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$base64` | Text | The text as Base64. `{{$base64('heidi:alpenglow')}}` |
+| `$base64Decode` | Base64 | Base64 or Base64URL decoded to text. `{{$base64Decode('aGVpZGk=')}}` |
+| `$base64Url` | Text | The text as Base64URL, without padding. `{{$base64Url('{"alg":"none"}')}}` |
+| `$urlEncode` | Text | The text percent-encoded for a URL component. `{{$urlEncode('ultralight tent')}}` |
+| `$urlDecode` | Text | Percent-encoded text decoded; `+` stays `+`. `{{$urlDecode('ultralight%20tent')}}` |
+| `$hex` | Text | The text's UTF-8 bytes in hex. `{{$hex('Grüezi')}}` |
+| `$hexDecode` | Hex | Hex decoded to text. `{{$hexDecode('6869')}}` |
+| `$jsonEscape` | Text | The text escaped to go inside a JSON string, without the quotes. `{{$jsonEscape(note)}}` |
+| `$newline` | none | A line feed (`\n`). |
+| `$cr` | none | A carriage return (`\r`). |
+| `$crlf` | none | A carriage return and line feed (`\r\n`). |
+| `$tab` | none | A tab. |
+| `$unescape` | Sequence | Text with escape sequences turned into characters: `\n`, `\r`, `\t`, `\0`, `\\`, `\xHH`, `\uHHHH`. `{{$unescape('café')}}` |
+| `$basicAuth` | User, password | An `Authorization` value for HTTP Basic: `Basic ` and Base64 of `user:password`. `{{$basicAuth(email, password)}}` |
+| `$jwt` | Payload, secret, algorithm (optional) | A JWT of the JSON payload, signed with the secret: `HS256` unless you choose `HS384` or `HS512`. `{{$jwt('{"sub": "heidi"}', jwtSecret)}}` |
+
+## Hashes and signatures
+
+Each hash takes the text and, optionally, the output: `'hex'` (the default), `'base64'` or `'base64url'`. Each HMAC takes
+the key, the message and, optionally, the output.
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$md5` | Text, output | The MD5 of the text. `{{$md5('alpenglow')}}` |
+| `$sha1` | Text, output | The SHA-1. `{{$sha1('alpenglow')}}` |
+| `$sha224` | Text, output | The SHA-224. |
+| `$sha256` | Text, output | The SHA-256. `{{$sha256($requestBody(''), 'base64')}}` |
+| `$sha384` | Text, output | The SHA-384. |
+| `$sha512` | Text, output | The SHA-512. |
+| `$hmacMd5` | Key, message, output | The HMAC-MD5 of the message with the key. |
+| `$hmacSha1` | Key, message, output | The HMAC-SHA1. |
+| `$hmacSha224` | Key, message, output | The HMAC-SHA224. |
+| `$hmacSha256` | Key, message, output | The HMAC-SHA256. `{{$hmacSha256(apiSecret, $timestamp)}}` |
+| `$hmacSha384` | Key, message, output | The HMAC-SHA384. |
+| `$hmacSha512` | Key, message, output | The HMAC-SHA512. |
+
+## Time
+
+All of these are the moment the request is sent.
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$timestamp` | none | Unix time in seconds: `1793525000`. |
+| `$timestampMs` | none | Unix time in milliseconds: `1793525000123`. |
+| `$isoTimestamp` | none | ISO 8601 in UTC, with milliseconds: `2026-11-01T09:30:00.123Z`. |
+| `$httpDate` | none | An HTTP date, for `Date` or `If-Modified-Since`: `Sun, 01 Nov 2026 09:30:00 GMT`. |
+| `$date` | Format, offset in seconds (optional), time zone (optional) | The time in a Unicode date pattern, moved by the offset, in the time zone (UTC unless given). `{{$date('yyyy-MM-dd')}}`, `{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
+
+## Random
+
+A new value on every send.
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$uuid` | none | A random UUID, in lower case. Also `$guid` and `$randomUUID`. `{{$uuid}}` |
+| `$randomInt` | Minimum, maximum | A whole number between the two, both included. One argument is the maximum, from 0; none is 0 to 1000. `{{$randomInt(1, 5)}}` |
+| `$randomString` | Length, characters (optional) | Random characters, 16 unless given (up to 4096): letters and digits, or the characters given. `{{$randomString(8, 'ABCDEF0123456789')}}` |
+| `$randomHex` | Bytes | Random bytes in hex, 16 unless given (up to 2048); twice as many digits. `{{$randomHex(8)}}` |
+
+Alpenglow's **Create order** sends `Idempotency-Key: {{$uuid}}`, so every order it places is a new one.
+
+## Text
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$lowercase` | Text | The text in lower case. `{{$lowercase(email)}}` |
+| `$uppercase` | Text | The text in upper case. `{{$uppercase(productId)}}` |
+| `$trim` | Text | The text without spaces and line breaks at either end. `{{$trim($responseBody('auth/who-am-i'))}}` |
+
+## Files and the system
+
+| Value | Arguments | What it gives |
+| --- | --- | --- |
+| `$file` | Path | The contents of a file: a path relative to the workspace, or an absolute one. `{{$file('fixtures/order.json')}}` |
+| `$env` | Name | An environment variable of the Echolot process. `{{$env('HOME')}}` |
+
+## Dynamic values and agents
+
+When an AI agent sends a request (through Echolot's MCP server or the Assistant), `$env` gives nothing, and `$file` reads
+only files inside the workspace. Secret values never reach the agent. See
+[agents](/docs/ai/agents).

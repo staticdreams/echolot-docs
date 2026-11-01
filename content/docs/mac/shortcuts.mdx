@@ -1,0 +1,89 @@
+---
+title: Shortcuts
+description: Run saved requests and folders from the Shortcuts app, Siri and automations, and use the outcome in the next action.
+---
+
+Echolot adds two actions to the Shortcuts app: **Run Request** and **Run Folder**. They send saved requests with
+their checks, as the [Runner](/docs/requests/runner) does, and hand the outcome to the next action. Use them to check
+an API every morning, from a keyboard shortcut, or by asking Siri. Echolot doesn't come to the front while they run.
+
+<Shot id="mac-shortcuts-action" alt="The Shortcuts app with Echolot's Run Folder action set to run the Catalog folder of the Alpenglow workspace, followed by an If action on its Passed value" />
+
+## The actions
+
+Find them in the Shortcuts app by searching for Echolot, under **Requests**.
+
+### Run Request
+
+Sends one saved request of a workspace with its checks, and returns the outcome. In the editor it reads **Run
+*Request* in *Workspace***.
+
+| Parameter | What to choose |
+| --- | --- |
+| **Workspace** | A workspace open in Echolot, or one of your recent workspaces. |
+| **Request** | A saved request of that workspace. Each shows its method and path. |
+| **Environment** | Optional. The environment's name as the workspace shows it, or its slug. When empty, the environment the workspace uses in its window, or used last. |
+
+### Run Folder
+
+Runs every request of a folder, in order with their checks, and returns the outcome. In the editor it reads **Run
+*Folder* in *Workspace***.
+
+| Parameter | What to choose |
+| --- | --- |
+| **Workspace** | A workspace open in Echolot, or one of your recent workspaces. |
+| **Folder** | A folder of that workspace, or **Whole workspace (*name*)** for every request. |
+| **Environment** | Optional, as for Run Request. |
+
+Requests run with their scripts and checks, and their responses go into the workspace's
+[history](/docs/workspaces/history), as from the workspace's window. The workspace doesn't need to be open.
+
+<Edition only="appstore">
+  The actions work the same in the App Store edition. A workspace that isn't open is reached through the access you
+  gave Echolot when you opened it.
+</Edition>
+
+## The outcome
+
+Both actions return a **Run Outcome** for the next action, and show its summary when the shortcut finishes.
+
+| Property | What it holds |
+| --- | --- |
+| **Passed** | Whether every request ran without an error and every check passed (skipped checks don't count against it). |
+| **Requests** | How many requests ran. |
+| **Failed Requests** | How many failed. |
+| **Status** | The status code, for a single request. |
+| **Duration (ms)** | The time in milliseconds, for a single request. |
+| **Summary** | One line, such as `GET List products: 200 in 182 ms, 3 of 3 checks passed` for one request, or `2 of 9 requests failed` for a folder. |
+| **Failures** | One line for each failed request: its name and the error or the checks that failed. |
+
+## Protected environments
+
+When the environment is [protected](/docs/workspaces/protected-environments), Shortcuts asks before anything is
+sent, with the environment and what would be sent. Declining ends the action with nothing sent.
+
+## Siri
+
+Echolot's actions are ready for Siri without setting up a shortcut: say "Run a request in Echolot" or "Send a request
+with Echolot" for Run Request, and "Run a folder in Echolot" or "Run the requests of a folder in Echolot" for Run
+Folder.
+
+## Example: check the shop every morning
+
+With the Alpenglow example workspace, which works against the [demo API](/docs/tutorials/demo-api):
+
+<Steps>
+<Step>
+In the Shortcuts app, make a new shortcut and add **Run Folder**. Choose the Alpenglow workspace and the **Catalog**
+folder.
+</Step>
+<Step>
+Add **If**, with the **Run Outcome**'s **Passed** as the input and **is false** as the condition.
+</Step>
+<Step>
+Inside the If, add **Show Notification** with the outcome's **Summary**, or **Failures** for every failed request.
+</Step>
+<Step>
+In **Automation**, make a personal automation that runs the shortcut every morning.
+</Step>
+</Steps>

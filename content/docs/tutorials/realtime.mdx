@@ -1,0 +1,115 @@
+---
+title: Realtime
+description: Watch live order events over WebSocket and Server-Sent Events from the demo API, then chat over Socket.IO and read sensors over MQTT on servers on your Mac.
+---
+
+Realtime APIs keep a connection open and send messages both ways. In this tutorial you watch the demo shop's order
+feed over a WebSocket and as Server-Sent Events, then talk to the shop's support desk over Socket.IO and read
+warehouse temperatures over MQTT, side by side.
+
+- **Time:** 20 minutes.
+- **You need:** the [Alpenglow workspace](/docs/tutorials#the-alpenglow-workspace) with **No Environment** chosen. For
+  Socket.IO and MQTT, the [local servers](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt): run
+  `bun run realtime` in `examples/servers`.
+- **You learn:** connecting, saved messages, the live log, event streams, namespaces and acknowledgements,
+  subscriptions, QoS and retained messages.
+
+## 1. WebSocket: the order feed
+
+1. Open **Realtime › Order updates**. Its URL is `{{wsURL}}/orders`, which is `wss://demo.echolot.dev/v1/orders`.
+2. Choose **Connect** (<kbd>⌘</kbd><kbd>R</kbd>). The button becomes **Disconnect**.
+3. The response's **Messages** tab fills: a link icon for the open connection, the server's `hello`, then an order
+   event every 1.5 seconds, such as `{"event": "order.created", "order": "ord_9Tq3Vb", …}`. Sent messages have an
+   arrow pointing up, received ones a green arrow pointing down. **More** unfolds a long JSON message.
+4. In the request's **Messages** tab, the saved message **Subscribe** holds `{"op":"subscribe","channel":"orders"}`.
+   Choose its **Send**. The server answers `{"op": "subscribed", "channel": "orders"}`.
+5. Type into the composer at the bottom: `{"id": 42, "text": "hello"}` and choose **Send**
+   (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>). The server acknowledges it with `{"op": "ack", "id": 42}`. Choose **+** to
+   save the message for later.
+6. Narrow the log with **All**, **Sent** and **Received**, or type `shipped` into **Filter messages**.
+7. Choose **Disconnect**. The log ends with **Closed by Echolot**.
+
+The demo closes a session after three minutes (`1000 Demo sessions last 3 minutes`), and closes it with `1008` if
+you send more than 20 messages in ten seconds. Saved messages with **Send in runs** ticked are sent in order, after
+connecting, when the request runs in the Runner or the command-line tool. More in
+[WebSocket and SSE](/docs/requests/websocket-and-sse).
+
+<Shot id="tutorials-realtime-websocket" alt="Order updates connected: the saved Subscribe and Ping messages on the left, and the live log of sent and received messages on the right" />
+
+## 2. Server-Sent Events: the same feed as a stream
+
+1. Open **Realtime › Order events**. It is a plain HTTP request, `GET {{baseURL}}/orders/events`, with the header
+   `Accept: text/event-stream`.
+2. Choose **Send**. The response opens on its **Events** tab: **Listening… Stop ends it.**
+3. An event arrives every second, each in its own card titled with its number and name, such as **1. order.created**,
+   with **id 1** under it. After 20 events the server sends `end` and closes the stream.
+4. To stop earlier, choose **Cancel** (<kbd>⌘</kbd><kbd>.</kbd>).
+
+To resume after an event, add the header `Last-Event-ID` with the last id you saw, say `15`, and send again. The
+server sends 16 to 20. Typing `Last-Event-ID` in the **Headers** tab offers `{{lastEventId}}` as its value; give that
+variable a value, or type the number.
+
+## 3. Socket.IO: the support desk
+
+Start the local servers first (`bun run realtime`). They print
+`Alpenglow realtime: Socket.IO on http://localhost:3001/support, MQTT on mqtt://localhost:1883`.
+
+1. Open **Realtime › Support chat**. Its URL is `{{realtimeURL}}`, `http://localhost:3001`. In its **Events** tab,
+   **Namespace** is `/support`; the URL bar's method menu sets the **Server** version (Socket.IO 4).
+2. Choose **Connect**. Three events arrive: `welcome` with the agent's name and queue, `typing`, then `message`:
+   "Grüezi! How can I help with your order?"
+3. The saved event **Say hello** emits `message` with `{"text":"Grüezi!"}`. Tick its **Ack** box, so the server is
+   asked to acknowledge it, and choose **Emit**.
+4. The log shows the acknowledgement, `{"id": "msg_31", "delivered": true}`, and a moment later Heidi's answer:
+   "Your Matterhorn 2P ships tomorrow from Bern."
+5. To emit an event you haven't saved, type its name in the composer's **event** field and its arguments as JSON,
+   and choose **Emit** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>).
+
+Each log row names the namespace, the event, and the acknowledgement's number when there is one. **Filter events**
+narrows the log. A server that asks you to acknowledge one of its events gets an **Acknowledge** button on that row.
+An auth payload, such as `{"token": "{{token}}"}`, goes in the **Auth** field of the **Events** tab. See
+[Socket.IO](/docs/requests/socket-io).
+
+## 4. MQTT: warehouse sensors
+
+The same local servers run an MQTT broker on `localhost:1883` that publishes three warehouses' temperatures every 1.5
+seconds.
+
+1. Open **Realtime › Warehouse sensors**. Its URL is `mqtt://{{mqttHost}}`, and the method menu's **Protocol** is
+   **MQTT 3.1.1**.
+2. Its **Subscribe** tab has the subscription `warehouses/+/temperature` at **QoS 1**, with **Subscribe on
+   connecting** ticked. `+` matches one level of the topic.
+3. Choose **Connect**. Messages arrive for `warehouses/zurich/temperature`, `warehouses/bern/temperature` and
+   `warehouses/chur/temperature`, such as `{"celsius": 6.1, "humidity": 44, …}`.
+4. Use the **All Topics** menu to show one warehouse only.
+5. In the **Subscribe** composer, type `warehouses/status`, leave **QoS 0**, and choose **Subscribe**. One message
+   arrives at once, `{"online": 3}`, marked retained: the broker kept it for anyone who subscribes later.
+6. In the **Publish** tab, set the topic to `warehouses/bern/door`, the payload to `{"open": true}`, and choose
+   **Publish** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>). Subscribe to `warehouses/#` to see it come back: `#` matches
+   every level below.
+
+The **Connection** tab holds the **Client ID**, the clean session setting, **Keep alive** and a will. A broker's user
+name and password go in the **Auth** tab as Basic auth; keep the password in a secret variable. The
+command-line tool speaks MQTT too:
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 5
+```
+
+See [MQTT](/docs/requests/mqtt) and [`echolot mqtt`](/docs/cli/mqtt).
+
+## 5. Side by side
+
+Each request has its own tab. Keep **Order updates**, **Support chat** and **Warehouse sensors** open in three tabs
+and connect each: every connection stays open while you switch between them. When a session closes, Echolot keeps
+it in History with the whole message log, so you can read it again later (<kbd>⌘</kbd><kbd>Y</kbd>).
+
+The local servers also serve gRPC: run `bun run grpc` and send the requests in **Inventory**. **Watch stock** streams
+a dozen stock levels and ends. See [gRPC](/docs/requests/grpc).
+
+## Next steps
+
+- [WebSocket and SSE](/docs/requests/websocket-and-sse): subprotocols, binary messages, checks on sessions.
+- [Socket.IO](/docs/requests/socket-io) and [MQTT](/docs/requests/mqtt): every setting.
+- [Test an API and run it in CI](/docs/tutorials/test-in-ci): sessions run in the Runner too, sending their saved
+  messages.

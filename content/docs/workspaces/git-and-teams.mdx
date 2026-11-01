@@ -1,0 +1,106 @@
+---
+title: Git and teams
+description: Share a workspace through Git, review changes as small diffs, and keep secrets and personal settings out of the repository.
+---
+
+A workspace is a folder of text files written to be kept in Git: one file per request, the same bytes for the same
+content, nothing private inside. Commit it, push it, and your team works from the same requests, each with their own
+credentials.
+
+## Files made for diffs
+
+- **One file per request.** Changing a request changes one file. Adding a request adds one file.
+- **Deterministic.** Echolot writes the same content the same way every time: the same keys in the same order, so
+  saving without a change changes nothing, and a diff shows only what you changed.
+- **Readable.** Requests are TOML; bodies sit beside their request as their own files (`create-order.body.json`), and
+  GraphQL queries as `.graphql`, so they diff as JSON and GraphQL rather than as escaped strings.
+- **Order in the folder file.** The order of items in a folder is a list in its `_folder.toml`, not part of the file
+  names, so reordering changes one line.
+- **Your comments stay.** Comments you write in a file by hand (`# why this header`) are kept when Echolot saves it:
+  the comment block at the top, comments above a key or table, and comments after a value. A comment on a key that no
+  longer exists is dropped.
+
+Renaming a request renames its file, and the body and script files beside it. Renaming an environment keeps its file
+name.
+
+## What to commit
+
+Commit the whole workspace folder. There is nothing in it to ignore: Echolot never writes secret values, history,
+response bodies or your personal settings into it.
+
+| In the workspace (shared) | On your Mac only (not shared) |
+| --- | --- |
+| Requests, folders, their order, docs, auth and scripts | Secret values, in the Keychain |
+| Variables and their non-secret values | Global variables |
+| Environments, and which ones are protected | Which environment is active |
+| MCP servers, specs, mocks, flows | History and response bodies |
+| The workspace's agent rules, proxy and certificates | Pane layouts and other app settings |
+| Assistant conversations you chose to share | Which scripts and agent rules you trusted |
+
+Keep the workspace ID in `workspace.toml` as it is. Echolot finds each person's secret values by it.
+
+<Callout type="warn">
+  A value typed straight into a field, not through a secret variable, is written into the file as it is. Echolot
+  warns under auth and proxy fields that hold one (**Saved as plain text in the workspace file.**); click **Move to
+  Keychain** before you commit. See [secrets](/docs/workspaces/secrets).
+</Callout>
+
+## Start sharing
+
+1. Put the workspace in a Git repository: make the repository in the `.echolot` folder, or keep the workspace as a
+   folder inside your project's repository. Any folder with a `workspace.toml` opens in Echolot.
+2. Commit and push.
+3. Teammates clone the repository and open the workspace with **File › Open Workspace…**.
+4. Each teammate sets the secret values once on their Mac: the [Environments](/docs/workspaces/environments) page shows
+   **Not set on this Mac** for each one.
+
+The command-line tool reads the same files, so CI runs the requests you commit. See
+[Test in CI](/docs/tutorials/test-in-ci).
+
+## Changes from Git, editors and agents
+
+Echolot watches the workspace folder. When files change outside Echolot (a `git pull`, a branch switch, an editor,
+an agent), the window reloads them: the sidebar, open requests, environments, specs, mocks and flows follow at once.
+
+An open request with no unsaved edits takes the new version without a question.
+
+When the request has unsaved edits in its tab, Echolot doesn't pick a side. A bar appears over the request: **This
+request changed on disk**, "Another app or Git changed the file while you had unsaved edits here."
+
+- **Keep Mine** keeps the edits in the tab and writes them over the file.
+- **Use Theirs** drops the edits in the tab and loads the file from disk.
+
+Until you choose, Echolot doesn't save that request, so the change on disk stays as it is.
+
+### Closing a tab during a conflict
+
+If you close the tab before choosing, Echolot asks: **“Create order” changed on disk while you had unsaved edits.**
+"Closing the tab keeps only one version." Choose **Keep Mine**, **Use Theirs**, or **Cancel** to keep the tab open.
+Closing the window or quitting while a conflict waits tells you the edit can't be saved, and asks before it lets it
+go, so neither version is lost without your say.
+
+### Merge conflicts
+
+Resolve Git merge conflicts in your editor or Git tool, as with any text file. A file that still holds conflict
+markers isn't valid TOML. While a file can't be read, an open window keeps what it read before, and opening the
+workspace fails with a message in the welcome window that names the file: “…” could not be read. Fix the file and
+the workspace reads again.
+
+## Scripts and agent rules from Git
+
+Scripts can send requests and read the workspace's variables, so Echolot runs a script only once you trust it on your
+Mac. Scripts you write in Echolot are trusted. A script that arrives through Git, an import or another editor, or
+whose code changed there, shows **These scripts came from outside Echolot** until you read it and click **Trust
+Scripts**. See [scripts and tests](/docs/requests/scripts-and-tests).
+
+The same goes for the workspace's agent rules: rules from the file that tighten what agents may do apply at once;
+rules that loosen it count only after you trust that version on your Mac. See [agents](/docs/ai/agents).
+
+## Sharing without Git
+
+To hand a workspace to someone who doesn't use Git, [export](/docs/workspaces/exporting) it as an **Echolot
+workspace**. The copy gets a new ID, so its secrets are separate from yours, and secret values are never written into
+it.
+
+Copying a workspace folder in the Finder keeps its ID. On the same Mac, the copy and the original read the same secret
+values from the Keychain.

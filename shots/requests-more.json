@@ -1,0 +1,104 @@
+[
+  {
+    "id": "requests-tests-tab",
+    "page": "requests/scripts-and-tests",
+    "scene": "Alpenglow, no environment. Open Catalog › List products and send it. Request editor on the Tests tab: the four checks (status equals 200, JSON value $.items.length is greater than 0, header Content-Type contains json, response time is less than 1000), each with a green tick, and '4 passed' at the bottom.",
+    "frame": "the request editor's Tests tab",
+    "crop": [
+      304,
+      100,
+      1008,
+      345
+    ]
+  },
+  {
+    "id": "requests-tests-generate",
+    "page": "requests/scripts-and-tests",
+    "scene": "Alpenglow, no environment. Open Catalog › Categories and send it. Tests tab › Generate from Response…. The sheet 'Generate Tests from Response' shows the Content-Type and the JSON Schema ticked (the status check is in the request already, so it is not offered), and value checks and the response time unticked.",
+    "frame": "the Generate Tests from Response sheet",
+    "crop": [
+      468,
+      210,
+      576,
+      476
+    ]
+  },
+  {
+    "id": "requests-scripts-tab",
+    "page": "requests/scripts-and-tests",
+    "scene": "Alpenglow, no environment. Open Catalog › List products, Scripts tab, choose Tests at the top and type: pm.test(\"Status code is 200\", () => { pm.response.to.have.status(200); }); pm.test(\"Returns tents\", () => { pm.expect(pm.response.json().items.length).to.be.above(0); }); Send it (trust is automatic for scripts typed in Echolot once saved). Open the Snippets menu. Response pane on Tests, showing Checks and Scripts sections. Remove the script afterwards: Alpenglow has none.",
+    "frame": "window"
+  },
+  {
+    "id": "requests-runner-results",
+    "page": "requests/runner",
+    "scene": "Alpenglow, no environment. Right-click the Catalog folder › Run Folder (the GraphQL request included). Wait for the run to finish. The Runner page with the Run card on the left, the counts (Requests, Passed, Failed, Failing checks, Duration) and the Results list with status codes and times. Avoid running the whole workspace: the Realtime and Inventory folders need local servers, and the demo API is rate limited.",
+    "frame": "window"
+  },
+  {
+    "id": "requests-graphql-query",
+    "page": "requests/graphql",
+    "scene": "Alpenglow, no environment. Open Catalog › Search products and send it. Request editor on Query: the SearchProducts query, the Operation field reading SearchProducts, the schema menu with shop.graphql and its type count. Response pane on Body with the JSON (search.totalCount, nodes).",
+    "frame": "window"
+  },
+  {
+    "id": "requests-graphql-builder",
+    "page": "requests/graphql",
+    "scene": "Alpenglow, no environment. Open Catalog › Search products. Response pane › Schema tab, switch to Build, Operation query. Expand search and nodes so the ticked fields (sku, name, price…) show beside the query in the editor.",
+    "frame": "window"
+  },
+  {
+    "id": "requests-grpc-message",
+    "page": "requests/grpc",
+    "scene": "Alpenglow, no environment, with the local gRPC server running on localhost:50051 (examples/servers, bun run grpc). Open Inventory › Reserve stock, Message tab: specs/inventory.proto picked, choose Load, service alpenglow.inventory.v1.Inventory, method Reserve, 'unary' beside it, the JSON message. Send it: the response summary shows OK and '1 message'; Body shows the reservation JSON.",
+    "frame": "window"
+  },
+  {
+    "id": "requests-websocket-log",
+    "page": "requests/websocket-and-sse",
+    "scene": "Alpenglow, no environment. Open Realtime › Order updates, Connect, then choose Send on the saved Subscribe message and on Ping. Wait for three or four order events. Request editor on Messages (Subprotocols empty, the two saved messages); response pane on Messages with the sent messages and received events, one JSON event expanded with More.",
+    "frame": "window"
+  },
+  {
+    "id": "requests-sse-events",
+    "page": "requests/websocket-and-sse",
+    "scene": "Alpenglow, no environment. Open Realtime › Order events and send it. After five or six events, response pane on the Events tab: numbered events with their event name and id, the count at the top and 'Listening… Stop ends it.'.",
+    "frame": "the response pane",
+    "crop": [
+      928,
+      178,
+      584,
+      710
+    ]
+  },
+  {
+    "id": "requests-socketio-events",
+    "page": "requests/socket-io",
+    "scene": "Alpenglow, no environment, with the local Socket.IO server running on localhost:3001 (examples/servers, bun run realtime). Open Realtime › Support chat, Connect, then Emit the saved 'Say hello' event. Request editor on Events (Namespace /support, the saved event); response pane on Messages with the emitted event and the server's reply.",
+    "frame": "window"
+  },
+  {
+    "id": "requests-mqtt-log",
+    "page": "requests/mqtt",
+    "scene": "Alpenglow, no environment, with the local MQTT broker running on localhost:1883 (examples/servers, bun run realtime). Open Realtime › Warehouse sensors, Connect. Request editor on Subscribe with warehouses/+/temperature at QoS 1 and 'Subscribe on connecting' ticked; response pane on Messages with a few temperature messages and their topics.",
+    "frame": "window"
+  },
+  {
+    "id": "requests-mcp-call",
+    "page": "requests/mcp-requests",
+    "scene": "Alpenglow, no environment. Check Alpenglow MCP on the MCP Servers page once, so the tool's fields are known. Open Agent tools › search_catalog and choose Call. Request editor on Arguments (the JSON, the tool's description above, 'Fields: query*, limit' and Fill from Schema below); response pane on Body with the result and the green Result badge.",
+    "frame": "window"
+  },
+  {
+    "id": "requests-mcp-call-panel",
+    "page": "requests/mcp-requests",
+    "scene": "Alpenglow, no environment. MCP Servers page, Alpenglow MCP, choose Check. In the Tools card click search_catalog. In the sheet, Form: query 'ultralight tent', limit 3; choose Call. The sheet with the form, the Result badge, the time and the JSON result, and Save as Request at the bottom.",
+    "frame": "the call sheet",
+    "crop": [
+      440,
+      146,
+      632,
+      602
+    ]
+  }
+]

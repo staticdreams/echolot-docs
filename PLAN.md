@@ -185,3 +185,17 @@ Help › Echolot Documentation (⌘?) opens `/docs`; Help › Help for This Page
 - Public repository `staticdreams/echolot-docs`.
 - A public demo API, rate limited.
 - The app's Help menu leads to the docs, and to the page about the current screen.
+
+## 10. Status (Nov 1, 2026)
+
+All 82 pages of section 2 are written, checked against the app's code and the CLI. Screenshots: 78 of 92 taken from the real app
+(a Debug build, the Alpenglow workspace, light and dark). How they are made:
+
+1. Launch a Debug build: `open -n -a <Echolot.app> --args -open <Alpenglow.echolot> -page request -greetingName Heidi
+   -ApplePersistenceIgnoreState YES -windowFrame "40 60 1320 852"` (the last three keep personal state out).
+2. Drive the scene with Orca (`source tools/orca.zsh`: `openreq`, `sendreq`, `axmenu`, `pick`, `look`…), as each
+   entry of `shots/*.json` describes.
+3. `tools/cap.sh <id>` captures light and dark (it switches the Debug build's appearance with
+   `.work/set-appearance`, from `tools/src/set-appearance.swift`); `bun tools/shots.ts <id>` crops and writes WebP.
+
+Not taken yet (the pages skip them until they are): ai-assistant-approval, ai-agents-workspace-rules, mac-quick-send-panel, mac-shortcuts-action, mac-quick-look, cli-settings-command-line-tool, get-started-import-report, mcp-try-with-a-model, requests-http-token-editor, requests-scripts-tab, tutorials-agents-approval, tutorials-postman-import-report, workspaces-history-compare, workspaces-export-report.

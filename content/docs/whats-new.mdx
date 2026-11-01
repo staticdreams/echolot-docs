@@ -1,0 +1,116 @@
+---
+title: What's new
+description: The release notes of every Echolot release, newest first.
+---
+
+These are the notes Echolot shows in **Help › What's New in Echolot**, newest first. Every release and its downloads
+are also on the [releases page](https://github.com/staticdreams/echolot-public/releases).
+
+## 0.5.0
+
+*October 31, 2026 · build 7*
+
+**Improvements**
+
+- Protected environments ask before more things: MCP calls, checks and watches, Get Token, schema fetches, gRPC
+  reflection and messages sent on an open session after you switch environments.
+- A proxy password or certificate passphrase kept as plain text now carries a warning, with Move to Keychain beside
+  it; clearing one request's history asks first.
+- Typing `{{` offers the request's variables again in the URL bar, and the variables a folder's or workspace's auth
+  resolves with in their settings.
+- The JSON tree opens large responses sooner, and the flow canvas pans more smoothly.
+
+**Fixes**
+
+- Secrets stay put: API key headers and headers holding a secret no longer follow a redirect to another origin,
+  history no longer keeps Hawk, EdgeGrid, NTLM, proxy or certificate secrets, and with encrypted storage a response's
+  text stays out of the search index.
+- Agents read history with credentials masked, and a search match that touches a secret is neither counted nor shown;
+  an agent's limits also hold inside the flows it runs.
+- NTLM sign-in works over HTTP/1.1 without another request borrowing its connection, and a server that insists on
+  HTTP/1.1 gets it. HTTP/3 tries every address of a host at once, as TCP does.
+- Responses that expand absurdly (past 100 to 1 beyond 256 MB), and WebSocket and Socket.IO messages built from huge
+  fragments, are cut off instead of filling memory.
+- Export never writes over, into or around the workspace it comes from, sends what it replaces to the Trash, and says
+  how many credentials were written in clear.
+- Edits are no longer lost: folder and workspace settings, mock routes and a tab closing just before you quit are all
+  written, and a failed save keeps your text.
+- Closing a window stops its runs and sends. Runs with iterations side by side keep their own `$response` values, and
+  data files of up to 100 MB load without freezing the window.
+- A flow whose request script fails now takes the failure path, and background services follow a choice of no
+  environment.
+
+## 0.4.0
+
+*October 30, 2026 · build 6*
+
+**New**
+
+- Export a folder or the whole workspace (**File › Export Workspace…**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd>, or
+  **Export Folder…** on a folder) as an Echolot workspace, a Postman v2.1 collection, an Insomnia v5 file or a Bruno
+  collection; each format shows which requests it carries, and secret values stay in the Keychain.
+- `echolot export` writes the same formats from the command line.
+- **Help › Report a Bug** and **Request a Feature** open a new GitHub issue with your Echolot and macOS versions filled
+  in.
+
+**Improvements**
+
+- Switching between requests is faster, and the page no longer shifts as it settles.
+
+**Fixes**
+
+- Dragging in the sidebar puts requests into folders again; a gap opens where they will land, and resting on a closed
+  folder opens it.
+
+## 0.3.1
+
+*October 30, 2026 · build 4*
+
+**New**
+
+- Each kind of request keeps its own layout (side by side or stacked) and where you left the divider, saved on this
+  Mac; **View › Panes › Reset Pane Sizes** starts over.
+- <kbd>⌘</kbd><kbd>P</kbd> switches to a recent workspace from a floating list, like the command palette.
+- **File › Open Recent** lists your recent workspaces.
+
+**Improvements**
+
+- **Echolot › About Echolot**, **Help › Echolot Website** and **Settings › About** link to echolot.dev.
+
+**Fixes**
+
+- **Open Workspace…** can choose `.echolot` workspaces again; they were greyed out.
+
+## 0.3.0
+
+*October 30, 2026 · build 3*
+
+**New**
+
+- Socket.IO and MQTT requests: namespaces, events and acknowledgements; MQTT 3.1.1 and 5.0 with QoS 0–2, over TCP,
+  TLS or WebSocket.
+- HTTP/3 on macOS 27: pick it per request, or let Automatic switch when a server offers it.
+- Install the `echolot` command-line tool on your PATH from **Settings › General**.
+- This is a public beta: each build expires 30 days after release, and Echolot updates itself before then.
+
+**Improvements**
+
+- Protected environments ask before every send, run and connection you start, not only before agents'.
+- Imported credentials go to the Keychain instead of the request files, and the import report names them.
+
+## 0.2.0
+
+*October 28, 2026 · build 2*
+
+**New**
+
+- Send HTTP/1.1, HTTP/2, GraphQL, WebSocket, Server-Sent Events and gRPC requests, and see exactly what went over the
+  wire: raw bytes, every redirect hop and a full timing breakdown.
+- Workspaces are folders of readable TOML files you can keep in Git; secrets stay in the Keychain.
+- Import from Postman, Insomnia, Bruno, Paw, OpenAPI, HAR and cURL, check responses with tests, and run whole folders
+  in the Runner or with the `echolot` command-line tool.
+- Design OpenAPI specs, serve them as local mocks, and chain requests into flows on a canvas.
+- Inspect and call MCP servers, and let AI agents work in your workspace through Echolot's own MCP server.
+- The Assistant, built in: it sends, tests and fixes requests with your own model keys, and asks before it changes
+  anything.
+- Echolot updates itself (**Echolot › Check for Updates…**), and **Help › What's New in Echolot** shows what changed.

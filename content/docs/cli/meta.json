@@ -1,0 +1,19 @@
+{
+  "title": "Command line and CI",
+  "pages": [
+    "index",
+    "send",
+    "run",
+    "validate",
+    "import-export",
+    "mcp",
+    "spec",
+    "graphql",
+    "grpc",
+    "mqtt",
+    "mock",
+    "flow",
+    "agent",
+    "ci"
+  ]
+}

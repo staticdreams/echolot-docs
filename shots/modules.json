@@ -1,0 +1,110 @@
+[
+  {
+    "id": "mcp-server-detail",
+    "page": "mcp-servers",
+    "scene": "Alpenglow, no environment. Launch with -page mcp -mcpServer alpenglow-mcp (or choose MCP Servers, ⌘2, and click Alpenglow MCP). Wait for the check to finish (green dot in the sidebar). Scroll to the top.",
+    "frame": "window"
+  },
+  {
+    "id": "mcp-add-server",
+    "page": "mcp-servers/adding-servers",
+    "scene": "Alpenglow, MCP Servers page. Click + in the sidebar's Servers header, choose Add MCP Server…. Name: GitHub, Transport: Local command (stdio), Command npx, Arguments -y @modelcontextprotocol/server-github. Cancel afterwards.",
+    "frame": "the Add MCP Server sheet",
+    "crop": [
+      380,
+      146,
+      560,
+      560
+    ]
+  },
+  {
+    "id": "mcp-quality-card",
+    "page": "mcp-servers/tools-and-quality",
+    "scene": "Alpenglow, MCP Servers page, Alpenglow MCP selected and checked. Scroll down to the How a model sees this server card. Leave The list as a provider receives it closed.",
+    "frame": "the How a model sees this server card",
+    "crop": [
+      322,
+      150,
+      1008,
+      350
+    ]
+  },
+  {
+    "id": "mcp-try-with-a-model",
+    "page": "mcp-servers/tools-and-quality",
+    "scene": "Needs a model provider in Settings › Assistant (Ollama with a small model is free; allow the one-time permission). Alpenglow, MCP Servers page, Alpenglow MCP checked. In the Try with a model card type: Is the two-person tent in stock? and click Try. Wait for the answer (a call to search_catalog or get_product).",
+    "frame": "the Try with a model card"
+  },
+  {
+    "id": "specs-page",
+    "page": "specs",
+    "scene": "Alpenglow, no environment. Launch with -page specs -spec alpenglow.yaml (or choose Specs, ⌘3, and click Alpenglow demo shop). Editor switch on Visual. The sidebar shows the outline (Overview, ENDPOINTS, SCHEMAS) under the spec list and inventory.proto under Proto Files.",
+    "frame": "window"
+  },
+  {
+    "id": "specs-problems",
+    "page": "specs",
+    "scene": "Alpenglow, Specs page, alpenglow.yaml open. Switch Editor to Code and break two things so lint reports them: delete the description line of the 200 response of GET /products/{sku} and change one tag of an operation to Shoes. Then click the problems count in the bar above the editor. Undo the edits (⌘Z) after the shot.",
+    "frame": "the Problems popover and the bar above it",
+    "crop": [
+      740,
+      56,
+      580,
+      200
+    ]
+  },
+  {
+    "id": "specs-visual-endpoint",
+    "page": "specs/editing",
+    "scene": "Alpenglow, Specs page, alpenglow.yaml open, Editor on Visual. In the sidebar outline click GET /products, so its card opens in the Endpoints card. Scroll so the endpoint's fields, Parameters, Request Body and Responses are in view.",
+    "frame": "the open GET /products endpoint card",
+    "crop": [
+      460,
+      100,
+      872,
+      668
+    ]
+  },
+  {
+    "id": "specs-from-responses",
+    "page": "specs/specs-from-traffic",
+    "scene": "Alpenglow, no environment. Send every request in the Catalog folder (Run Folder works). Right-click Catalog in the Requests sidebar, choose Document in OpenAPI Spec…. Spec: New Spec, title Catalog, Link on. Click Document and wait for the result. Delete the new spec and unlink the folder afterwards (or use a copy of the workspace).",
+    "frame": "the Document in OpenAPI Spec sheet",
+    "crop": [
+      380,
+      252,
+      560,
+      346
+    ]
+  },
+  {
+    "id": "specs-proto",
+    "page": "specs/proto-files",
+    "scene": "Alpenglow, Specs page. Click inventory.proto under Proto Files in the sidebar. The bar shows No problems; the outline on the right shows the Inventory service with ListWarehouses, WatchStock and Reserve.",
+    "frame": "the page (editor and outline)",
+    "crop": [
+      304,
+      56,
+      1208,
+      700
+    ]
+  },
+  {
+    "id": "mocks-running",
+    "page": "mocks",
+    "scene": "Alpenglow, no environment. Mocks page (⌘4): + › Mock of Alpenglow demo shop. Click Start. In the Responses card, set GET /orders/{id} to its 404. From Terminal run: curl http://127.0.0.1:4010/v1/products, curl http://127.0.0.1:4010/v1/products/TNT-MH-2P, curl http://127.0.0.1:4010/v1/orders/ord_7Hk2Lw, and curl -X POST http://127.0.0.1:4010/v1/orders -H 'Content-Type: application/json' -d '{}' (a 400 with reasons), so the log has four lines. Delete the mock afterwards.",
+    "frame": "window"
+  },
+  {
+    "id": "mocks-routes",
+    "page": "mocks/scripted-routes",
+    "scene": "The mock from mocks-running, running. In the Routes card paste the orders example from the Scripted routes page (let orders = [] …) and click Save Routes, so the line Running: POST /orders, GET /orders/:id shows. Delete the mock afterwards.",
+    "frame": "the Routes card",
+    "crop": [
+      460,
+      276,
+      872,
+      380
+    ]
+  }
+]
