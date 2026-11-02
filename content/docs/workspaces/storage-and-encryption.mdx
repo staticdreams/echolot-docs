@@ -43,6 +43,11 @@ Set how much room bodies may take in **Settings › Storage › Response bodies*
 - the newest response of each saved request, so it shows again after a restart,
 - bodies other requests read through [dynamic values](/docs/requests/dynamic-values) such as `$responseJSONPath`.
 
+The line below the limit shows how much the stored bodies take on disk. To free that space now, click
+**Remove Stored Bodies…** and confirm. Echolot keeps only what open windows need: bodies shown in an open tab and the
+newest response of each request in open workspaces. Every other body goes, including those of workspaces that aren't
+open, and can't be brought back. Requests and their history stay; old responses show without their bodies.
+
 History keeps the request each exchange sent. A request body larger than 256 KB isn't kept in history; the wire capture
 still has its beginning.
 
@@ -50,7 +55,8 @@ still has its beginning.
 
 **Settings › Storage › History** sets how many responses [history](/docs/workspaces/history) keeps per request:
 10, 25, 50 (the default), 100 or 200. Older entries go first. Every send is kept with who made it: you, a run or an
-agent.
+agent. To clear a workspace's history, use **Clear History…** in the ⋯ menu of its
+[History page](/docs/workspaces/history); a request's own history clears from the same menu in its history list.
 
 <Shot id="workspaces-settings-storage" alt="Settings, Storage pane: Encrypt response bodies on disk, Keep response bodies up to 5 GB, and History per request 50 responses" />
 
