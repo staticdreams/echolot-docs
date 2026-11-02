@@ -129,7 +129,10 @@ to *send a request that may change data*** with the call and the request as it w
 <Shot id="ai-assistant-approval" alt="The approval sheet: the agent wants to send a request that may change data, with the POST request it would send and the Deny, Allow for This Session and Allow Once buttons" />
 
 - **Allow Once** runs this call.
-- **Allow for This Session** runs this call and the same call again without asking until the window closes.
+- **Allow for This Session** runs this call, and calls like it, without asking until the window closes: the same
+  tool for changes to the workspace (every `create_request`), the same method to the same host for sends (every GET to
+  `demo.echolot.dev`). For deletes and protected environments it covers only the same call. The sheet says what it
+  covers.
 - **Deny** refuses it, and the Assistant is told so.
 
 For a send to a new host, a send to a protected environment and a delete, **Allow Once** is not the default button,
@@ -147,6 +150,15 @@ What asks depends on the workspace's agent rules. Without any, it is this:
 | Sends to new hosts (no request or environment in the workspace uses them) | Always asks |
 | Changes to the workspace | Asks |
 | Deleting (items go to the Trash) | Asks |
+
+### Ask less
+
+**Settings › Assistant › Ask before › Only ask before deleting, new hosts and protected environments** stops the
+questions about sends and changes: the Assistant creates requests, environments, specs, mocks and flows and sends
+POST, PUT and DELETE requests without asking. Every call still shows in the conversation. Moving things to the
+Trash, a host the workspace didn't use when the Assistant started and a protected environment still ask, and so does
+running a flow that isn't offered to agents. It is off until you turn it on, and it covers the Assistant only;
+external agents follow the workspace's rules.
 
 To loosen or tighten these, or to limit hosts and sends, use **Workspace Settings › Agents**: see
 [Workspace rules for agents](/docs/ai/agents#workspace-rules). The same rules apply to external agents. If

@@ -153,13 +153,13 @@ never allowed outright. The keys are in [workspace files](/docs/reference/worksp
 | --- | --- |
 | `requests` | Listing, reading, creating and sending requests; responses, history, GraphQL, running mocks. Always on. |
 | `flows` | Running the flows offered to agents, and answering what they ask. On by default. |
-| `workspace` | Making, renaming, moving, duplicating and deleting folders and requests; workspace variables; saving gathered data as files. |
+| `workspace` | Making, renaming, moving, duplicating and deleting folders and requests; folders' auth; workspace variables; saving gathered data as files. |
 | `environments` | Making, changing and deleting environments. |
 | `specs` | Reading, writing and linting OpenAPI specs; linking folders to them and applying changes. |
 | `mocks` | Making, changing and deleting mock servers and their routes, with fake data; requests from routes; saving responses as examples. |
 | `mcp-servers` | Adding, changing, checking and deleting MCP servers. |
 | `history` | Opening, comparing and deleting past exchanges. |
-| `flow-editing` | Reading, drawing and deleting flows. |
+| `flow-editing` | Reading, drawing and deleting flows; `try_flow` runs one once after the person approves it (headless, nobody can, so it is refused). |
 
 The agent policy, proxy, certificates, auth settings and scripts are never offered to agents, in any toolset.
 

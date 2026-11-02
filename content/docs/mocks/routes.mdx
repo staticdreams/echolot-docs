@@ -60,7 +60,9 @@ A request to a route gets, in this order:
 1. The response it asks for: a `Prefer: example=Not found` or `Prefer: code=404` header, or Postman's
    `x-mock-response-name` and `x-mock-response-code` headers.
 2. The first response whose rules all hold.
-3. The route's default.
+3. The route's default: the response you made the default with **Make Default**, whatever its rules. On a route
+   where you haven't chosen one, a first response whose rules didn't hold steps aside for the first response without
+   rules, so "409 for the shipped order" listed first doesn't answer every other order.
 
 A **rule** looks at one part of the request:
 

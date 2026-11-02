@@ -107,13 +107,13 @@ change them.
 | --- | --- |
 | **Requests** | List, read, create and send requests; responses, history, GraphQL, mocks running |
 | **Flows** | Run the flows offered to agents, answer what they ask |
-| **Workspace** | Make, rename, move, duplicate and delete folders and requests; workspace variables; save gathered data as files |
+| **Workspace** | Make, rename, move, duplicate and delete folders and requests; folders' auth; workspace variables; save gathered data as files |
 | **Environments** | Make, change and delete environments |
 | **Specs** | Read, write and lint OpenAPI specs; link folders to them and apply changes |
 | **Mocks** | Make, change and delete mock servers and their routes, with fake data; requests from routes; save responses as examples |
 | **MCP servers** | Add, change, check and delete MCP servers |
 | **History** | Open, compare and delete past exchanges |
-| **Flow editing** | Read, draw and delete flows |
+| **Flow editing** | Read, draw and delete flows; try one once, after you approve it |
 
 With the default toolsets, an agent gets tools to list, read, create, update and send requests, run folders with
 their checks, read responses piece by piece, look at history, check GraphQL queries, copy a request as cURL or code,
@@ -122,12 +122,21 @@ import, lint specs, start and stop mocks and run the flows offered to agents. It
 
 When you change the toolsets, open windows start serving again with the new set; reconnect your clients to get it.
 
-**Never offered**, in any toolset: changing the agent rules, the proxy, certificates, workspace or folder auth and
-settings, scripts (request, folder and mock scripts), and starting flows that aren't offered to agents. Those are
-yours alone.
+**Never offered**, in any toolset: changing the agent rules, the proxy, certificates, the workspace's auth, folder
+settings beyond their auth, scripts (request, folder and mock scripts), and auth that fetches or signs with secrets
+(OAuth 2.0, AWS, JWT and the like). Those are yours alone.
 
-Agents may start only the flows offered to them (marked with a sparkle in the Flows list), and each needs your
-approval of the flow as it is now; see [Running flows](/docs/flows/running-and-triggers).
+Agents can give requests and folders **bearer**, **basic** or **API key** auth, and make requests keep values from
+their responses (a sign-in's token for the requests after it): `create_request` and `update_request` take `auth` and
+`captures`, and `save_folder_auth` sets what a folder's requests inherit. Credentials must be `{{variables}}`; an
+agent that writes a password or token itself is refused, so they never land in a file. A captured value whose name
+looks like a credential (token, password, key…) is kept as a secret.
+
+Agents start the flows offered to them (marked with a sparkle in the Flows list) through tools of their own, each
+after your approval of the flow as it is now; see [Running flows](/docs/flows/running-and-triggers). With **Flow
+editing** on, `try_flow` runs any other flow once, the one an agent is drawing included: you see what it sends, saves
+and runs and approve that run every time, whatever the rules, and **Allow for This Session** covers only that version
+of the flow.
 
 ## See what agents do
 

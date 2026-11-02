@@ -211,8 +211,9 @@ Sends what came in to the first case whose condition holds, else to `default`.
 
 ### Evaluate
 
-Runs JavaScript on what came in. The code is the body of a function: what `return` gives is the result, and a
-returned promise is awaited. Without `return`, the result is `null`. `pm.test` and `pm.expect` work as in
+Runs JavaScript on what came in. The last expression is the result: `({ id: value.body.id })` or `a + b`. Code
+with a `return` of its own runs as the body of a function, and what `return` gives is the result. A promise is
+awaited. `pm.test` and `pm.expect` work as in
 [scripts](/docs/requests/scripts-and-tests), and their results count as the run's tests. `console.log` lines go to
 the run log.
 
