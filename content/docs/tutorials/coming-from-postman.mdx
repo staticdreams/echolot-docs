@@ -60,7 +60,7 @@ which were typed into the collection. The requests now refer to them as `{{passw
 | Pre-request Script, Tests | The **Scripts** tab's **Pre-request** and **Tests** scripts, on the request, folder or workspace |
 | `pm.*` | The same API: `pm.test`, `pm.expect`, `pm.response`, `pm.request`, `pm.environment`, `pm.variables`, `pm.collectionVariables`, `pm.globals`, `pm.iterationData`, `pm.sendRequest`, `pm.cookies`, `pm.setNextRequest`, `pm.visualizer`, and the older `postman.*` and `tests[…]` |
 | `require()` | `lodash`, `ajv`, `tv4`, `crypto-js`, `uuid`, `atob` and `btoa` |
-| Auth | The same types: Basic, Digest, Bearer Token, API Key, OAuth 2.0, AWS Signature, JWT Bearer, Hawk, Akamai EdgeGrid, NTLM. OAuth 2.0 client credentials stays as it is; other OAuth grants become authorization code with PKCE |
+| Auth | The same types: Basic, Digest, Bearer Token, API Key, OAuth 1.0, OAuth 2.0 (with its advanced settings: token in the address, refresh URL, extra parameters), AWS Signature, JWT Bearer, Hawk, Akamai EdgeGrid, NTLM. ASAP (Atlassian) becomes a JWT Bearer set up the same way. OAuth 2.0 client credentials and password credentials stay as they are; implicit becomes authorization code with PKCE, and the import report says so |
 | `{{$guid}}`, `{{$timestamp}}`, `{{$randomInt}}`, `{{$randomFirstName}}` and the other `$random…` values | Dynamic values with the same names, fake data included, and many more |
 | Collection Runner, Newman | The [Runner](/docs/requests/runner) and [`echolot run`](/docs/cli/run) |
 | Mock servers | [Mocks](/docs/mocks) on your Mac: routes with examples and fake data, or an OpenAPI spec |

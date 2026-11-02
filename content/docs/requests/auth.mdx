@@ -1,6 +1,6 @@
 ---
 title: Authentication
-description: Sign requests in with Basic, Digest, Bearer, API keys, OAuth 2.0, AWS Signature, JWT, Hawk, Akamai EdgeGrid or NTLM, and share auth through folders.
+description: Sign requests in with Basic, Digest, Bearer, API keys, OAuth 1.0, OAuth 2.0, AWS Signature, JWT, Hawk, Akamai EdgeGrid or NTLM, and share auth through folders.
 ---
 
 The **Auth** tab says how a request proves who it is. Choose a **Type**, fill in its fields, and Echolot adds the
@@ -50,7 +50,8 @@ inherits it. **Auth › Sign in** fills `{{token}}` from its response with a
 | **Digest** | Answers the server's Digest challenge. |
 | **Bearer Token** | Adds `Authorization: Bearer <token>`. |
 | **API Key** | Adds a key as a header or a query parameter. |
-| **OAuth 2.0** | Gets an access token and sends it as a bearer token. |
+| **OAuth 1.0** | Signs each request with OAuth 1.0, using a token you already have. |
+| **OAuth 2.0** | Gets an access token and sends it as a bearer token, or in the address. |
 | **AWS Signature** | Signs each request with AWS Signature Version 4. |
 | **JWT Bearer** | Signs a new JSON Web Token for each send. |
 | **Hawk** | Signs each request with Hawk. |
@@ -86,16 +87,18 @@ Echolot gets the access token for you and adds it as `Authorization: Bearer <tok
 
 | Field | Meaning |
 | --- | --- |
-| **Grant** | **Authorization Code**, **Client Credentials** or **Device Code**. |
+| **Grant** | **Authorization Code**, **Client Credentials**, **Device Code** or **Password (legacy)**. |
 | **Authorization URL** | Where you sign in (Authorization Code). |
 | **Device URL** | Where the device code comes from (Device Code). |
 | **Token URL** | Where tokens come from. |
+| **Username**, **Password** | The person's own sign-in (Password). The password can be moved to the Keychain like any other credential. |
 | **Client ID**, **Client Secret** | The client's credentials. Public clients leave the secret empty. |
 | **Scope** | The scopes to ask for, separated by spaces, such as `read write`. |
 | **Audience** | For servers that want one. |
 | **Redirect URI** | Authorization Code. Empty means automatic: a loopback address, `http://127.0.0.1:<port>/callback`, on a free port. |
 | **PKCE (S256)** | Authorization Code. On by default. |
 | **Client authentication** | How the client ID and secret reach the token URL: **HTTP Basic** (default) or **In the body**. |
+| **Add token to** | **Header** (default) or **URL**: the token as a query parameter, named under **Parameter** (`access_token` by default). Addresses end up in logs and history, so use URL only for APIs that take nothing else. |
 | **Header prefix** | The word before the token in the header, `Bearer` by default. |
 
 At the bottom of the tab, the token bar shows whether there is a token. Click **Get Token**:
@@ -106,6 +109,12 @@ At the bottom of the tab, the token bar shows whether there is a token. Click **
   the code there and approve; Echolot waits with **Waiting for approval…**.
 - **Client Credentials** asks the token URL directly. You don't need to click **Get Token** for this grant: the first
   send gets a token by itself.
+- **Password (legacy)** sends the username and password to the token URL, and also needs no click: the first send
+  gets a token. Use it only for older APIs that require it. The grant is deprecated because the password itself
+  leaves your Mac, so prefer Authorization Code when the server offers it.
+
+Echolot doesn't offer the implicit grant, which is deprecated too. Most servers that still offer it also offer
+Authorization Code, which is what an imported implicit grant becomes; check that the server accepts it.
 
 Once there is a token, the bar says **Access token in the Keychain**, with its type, when it expires, whether it
 **refreshes automatically** and its scope. **Get New Token** replaces it; **Forget** deletes it.
@@ -115,11 +124,47 @@ How tokens are kept and used:
 - Tokens are stored in the Keychain, never in workspace files.
 - A token belongs to the request, folder or workspace that sets the auth. Requests that inherit OAuth from a folder
   share one token.
-- When a token has expired, the next send refreshes it with its refresh token. A Client Credentials token is fetched
-  again. Otherwise the send stops with **This request needs an OAuth token: get one in the Auth tab first.** or
+- When a token has expired, the next send refreshes it with its refresh token. A Client Credentials or Password token is
+  fetched again. Otherwise the send stops with **This request needs an OAuth token: get one in the Auth tab first.** or
   **The OAuth token expired and could not be refreshed: get a new one in the Auth tab.**
 
 To try it, send **Auth › Orders with OAuth 2** in Alpenglow: it uses Client Credentials against the demo API.
+
+#### Advanced
+
+Most servers need none of this, so it's folded away under **Advanced**. It opens by itself when something in it is
+set.
+
+- **Refresh automatically** is on by default. Turn it off to send an expired token as it is, and see how the API
+  answers one. A first token is still fetched for Client Credentials and Password.
+- **Refresh URL** is for servers whose refresh endpoint isn't the token URL. Empty means the token URL.
+- **Authorization request**, **Token request** and **Refresh request** add parameters for servers that want more than
+  the standard fields: Google's `access_type = offline` (so it gives a refresh token), `resource` for Azure AD, a tenant
+  or an API version. Each row has a key, a value (variables work, so secrets can stay in the Keychain) and, for the
+  token and refresh requests, where it goes: **Body**, **Header** or **URL**. A parameter with the same name as a
+  standard one replaces it. The authorization request's parameters go into the sign-in address, or into the device
+  authorization request for Device Code. They never replace the `state` or the PKCE challenge.
+
+### OAuth 1.0
+
+For APIs that still use OAuth 1.0: NetSuite, Magento and Adobe Commerce, X's v1.1 endpoints, and Jira or Confluence
+Server application links, among others. Echolot signs each request with a token you already have. It doesn't run the
+three-legged flow that gets one, and Postman doesn't either.
+
+1. Choose the **Signature method**: **HMAC-SHA1** (the most common), **HMAC-SHA256**, **HMAC-SHA512**,
+   **RSA-SHA1**, **RSA-SHA256**, **RSA-SHA512** or **PLAINTEXT**.
+2. Fill in **Consumer key**, then **Consumer secret**, or for RSA a **Private key** (paste it, or click
+   **Choose PEM File…** to put it straight into the Keychain).
+3. Fill in **Access token** and, except for RSA, **Token secret**. Leave them empty for a request made before there is
+   a token.
+4. Under **Add to**, choose **Header** (`Authorization: OAuth …`, the default), **URL** or **Body**. **Body** signs
+   into a form body, or into the address for a request without one.
+5. **Advanced** has **Realm**, **Callback URL** and **Verifier** (for the steps of the three-legged flow you make by
+   hand), **Add oauth_version="1.0"** (on by default) and **Hash the body into the signature** (`oauth_body_hash`, for
+   bodies that aren't forms).
+
+Each request is signed as it is sent, with a new timestamp and nonce, over the method, the address, its query and a
+form body's fields.
 
 ### AWS Signature
 
@@ -171,7 +216,7 @@ there. It drops:
 - the `Authorization`, `Proxy-Authorization` and `Cookie` headers,
 - common API key headers (`X-API-Key`, `Api-Key`, `Apikey`, `X-Auth-Token`, `X-Access-Token`, `Private-Token`,
   `X-Functions-Key`), the header your **API Key** auth uses, and any header whose value holds a secret variable,
-- Digest, AWS Signature, Hawk, EdgeGrid and NTLM signing, and the client certificate chosen for the first host.
+- Digest, AWS Signature, OAuth 1.0, Hawk, EdgeGrid and NTLM signing, and the client certificate chosen for the first host.
 
 The certificates and proxy of the new host apply to the hop that goes there. See
 [Request settings](/docs/requests/settings#redirects).
