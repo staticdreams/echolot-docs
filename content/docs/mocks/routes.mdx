@@ -25,6 +25,8 @@ Every change is saved at once, and a running mock answers with it at once. **Edi
 deleting a route too. When two routes that are on have the same method and path, the card warns you: only the first
 one answers.
 
+<Shot id="mocks-route-editor" alt="The editor of the route GET /users/{id}: its method, path and summary, the responses 200 OK (the default) and 404 Not found, and the OK response's content type, an X-Request-Id header of {{$randomUUID}}, and a JSON body with request.params.id and fake values" />
+
 ### Method, path and summary
 
 - **Route**: the method (**GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS**, or **ANY** for every
@@ -80,6 +82,8 @@ For example, a `GET /users/{id}` route can answer `200` with a user by default, 
 curl -i http://127.0.0.1:4010/users/42    # 200, the user
 curl -i http://127.0.0.1:4010/users/0     # 404
 ```
+
+<Shot id="mocks-route-rule" alt="The 404 Not found response of GET /users/{id} with Make Default, and its rule: Path parameter id is 0" />
 
 ## Bodies with fake data
 

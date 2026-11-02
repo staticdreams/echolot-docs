@@ -1,0 +1,66 @@
+echolot = 1
+name = "Users"
+port = 4011
+
+[[routes]]
+id = "c1d2e3f4"
+method = "GET"
+path = "/users"
+summary = "List users"
+
+[[routes.responses]]
+name = "OK"
+status = 200
+content-type = "application/json"
+body = """
+[
+  {{#repeat 5}}
+  {
+    "id": {{@number}},
+    "name": "{{$randomFullName}}",
+    "email": "{{$randomEmail}}"
+  }
+  {{/repeat}}
+]"""
+
+[[routes]]
+id = "d5e6f7a8"
+method = "GET"
+path = "/users/{id}"
+summary = "One user"
+
+[[routes.responses]]
+name = "OK"
+status = 200
+content-type = "application/json"
+headers = [{ name = "X-Request-Id", value = "{{$randomUUID}}" }]
+body = """
+{
+  "id": "{{request.params.id}}",
+  "name": "{{$randomFullName}}",
+  "email": "{{$randomEmail}}",
+  "company": "{{$randomCompanyName}}",
+  "joined": "{{$randomDatePast}}"
+}"""
+
+[[routes.responses]]
+name = "Not found"
+status = 404
+content-type = "application/json"
+rules = [{ source = "path", name = "id", value = "0" }]
+body = """{ "error": "no user {{request.params.id}}" }"""
+
+[[routes]]
+id = "e9f0a1b2"
+method = "POST"
+path = "/users"
+summary = "Create a user"
+request-content-type = "application/json"
+request-body = """{ "name": "Heidi Graf", "email": "heidi@example.com" }"""
+
+[[routes.responses]]
+name = "Created"
+status = 201
+content-type = "application/json"
+headers = [{ name = "Location", value = "/users/{{$randomInt(100, 999)}}" }]
+body = """{{{request.body}}}"""

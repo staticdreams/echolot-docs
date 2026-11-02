@@ -1,0 +1,43 @@
+echolot = 1
+name = "Alpenglow demo shop"
+spec = "specs/alpenglow.yaml"
+port = 4010
+
+[[scenarios]]
+operation = "GET /orders/{id}"
+status = "404"
+
+[[routes]]
+id = "a1c2e3f4"
+method = "GET"
+path = "/reviews/{sku}"
+summary = "Reviews of a product"
+
+[[routes.responses]]
+name = "OK"
+status = 200
+content-type = "application/json"
+body = """
+[
+  {{#repeat 2 5}}
+  {
+    "sku": "{{request.params.sku}}",
+    "author": "{{$randomFullName}}",
+    "rating": {{$randomInt(3, 5)}},
+    "text": "{{$randomLoremSentence}}",
+    "date": "{{$randomDatePast}}"
+  }
+  {{/repeat}}
+]"""
+
+[[routes]]
+id = "b5d6f7a8"
+method = "POST"
+path = "/newsletter"
+summary = "Subscribe to the newsletter"
+
+[[routes.responses]]
+name = "Subscribed"
+status = 201
+content-type = "application/json"
+body = """{ "email": "{{request.body.email}}", "id": "{{$randomUUID}}" }"""

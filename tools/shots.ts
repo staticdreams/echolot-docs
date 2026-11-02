@@ -1,6 +1,6 @@
 // Turns window captures (.work/captures/<id>-light.png and -dark.png, 2x Retina) into the site's screenshots:
 // public/shots/<id>-light.webp and -dark.webp, cropped as shots/*.json says, and their size in points in
-// lib/shots.json for <Shot>.
+// src/lib/shots.json for <Shot>.
 //
 //   bun tools/shots.ts            every capture that has both appearances
 //   bun tools/shots.ts <id> …     only these
@@ -11,7 +11,7 @@ import sharp from 'sharp'
 
 const root = new URL('..', import.meta.url).pathname
 const captures = `${root}.work/captures`
-const manifestPath = `${root}lib/shots.json`
+const manifestPath = `${root}src/lib/shots.json`
 
 type Request = { id: string; crop?: [number, number, number, number]; cropPx?: [number, number, number, number] }
 const requests = new Map<string, Request>()

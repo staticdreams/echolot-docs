@@ -75,9 +75,17 @@
     "width": 1200,
     "height": 775
   },
+  "mocks-route-editor": {
+    "width": 885,
+    "height": 548
+  },
+  "mocks-route-rule": {
+    "width": 878,
+    "height": 282
+  },
   "mocks-routes": {
-    "width": 872,
-    "height": 380
+    "width": 1009,
+    "height": 542
   },
   "mocks-running": {
     "width": 1200,

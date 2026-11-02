@@ -92,19 +92,43 @@
   {
     "id": "mocks-running",
     "page": "mocks",
-    "scene": "Alpenglow, no environment. Mocks page (⌘4): + › Mock of Alpenglow demo shop. Click Start. In the Responses card, set GET /orders/{id} to its 404. From Terminal run: curl http://127.0.0.1:4010/v1/products, curl http://127.0.0.1:4010/v1/products/TNT-MH-2P, curl http://127.0.0.1:4010/v1/orders/ord_7Hk2Lw, and curl -X POST http://127.0.0.1:4010/v1/orders -H 'Content-Type: application/json' -d '{}' (a 400 with reasons), so the log has four lines. Delete the mock afterwards.",
+    "scene": "Alpenglow, no environment, window 1320×852. Copy shots/scenes/mocks/alpenglow-demo-shop.toml (the spec, two routes made by hand and GET /orders/{id} set to 404) into the workspace's mocks folder. Mocks page (⌘4), select Alpenglow demo shop, Start; the first route stays selected. From Terminal send GET /v1/products/TNT-MH-2P, GET /v1/orders/ord_7Hk2Lw, POST /v1/orders with {} (a 400 with reasons), POST /v1/newsletter with {\"email\":\"heidi@example.com\"} and GET /v1/reviews/TNT-MH-2P, so the log has five lines from the spec and the routes.",
     "frame": "window"
+  },
+  {
+    "id": "mocks-route-editor",
+    "page": "mocks/routes",
+    "scene": "Window 1320×940 (the screen keeps 896). Copy shots/scenes/mocks/users.toml into the mocks folder. Select Users, click the route GET /users/{id}, and scroll so the editor's card starts just below the address bar (the page's scroll bar at 0.432). The 200 OK response is shown.",
+    "frame": "the route editor",
+    "crop": [
+      365,
+      102,
+      885,
+      548
+    ]
+  },
+  {
+    "id": "mocks-route-rule",
+    "page": "mocks/routes",
+    "scene": "As mocks-route-editor, then click the 404 Not found chip: its Path parameter id is 0 rule shows.",
+    "frame": "the responses and the rule",
+    "crop": [
+      372,
+      258,
+      878,
+      282
+    ]
   },
   {
     "id": "mocks-routes",
     "page": "mocks/scripted-routes",
-    "scene": "The mock from mocks-running, running. In the Routes card paste the orders example from the Scripted routes page (let orders = [] …) and click Save Routes, so the line Running: POST /orders, GET /orders/:id shows. Delete the mock afterwards.",
-    "frame": "the Routes card",
+    "scene": "The mock from mocks-running with shots/scenes/mocks/alpenglow-demo-shop.js beside it, trusted, running, and the page scrolled to the bottom. Send POST /v1/orders with {\"lines\":[{\"sku\":\"TNT-MH-2P\",\"quantity\":1}]}, GET /v1/orders/ord_1, GET /v1/reviews/TNT-MH-2P and GET /v1/products, so the log shows which script route answered.",
+    "frame": "the Routes in JavaScript card and the log",
     "crop": [
-      460,
-      276,
-      872,
-      380
+      303,
+      245,
+      1009,
+      542
     ]
   }
 ]
