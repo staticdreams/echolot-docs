@@ -25,16 +25,26 @@ the URL preview under the URL bar.
 ## Inherit from folders and the workspace
 
 **Inherit** is the default. A request that inherits uses the auth of the nearest folder above it that sets one,
-then the workspace's. Under **Uses**, the tab says which one applies, such as `Folder “Orders”: Bearer Token`. When
-nothing above sets auth, the request sends none.
+then the workspace's. Under **Uses**, the tab says which one applies, such as `Folder “Orders”: Bearer Token`, with a
+button that opens it: **Edit Folder Auth…** or **Edit Workspace Auth…**. When nothing above sets auth, the request
+sends none.
+
+A request with auth of its own keeps it, and its **Auth** tab also shows a **Workspace auth** row with the workspace's
+auth and a button to open it: **Workspace Auth…**, or **Set Up Workspace Auth…** when the workspace has none yet.
+**Workspace Auth…** is in the command palette too (<kbd>⌘</kbd><kbd>K</kbd>).
 
 To set auth for many requests at once:
 
-1. In the sidebar, right-click a folder and choose **Folder Settings…**. For the workspace, click the workspace
-   switcher at the foot of the sidebar and choose **Workspace Settings…** (it's also in the command palette,
-   <kbd>⌘</kbd><kbd>K</kbd>).
-2. Open the **Auth** tab and choose a type. A folder can inherit too; the workspace can't.
-3. Click **Done**.
+1. In the sidebar, right-click a folder and choose **Folder Settings…**. For the workspace, use **Workspace Auth…**
+   from a request's **Auth** tab or the command palette, or click the workspace switcher at the foot of the sidebar
+   and choose **Workspace Settings…**.
+2. Open the **Auth** tab and choose a type. A folder can inherit too; the workspace can't. Under the settings, the tab
+   says how many requests set to **Inherit** use this auth.
+3. For OAuth 2.0, sign in right there: the token bar at the bottom works as in a request (see
+   [OAuth 2.0](#oauth-20)), and every request that inherits the auth uses that token. **Get Token** saves the auth
+   first. The bar shows the folder's or workspace's own token only once its auth is saved, so it never shows or
+   forgets a token that belongs to the auth above.
+4. Click **Done**.
 
 In the Alpenglow example, the **Orders** folder sets **Bearer Token** with `{{token}}`, and every order request
 inherits it. **Auth › Sign in** fills `{{token}}` from its response with a
@@ -122,8 +132,10 @@ Once there is a token, the bar says **Access token in the Keychain**, with its t
 How tokens are kept and used:
 
 - Tokens are stored in the Keychain, never in workspace files.
-- A token belongs to the request, folder or workspace that sets the auth. Requests that inherit OAuth from a folder
-  share one token.
+- A token belongs to the request, folder or workspace that sets the auth, and to the environment and settings it was
+  issued for: switching environments, or changing the token URL, client ID, scope or another setting that decides
+  who the token is for, uses or gets a token of its own and never sends one issued for something else. Requests that
+  inherit OAuth from a folder share its tokens. **Forget** deletes the tokens of every environment.
 - When a token has expired, the next send refreshes it with its refresh token. A Client Credentials or Password token is
   fetched again. Otherwise the send stops with **This request needs an OAuth token: get one in the Auth tab first.** or
   **The OAuth token expired and could not be refreshed: get a new one in the Auth tab.**
