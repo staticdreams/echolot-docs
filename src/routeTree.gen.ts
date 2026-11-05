@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as R404RouteImport } from './routes/404'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as Char123LangChar125IndexRouteImport } from './routes/{-$lang}/index'
 import { Route as Char123LangChar125LlmsFullDottxtRouteImport } from './routes/{-$lang}/llms-full[.]txt'
 import { Route as Char123LangChar125LlmsDottxtRouteImport } from './routes/{-$lang}/llms[.]txt'
@@ -21,6 +22,11 @@ import { Route as Char123LangChar125OgDocsSplatRouteImport } from './routes/{-$l
 const R404Route = R404RouteImport.update({
   id: '/404',
   path: '/404',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const Char123LangChar125IndexRoute = Char123LangChar125IndexRouteImport.update({
@@ -67,6 +73,7 @@ const Char123LangChar125OgDocsSplatRoute =
 
 export interface FileRoutesByFullPath {
   '/404': typeof R404Route
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/{-$lang}/llms-full.txt': typeof Char123LangChar125LlmsFullDottxtRoute
   '/{-$lang}/llms.txt': typeof Char123LangChar125LlmsDottxtRoute
   '/{-$lang}/': typeof Char123LangChar125IndexRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/404': typeof R404Route
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/{-$lang}/llms-full.txt': typeof Char123LangChar125LlmsFullDottxtRoute
   '/{-$lang}/llms.txt': typeof Char123LangChar125LlmsDottxtRoute
   '/{-$lang}': typeof Char123LangChar125IndexRoute
@@ -88,6 +96,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/404': typeof R404Route
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/{-$lang}/llms-full.txt': typeof Char123LangChar125LlmsFullDottxtRoute
   '/{-$lang}/llms.txt': typeof Char123LangChar125LlmsDottxtRoute
   '/{-$lang}/': typeof Char123LangChar125IndexRoute
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/404'
+    | '/sitemap.xml'
     | '/{-$lang}/llms-full.txt'
     | '/{-$lang}/llms.txt'
     | '/{-$lang}/'
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/404'
+    | '/sitemap.xml'
     | '/{-$lang}/llms-full.txt'
     | '/{-$lang}/llms.txt'
     | '/{-$lang}'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/404'
+    | '/sitemap.xml'
     | '/{-$lang}/llms-full.txt'
     | '/{-$lang}/llms.txt'
     | '/{-$lang}/'
@@ -131,6 +143,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   R404Route: typeof R404Route
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   Char123LangChar125LlmsFullDottxtRoute: typeof Char123LangChar125LlmsFullDottxtRoute
   Char123LangChar125LlmsDottxtRoute: typeof Char123LangChar125LlmsDottxtRoute
   Char123LangChar125IndexRoute: typeof Char123LangChar125IndexRoute
@@ -147,6 +160,13 @@ declare module '@tanstack/react-router' {
       path: '/404'
       fullPath: '/404'
       preLoaderRoute: typeof R404RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/{-$lang}/': {
@@ -203,6 +223,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   R404Route: R404Route,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   Char123LangChar125LlmsFullDottxtRoute: Char123LangChar125LlmsFullDottxtRoute,
   Char123LangChar125LlmsDottxtRoute: Char123LangChar125LlmsDottxtRoute,
   Char123LangChar125IndexRoute: Char123LangChar125IndexRoute,

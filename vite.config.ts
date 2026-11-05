@@ -17,11 +17,11 @@ for await (const entry of glob('**/*.mdx', { cwd: 'content/docs' })) {
   for (const locale of ogLanguages) imageRoutes.push(getPageImageUrl({ slugs: getSlugs(entry), locale }).url);
 }
 
-// The pages the crawl starts from, in every language: the home page, the docs' first page and the llms files.
+// The pages the crawl starts from, in every language: the home page, the docs' first page, the llms files and the sitemap.
 const languagePages = i18n.languages.flatMap((lang) => {
   const prefix = lang === i18n.defaultLanguage ? '' : `/${lang}`;
   return [`${prefix || '/'}`, `${prefix}/docs`, `${prefix}/llms.txt`, `${prefix}/llms-full.txt`, `${prefix}/api/search`];
-});
+}).concat('/sitemap.xml');
 
 export default defineConfig({
   server: {

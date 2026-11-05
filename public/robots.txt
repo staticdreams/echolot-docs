@@ -1,0 +1,5 @@
+# docs.echolot.dev is public documentation: every crawler is welcome.
+User-agent: *
+Allow: /
+
+Sitemap: https://docs.echolot.dev/sitemap.xml
