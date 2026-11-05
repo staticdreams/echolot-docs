@@ -1,0 +1,106 @@
+---
+title: "Solicitudes MCP"
+description: "Llama a las herramientas de un servidor MCP, lee sus recursos, obtén sus prompts o envía cualquier método JSON-RPC, guardado como solicitudes con comprobaciones."
+---
+
+Una solicitud MCP es una llamada guardada a uno de los [servidores MCP](/docs/mcp-servers) del espacio de trabajo: una
+llamada a una herramienta, la lectura de un recurso, un prompt o cualquier método JSON-RPC. Guarda las llamadas que haces
+a menudo, añade comprobaciones y ejecútalas en la [Ejecución](/docs/requests/runner) como cualquier otra solicitud.
+
+<Shot id="requests-mcp-call" alt="Agent tools › search_catalog: el menú del servidor en Alpenglow MCP, Herramienta elegida, los argumentos como JSON con los campos de la herramienta debajo, y el resultado con una insignia verde Resultado" />
+
+## Prueba una llamada desde la página Servidores MCP [#try-a-call-from-the-mcp-servers-page]
+
+La forma más rápida de empezar es en el propio servidor:
+
+1. Abre la página **Servidores MCP** y elige un servidor, como **Alpenglow MCP**, que apunta a
+   `https://demo.echolot.dev/mcp`.
+2. Elige **Comprobación** si aún no se ha comprobado. La página lista las **Herramientas**, los **Recursos** y los
+   **Prompts** del servidor.
+3. Haz clic en una herramienta, un recurso o un prompt. Se abre una hoja con sus argumentos.
+4. Rellénalos, como un **Formulario** construido a partir del esquema de entrada o como **JSON**, y elige **Llamar**.
+5. El resultado aparece debajo, con **Resultado** o **Error** y el tiempo que tardó.
+6. Elige **Guardar como solicitud** para conservar la llamada, con sus argumentos, como solicitud MCP.
+
+<Shot id="requests-mcp-call-panel" alt="La hoja de llamada de la herramienta search_catalog en la página Servidores MCP, con el Formulario de query y limit, y el resultado JSON debajo" />
+
+## Crea una solicitud MCP [#create-an-mcp-request]
+
+Elige **Nueva llamada MCP** en el menú **+** junto a **Solicitudes** en la barra lateral. La barra del editor contiene la
+llamada:
+
+1. Elige el servidor en el menú del principio. **Servidores MCP…** en el mismo menú abre la página Servidores MCP.
+2. Elige qué llamar: **Herramienta**, **Recurso**, **Prompt** o **Método**.
+3. Escribe el destino: el **Nombre de la herramienta**, el **URI del recurso**, el **Nombre del prompt**, o un método
+   JSON-RPC como `ping`. Los nombres de la última comprobación del servidor se ofrecen mientras escribes, bajo
+   **Del servidor**.
+4. Elige **Llamar** (<kbd>⌘</kbd><kbd>R</kbd>). Mientras se ejecuta, **Cancelar** (<kbd>⌘</kbd><kbd>.</kbd>) la detiene.
+
+| Operación | Qué envía | Qué son los argumentos |
+| --- | --- | --- |
+| **Herramienta** | `tools/call` con el nombre de la herramienta | Los argumentos de la herramienta |
+| **Recurso** | `resources/read` con el URI | No se usan |
+| **Prompt** | `prompts/get` con el nombre del prompt | Los argumentos del prompt |
+| **Método** | Cualquier método JSON-RPC | Los params del método |
+
+El editor tiene estas pestañas: **Docs**, **Argumentos**, **Variables**, **Pruebas** y **Ajustes**. Las solicitudes MCP no
+tienen cabeceras, autenticación ni scripts propios: los ajustes de conexión del servidor, sus cabeceras y su inicio de
+sesión están en la página Servidores MCP. Consulta [añadir servidores](/docs/mcp-servers/adding-servers).
+
+## Argumentos [#arguments]
+
+La pestaña **Argumentos** contiene un objeto JSON, con `{{variables}}`:
+
+```json
+{
+  "query": "ultralight tent",
+  "limit": 3
+}
+```
+
+Cuando la última comprobación del servidor conoce la herramienta, la pestaña muestra su descripción encima del editor y
+sus campos debajo, como `Fields: query*, limit`; una estrella marca un campo obligatorio. **Rellenar desde el esquema**
+sustituye los argumentos por todos los campos del esquema de entrada de la herramienta, para que partas de ahí.
+
+El espacio de trabajo Alpenglow tiene dos llamadas en **Agent tools**: **search_catalog**, con los argumentos de arriba, y
+**order_status**, que consulta `{"order_id": "ord_7Hk2Lw"}`.
+
+## Resultados [#results]
+
+El panel de respuesta muestra el resultado como JSON en la pestaña **Cuerpo**, como cualquier
+[respuesta](/docs/requests/responses). La insignia del resumen de la respuesta dice **Resultado** en verde o **Error** en
+rojo, con la versión del protocolo que habla el servidor. Pasa el puntero por ella para ver quién respondió, o qué salió
+mal.
+
+Una llamada puede fallar de dos maneras, y Echolot las distingue:
+
+- El servidor responde con un error: un resultado de herramienta marcado como error, o un error JSON-RPC. La insignia
+  dice **Error**, y el cuerpo contiene lo que dijo el servidor.
+- La llamada nunca recibe respuesta: el servidor no es accesible, no arranca o rompe el protocolo. El panel de respuesta
+  dice por qué. Comprueba el servidor en la página Servidores MCP: su registro de mensajes muestra todos los mensajes de
+  la última comprobación.
+
+Todas las llamadas se conservan en el [Historial](/docs/workspaces/history).
+
+## Comprobaciones para MCP [#checks-for-mcp]
+
+En la pestaña **Pruebas**:
+
+- **Error de MCP** igual a `false` se supera cuando la llamada tuvo éxito. Un fallo muestra el mensaje del servidor.
+- **Esquema de salida de la herramienta** comprueba el `structuredContent` del resultado con el `outputSchema` que declara
+  la herramienta. Falla si la herramienta no declara ninguno o si el resultado no tiene `structuredContent`.
+- **Valor JSON** comprueba cualquier valor del resultado, como `$.structuredContent.results.length` es mayor que `0`, o
+  `$.content[0].type` es igual a `text`.
+
+Consulta [scripts y pruebas](/docs/requests/scripts-and-tests) para ver todas las comprobaciones y comparaciones.
+
+<Edition only="appstore">
+  La edición de la App Store llama a los servidores MCP por HTTP. Los servidores que se ejecutan como un programa local
+  (stdio) permanecen en el espacio de trabajo, pero las llamadas a ellos necesitan la descarga directa o la herramienta de
+  línea de comandos.
+</Edition>
+
+## Desde la línea de comandos [#from-the-command-line]
+
+`echolot run` ejecuta las solicitudes MCP guardadas con sus comprobaciones, y `echolot mcp check` inspecciona un servidor.
+Consulta [echolot mcp](/docs/cli/mcp).

@@ -1,0 +1,104 @@
+---
+title: "echolot mock"
+description: "ワークスペースの手作りのルートやOpenAPIドキュメントのモックを、ターミナルやCIで提供します。遅延、失敗の注入、リクエストのチェックにも対応します。"
+---
+
+`echolot mock` はモックを提供します：ワークスペースに保存されたモック（[手作りのルート](/docs/mocks/routes)と、あれば仕様を含む）か、OpenAPIドキュメントです。
+OpenAPIドキュメントのオペレーションは、ドキュメントに書かれた例か、スキーマから作ったボディで応答します。APIが存在する前にクライアントを作るときや、
+CIジョブに望みどおりに応答するサーバが必要なときに使えます。[モックページ](/docs/mocks)と同じモックを提供します。
+
+```sh
+echolot mock <source> [--workspace <workspace>] [--port <port>] [--share] [--delay <ms>] [--failure-rate <percent>] [--no-validate] [--routes <file>]
+```
+
+`<source>` は仕様ファイル（YAMLまたはJSON）、または `--workspace` を指定した場合は、そのワークスペースに保存されたモックの名前です。
+
+## 仕様をモックにする [#mock-a-spec]
+
+```sh
+echolot mock Alpenglow.echolot/specs/alpenglow.yaml --port 4010
+```
+
+```text
+Mock of Alpenglow demo shop: 9 operations at http://127.0.0.1:4010/v1 (Ctrl-C stops it)
+```
+
+モックは、仕様の最初のサーバのパス（ここでは `/v1`）で応答します。応答したリクエストは、標準出力に1行ずつ出力されます：ステータス、メソッドとパス、一致したオペレーション、
+応答の出どころ、所要時間。リクエストの問題は、その下に一覧表示されます。
+
+```text
+200 GET /v1/products/TNT-MH-2P  → GET /products/{sku} (generated)  0 ms
+400 POST /v1/orders  → POST /orders  0 ms
+    body $.lines: expected array, got string
+```
+
+**リクエストは仕様に照らしてチェックされます。** パラメータやボディが仕様に反するリクエストには、何が問題かを示す `400` が返ります。
+
+```json
+{
+  "error" : "The request does not match the spec (POST /orders).",
+  "problems" : [
+    "body $.lines: expected array, got string"
+  ]
+}
+```
+
+`--no-validate` を指定すると、そのようなリクエストにも応答します。
+
+**応答の選び方。** デフォルトでは、オペレーションは最初の成功レスポンスと最初の例で応答します。リクエストで別のものを指定するには、`Prefer: code=404, example=empty` か、
+Postmanの `x-mock-response-code` ヘッダーと `x-mock-response-name` ヘッダーを使います。
+
+## ワークスペースのモックを提供する [#mock-a-workspaces-mock]
+
+`--workspace` を指定すると、`<source>` はモックページに保存したモックを指します（`mocks/` 内のファイル名から `.toml` を除いたもの、またはモックの名前）。
+そのポート、遅延、失敗率、リクエストのチェック、選択したレスポンス、ルートが適用され、指定したオプションがそれらを上書きします。JavaScriptのルート（`mocks/<name>.js`）が最初に応答し、
+次に手作りのルート、最後に仕様が応答します。[スクリプトによるルート](/docs/mocks/scripted-routes)と[ルートとダミーデータ](/docs/mocks/routes)を参照してください。
+
+```sh
+echolot mock shop -w Alpenglow.echolot --delay 300
+```
+
+ルートだけのモックには、仕様は不要です。
+
+```sh
+echolot mock storefront -w Shop.echolot
+```
+
+```text
+Mock of Storefront: 3 routes at http://127.0.0.1:4321 (Ctrl-C stops it)
+200 GET /users/42  → GET /users/{id} (OK)  1 ms
+404 GET /users/0  → GET /users/{id} (Not found)  0 ms
+```
+
+各行には、応答したルートと、括弧内に返したレスポンスが表示されます。ボディ内のダミーの値は、リクエストごとに作り直されます。サーバなしでダミーデータを作るには、
+[echolot fake](/docs/cli/fake)を参照してください。
+
+## オプション [#options]
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | モックがあるワークスペースのフォルダ。 |
+| `--port <port>` | ポート。デフォルトはモック自身のポート、なければ4010。 |
+| `--share` | このMacだけでなく、すべてのネットワークインターフェースで応答します：コンテナやスマートフォン向けです。 |
+| `--delay <ms>` | 各応答の前に待つミリ秒数。 |
+| `--failure-rate <percent>` | 注入した `500` で応答するリクエストの割合（パーセント）。 |
+| `--no-validate` | 仕様に反するリクエストを `400` で拒否せず、応答します。 |
+| `--routes <file>` | 仕様より先に応答するJavaScriptのルート。デフォルトはワークスペースのモックの `mocks/<name>.js`。 |
+
+`--share` を指定しない場合、モックは127.0.0.1だけで待ち受けるので、ネットワーク上のほかのものからはアクセスできません。`--share` を指定すると、このMacに到達できるすべてのユーザがアクセスできます。
+
+モックの上限を超えるリクエストボディには `413` が返り、ルートには届きません。
+
+## CIで使う [#in-ci]
+
+モックをバックグラウンドで起動して、それに対して実行します。Alpenglowの **Local** 環境は `{{baseURL}}` を `http://localhost:8787/v1` に向けているので、ポート8787のモックがそのリクエストに応答します。
+
+```sh
+echolot mock Alpenglow.echolot/specs/alpenglow.yaml --port 8787 &
+echolot run Alpenglow.echolot --env local --folder catalog
+kill %1
+```
+
+## 終了コード [#exit-codes]
+
+モックは、停止するまで動作し続けます。オプションが正しくない場合や、ワークスペースにないモック名の場合は `64` で、仕様を読み込めない場合やポートが使用中の場合は `1` で終了します。

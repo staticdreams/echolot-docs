@@ -1,0 +1,124 @@
+---
+title: "Rutas con script"
+description: "Responde a las solicitudes de un mock con JavaScript antes que sus otras rutas y su especificación, con un estado que se conserva mientras el mock está en marcha."
+---
+
+Las [rutas creadas a mano](/docs/mocks/routes) y una especificación responden con respuestas que tú escribes. A veces un
+mock tiene que hacer más: recordar el pedido que acaba de hacer un cliente, calcular una respuesta o fallar en la
+tercera llamada. Las **Rutas en JavaScript** son pequeños manejadores que responden primero a las solicitudes de un
+mock. Sus variables viven mientras el mock está en marcha, así que pueden conservar estado entre solicitudes. Todo lo
+que una ruta no gestiona pasa a las rutas creadas a mano del mock y después a su especificación.
+
+## Escribir rutas [#writing-routes]
+
+Abre un mock en la página Mocks y desplázate hasta la tarjeta **Rutas en JavaScript**. Escribe las rutas en el editor y
+haz clic en **Guardar rutas**. **Revertir** vuelve a lo que estaba guardado.
+
+<Shot id="mocks-routes" alt="La tarjeta Rutas en JavaScript de un mock con código que guarda los pedidos en una lista, la línea En ejecución: POST /orders, GET /orders/:id debajo del editor y el registro con el nombre de la ruta con script que respondió a cada solicitud de pedido" />
+
+Este ejemplo, para un mock de la especificación Alpenglow, guarda los pedidos que hace un cliente y los devuelve por ID:
+
+```js
+let orders = []
+
+mock.post("/orders", (req, res) => {
+  const order = { id: "ord_" + (orders.length + 1), status: "pending", ...req.json() }
+  orders.push(order)
+  res.status(201).header("Location", "/v1/orders/" + order.id).json(order)
+})
+
+mock.get("/orders/:id", (req, res) => {
+  const order = orders.find(o => o.id === req.params.id)
+  return order ?? res.status(404).json({ error: "no such order" })
+})
+```
+
+Tras guardar, la tarjeta lista las rutas que ha registrado el script (`En ejecución: POST /orders, GET /orders/:id`) o,
+en naranja, por qué no se cargó el script. Las rutas se guardan en `mocks/<name>.js`, junto a los ajustes del mock, así
+que van a Git con el espacio de trabajo.
+
+## Cuándo se ejecutan las rutas [#when-routes-run]
+
+- Las rutas en JavaScript responden **primero**, antes que las rutas creadas a mano y la especificación. Responde la
+  primera ruta cuyo método y cuya ruta coinciden.
+- Las rutas están **por debajo de la ruta de servidor de la especificación**, cuando el mock sirve una: escribe
+  `/orders`, no `/v1/orders`.
+- Una ruta que no fija nada y no devuelve nada **pasa la solicitud** a las rutas creadas a mano y a la especificación,
+  que responden como siempre. Úsalo para gestionar solo algunas solicitudes, como las de un parámetro de consulta.
+- El script se ejecuta una vez cuando se inicia el mock. Sus variables de nivel superior y el objeto `state` viven hasta
+  que el mock se detiene.
+- **Al guardar se reinician las rutas, con un estado nuevo.** Los cambios en la especificación, en las rutas creadas a
+  mano o en los ajustes del mock lo conservan.
+- Las solicitudes se gestionan una a una, así que el estado se mantiene coherente.
+
+El [registro](/docs/mocks#the-log) del mock marca cada solicitud que ha gestionado una ruta con el nombre de la ruta:
+sitúa el puntero sobre él para ver **Respondida por esta ruta** o **Transmitida por esta ruta** (a las rutas creadas a
+mano o a la especificación). Lo que una ruta escribe con `console.log` aparece en el registro debajo de la solicitud.
+
+## La API de rutas [#the-routes-api]
+
+Registra rutas con `mock` y un método:
+
+| Función | Coincide con |
+| --- | --- |
+| `mock.get(path, handler)` | `GET` |
+| `mock.post`, `mock.put`, `mock.patch`, `mock.delete`, `mock.head`, `mock.options` | Ese método |
+| `mock.any(path, handler)` | Cualquier método |
+
+En una ruta, `:name` coincide con un segmento y lo pone en `req.params.name`; `*` coincide con el resto.
+
+Un manejador recibe `req` y `res`:
+
+| `req` | Qué contiene |
+| --- | --- |
+| `req.method` | El método, en mayúsculas. |
+| `req.path` | La ruta, por debajo de la ruta de servidor de la especificación. |
+| `req.params` | Los segmentos `:name` de la ruta. |
+| `req.query` | Los parámetros de consulta, con el último valor de cada nombre. |
+| `req.headers` | Las cabeceras, con los nombres en minúsculas. |
+| `req.body` | El cuerpo como texto. |
+| `req.json()` | El cuerpo analizado como JSON, o `null` si no hay. |
+
+| `res` | Qué hace |
+| --- | --- |
+| `res.status(code)` | Fija el estado. El valor predeterminado es `200`. |
+| `res.header(name, value)` | Añade una cabecera. |
+| `res.json(value)` | Envía el valor como JSON, con `Content-Type: application/json` salvo que fijes otro. |
+| `res.send(text)` | Envía texto, con `Content-Type: text/plain; charset=utf-8` salvo que fijes otro. |
+
+Cada función de `res` devuelve `res`, así que las llamadas se encadenan: `res.status(201).json(order)`. Un valor que
+devuelve el manejador se envía como JSON, así que `return order` equivale a `res.json(order)`. Los manejadores pueden ser
+`async`.
+
+`state` (también `mock.state`) es un objeto que se conserva entre solicitudes, para lo que prefieres no guardar en una
+variable propia:
+
+```js
+mock.get("/me", (req, res) => {
+  state.calls = (state.calls ?? 0) + 1
+  if (state.calls % 3 === 0) return res.status(503).json({ error: "try again" })
+  // Nothing set: the routes made by hand or the spec answer this request.
+})
+```
+
+## Límites [#limits]
+
+Las rutas se ejecutan en el mismo sandbox que los [scripts de solicitud](/docs/requests/scripts-and-tests), no en Node:
+sin sistema de archivos y sin red. Cada solicitud puede ejecutar JavaScript durante 2 segundos, y el script tiene
+2 segundos para arrancar. Un manejador que lanza una excepción responde `500` con el error, que también aparece en el
+registro.
+
+## Confiar en las rutas [#trusting-routes]
+
+Las rutas son código que se ejecuta en tu Mac, así que siguen la misma regla que los scripts de solicitud. Las rutas que
+escribes y guardas en Echolot se ejecutan. Las que llegan de fuera, mediante Git, una importación u otra app que edita
+el archivo, no: la tarjeta dice **Estos scripts vienen de fuera de Echolot** y el mock no se inicia hasta que los lees y
+haces clic en **Confiar en los scripts**. Si vuelven a cambiar fuera de Echolot, Echolot vuelve a preguntar.
+
+Los agentes pueden leer las rutas de un mock, pero nunca escribirlas.
+
+## Desde la línea de comandos [#from-the-command-line]
+
+`echolot mock -w <workspace> <mock>` ejecuta un mock de un espacio de trabajo con todas sus rutas; `--routes <file>`
+ejecuta rutas en JavaScript de otro archivo, también con un archivo de especificación. Consulta
+[echolot mock](/docs/cli/mock).

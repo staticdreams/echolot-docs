@@ -1,0 +1,273 @@
+---
+title: "Scripts y pruebas"
+description: "Comprueba cada respuesta sin código en la pestaña Pruebas, o con JavaScript en scripts previos a la solicitud y de pruebas."
+---
+
+Las pruebas te dicen si una respuesta es la que esperas. Echolot ofrece dos formas de escribirlas: comprobaciones que
+configuras en la pestaña **Pruebas** de una solicitud, sin código, y scripts en JavaScript que se ejecutan antes de enviar
+una solicitud y después de que se responda. Ambos se ejecutan tras cada envío, en la [Ejecución](/docs/requests/runner) y
+en la línea de comandos.
+
+## Comprobaciones en la pestaña Pruebas [#checks-in-the-tests-tab]
+
+<Shot id="requests-tests-tab" alt="La pestaña Pruebas de List products con cuatro comprobaciones, cada una con una marca verde: el estado es igual a 200, el valor JSON $.items.length es mayor que 0, la cabecera Content-Type contiene json, el tiempo de respuesta es menor que 1000" />
+
+1. Abre una solicitud, por ejemplo **Catalog › List products** en el espacio de trabajo Alpenglow.
+2. Elige la pestaña **Pruebas**.
+3. Elige **Añadir prueba** y escoge qué comprobar.
+4. Elige una comparación en el menú de al lado y escribe el valor esperado.
+5. Envía la solicitud. Cada comprobación muestra una marca verde o una cruz roja, y una fallida dice por qué debajo.
+
+Las comprobaciones se guardan con la solicitud y se ejecutan en cada respuesta a partir de ese momento. La casilla del
+principio de una fila desactiva una comprobación sin eliminarla; el botón de menos la elimina. La insignia de la pestaña
+Pruebas cuenta las comprobaciones, y la parte inferior de la pestaña muestra cuántas se superaron, como **4 superadas** o
+**1 de 4 con error**.
+
+El valor esperado es una plantilla, así que las `{{variables}}` funcionan en él: **Catalog › Get product** comprueba que
+`$.sku` es igual a `{{productId}}`.
+
+### Qué puedes comprobar [#what-you-can-check]
+
+| Comprobación | Qué lee | Comparaciones |
+| --- | --- | --- |
+| **Estado** | El código de estado | es igual a, no es igual a, es menor que, es mayor que, es uno de |
+| **Cabecera** | Una cabecera de la respuesta, por nombre | existe, no existe, es igual a, no es igual a, contiene, no contiene, coincide con la regex |
+| **Valor JSON** | El valor en un JSONPath de un cuerpo JSON | existe, no existe, es igual a, no es igual a, contiene, no contiene, es menor que, es como máximo, es mayor que, es como mínimo, coincide con la regex, es de tipo, es uno de |
+| **Cuerpo** | El cuerpo entero como texto | contiene, no contiene, es igual a, coincide con la regex |
+| **Tiempo de respuesta (ms)** | El tiempo total del intercambio, en milisegundos | es menor que, es como máximo, es mayor que, es como mínimo |
+| **Tamaño (bytes)** | El tamaño del cuerpo en bytes | es menor que, es como máximo, es mayor que, es como mínimo |
+| **JSON Schema** | El cuerpo, frente a un JSON Schema que pegas | coincide |
+| **Errores de GraphQL** | El array `errors` de una respuesta GraphQL | es igual a, es menor que, es mayor que (su número); contiene, no contiene (sus mensajes) |
+| **Error de MCP** | Si una llamada MCP falló: `true` o `false` | es igual a |
+| **Esquema de salida de la herramienta** | El `structuredContent` del resultado de una herramienta MCP, frente al `outputSchema` de la propia herramienta | coincide |
+| **Especificación OpenAPI** | El cuerpo, frente al esquema de la especificación OpenAPI vinculada para el estado de la respuesta | coincide |
+| **Estado gRPC** | El estado de una llamada gRPC, por nombre o código | es igual a, no es igual a, es uno de |
+
+Una comprobación nueva empieza con un valor razonable: **Estado** igual a `200`, **Tiempo de respuesta (ms)** menor que
+`1000`, **Errores de GraphQL** igual a `0`, **Error de MCP** igual a `false`, **Estado gRPC** igual a `OK`, y
+**JSON Schema** con `{"type": "object"}`.
+
+### Cómo se comparan los valores [#how-values-compare]
+
+- **es igual a** compara los números como números, así que `200` es igual a `200.0`, e ignora los espacios alrededor del
+  valor.
+- **es uno de** acepta una lista separada por comas: `200, 201, 204`.
+- **coincide con la regex** se supera cuando la expresión regular coincide en cualquier parte del valor.
+- **es de tipo** acepta `object`, `array`, `string`, `number`, `integer`, `boolean` o `null`.
+- Las comparaciones numéricas necesitan números en ambos lados; cualquier otra cosa falla con un mensaje que lo indica.
+
+### Valores JSON [#json-values]
+
+La ruta es un JSONPath de claves e índices, que empieza por `$`: `$.items[0].sku`, `$.data.search.totalCount`. Un índice
+negativo cuenta desde el final: `$.items[-1]`. Añade `.length` para contar los elementos de un array o las claves de un
+objeto: `$.items.length` es mayor que `0`. Echolot lee solo la parte del cuerpo que está en el camino hacia el valor, así
+que las comprobaciones JSON funcionan con cuerpos de cualquier tamaño.
+
+**Cuerpo** con **contiene** o **no contiene** también funciona con cuerpos de cualquier tamaño. Las demás comparaciones
+del cuerpo, y **JSON Schema** y **Errores de GraphQL**, leen el cuerpo entero y se detienen en 50 MB.
+
+### Comprobaciones para otros tipos de solicitud [#checks-for-other-kinds-of-request]
+
+- **GraphQL**: los servidores responden a los errores con el estado 200, así que añade **Errores de GraphQL** igual a `0`
+  para detectarlos. Usa **contiene** para comprobar que vuelve un mensaje concreto.
+- **Llamadas MCP**: **Error de MCP** igual a `false` se supera cuando la llamada tuvo éxito. Falla con un resultado
+  marcado como error y con un error JSON-RPC, y el mensaje muestra lo que dijo el servidor. **Esquema de salida de la
+  herramienta** comprueba el resultado de una herramienta con el esquema que declara la herramienta; falla cuando la
+  herramienta no declara ninguno. Consulta [Solicitudes MCP](/docs/requests/mcp-requests).
+- **gRPC**: **Estado gRPC** acepta nombres como `OK` y `NOT_FOUND` o códigos del 0 al 16; `5`, `not_found` y `NOT_FOUND`
+  son el mismo estado. Una comprobación fallida muestra el mensaje del estado. Consulta [gRPC](/docs/requests/grpc).
+- **Especificación OpenAPI**: la carpeta de la solicitud (o una carpeta superior) debe estar vinculada a una
+  especificación, y la solicitud debe seguir una de sus operaciones. La comprobación valida entonces el cuerpo con el
+  esquema que la especificación documenta para el estado que volvió. Un estado que la especificación documenta sin cuerpo
+  JSON se supera; un estado no documentado falla. Consulta [Especificaciones](/docs/specs).
+
+### Añade comprobaciones desde una respuesta [#add-checks-from-a-response]
+
+No tienes que escribir cada comprobación:
+
+- **Generar a partir de la respuesta…** en la pestaña Pruebas propone comprobaciones a partir de la última respuesta. Las
+  comprobaciones que se cumplen en cualquier buena respuesta, como el estado, el tipo de contenido y la forma del cuerpo
+  como JSON Schema, ya vienen marcadas. Los valores que cambian entre llamadas, y el tiempo, se ofrecen pero no vienen
+  marcados. Elige **el esquema deducido** para leer un esquema propuesto. Elige **Añadir 1 prueba** (o **Añadir N
+  pruebas**) para conservar las marcadas. Envía antes la solicitud: el botón necesita una respuesta.
+- En el **Cuerpo** de la respuesta, en la vista Árbol JSON, haz clic con el botón derecho en un valor y elige
+  **Añadir aserción**: añade una comprobación **Valor JSON** de que la ruta es igual a ese valor.
+- En las **Cabeceras** de la respuesta, haz clic con el botón derecho en una cabecera y elige **Añadir comprobación**:
+  añade una comprobación **Cabecera** de que la cabecera es igual a ese valor.
+
+<Shot id="requests-tests-generate" alt="La hoja Generar pruebas a partir de la respuesta de List products, con el estado, el tipo de contenido y el esquema deducido marcados, y una comprobación de valor ofrecida pero sin marcar" />
+
+### Resultados [#results]
+
+La pestaña **Pruebas** del panel de respuesta lista cada comprobación con su resultado y el valor encontrado (`got 200`),
+y después cada prueba de los scripts. La página **Pruebas** de la barra lateral (**Vista › Pruebas**,
+<kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>) lista todas las solicitudes que tienen comprobaciones, con su situación en la última
+respuesta; haz clic en una para abrir la solicitud.
+
+## Scripts [#scripts]
+
+Los scripts son JavaScript con la API `pm.*` de Postman, así que la mayoría de los scripts de Postman se ejecutan sin
+cambios. Una solicitud puede tener dos:
+
+- Un script **previo** a la solicitud se ejecuta antes de enviarla. Puede cambiar la solicitud, establecer variables u
+  omitir la solicitud.
+- Un script de **pruebas** se ejecuta cuando llega la respuesta. Comprueba la respuesta con `pm.test` y puede guardar
+  valores para solicitudes posteriores.
+
+<Shot id="requests-scripts-tab" alt="La pestaña Scripts de List products en Pruebas, con un pm.test que comprueba el estado y el número de elementos, y el menú Fragmentos abierto" />
+
+1. Abre una solicitud y elige la pestaña **Scripts**.
+2. Elige **Previo** o **Pruebas** en la parte superior. Un punto tras el nombre, como **Pruebas •**, marca un script que
+   tiene código.
+3. Escribe el script. El editor colorea JavaScript y completa las rutas `pm.` mientras escribes. **Fragmentos** añade un
+   script ya preparado para casos habituales.
+4. Envía la solicitud.
+
+Por ejemplo, un script de pruebas para **Catalog › List products**:
+
+```js
+pm.test("Status code is 200", () => {
+  pm.response.to.have.status(200);
+});
+
+pm.test("Returns tents", () => {
+  const body = pm.response.json();
+  pm.expect(body.items.length).to.be.above(0);
+});
+```
+
+Y un script previo a la solicitud que añade una cabecera a todas las solicitudes para las que se ejecuta:
+
+```js
+pm.request.headers.add({ key: "X-Request-Id", value: pm.variables.replaceIn("{{$guid}}") });
+```
+
+Cada `pm.test` aparece en la pestaña **Pruebas** de la respuesta, bajo **Scripts**, después de las comprobaciones de la
+pestaña Pruebas. Un script que lanza una excepción se muestra como **Error del script** con su mensaje. Lo que los
+scripts escriben con `console.log`, `console.info`, `console.warn` y `console.error` aparece en la pestaña **Consola** de
+la respuesta, marcado como `pre` o `test`; la pestaña aparece una vez que se han ejecutado scripts.
+
+### Fragmentos [#snippets]
+
+| Fragmento | Para |
+| --- | --- |
+| **El código de estado es 200**, **El tiempo de respuesta es inferior a 500 ms**, **El valor JSON existe**, **La cabecera está presente**, **El cuerpo contiene un texto** | Pruebas |
+| **Guardar un valor para solicitudes posteriores** | Pruebas: `pm.environment.set("token", pm.response.json().token)` |
+| **Ejecutar otra solicitud a continuación** | Pruebas: `pm.execution.setNextRequest("Request name")` |
+| **Establecer una variable**, **Añadir una cabecera**, **Firmar la solicitud con HMAC-SHA256**, **Obtén primero un token**, **Omitir esta solicitud** | Previo |
+
+### Scripts en carpetas y en el espacio de trabajo [#scripts-on-folders-and-the-workspace]
+
+Una carpeta y el espacio de trabajo también pueden tener scripts, para todas las solicitudes que contienen. Ábrelos desde
+el menú contextual de la carpeta en la barra lateral (**Ajustes de la carpeta…**) o desde
+**Ajustes del espacio de trabajo…**, en la pestaña **Scripts**.
+
+Para cada solicitud, Echolot ejecuta primero el script del espacio de trabajo, después los de cada carpeta de fuera hacia
+dentro y por último el de la propia solicitud. El mismo orden vale para los scripts previos y los de pruebas. Solo las
+solicitudes guardadas ejecutan scripts.
+
+Las llamadas MCP no tienen pestaña Scripts ni ejecutan scripts. Todos los demás tipos de solicitud sí la tienen.
+
+### La API `pm` de un vistazo [#the-pm-api-at-a-glance]
+
+La lista completa está en la [referencia de la API de scripts](/docs/reference/scripting-api).
+
+| Objeto | Qué hace |
+| --- | --- |
+| `pm.test(name, fn)`, `pm.expect(value)` | Una prueba con nombre y aserciones al estilo Chai: `pm.expect(x).to.equal(1)` |
+| `pm.response` | La respuesta en los scripts de pruebas: `code`, `status`, `headers`, `responseTime`, `responseSize`, `json()`, `text()`, y `pm.response.to.have.status(200)`, `.header()`, `.body()`, `.jsonBody()`, `pm.response.to.be.ok`, `.success`, `.json`, `.clientError`, `.serverError`, `.notFound` |
+| `pm.request` | La solicitud: `url`, `method`, `headers`, `body`; un script previo puede añadir, reemplazar y eliminar cabeceras y parámetros de consulta |
+| `pm.variables` | Todos los ámbitos, del más cercano al más lejano: `get`, `set`, `has`, `unset`, `replaceIn`, `toObject` |
+| `pm.environment`, `pm.collectionVariables`, `pm.globals` | El entorno activo, las variables del espacio de trabajo y las variables globales |
+| `pm.iterationData` | La fila de datos de una ejecución: `get`, `has`, `toObject` |
+| `pm.info` | `requestName`, `requestId`, `iteration` (desde 0), `iterationCount`, `eventName` |
+| `pm.execution` | `setNextRequest(name)` (`null` termina la ejecución) y `skipRequest()` |
+| `pm.cookies` | Las cookies de la respuesta |
+| `pm.sendRequest` | Envía otra solicitud |
+| `console` | `log`, `info`, `warn`, `error` |
+| `CryptoJS` | `MD5`, `SHA1`, `SHA256`, `SHA512`, `HmacSHA1`, `HmacSHA256`, `HmacSHA512`, y `CryptoJS.enc` (`Hex`, `Base64`, `Utf8`, `Latin1`) |
+
+`require` da acceso a `lodash`, `ajv`, `tv4`, `crypto-js`, `uuid`, `atob` y `btoa`. `_` (lodash), `tv4`, `btoa`, `atob` y
+`setTimeout` también están disponibles sin él. Los globales antiguos de Postman (`postman.setEnvironmentVariable`,
+`tests[...]`, `environment`, `globals`, `data`, `iteration`) siguen funcionando. Cualquier otro módulo falla con "The
+module … is not available in Echolot scripts."
+
+### Variables que establecen los scripts [#variables-that-scripts-set]
+
+Lo que escriben `pm.environment.set`, `pm.collectionVariables.set` y `pm.globals.set` es un valor actual: vive mientras
+viva la ventana, prevalece sobre el valor guardado de ese ámbito cuando se resuelven las solicitudes y nunca se escribe en
+los archivos del espacio de trabajo. Así, un token que guarda un script llega a las solicitudes posteriores sin acabar en
+Git. Para conservar en el espacio de trabajo un valor de una respuesta, usa en su lugar una
+[captura](/docs/requests/captures).
+
+`pm.variables.set` establece un valor solo para la ejecución actual: una ejecución empieza sin los valores establecidos
+así por los scripts.
+
+### Enviar otra solicitud [#sending-another-request]
+
+`pm.sendRequest` envía una solicitud desde un script, por ejemplo una que obtiene antes un token. Acepta una URL o un
+objeto con `url`, `method`, `header` y `body`, y un callback o la promesa que devuelve:
+
+```js
+pm.sendRequest({
+  url: pm.variables.replaceIn("{{baseURL}}/auth/token"),
+  method: "POST",
+  header: { "Content-Type": "application/json" },
+  body: { mode: "raw", raw: JSON.stringify({ email: "heidi@alpenglow.ch", password: "alpenglow" }) },
+}, (error, response) => {
+  if (!error) pm.environment.set("token", response.json().access_token);
+});
+```
+
+La solicitud sale como cualquier otro envío de Echolot, con el mismo proxy y los mismos certificados, pero sin la
+autenticación del espacio de trabajo ni de la carpeta. Los scripts esperan hasta 30 segundos las respuestas.
+
+### Omitir solicitudes y elegir la siguiente [#skipping-requests-and-choosing-the-next-one]
+
+`pm.execution.skipRequest()` en un script previo a la solicitud impide que se envíe; el panel de respuesta y la Ejecución
+indican que se omitió. `pm.execution.setNextRequest("Get order")` en una ejecución salta a esa solicitud a continuación, y
+`setNextRequest(null)` termina la ejecución. Consulta [la Ejecución](/docs/requests/runner).
+
+## Scripts de fuera de Echolot [#scripts-from-outside-echolot]
+
+Los scripts son código, así que Echolot ejecuta solo los que tú apruebas en este Mac. Los scripts que escribes en Echolot
+son de confianza al guardarlos. Los scripts que llegan de otra manera, de una importación, de Git o de una edición en otro
+editor, esperan:
+
+- La pestaña Scripts muestra **Estos scripts vienen de fuera de Echolot**, con **Confiar en los scripts**.
+- Al enviar la solicitud se detiene con **Revisar scripts…**. Abre **¿Ejecutar estos scripts?**, con cada script que aún no
+  se ha ejecutado y de dónde viene (la solicitud, una carpeta o el espacio de trabajo). Léelos y elige **Confiar y
+  enviar**, o **Cancelar**.
+
+La confianza se conserva en este Mac, por espacio de trabajo, para el código exacto: cuando el script cambia fuera de
+Echolot, vuelve a preguntar. La confianza nunca viaja con el espacio de trabajo, así que un espacio de trabajo compartido
+no puede dar confianza a sus propios scripts.
+
+La herramienta de línea de comandos ejecuta todos los scripts del espacio de trabajo que le indicas. `echolot mcp serve`
+ejecuta solo los scripts que tenía el espacio de trabajo al arrancar.
+
+## El sandbox y sus límites [#the-sandbox-and-its-limits]
+
+Los scripts se ejecutan en un sandbox de JavaScript dentro de Echolot. No tienen sistema de archivos, ni red propia, ni
+acceso al Mac: las únicas salidas son `pm.sendRequest`, `console` y las variables. Cada envío empieza con un sandbox
+nuevo.
+
+| Límite | Valor |
+| --- | --- |
+| Tiempo de JavaScript para todos los scripts de un evento (previo o de pruebas) | 5 segundos |
+| Memoria | 128 MB |
+| Espera de las respuestas de `pm.sendRequest` | 30 segundos |
+| Cuerpo de respuesta que ve un script | Los primeros 32 MB |
+
+Un script que tarda demasiado falla con "the script took longer than 5 s"; uno que usa demasiada memoria falla con "the
+script used more memory than allowed". Los scripts aún pueden leer las variables del espacio de trabajo, incluidos los
+secretos, y enviarlas con `pm.sendRequest`, por eso los scripts de fuera esperan tu confianza.
+
+## Solución de problemas [#troubleshooting]
+
+- **Generar a partir de la respuesta… está atenuado**: envía antes la solicitud. Funciona con solicitudes HTTP y GraphQL.
+- **"no OpenAPI spec is linked to this request's folder"**: vincula la carpeta a una especificación, o elimina la
+  comprobación **Especificación OpenAPI**.
+- **"“…” is not a JSONPath this version understands"**: usa solo claves e índices, como `$.items[0].sku`.
+- **Un script no se ejecuta**: comprueba que la solicitud esté guardada, que no sea una llamada MCP y que el script no
+  esté esperando tu confianza.

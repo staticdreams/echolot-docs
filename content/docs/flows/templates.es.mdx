@@ -1,0 +1,145 @@
+---
+title: "Plantillas"
+description: "Empieza un flujo desde una plantilla ya hecha (inicio de sesión con dispositivo, token de actualización, paginar y exportar, monitor de disponibilidad, crear datos y limpiar) en la app o con echolot flow new."
+---
+
+Las plantillas son flujos ya hechos para tareas que aparecen en casi todas las APIs. Una plantilla trae los bloques, los
+enlaces entre ellos y una nota en el lienzo. No conoce tu API, así que sus bloques Solicitud y Sondear aún no tienen
+solicitud: el flujo muestra un problema por cada uno hasta que eliges una, y la nota dice qué elegir.
+
+## Crea un flujo desde una plantilla [#create-a-flow-from-a-template]
+
+**En la app:**
+
+1. En la página Flujos, haz clic en **+** junto a **Flujos** en la barra lateral.
+2. En **Desde una plantilla**, elige una plantilla. Apunta a ella para leer qué hace.
+3. El flujo se abre con el nombre de la plantilla y se ajusta a la vista. Renómbralo en **Nombre** en el inspector.
+4. Lee la nota y luego selecciona cada bloque Solicitud o Sondear y elige su **Solicitud**. Cuando desaparece el número
+   de problemas de la barra de herramientas, el flujo puede ejecutarse.
+
+<Shot id="flows-new-from-template" alt="El menú del botón + junto a Flujos en la barra lateral: Flujo vacío y luego Desde una plantilla con Inicio de sesión con dispositivo, Token de actualización, Paginar y exportar, Monitor de disponibilidad y Crear datos y limpiar" />
+
+**En la línea de comandos:**
+
+```sh
+# Enumera las plantillas
+echolot flow new
+
+# Crea un flujo a partir de una
+echolot flow new "Export products" --template paginate-and-export -w Alpenglow.echolot
+```
+
+`echolot flow new` escribe `flows/export-products.flow.toml` e imprime su ruta. Sin `--template`, crea un flujo vacío: un
+bloque Inicio enlazado con un bloque Salida. Elige las solicitudes en la app o en el archivo del flujo. Consulta
+[echolot flow](/docs/cli/flow).
+
+Los agentes también pueden crear flujos desde plantillas, a través del servidor MCP de Echolot.
+
+## Inicio de sesión con dispositivo [#device-sign-in]
+
+`device-sign-in`. Inicia sesión con la concesión de dispositivo de OAuth 2.0 (RFC 8628): pide un código de dispositivo,
+te muestra el código y el enlace, sondea el endpoint del token hasta que apruebas y guarda los tokens de acceso y de
+actualización como variables secretas.
+
+| Bloque | Tipo | Qué hace |
+| --- | --- | --- |
+| Ask for a device code | Solicitud | Envía la solicitud que responde `device_code`, `user_code`, `verification_uri`, `interval` y `expires_in`. **Pick this request.** |
+| Codes | Extraer | Extrae esos cinco valores del cuerpo (`code` es `$.body.device_code`). |
+| Show the code | Mostrar y esperar | Muestra `Open {{verification_uri}} and enter the code. This goes on by itself once you have approved it.`, el código de usuario con **Copiar código** y el enlace con **Abrir en el navegador** y un código QR. |
+| Wait for approval | Sondear | Envía la solicitud del token cada `{{interval}}` segundos hasta que responde 200 con un `access_token`, durante un máximo de `{{expires_in}}` segundos. Su variable `code` es el código de dispositivo. **Pick this request.** |
+| Save the tokens | Definir variable | Guarda `accessToken` y `refreshToken` como secretos en el entorno. |
+| Done | Plantilla | `Signed in; the tokens are in the Keychain.` |
+| Output | Salida | Devuelve ese texto. |
+
+<Shot id="flows-template-device-sign-in" alt="Un flujo creado con la plantilla Inicio de sesión con dispositivo: Inicio, Ask for a device code, Codes, Show the code y Wait for approval en paralelo, Save the tokens, Done y Output, con la nota que dice qué solicitudes elegir" />
+
+Show the code y Wait for approval se ejecutan en paralelo: la hoja se queda abierta mientras Sondear envía, y se cierra sola
+cuando Sondear lo consigue (su `success` está enlazado con el `until` de la hoja).
+
+La solicitud del token envía `grant_type` `urn:ietf:params:oauth:grant-type:device_code` con `device_code={{code}}`. Tus
+otras solicitudes usan entonces `{{accessToken}}`. Como los tokens se guardan en el entorno, ejecuta el flujo con un
+entorno elegido.
+
+## Token de actualización [#refresh-token]
+
+`refresh-token`. Obtiene un token de acceso nuevo con el token de actualización y guarda ambos como variables secretas.
+Dale una [programación](/docs/flows/running-and-triggers#schedule) en el bloque Inicio para mantener el token al día.
+
+| Bloque | Tipo | Qué hace |
+| --- | --- | --- |
+| Refresh the token | Solicitud | Envía la solicitud del token: `grant_type=refresh_token` con `refresh_token={{refreshToken}}`. **Pick this request.** |
+| Save the tokens | Definir variable | Guarda `accessToken` y `refreshToken` como secretos en el entorno. Una respuesta sin un token de actualización nuevo conserva el anterior. |
+| Valid for | Extraer | Extrae `$.body.expires_in`. |
+| Output | Salida | Devuelve cuántos segundos es válido el token nuevo. |
+| Say it failed | Notificar | Cuando la solicitud falla: `The token could not be refreshed` y `The server answered {{status}}. Sign in again.` |
+
+## Paginar y exportar [#paginate-and-export]
+
+`paginate-and-export`. Envía una solicitud una vez por página, reúne los elementos de todas las páginas en una sola lista
+y la escribe en `exports/items.json` en la carpeta del espacio de trabajo. Su entrada `pages` (un número, 3 de forma
+predeterminada) indica cuántas páginas obtener.
+
+| Bloque | Tipo | Qué hace |
+| --- | --- | --- |
+| Each page | Repetir | Se ejecuta `{{pages}}` veces. |
+| Page number | Evaluar | `return { page: index + 1 };`, así que las páginas son 1, 2, 3… |
+| Fetch the page | Solicitud | Envía la solicitud con `{{page}}` definido, por ejemplo `?page={{page}}`. **Pick this request.** |
+| Items | Extraer | Extrae `$.body`, la lista de una página. |
+| All pages | Reunir | Reúne las listas de todas las páginas. |
+| One list | Evaluar | `return pages.flat();` las une. |
+| Export | Escribir archivo | Escribe `exports/items.json` como JSON. |
+| Output | Salida | Devuelve la ruta del archivo. |
+
+Cuando la lista no es todo el cuerpo, cambia la ruta en **Items**. Con **Catalog › List products** de Alpenglow, añade
+`&page={{page}}` a su dirección y pon **Items** en `$.body.items`: la API de demostración devuelve los productos en
+`items`.
+
+## Monitor de disponibilidad [#smoke-monitor]
+
+`smoke-monitor`. Envía una solicitud cada hora y comprueba que responde 200 en menos de dos segundos; una notificación
+avisa cuando no es así. La programación (cada 60 minutos) ya está en el bloque Inicio: haz clic en **Permitir** allí
+para ponerla en marcha, o ejecútala con `echolot flow serve`.
+
+| Bloque | Tipo | Qué hace |
+| --- | --- | --- |
+| Send | Solicitud | Envía la solicitud que se vigila. **Pick this request.** |
+| Healthy | Comprobar | Comprueba **Answers 200** (`value.status === 200`) y **Within two seconds** (`value.time < 2000`). |
+| Output | Salida | Recibe la respuesta cuando se cumplen las dos comprobaciones. |
+| Unhealthy | Notificar | Cuando falla una comprobación: `Smoke check failed` y `{{url}} answered {{status}} in {{time}} ms.` |
+| Failed | Notificar | Cuando falla la solicitud: `Smoke check failed` y `The request failed or did not answer with a 2xx status.` |
+
+Como las comprobaciones de Comprobar son pruebas, `echolot flow run` falla cuando la API no está sana, lo que convierte el
+mismo flujo en una comprobación de CI.
+
+## Crear datos y limpiar [#seed-and-clean-up]
+
+`seed-and-clean-up`. Crea un registro por cada elemento de una lista, registra lo que se ha creado y después elimina cada
+registro. Pon las comprobaciones que necesitan los datos donde está el registro.
+
+| Bloque | Tipo | Qué hace |
+| --- | --- | --- |
+| Records | Valor | `[{"title": "First"}, {"title": "Second"}, {"title": "Third"}]`. |
+| Each record | Para cada | Envía cada registro por turno. |
+| Create | Solicitud | Crea un registro: las claves de cada registro son variables del envío, así que la solicitud usa `{{title}}`. **Pick this request.** |
+| Its id | Extraer | Extrae `$.body.id`. |
+| Made | Reunir | Reúne los ids nuevos. |
+| Use the data | Registro | Registra `Seeded {{value}}`. Sustitúyelo por lo que necesite los datos. |
+| Each id | Para cada | Envía cada id por turno. |
+| Delete | Solicitud | Elimina el registro, con `{{id}}` como variable. **Pick this request.** |
+| Deleted | Reunir | Reúne lo que se ha eliminado. |
+| Count | Evaluar | `return { deleted: gone.length };` |
+| Output | Salida | Devuelve cuántos se han eliminado. |
+
+Cambia **Its id** cuando el id nuevo esté en otro lugar de la respuesta.
+
+## Los flujos de Alpenglow [#the-flows-in-alpenglow]
+
+El espacio de trabajo de ejemplo tiene tres flujos para ver junto con las plantillas:
+
+- **Place a test order**: inicia sesión, hace un pedido, te pregunta con un bloque Aprobar si quieres conservarlo y lo
+  cancela cuando lo rechazas. Se ofrece a los agentes como `place_test_order`.
+- **Morning stock check**: todos los días a las 6:00, enumera los productos y muestra una notificación cuando una tienda
+  de campaña se está agotando en Bern.
+- **Order status on webhook**: responde a `POST /order-status` con un pedido.
+
+[Automatiza con flujos](/docs/tutorials/automate-with-flows) construye uno paso a paso.

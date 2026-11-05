@@ -1,0 +1,121 @@
+---
+title: "실행"
+description: "폴더, 몇 개의 요청 또는 작업 공간 전체를 검사와 함께 원하는 횟수만큼, 또는 데이터 파일의 행마다 한 번씩 실행합니다."
+---
+
+실행은 요청을 차례로 보내고 어느 요청이 통과했는지 알려 줍니다. 요청이 응답을 받고 [테스트 탭과 스크립트](/docs/requests/scripts-and-tests)의 모든 검사가 성립하면
+통과합니다. 변경 후 API 전체를 시험하거나, 같은 요청을 여러 입력으로 실행하거나, 보고서를 만들 때 사용하십시오.
+
+<Shot id="requests-runner-results" alt="Alpenglow 작업 공간 전체를 실행한 뒤의 실행 페이지: 왼쪽의 실행 카드, 요청·통과·실패·실패한 검사의 개수, 상태 코드와 시간이 있는 결과 목록" />
+
+## 실행 시작 [#start-a-run]
+
+여러 가지 방법이 있습니다.
+
+- 사이드바에서 폴더를 오른쪽 클릭하고 <strong>폴더 실행</strong>을 선택하거나, 요청을 오른쪽 클릭하고 <strong>요청 실행</strong>을 선택합니다. 실행이 바로 시작되고 실행 페이지가 열립니다.
+- 사이드바에서 폴더나 요청을 여러 개 선택하고 오른쪽 클릭하여 <strong>항목 N개 실행</strong>을 선택합니다.
+- 명령 팔레트에서 <strong>작업 공간 실행</strong>을 선택합니다.
+- 실행 페이지를 열어 실행을 설정하고 <strong>실행</strong>을 선택합니다. 실행은 사이드바의 <strong>테스트</strong> 아래에 있으며, <strong>보기 › 실행</strong>(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd>)을
+  선택해도 됩니다.
+
+실행 페이지에서는 <strong>실행</strong> 카드에 설정이 있습니다.
+
+| 설정 | 동작 |
+| --- | --- |
+| <strong>대상</strong> | <strong>작업 공간 전체</strong>, <strong>폴더</strong>에서 고른 폴더, 또는 <strong>요청 하나</strong>에서 고른 요청 하나 |
+| <strong>환경</strong> | 요청이 변수를 해석하는 기준이 되는 환경. 윈도우의 다른 곳과 같음 |
+| <strong>데이터</strong> | 데이터 파일을 위한 <strong>CSV 또는 JSON 선택…</strong>: 행마다 한 번씩 반복 |
+| <strong>반복</strong> | 전체를 몇 번 실행할지, 1에서 1000까지. 데이터 파일이 있으면 <strong>데이터 행마다 하나</strong>로 표시됨 |
+| <strong>지연</strong> | 요청 사이의 대기 시간, 0에서 60,000 ms까지 100 단위 |
+| <strong>재시도</strong> | 실패한 요청의 추가 시도 횟수, 0에서 5까지 |
+| <strong>동시 실행</strong> | 반복을 몇 개나 나란히 실행할지, 1에서 32까지. 반복이 둘 이상일 때 표시됨 |
+| <strong>첫 번째 실패 시 중단</strong> | 처음 실패하는 요청에서 실행을 끝냄 |
+
+<strong>실행</strong>(<kbd>⌘</kbd><kbd>R</kbd>)을 선택해 시작하고, <strong>중단</strong>(<kbd>⌘</kbd><kbd>.</kbd>)으로 실행을 도중에 끝냅니다. 보호된 환경이 활성 상태이면 버튼에 환경 이름과 함께
+<strong>Production에서 실행…</strong>이라고 표시되며, 실행은 무언가를 보내기 전에 먼저 확인합니다. [보호된 환경](/docs/workspaces/protected-environments)을 참고하십시오.
+
+## 실행되는 항목과 순서 [#what-runs-and-in-which-order]
+
+요청은 사이드바의 순서대로 실행됩니다. 폴더의 요청은 위에서 아래로, 그 안의 폴더는 제자리에서 실행됩니다. 각 요청은 직접 보낸 것과 똑같이 전송됩니다. 같은 변수, 인증,
+스크립트, 검사를 씁니다. 뒤의 요청은 같은 실행 안에서 앞 요청의 응답을 [응답 값](/docs/requests/dynamic-values)이나 스크립트 또는 [캡처](/docs/requests/captures)가
+설정한 변수로 사용할 수 있습니다. 예를 들어 Alpenglow 작업 공간을 실행하면 <strong>Auth › Sign in</strong>을 먼저 보내고, 이 요청이 <strong>Orders</strong> 요청들이 보내는 토큰을 캡처합니다.
+
+모든 종류의 요청을 실행할 수 있습니다.
+
+- HTTP, GraphQL, gRPC 요청과 MCP 호출은 다른 요청과 마찬가지로 전송되고 검사됩니다.
+- WebSocket, Socket.IO, MQTT 요청은 연결하고, 실행에서 켜 둔 저장된 메시지, 이벤트, 게시를 보내고(MQTT는 사용 설정된 필터도 구독), 10초 동안 수신한 다음 닫습니다.
+  메시지 로그가 응답이므로 <strong>본문</strong>에 대한 검사가 동작합니다. 수신 시간을 바꾸려면 요청 파일의 `[settings]`에 `stream-limit`(초)을 설정합니다.
+- Server-Sent Events 스트림은 10초 동안 유지된 뒤 끝납니다.
+
+사전 요청 스크립트는 `pm.execution.skipRequest()`로 요청을 건너뛸 수 있습니다. 결과에는 <strong>사전 요청 스크립트가 건너뜀</strong>이라고 표시됩니다. 스크립트는
+`pm.execution.setNextRequest("Request name")`으로 다른 요청으로 이동할 수도 있고, `pm.execution.setNextRequest(null)`로 실행을 끝낼 수도 있습니다. 계속
+뒤로 건너뛰는 실행은 한 반복에서 10,000번 보낸 뒤에 중단됩니다.
+
+## 반복과 데이터 파일 [#iterations-and-data-files]
+
+<strong>반복</strong>은 전체를 그 횟수만큼 실행합니다. `{{$uuid}}` 같은 `{{$…}}` 값은 매번 새로 만들어지며, `pm.info.iteration`은 몇 번째 반복인지(0부터) 알려 줍니다.
+
+데이터 파일은 실행을 데이터 기반으로 만듭니다. 행마다 반복이 한 번씩 실행되고, 각 열은 요청이 `{{sku}}`처럼 다른 변수와 똑같이 사용하는 변수가 됩니다. 스크립트는
+`pm.iterationData.get("sku")`로 행을 읽습니다.
+
+- <strong>CSV</strong>: 변수 이름이 있는 헤더 행과 반복마다 한 행. 따옴표, 겹따옴표, 따옴표 안의 줄 바꿈이 동작합니다.
+- <strong>JSON</strong>: 객체의 배열이며 반복마다 객체 하나입니다.
+
+예를 들어 `{{baseURL}}/products/{{sku}}`로 보내는 요청에 `$.sku`가 `{{sku}}`와 같은지 확인하는 검사가 있을 때의 `skus.csv`는 다음과 같습니다.
+
+```csv
+sku,quantity
+TNT-MH-2P,1
+PCK-TIT-30,2
+```
+
+같은 내용을 JSON으로 쓰면 다음과 같습니다.
+
+```json
+[
+  { "sku": "TNT-MH-2P", "quantity": 1 },
+  { "sku": "PCK-TIT-30", "quantity": 2 }
+]
+```
+
+<strong>데이터</strong> 필드에는 파일 이름과 행 수가 표시됩니다. 옆의 X 버튼은 파일을 제거합니다.
+
+## 병렬 반복 [#parallel-iterations]
+
+반복이 둘 이상이면 <strong>동시 실행</strong>이 여러 반복을 나란히 실행합니다. 한 반복 안의 요청은 순서를 유지하며, 각 반복은 자체 스크립트가 설정한 변수를 따로 가지므로 한 반복의 토큰이
+다른 반복으로 새어 나가지 않습니다. 반복끼리 서로 의존하거나 서버가 호출 속도를 제한하면 <strong>1(하나씩 차례로)</strong>로 두십시오.
+
+## 재시도, 지연, 중단 [#retries-delays-and-stopping]
+
+- <strong>재시도</strong>는 실패한 요청을 그 횟수까지 다시 보냅니다. 응답을 받지 못하거나 검사가 실패하면 요청이 실패한 것입니다. 결과에 <strong>시도 3회</strong>처럼 몇 번 시도했는지가
+  표시되며 마지막 시도가 보관됩니다.
+- <strong>지연</strong>은 요청 사이에 기다립니다. [데모 API](/docs/tutorials/demo-api)처럼 속도 제한이 있는 서버를 위한 것입니다.
+- <strong>첫 번째 실패 시 중단</strong>은 재시도 후에도 요청이 실패하면 실행을 끝냅니다. 요약에 <strong>실패로 중단됨</strong>이라고 표시됩니다.
+
+## 결과 [#results]
+
+실행되는 동안 목록이 채워지며 지금 보내는 요청이 표시됩니다. 위에는 개수가 있습니다. <strong>요청</strong>, <strong>통과</strong>, <strong>실패</strong>, <strong>실패한 검사</strong>, 그리고 끝나면 <strong>기간</strong>과 함께
+<strong>모두 통과</strong> 또는 <strong>N개 실패</strong>가 표시됩니다.
+
+각 행에는 요청의 종류 또는 메서드, 이름, 주소, 상태, 시간이 표시됩니다. 반복이 여러 개이면 `#2`로 그 행이 몇 번째 반복에 속하는지 알려 줍니다. 실패한 요청 아래에는
+실패한 검사가 각각의 메시지와 함께, 또는 응답이 없던 이유와 함께 표시됩니다. 행을 클릭하면 요청이 열립니다.
+
+윈도우가 열려 있는 동안 페이지는 최근 실행을 유지합니다. 실행의 모든 교환은 [기록](/docs/workspaces/history)에도 있으며 실행에서 온 것으로 표시됩니다.
+
+## 보고서 [#reports]
+
+실행이 끝난 뒤 <strong>결과</strong> 카드의 <strong>보고서 저장</strong>으로 파일에 저장합니다.
+
+| 형식 | 용도 |
+| --- | --- |
+| <strong>JUnit XML…</strong> | CI 시스템과 테스트 대시보드 |
+| <strong>JSON…</strong> | 직접 만든 도구 |
+| <strong>HTML…</strong> | 읽거나 공유할 페이지 |
+| <strong>HAR(모든 교환)…</strong> | 실행의 모든 요청과 응답. 브라우저의 개발자 도구나 다른 HTTP 도구용 |
+
+JUnit, JSON, HTML 보고서는 포함된 주소, 검사 값과 메시지, 스크립트 테스트, 로그의 비밀 값을 가립니다.
+
+## 명령줄에서 실행 [#run-from-the-command-line]
+
+`echolot run`은 CI와 터미널에서 같은 작업 공간을 같은 설정으로 실행합니다. 반복, 데이터 파일, 지연, 재시도, 병렬 반복, 같은 보고서 형식을 지원합니다.
+[echolot run](/docs/cli/run)과 [CI에서 실행하기](/docs/cli/ci)를 참고하십시오.

@@ -1,0 +1,566 @@
+---
+title: "ワークスペースのファイル"
+description: "ワークスペースの形式を、ファイルごと、キーごとに。差分を読む、ファイルを手で書く、ファイルを生成するときのために。"
+---
+
+ワークスペースは、`.echolot`で終わるフォルダで、中にプレーンなTOMLファイルが入っています。リクエスト、環境、MCPサーバ、モック、フローごとに1ファイルです。
+Finderでは1つのドキュメントとして表示されますが、ターミナル、Git、エディタからは通常のフォルダです。
+Echolotは、すべてのファイルを毎回同じ方法で書き出す（キーの順序は固定で、デフォルト値のものは書かない）ため、アプリでの変更は差分では小さな変更になります。[Gitとチーム](/docs/workspaces/git-and-teams)を参照してください。
+
+```text
+Alpenglow.echolot/
+  workspace.toml                     the workspace: ID, name, variables, auth, agents, proxy, certificates
+  environments/
+    staging.toml                     one environment
+  requests/
+    _folder.toml                     the order of the top level
+    _folder.pre.js                   the workspace's pre-request script (and _folder.test.js)
+    auth/
+      _folder.toml                   a folder: name, order, docs, variables, auth
+      sign-in.req.toml               an HTTP request
+      sign-in.body.json              its body
+      sign-in.pre.js                 its pre-request script
+      sign-in.test.js                its test script
+    catalog/
+      search-products.gql.toml       a GraphQL request
+      search-products.graphql        its query
+  mcp-servers/
+    alpenglow-mcp.toml               an MCP server
+  specs/
+    alpenglow.yaml                   an OpenAPI document
+    shop.graphql                     a GraphQL schema
+    inventory.proto                  a protobuf file
+  mocks/
+    shop.toml                        a mock server: settings and routes
+    shop.js                          its routes in JavaScript
+  flows/
+    place-test-order.flow.toml       a flow
+  assistant/
+    checking-orders.md               a shared Assistant conversation, to read
+    checking-orders.json             the same, to open in the app
+```
+
+## すべてのファイルに共通のルール [#rules-for-every-file]
+
+- ファイルはTOML 1.0、UTF-8です。
+- 各ファイルは、形式のバージョンを示す`echolot = 1`で始まります。これより大きな番号のファイルは、新しいEcholotで保存されたものです。Echolotは、そのファイルを開かずに、その旨を知らせます。
+- ファイル名は**スラッグ**です。小文字、数字、ハイフンで、最大80文字、項目の名前から作られます（`Sign in`は`sign-in`）。名前そのものは`name`キーに入ります。
+- 項目間のパスは、`requests/`からの相対で、スラッグを`/`でつないだものです：`auth/sign-in`、`orders`。
+- テキストのフィールドには、`{{variables}}`と[動的な値](/docs/reference/dynamic-values)を含められます。
+- 項目のリストは、TOMLのテーブルの配列（`[[headers]]`）です。`enabled = false`の項目は保持されますがオフになり、キーがなければオンです。
+
+## ファイルに入らないもの [#what-never-goes-in-the-files]
+
+- <strong>シークレットの値。</strong>シークレットの変数は、名前と`secret = true`だけで書かれ、値はありません。値はMacのキーチェーンに保管されます。シークレットが必要なフィールド（パスワード、プロキシのパスワード、クライアントシークレット）には、シークレットである`{{variable}}`を入れてください。
+  Echolotは、入力したパスワードをキーチェーンに移すことを提案し、読み込みでは自動的にそうします。[シークレット](/docs/workspaces/secrets)を参照してください。
+- OAuthトークンとMCPのサインイン：キーチェーン内。
+- `pm.environment.set`などでスクリプトが設定した値：ウインドウまたはコマンドの間だけ保持されます。
+- 履歴とレスポンス：MacのApplication Support内に、ワークスペースごとに1つの履歴として保存されます。[履歴](/docs/workspaces/history)を参照してください。
+- あなた自身のレイアウト：ペインのレイアウトとサイズ、開いているタブ、選択した環境。
+
+そのため、ワークスペースは安全にコミットして共有できます。チームメイトは、自分のシークレットの値を設定します。
+
+## workspace.toml [#workspacetoml]
+
+```toml
+# Echolot workspace. Requests live in requests/, one file each.
+echolot = 1
+id = "0b7d4c1e-2f6a-4e38-9c51-7a1e3d9b5f20"
+name = "Alpenglow"
+
+[[variables]]
+name = "baseURL"
+value = "https://demo.echolot.dev/v1"
+
+[[variables]]
+name = "token"
+secret = true
+```
+
+| キー | 意味 |
+| --- | --- |
+| `id` | ワークスペースのID。キーチェーン内のシークレットはこれに属するため、同じIDのコピーはシークレットを共有します。書き出したコピーには新しいIDが付きます。 |
+| `name` | ワークスペースの名前。 |
+| `[[variables]]` | ワークスペースの変数。[変数](#variables)を参照してください。 |
+| `[auth]` | 継承するすべてのリクエストの認証。[認証](#auth)を参照してください。デフォルト：なし。 |
+| `[agents]` | AIエージェントのルール。[エージェント](#agents)を参照してください。 |
+| `[proxy]` | アプリのものではなく、ワークスペース独自のプロキシ。 |
+| `[[certificates]]` | ホストごとの、信頼するCA証明書と送信するクライアント証明書。 |
+
+### プロキシ [#proxy]
+
+| キー | 意味 |
+| --- | --- |
+| `mode` | `manual`（デフォルト）、`system`、`environment`（`HTTPS_PROXY`系）、または`none`。 |
+| `url` | プロキシ：`http://host:port`、`https://…`、または`socks5://host:port`。 |
+| `username`、`password` | プロキシの資格情報。パスワードは、シークレットの`{{variable}}`として書きます。 |
+| `bypass` | 直接接続するホスト（配列）。 |
+
+### 証明書 [#certificates]
+
+各`[[certificates]]`テーブルは、1つのホストに対するルールです。
+
+| キー | 意味 |
+| --- | --- |
+| `host` | ルールの対象のホスト。 |
+| `trust` | 信頼するCA証明書のPEMファイル（配列）。 |
+| `certificate` | クライアント証明書：PEMファイル、または`.p12`/`.pfx`ファイル。 |
+| `key` | 証明書ファイルにキーがない場合の、クライアント証明書のPEMキー。 |
+| `passphrase` | キーまたはPKCS#12ファイルのパスフレーズ。シークレットの`{{variable}}`として書きます。 |
+
+### エージェント [#agents]
+
+`[agents]`は、EcholotのMCPサーバとアシスタントを通じて、AIエージェントがこのワークスペースで何をしてよいかを設定します。[エージェント](/docs/ai/agents)を参照してください。
+
+```toml
+[agents]
+allowed-hosts = ["demo.echolot.dev"]
+max-requests = 200
+max-requests-per-minute = 30
+
+[agents.rules]
+unsafe-send = "ask"
+destructive = "refuse"
+```
+
+| キー | 意味 |
+| --- | --- |
+| `enabled` | `false`にすると、このワークスペースのエージェントがオフになり、何も得られなくなります。デフォルトは`true`。 |
+| `allowed-hosts` | ワークスペースのリクエストが使うホストに加えて、ワークスペース自身のものとみなすホスト。 |
+| `max-requests` | 1つのエージェントセッションが合計で送信できるリクエスト数。 |
+| `max-requests-per-minute` | 1つのエージェントセッションが1分間に送信できるリクエスト数。 |
+| `[agents.rules]` | 操作の種類ごとのルール：`allow`、`ask`、`refuse`。 |
+
+操作の種類は、`read`、`safe-send`、`unsafe-send`、`protected-send`、`new-host`、`workspace-write`、`destructive`です。
+より厳しいルールは常に有効です。緩いルールは、あなたが信頼したあとにだけ有効になります（アプリが確認し、コマンドラインでは`--trust-workspace-policy`が必要です）。
+`protected-send`と`new-host`は、`allow`にはできません。
+
+## environments/ [#environments]
+
+環境ごとに1ファイル。ファイル名がそのスラッグで、`--env`で使われます。
+
+```toml
+echolot = 1
+name = "Production"
+protected = true
+
+[[variables]]
+name = "baseURL"
+value = "https://api.alpenglow.example/v1"
+
+[[variables]]
+name = "password"
+secret = true
+```
+
+| キー | 意味 |
+| --- | --- |
+| `name` | 環境の名前。 |
+| `protected` | `true`にすると[保護された環境](/docs/workspaces/protected-environments)になり、送信のたびに確認が表示されます。 |
+| `[[variables]]` | その環境の変数。 |
+
+### 変数 [#variables]
+
+`workspace.toml`、環境、フォルダ、リクエストで共通です。
+
+| キー | 意味 |
+| --- | --- |
+| `name` | 変数の名前。`{{name}}`として使います。 |
+| `value` | その値。シークレットでは省略されます。 |
+| `secret` | シークレットなら`true`。値はキーチェーンにあります。 |
+| `enabled` | `false`でオフにします。 |
+
+## requests/ [#requests]
+
+`requests`フォルダには、サイドバーに表示されるツリーが入っています。その中の各フォルダがツリーのフォルダ、各リクエストファイルがリクエストです。リクエストの種類は、ファイルのサフィックスで決まります。
+
+| サフィックス | 種類 |
+| --- | --- |
+| `.req.toml` | HTTP（Server-Sent Eventsを含む） |
+| `.gql.toml` | GraphQL |
+| `.grpc.toml` | gRPC |
+| `.ws.toml` | WebSocket |
+| `.sio.toml` | Socket.IO |
+| `.mqtt.toml` | MQTT |
+| `.mcp.toml` | MCPサーバの呼び出し |
+
+リクエストの横に、同じスラッグで置かれるファイル：
+
+| ファイル | 内容 |
+| --- | --- |
+| `<slug>.body.<ext>` | リクエストのボディを、その形式で：`.json`、`.xml`、`.txt`、`.html`、`.graphql`、`.form.txt`。 |
+| `<slug>.graphql` | GraphQLリクエストのクエリ。 |
+| `<slug>.pre.js` | リクエスト前スクリプト。 |
+| `<slug>.test.js` | テストスクリプト。 |
+
+### _folder.toml [#foldertoml]
+
+すべてのフォルダにあり、トップレベル用に`requests/`自体にもあります。
+
+```toml
+echolot = 1
+name = "Auth"
+order = ["sign-in", "who-am-i", "client-credentials"]
+docs = "Send \"Sign in\" first: it captures the access token into {{token}}."
+```
+
+| キー | 意味 |
+| --- | --- |
+| `name` | フォルダの名前。`requests/_folder.toml`にはありません。 |
+| `order` | フォルダ内の項目のスラッグ。サイドバーと実行で使われる順序です。リストにないものはその後に、スラッグ順で続きます。 |
+| `docs` | フォルダのドキュメント（Markdown）。 |
+| `spec` | フォルダが従う仕様。`specs/alpenglow.yaml`など。 |
+| `spec-url` | その仕様がURLから来た場合の、取得元。 |
+| `agent-tools` | `true`にすると、フォルダのリクエストをツールとしてエージェントに提供します。 |
+| `[[variables]]` | フォルダ内のすべてに適用される、フォルダの変数。 |
+| `[auth]` | 継承するフォルダ内のすべてに適用される、フォルダの認証。デフォルト：継承。 |
+
+その横の`_folder.pre.js`と`_folder.test.js`は、フォルダのスクリプトです。`requests/`にあるものは、ワークスペースのスクリプトです。
+これらは、内側のすべてのリクエストに対して、ワークスペースのものから順に、リクエスト自身のものまで実行されます。
+仕様に従うフォルダには、`_spec-lock.json`もあり、仕様から最後に取り込んだ内容が入っています。Echolotに管理させてください。
+
+### すべてのリクエストのキー [#keys-of-every-request]
+
+```toml
+echolot = 1
+name = "Sign in"
+method = "POST"
+url = "{{baseURL}}/auth/token"
+
+[body]
+syntax = "json"
+file = "sign-in.body.json"
+
+[[headers]]
+name = "Content-Type"
+value = "application/json"
+
+[[assertions]]
+target = "status"
+check = "equals"
+expected = "200"
+
+[[captures]]
+variable = "token"
+from = "json"
+path = "$.access_token"
+scope = "workspace"
+secret = true
+```
+
+| キー | 意味 |
+| --- | --- |
+| `name` | リクエストの名前。 |
+| `url` | クエリ文字列を含むURL。MCPの呼び出しを除くすべての種類にあります。 |
+| `docs` | リクエストのドキュメント（Markdown）。 |
+| `spec-operation` | 元になった仕様のオペレーション。`POST /auth/token`など。 |
+| `[[headers]]` | `name`、`value`、そしてオフにしたものには`enabled = false`。 |
+| `[[disabled-params]]` | オフにしたクエリパラメータ：`name`、`value`。オンのものはURLに入っています。 |
+| `[[disabled-form-fields]]` | オフにしたフォームフィールド：`name`、`value`。 |
+| `[[variables]]` | リクエスト自身の変数。 |
+| `[[assertions]]` | そのチェック。 |
+| `[[captures]]` | レスポンスのたびに変数へ保存する値。 |
+| `[auth]` | その認証。デフォルト：フォルダから継承。 |
+| `[settings]` | アプリのものと異なる設定。 |
+
+### HTTPリクエスト（.req.toml） [#http-requests-reqtoml]
+
+| キー | 意味 |
+| --- | --- |
+| `method` | メソッド：`GET`、`POST`、または任意のトークン。デフォルトは`GET`。 |
+| `[body]` | ボディ。省略するとなし。 |
+
+`[body]`テーブルは、次の3つの形式のいずれかを取ります。
+
+| 形式 | キー |
+| --- | --- |
+| テキスト | `syntax`：`json`、`xml`、`text`、`html`、`graphql`、`form`（URLエンコードされたフォームフィールド）。`file`：リクエストの横にあるボディのファイル。 |
+| ディスクからストリーミングするファイル | `stream-from`：ファイルのパス。 |
+| マルチパート | `syntax = "multipart"`と、パートごとの`[[body.parts]]`テーブル：`name`、そして`value`（テキスト）または`file`（パス）、`content-type`、`enabled`。 |
+
+### GraphQLリクエスト（.gql.toml） [#graphql-requests-gqltoml]
+
+```toml
+echolot = 1
+name = "Search products"
+url = "{{baseURL}}/graphql"
+operation = "SearchProducts"
+schema = "specs/shop.graphql"
+query-file = "search-products.graphql"
+graphql-variables = """
+{
+  "text": "ultralight"
+}"""
+```
+
+| キー | 意味 |
+| --- | --- |
+| `query-file` | リクエストの横にある、クエリのファイル`<slug>.graphql`。 |
+| `operation` | クエリに複数ある場合に、実行するオペレーション。 |
+| `graphql-variables` | GraphQLの変数をJSONテキストで。古いファイルでは`variables`と呼ばれていました。 |
+| `schema` | チェックと補完に使うスキーマ：`specs/`内のファイル。 |
+| `transport` | `post`（デフォルト）、`get`、またはサブスクリプション用の`websocket`。 |
+| `persisted-queries` | `true`にすると、最初はクエリのSHA-256だけを送信し、サーバがそれを知らない場合にクエリを送信します（自動永続化クエリ）。 |
+| `batch` | `true`にすると、複数のオペレーションを持つドキュメントを、オペレーションごとに1エントリの配列として送信します。 |
+| `[[uploads]]` | ファイルのアップロード：`variable`（ファイルを渡す変数）と`path`。 |
+
+### gRPCリクエスト（.grpc.toml） [#grpc-requests-grpctoml]
+
+| キー | 意味 |
+| --- | --- |
+| `proto` | サービスを記述する`.proto`ファイル。`specs/inventory.proto`など。 |
+| `reflection` | `true`にすると、代わりにサーバのリフレクションを使います。 |
+| `service` | サービス。`alpenglow.inventory.v1.Inventory`など。 |
+| `rpc` | メソッド。`Reserve`など。 |
+| `message` | JSONテキストのメッセージ。クライアントストリーミングのメソッドでは、メッセージの配列。 |
+| `deadline-ms` | ミリ秒単位のデッドライン。 |
+| `compression` | 送信するメッセージの`gzip`または`deflate`。 |
+
+### WebSocketリクエスト（.ws.toml） [#websocket-requests-wstoml]
+
+| キー | 意味 |
+| --- | --- |
+| `subprotocols` | 提示するサブプロトコル（配列）。 |
+| `[[messages]]` | 保存したメッセージ：`name`、`text`、`enabled`。 |
+
+### Socket.IOリクエスト（.sio.toml） [#socketio-requests-siotoml]
+
+| キー | 意味 |
+| --- | --- |
+| `version` | サーバのSocket.IOバージョン：`4`（デフォルト）、`3`、`2`。 |
+| `path` | サーバが待ち受けるパス。デフォルトは`/socket.io/`。 |
+| `namespace` | 参加する名前空間。`/support`など。 |
+| `socket-auth` | 認証ペイロードをJSONテキストで。 |
+| `[[emits]]` | 保存したイベント：`name`、`event`、`arguments`（JSONテキスト）、確認応答を求める`ack = true`、`enabled`。 |
+
+### MQTTリクエスト（.mqtt.toml） [#mqtt-requests-mqtttoml]
+
+| キー | 意味 |
+| --- | --- |
+| `version` | `5`（デフォルト）または`3.1.1`。 |
+| `client-id` | クライアントID。空の場合はランダムなID。 |
+| `clean-start` | `false`にすると、ブローカーにセッションを保持するよう求めます。デフォルトは`true`。 |
+| `keep-alive` | Pingの間隔（秒）。デフォルトは60。 |
+| `[will]` | 遺言メッセージ：`topic`、`payload`、`qos`、`retain`。 |
+| `[[subscriptions]]` | `filter`、`qos`（デフォルトは0）、`no-local`、`enabled`。 |
+| `[[messages]]` | パブリッシュ用に保存したメッセージ：`name`、`topic`、`payload`、`qos`、`retain`、`content-type`、`enabled`。 |
+
+ユーザー名とパスワードは、リクエストのBasic認証です。
+
+### MCPの呼び出し（.mcp.toml） [#mcp-calls-mcptoml]
+
+```toml
+echolot = 1
+name = "search_catalog"
+server = "alpenglow-mcp"
+tool = "search_catalog"
+arguments = """
+{
+  "query": "ultralight tent",
+  "limit": 3
+}"""
+```
+
+| キー | 意味 |
+| --- | --- |
+| `server` | `mcp-servers/`内のサーバのスラッグ。 |
+| `tool`、`resource`、`prompt`、または`method` | 呼び出す対象：名前でツール、URIでリソース、名前でプロンプト、または生のJSON-RPCメソッド。どれか1つ。 |
+| `arguments` | 引数をJSONテキストで。 |
+
+### チェック [#assertions]
+
+| キー | 意味 |
+| --- | --- |
+| `target` | チェックの対象：`status`、`header`、`json`、`body`、`time`（ミリ秒）、`size`（バイト）、`schema`（JSON Schema）、`graphql-errors`、`mcp-error`、`mcp-output-schema`、`openapi`、`grpc-status`。 |
+| `name` | `header`の場合：ヘッダーの名前。 |
+| `path` | `json`の場合：JSONPath。`$.items.length`など。 |
+| `check` | `equals`、`not-equals`、`contains`、`not-contains`、`less-than`、`at-most`、`greater-than`、`at-least`、`exists`、`not-exists`、`matches`（正規表現）、`is-type`、`is-one-of`、`matches-schema`。 |
+| `expected` | 比較する値。値が不要なチェックでは書かれません。 |
+| `enabled` | `false`でオフにします。 |
+
+各対象で使えるチェックは、[スクリプトとテスト](/docs/requests/scripts-and-tests)を参照してください。
+
+### キャプチャ [#captures]
+
+| キー | 意味 |
+| --- | --- |
+| `variable` | 値を保存する変数。 |
+| `from` | `json`、`form`、`msgpack`、`xml`、`header`、`cookie`、`status`、`body`。 |
+| `path` | 値の場所：JSONPath、XPath、ヘッダーまたはCookieの名前。`status`と`body`にはありません。 |
+| `scope` | `environment`（デフォルト：有効な環境）または`workspace`。 |
+| `secret` | `true`にすると、値をシークレットとしてキーチェーンに保存します。 |
+| `enabled` | `false`でオフにします。 |
+
+400以上のレスポンスや、存在しない値の場合、変数はそのまま変わりません。[キャプチャ](/docs/requests/captures)を参照してください。
+
+### 設定 [#settings]
+
+| キー | 意味 |
+| --- | --- |
+| `timeout` | やり取り全体の秒数。 |
+| `raw` | `true`にすると、自動のヘッダーを送信しません。 |
+| `verify-tls` | `false`にすると、証明書の検証をスキップします。 |
+| `follow-redirects` | `false`にすると、リダイレクトで止まります。 |
+| `max-redirects` | たどるリダイレクトの回数。 |
+| `decompress` | `false`にすると、ボディをサーバがエンコードしたままにします。 |
+| `cookies` | `false`にすると、Cookieを送信も保存もしません。 |
+| `http-version` | `automatic`、`http1`、`http2`、`http3`。 |
+| `stream-limit` | イベントストリームやセッションを待ち受ける秒数。 |
+
+[リクエストの設定](/docs/requests/settings)を参照してください。
+
+### 認証 [#auth]
+
+`[auth]`には`type`と、その種類のキーがあります。`[auth]`のないリクエストやフォルダは継承します。ワークスペースのデフォルトは認証なしです。
+
+| `type` | キー |
+| --- | --- |
+| `inherit` | なし：フォルダのものを使う。 |
+| `none` | なし：フォルダに認証があっても、認証なし。 |
+| `basic`、`digest` | `username`、`password` |
+| `bearer` | `token`。`Bearer`でない場合は`prefix` |
+| `api-key` | `name`、`value`、`in`（`header`または`query`） |
+| `oauth2` | `grant`（`authorization-code`、`client-credentials`、`device-code`）、`authorization-url`、`token-url`、`device-authorization-url`、`client-id`、`client-secret`、`scope`、`audience`、`redirect-uri`。PKCEをオフにする`pkce = false`。クライアントの資格情報をBasicではなくボディで送信する`client-authentication = "body"`。`Bearer`でない場合は`header-prefix` |
+| `aws-signature` | `access-key-id`、`secret-access-key`、`session-token`、`region`、`service` |
+| `jwt` | `algorithm`（`HS256`、`HS384`、`HS512`、`RS256`、`RS384`、`RS512`、`PS256`、`PS384`、`PS512`、`ES256`、`ES384`）、`secret`、`secret-base64`、`payload`、`header`、`iat`を省く`issued-at = false`、`expires-in`（秒、デフォルトは300）、`in`（`header`または`query`）、`prefix`、`query-name`（デフォルトは`token`） |
+| `hawk` | `id`、`key`、`algorithm`（`sha256`または`sha1`）、`ext`、`payload-hash` |
+| `edgegrid` | `client-token`、`client-secret`、`access-token`、`max-body`（デフォルトは131072）、`headers-to-sign` |
+| `ntlm` | `username`、`password`、`domain`、`workstation` |
+
+パスワード、トークン、キーは、すべてシークレットの`{{variable}}`として書いてください。[認証](/docs/requests/auth)を参照してください。
+
+## mcp-servers/ [#mcp-servers]
+
+MCPサーバごとに1ファイル。ファイル名は、MCPの呼び出しが指定するスラッグです。
+
+```toml
+echolot = 1
+name = "Alpenglow MCP"
+transport = "http"
+url = "https://demo.echolot.dev/mcp"
+```
+
+| キー | 意味 |
+| --- | --- |
+| `name` | サーバの名前。 |
+| `transport` | `http`（Streamable HTTP）または`stdio`（Echolotが起動するプログラム）。 |
+| `url` | `http`の場合：エンドポイント。 |
+| `[[headers]]` | `http`の場合：`name`、`value`、`enabled`。 |
+| `command` | `stdio`の場合：起動するプログラム。 |
+| `arguments` | `stdio`の場合：その引数（配列）。 |
+| `working-directory` | `stdio`の場合：起動するフォルダ。 |
+| `[[environment]]` | `stdio`の場合：環境変数、`name`、`value`、`enabled`。 |
+| `[oauth]` | OAuthでサインインするサーバのクライアント設定：`client-id`、`client-secret`、`scope`、`redirect-uri`。 |
+
+[サーバを追加する](/docs/mcp-servers/adding-servers)を参照してください。
+
+## specs/ [#specs]
+
+仕様ファイルはそのままの形で置かれます。OpenAPIドキュメント（`.yaml`、`.yml`、`.json`）、GraphQLスキーマ（`.graphql`のSDL、またはJSONのイントロスペクション結果）、protobufファイル（`.proto`）です。
+Echolotはそれらをその場で編集し、書式を保ちます。リクエストとモックは、`specs/alpenglow.yaml`のように、パスでそれらを指定します。[仕様](/docs/specs)を参照してください。
+
+## mocks/ [#mocks]
+
+モックサーバごとに1ファイルと、その横にJavaScriptのルート。
+
+```toml
+echolot = 1
+name = "Shop"
+spec = "specs/alpenglow.yaml"
+port = 4010
+delay = 200
+
+[[scenarios]]
+operation = "GET /products/{sku}"
+status = "404"
+
+[[routes]]
+id = "e5f6a7b8"
+method = "GET"
+path = "/users/{id}"
+summary = "One user"
+
+[[routes.responses]]
+name = "OK"
+status = 200
+content-type = "application/json"
+headers = [{ name = "X-Request-Id", value = "{{$randomUUID}}" }]
+body = """
+{
+  "id": "{{request.params.id}}",
+  "name": "{{$randomFullName}}"
+}"""
+
+[[routes.responses]]
+name = "Not found"
+status = 404
+content-type = "application/json"
+rules = [{ source = "path", name = "id", value = "0" }]
+body = """{ "error": "no user {{request.params.id}}" }"""
+```
+
+| キー | 意味 |
+| --- | --- |
+| `name` | モックの名前。 |
+| `spec` | 提供する仕様。なければ、モックのルートだけが応答します。 |
+| `port` | ポート。デフォルトは4010。 |
+| `share-on-network` | `true`にすると、このMacだけでなく、すべてのネットワークインターフェースで応答します。 |
+| `delay` | 応答の前に待つミリ秒数。 |
+| `failure-rate` | 意図的な500で応答するリクエストの割合（％）、0〜100。 |
+| `validate-requests` | `false`にすると、仕様に違反するリクエストにも応答します。デフォルトは`true`。 |
+| `[[scenarios]]` | 仕様のオペレーションに選んだ応答：`operation`（`GET /pets`など）、`status`、`example`（例の名前）。 |
+| `[[routes]]` | 手書きのルート：`id`（ルートを変更しても変わりません）、`method`（または`ANY`）、`path`（パラメータは`{id}`）、`summary`、オフのルートには`enabled = false`、`response`（デフォルトのレスポンスの名前。省略すると最初のもの）、`request-content-type`と`request-body`（そこから作るリクエストが送信する内容）。 |
+| `[[routes.responses]]` | 上のルートの応答の1つ：`name`、`status`、`content-type`、`headers`（`name`と`value`）、`rules`（`source`は`path`、`query`、`header`、`body`のいずれか。`name`。`value`は、`*`で任意、空でなし）、`body`。 |
+
+`mocks/<slug>.js`には、モックのJavaScriptのルートが入っており、手書きのルートと仕様より先に応答します。
+仕様のオペレーションのレスポンスは、モックには保存されません。例は仕様に入ります。[モック](/docs/mocks)、[ルートとダミーデータ](/docs/mocks/routes)、[JavaScriptのルート](/docs/mocks/scripted-routes)を参照してください。
+
+## flows/ [#flows]
+
+フローごとに1ファイル、`<slug>.flow.toml`。Echolotはブロック、接続、ノートを固定の順序で書き出すので、ブロックを移動しても変更は2行です。
+
+```toml
+echolot = 1
+name = "Place a test order"
+description = "Places an order, then asks a person whether to keep it."
+
+[mcp]
+tool = "place_test_order"
+description = "Places a test order on the demo shop, asking a person before keeping it."
+
+[[blocks]]
+id = "signin"
+kind = "request"
+title = "Sign in"
+position = [330, 250]
+
+[blocks.settings]
+request = "auth/sign-in"
+
+[[wires]]
+from = "start.run"
+to = "signin.run"
+```
+
+| キー | 意味 |
+| --- | --- |
+| `name`、`description` | フローの名前と、その内容。 |
+| `[mcp]` | フローをツールとしてエージェントに提供します：`tool`（その名前）と`description`。 |
+| `[schedule]` | スケジュールで実行します：`every-minutes`、または`cron`（`"0 6 * * *"`など）。 |
+| `[webhook]` | リクエストが届いたときに実行します：`method`（デフォルトは`POST`）と`path`。 |
+| `[[inputs]]` | 入力：`name`、`type`（`any`、`text`、`number`、`bool`、`object`、`list`、`secret`）、`description`、`default`、`required`。 |
+| `[[blocks]]` | ブロック：`id`、`kind`、`title`、`position`（キャンバス上の`[x, y]`）、`paused`、`color`、そして種類ごとの設定を持つ`[blocks.settings]`。 |
+| `[[wires]]` | 接続：`from`と`to`。それぞれ`block.port`。 |
+| `[[groups]]` | ブロックのグループ：`title`、`blocks`（そのID）、`color`。 |
+| `[[notes]]` | キャンバス上のノート：`text`、`frame`（`[x, y, width, height]`）。 |
+
+ブロックの種類とその設定は、[ブロック](/docs/flows/blocks)にあります。
+
+## assistant/ [#assistant]
+
+ワークスペースで共有する[アシスタント](/docs/ai/assistant)との会話：どのエディタでも読める`<slug>.md`と、Echolotが再び開くための`<slug>.json`。
+
+## その他のファイル [#other-files]
+
+Echolotが知らないファイルはそのままにされるため、README、`.gitignore`、データファイルをワークスペースに置いても構いません。
+エージェントやフローが保存するデータ（`exports/products.csv`など）は、指定された場所、つまりワークスペース内に保存されます。

@@ -1,0 +1,158 @@
+---
+title: "GraphQL"
+description: "GraphQL-Abfragen mit Vervollständigung aus dem Schema schreiben, durch Anhaken von Feldern erstellen und Fehler, Subscriptions und inkrementelle Ergebnisse lesen."
+---
+
+Eine GraphQL-Anfrage enthält eine Abfrage, ihre Variablen und das Schema, gegen das sie geschrieben ist. Echolot nutzt
+das Schema, um Felder beim Tippen zu vervollständigen, Fehler vor dem Senden zu markieren und die Typen neben der
+Antwort zu zeigen.
+
+<Shot id="requests-graphql-query" alt="Catalog › Search products: der Tab „Abfrage“ mit der Query SearchProducts, das Schemamenü mit shop.graphql und der Zahl seiner Typen und die JSON-Antwort mit totalCount und nodes" />
+
+## GraphQL-Anfrage erstellen [#create-a-graphql-request]
+
+Wähle **Datei › Neue GraphQL-Anfrage** oder **Neue GraphQL-Anfrage** im Menü **+** neben **Anfragen** in der
+Seitenleiste. Tippe den Endpunkt ins Adressfeld: für den Demo-Shop `{{baseURL}}/graphql`. Der Alpenglow-Arbeitsbereich
+hat eine fertige: **Catalog › Search products**.
+
+Der Editor hat diese Tabs: **Doku**, **Abfrage**, **Variablen**, **Header**, **Parameter**, **Auth**, **Variablen**
+(die eigenen Variablen der Anfrage), **Tests**, **Skripte** und **Einstellungen**. Header, Auth, Tests und Skripte
+funktionieren wie bei [HTTP-Anfragen](/docs/requests).
+
+## Abfrage und Variablen [#query-and-variables]
+
+Schreibe die Abfrage im Tab **Abfrage**:
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } rating stock { warehouse available } }
+  }
+}
+```
+
+und ihre Variablen als JSON im Tab **Variablen**. `{{variables}}` funktionieren im JSON:
+
+```json
+{
+  "text": "{{searchTerm}}"
+}
+```
+
+Enthält das Dokument mehrere Operationen, tippe die zu sendende in **Operation** über der Abfrage. Lass das Feld leer
+bei einem Dokument mit einer Operation.
+
+Sende mit **Senden** oder <kbd>⌘</kbd><kbd>R</kbd>.
+
+## Wie die Anfrage gesendet wird [#how-the-request-is-sent]
+
+Das Badge **GQL** vor der Adresse ist ein Menü. Unter **Senden als**:
+
+| Auswahl | Was gesendet wird |
+| --- | --- |
+| **POST (JSON-Body)** | Ein POST mit `query`, `variables` und `operationName` als JSON. Der übliche Weg |
+| **GET (in der URL)** | `query`, `variables` und `operationName` als Query-Parameter, für Server, die GET-Anfragen cachen |
+| **WebSocket (graphql-transport-ws)** | Ein WebSocket mit dem Protokoll `graphql-transport-ws`, für Subscriptions |
+
+Zwei Schalter darunter:
+
+- **Persisted Queries (APQ)** sendet zuerst den SHA-256-Hash der Abfrage ohne die Abfrage. Antwortet der Server, dass er
+  den Hash nicht kennt, sendet Echolot erneut mit der Abfrage, damit der Server sie behalten kann.
+- **Alle Operationen bündeln** sendet alle benannten Operationen des Dokuments zusammen als ein JSON-Array.
+
+## Das Schema [#the-schema]
+
+Das Schemamenü sitzt rechts im Tab **Abfrage**. Es zeigt die Schemadatei und die Zahl ihrer Typen, etwa
+`shop.graphql · … types`, oder **Kein Schema**.
+
+- **Vom Server abrufen** führt die Introspection-Abfrage gegen die Adresse der Anfrage aus und behält das Ergebnis als
+  Datei im Ordner `specs/` des Arbeitsbereichs. Wähle es erneut, um das Schema zu aktualisieren.
+- **Schema verwenden** listet die Schemadateien auf, die schon im Arbeitsbereich liegen (`.graphql`, `.graphqls` und
+  `.json`), zur Auswahl.
+- **Schemadatei hinzufügen …** nimmt eine SDL-Datei (`.graphql`) oder ein Introspection-Ergebnis (`.json`) von deinem
+  Mac.
+- **Schema-Explorer zeigen** öffnet das Schema neben der Antwort.
+- **Dieses Schema nicht mehr verwenden** nimmt das Schema von der Anfrage.
+
+Eine Schemadatei in `specs/` kann von jeder GraphQL-Anfrage gegen diesen Server geteilt und mit dem Arbeitsbereich
+committet werden. Ersetzt ein Abruf eine Schemadatei und hat sich das Schema geändert, listet
+**Das Schema hat sich geändert** die Änderungen als **Inkompatibel**, **Riskant** und **Sicher** auf, etwa ein
+entferntes Feld oder ein neues
+Pflichtargument. Inkompatible Änderungen sind die, bei denen Abfragen scheitern, die das Entfernte oder Geänderte
+nutzen. In der Befehlszeile vergleicht `echolot graphql diff` zwei Schemas auf dieselbe Weise: siehe
+[echolot graphql](/docs/cli/graphql).
+
+Lässt sich das Schema nicht lesen, zeigt das Menü **Schemaproblem**, und die Leiste unter der Abfrage sagt warum.
+
+## Vervollständigung, Probleme und Hover [#completion-problems-and-hover]
+
+Mit einem Schema hilft dir der Abfrageeditor beim Tippen:
+
+- **Vervollständigung** bietet Felder, Argumente, Eingabefelder, Typen, Enum-Werte, Variablen, Direktiven und Fragmente
+  an, die an die Stelle des Cursors passen, mit ihrer Dokumentation. Veraltete sind markiert.
+- **Probleme** werden beim Tippen unterstrichen: unbekannte Felder, falsche Argumenttypen, fehlende Pflichtargumente und
+  mehr. Die Leiste unter der Abfrage zeigt das erste und zählt die Fehler und Warnungen; zeige darauf, um alle zu lesen.
+- **Hover**: Halte den Zeiger auf ein Feld oder einen Typ, um die Signatur und Dokumentation zu sehen und ob es veraltet
+  ist.
+- <kbd>⌘</kbd>-Klick auf ein Feld oder einen Typ öffnet dessen Typ im Schema-Explorer.
+
+## Der Schema-Explorer und der Builder [#the-schema-explorer-and-the-builder]
+
+Der Tab **Schema** des Antwortbereichs zeigt das Schema der Anfrage, auch vor dem ersten Senden. Hat die Anfrage noch
+kein Schema, wähle dort **Vom Server abrufen**.
+
+**Erkunden** beginnt bei den **Einstiegspunkten** (**Query**, **Mutation** und **Subscription**). Klicke auf einen Typ,
+um seine Felder, Eingabefelder, Enum-Werte oder die Typen zu sehen, die ihn implementieren oder zu ihm gehören,
+veraltete Teile markiert. „Zurück“ führt zum vorherigen Typ. **Typen und Felder suchen** findet alles im Schema nach
+Namen.
+
+**Erstellen** schreibt die Abfrage für dich. Wähle unter **Operation** **Abfrage**, **mutation** oder **subscription**
+und hake dann Felder im Baum an: Jedes Häkchen fügt das Feld dem Abfragetext hinzu, und Abhaken nimmt es wieder heraus.
+Was du drumherum getippt hast, bleibt. Der Builder arbeitet an der in **Operation** genannten Operation oder an der
+ersten Operation dieser Art im Dokument; gibt es keine, legt er eine an.
+
+<Shot id="requests-graphql-builder" alt="Der Tab „Schema“ auf „Erstellen“ für Search products, mit angehaktem search und geöffnetem nodes, angehaktem sku, name und price und daneben der Abfrage mit denselben Feldern" />
+
+## Antworten [#responses]
+
+Die Antwort erscheint im Tab **Body** als JSON, wie jede [Antwort](/docs/requests/responses). Echolot liest außerdem,
+was GraphQL neben den Daten sagt:
+
+- **N GraphQL-Fehler** in der Zusammenfassung der Antwort: Der Server hat ein `errors`-Array gesendet, auch bei
+  HTTP 200. Klicke darauf, um jede Meldung und den zugehörigen Pfad zu lesen.
+- **Teildaten**: Daten kamen zusammen mit Fehlern zurück, sodass einige Felder `null` sind, weil sie fehlgeschlagen
+  sind.
+- **Erweiterungen**: die `extensions` der Antwort, etwa Tracing- oder Kosteninformationen.
+
+Füge im Tab **Tests** eine Prüfung **GraphQL-Fehler** mit dem Wert `0` hinzu, damit ein Durchlauf bei ihnen
+fehlschlägt. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests).
+
+## Subscriptions und inkrementelle Auslieferung [#subscriptions-and-incremental-delivery]
+
+Eine Subscription sendet Ergebnisse, bis sie endet:
+
+- Über HTTP (**POST** oder **GET**) fordert Echolot Server-Sent Events an, wenn die Operation eine Subscription ist.
+- Über **WebSocket (graphql-transport-ws)** öffnet Echolot den WebSocket, sendet die Subscription mit den Headern und
+  der Auth der Anfrage und beantwortet die Pings des Servers.
+
+Eine Abfrage mit `@defer` oder `@stream` kommt in Teilen zurück (`multipart/mixed`).
+
+In beiden Fällen bekommt der Antwortbereich einen Tab **Ereignisse**: jedes Ereignis oder jeder Teil der Reihe nach,
+nummeriert, mit seiner Art (etwa `next` oder `part`), seiner ID und seinen Fehlern. Bei `@defer` und `@stream` zeigt
+**Zusammengeführtes Ergebnis** oben das erste Ergebnis mit allen späteren Teilen angewendet. Der Tab folgt neuen
+Ereignissen, solange der Stream läuft, mit **Empfang läuft … „Stoppen“ beendet ihn.** Wähle **Abbrechen**
+(<kbd>⌘</kbd><kbd>.</kbd>), um ihn zu beenden. Ein begonnener Stream wird nicht durch die Gesamt-Zeitüberschreitung der
+Anfrage abgeschnitten.
+
+## Datei-Uploads [#file-uploads]
+
+Für eine Mutation mit einer `Upload`-Variablen fügst du die Datei im Tab **Variablen** unter **Dateien für Variablen**
+hinzu:
+
+1. Wähle **+**.
+2. Tippe die Variable, etwa `file`, oder `files.0` für das erste Element einer Liste.
+3. Tippe den Pfad der Datei, relativ zum Arbeitsbereich.
+
+Der POST folgt dann der GraphQL-Multipart-Request-Spec: Die Variable ist in `operations` `null`, und die Datei kommt in
+einen eigenen Teil.

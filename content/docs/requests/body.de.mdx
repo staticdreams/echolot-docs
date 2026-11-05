@@ -1,0 +1,112 @@
+---
+title: "Request-Body"
+description: "JSON, Formulare, Multipart-Uploads, GraphQL, Text, XML, HTML oder eine ganze Datei als Body einer HTTP-Anfrage senden."
+---
+
+Der Tab **Body** legt fest, was eine Anfrage nach ihren Headern sendet. Wähle den Typ in der Zeile oben im Tab; der
+Editor darunter passt sich an. Der Tab zeigt einen Punkt, wenn die Anfrage einen Body hat.
+
+<Shot id="requests-http-body-json" alt="Der Tab „Body“ von Create order mit gewähltem JSON, den Bestellpositionen im Editor und „Formatieren“ rechts" />
+
+## Body-Typen [#body-types]
+
+| Typ | Was gesendet wird | Content-Type, den Echolot hinzufügt |
+| --- | --- | --- |
+| **Ohne** | Kein Body. | Keiner |
+| **JSON** | Der Text im Editor. | `application/json` |
+| **URL-codiert** | Paare aus Name und Wert, wie ein Web-Formular sie sendet. | `application/x-www-form-urlencoded` |
+| **Multipart** | Textfelder und Dateien, wie ein Web-Formular mit Datei-Upload sie sendet. | `multipart/form-data` mit seiner Boundary |
+| **GraphQL** | Der Query-Text unverändert. | `application/graphql` |
+| **Roh** | Text, XML oder HTML, gewählt in einer zweiten Chip-Zeile. | `text/plain`, `application/xml` oder `text/html` |
+| **Binär** | Eine Datei, Byte für Byte. | Keiner |
+
+Der Content-Type steht im Tab **Header** unter **AUTOMATISCH**. Um einen anderen zu senden, füge einen eigenen
+`Content-Type`-Header hinzu; er ersetzt den von Echolot. Die Header für Länge und Framing werden beim Senden der
+Anfrage berechnet.
+
+Jeder Text-Body kann `{{variables}}` und [dynamische Werte](/docs/requests/dynamic-values) enthalten, die beim Senden
+eingesetzt werden:
+
+```json
+{
+  "lines": [{ "sku": "{{productId}}", "quantity": 1 }],
+  "note": "Sent at {{$isoTimestamp}}"
+}
+```
+
+## JSON [#json]
+
+Tippe oder füge JSON in den Editor ein. Er hat Zeilennummern, Syntaxfarben und die `{{`-Liste für Variablen.
+
+Klicke auf **Formatieren**, um das JSON einzurücken. Variablen bleiben, wie sie geschrieben sind: `{{productId}}` in
+einem String oder als bloßer Wert bleibt unangetastet. In einem schmalen Bereich zeigt der Knopf nur seinen Zauberstab.
+
+Zum Ausprobieren öffnest du im Alpenglow-Beispiel **Orders › Create order** und siehst dir den Body an, oder du
+sendest **Echo › Echo anything**, das den empfangenen Body zurückgibt.
+
+## URL-codiert [#url-encoded]
+
+Die Felder stehen wie Header in einer Tabelle aus **SCHLÜSSEL** und **WERT**:
+
+- Klicke auf **Feld hinzufügen**, um eines hinzuzufügen. Aktivierte Felder werden gesendet; deaktivierte bleiben
+  erhalten, werden aber nicht gesendet.
+- Klicke auf **Als Text bearbeiten**, um alle Felder als Text zu bearbeiten, eines pro Zeile als `Name: value`, mit
+  `//` vor einem Feld, das ausgeschaltet ist.
+
+Echolot codiert die Namen und Werte beim Senden, auch das, was eine Variable einsetzt, sodass ein `+`, `&` oder
+Leerzeichen in einem Wert genau so ankommt.
+
+## Multipart [#multipart]
+
+Jede Zeile ist ein Teil des Formulars:
+
+1. Setze das Häkchen, um das Feld zu senden.
+2. Tippe seinen **Namen**.
+3. Wähle **Text** oder **Datei**.
+   - Bei **Text** tippst du den **Wert**. Er darf `{{variables}}` enthalten.
+   - Bei **Datei** klickst du auf **Wählen …** und wählst die Datei. Ein Feld ohne Namen übernimmt den Namen der Datei
+     ohne Endung. Der Teil trägt den Namen der Datei als Dateinamen.
+4. Tippe optional einen Inhalts-**Typ** für den Teil, etwa `image/png`. Bleibt er leer (`Typ (auto)`), bekommt eine
+   Datei einen aus ihrer Endung (`.json`, `.png`, `.pdf` und so weiter, sonst `application/octet-stream`) und ein
+   Textfeld keinen.
+
+Klicke auf **Feld hinzufügen** für eine weitere Zeile und auf die Taste **−**, um eine zu entfernen. Dateien werden beim
+Senden der Anfrage von der Festplatte gestreamt, ein großer Upload muss also nie in den Speicher passen.
+
+## GraphQL [#graphql]
+
+**GraphQL** sendet den Query-Text als Body mit `Content-Type: application/graphql`, für Server, die eine Query so
+annehmen. Für einen vollständigen GraphQL-Client mit Variablen, Vervollständigung aus dem Schema, Schema-Explorer und
+Subscriptions erstelle stattdessen eine **Neue GraphQL-Anfrage**. Siehe [GraphQL](/docs/requests/graphql).
+
+## Roh: Text, XML und HTML [#raw-text-xml-and-html]
+
+Wähle **Roh** und dann in der Zeile daneben **Text**, **XML** oder **HTML**. Der Editor färbt XML und HTML ein, und der
+Content-Type folgt deiner Wahl.
+
+## Binär: eine Datei [#binary-a-file]
+
+Wähle **Binär**, dann **Datei auswählen …**, und wähle die Datei, die gesendet werden soll. Der Tab zeigt ihren Namen,
+ihre Größe und ihren Pfad; **Andere Datei auswählen …** ersetzt sie. Die Datei wird bei jedem Senden der Anfrage von der
+Festplatte gelesen, egal wie groß sie ist, sodass die Anfrage immer die Datei in ihrem aktuellen Stand sendet. Solange
+du keine Datei gewählt hast, wird nichts gesendet.
+
+<Edition only="appstore">
+  Die App-Store-Version kann nur Dateien lesen, die du ausgewählt hast. Eine Datei, die du im Tab **Body** wählst,
+  bleibt für spätere Sendungen lesbar. Nennt eine Anfrage eine Datei, die die App nie bekommen hat (zum Beispiel eine,
+  die ein Teammitglied auf seinem Mac gewählt hat), bricht das Senden ab und der Antwortbereich bietet
+  **Zugriff erlauben …** an: Wähle die Datei, und die Anfrage wird erneut gesendet.
+</Edition>
+
+## Wo Bodys gesichert werden [#where-bodies-are-saved]
+
+Ein getippter Body wird in einer eigenen Datei neben der Anfrage gesichert, etwa `create-order.body.json` neben
+`create-order.req.toml`, damit er sich in Git gut lesen lässt. Ein binärer Body wird als Pfad der Datei gesichert. Siehe
+[Arbeitsbereichsdateien](/docs/reference/workspace-files).
+
+## Große Bodys [#large-bodies]
+
+Binäre und Multipart-Dateien werden beim Senden von der Festplatte gestreamt, sodass Uploads jeder Größe gesendet
+werden, ohne in den Speicher geladen zu werden. Bei Antworten ist das anders: Sie werden beim Eintreffen auf die
+Festplatte geschrieben und bleiben in den Ansichten selbst bei Hunderten Megabyte flott. Siehe
+[Antworten](/docs/requests/responses#large-responses).

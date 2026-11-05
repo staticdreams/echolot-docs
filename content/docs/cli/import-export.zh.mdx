@@ -1,0 +1,108 @@
+---
+title: "echolot import 和 export"
+description: "将 cURL 命令、集合、规范和 HAR 文件带入工作区，并将工作区写出给其他工具使用。"
+---
+
+`echolot import` 将你手头的内容变成工作区文件：cURL 命令、Postman、Insomnia、Paw 或 Bruno 集合、OpenAPI 或 Swagger 规范、HAR 文件。
+`echolot export` 将工作区或其中一个文件夹写出为 Postman、Insomnia 或 Bruno 集合，或写出为 Echolot 工作区的副本。它们做的事与 App 中的**文件 › 导入…** 和**文件 › 导出工作区…** 相同；
+参见[导入](/docs/get-started/importing)和[导出](/docs/workspaces/exporting)。
+
+## echolot import [#echolot-import]
+
+```sh
+echolot import <file> [--workspace <workspace>] [--folder <folder>] [--format <format>]
+```
+
+`<file>` 是要导入的文件、一个 Bruno 集合文件夹，或用 `-` 表示从标准输入读取。
+
+格式根据内容判断。集合或规范会落在自己的文件夹中；cURL 命令会变成一个请求。写出内容的路径输出到标准输出，每行一个，摘要输出到标准错误：
+
+```sh
+pbpaste | echolot import - -w Alpenglow.echolot --folder auth
+```
+
+```text
+Imported 1 request from cURL.
+note: 1 credential kept out of the workspace files but not saved, as there is no Keychain here: auth_token_token. Set ECHOLOT_SECRET_AUTH_TOKEN_TOKEN where Echolot sends.
+auth/auth-token
+```
+
+| 你导入的内容 | 格式名称 |
+| --- | --- |
+| cURL 命令 | `curl` |
+| Postman 集合 | `postman-collection` |
+| Postman 环境 | `postman-environment` |
+| OpenAPI 3 文档（YAML 或 JSON） | `openapi` |
+| Swagger 2 文档 | `swagger` |
+| Insomnia 导出文件 | `insomnia` |
+| HAR 文件 | `har` |
+| Paw 文件 | `paw` |
+| MCP 客户端的配置（其中的服务器） | `mcp-config` |
+| Bruno 集合 | 文件夹本身，无需指定格式 |
+
+**凭据绝不会写入文件。** 在认证设置和凭据标头中找到的密码、令牌、API 密钥和其他机密值会变成机密变量，以请求和字段命名（`me_password`），而文件中保留 `{{me_password}}`。
+在 Mac 上它们存入钥匙串。没有钥匙串时（Linux、CI、`ECHOLOT_KEYCHAIN=0`），值会被省略，Echolot 会指出要设置的 `ECHOLOT_SECRET_<NAME>` 变量。报告会指出机密的名称，绝不会给出它们的值。
+
+导入规范会创建一个跟随该规范的文件夹。Echolot 会说明这一点（`note: the folder follows …`）；请用 [`echolot spec check` 和 `apply`](/docs/cli/spec)让它保持最新。
+
+### 选项 [#options]
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹（其中有 `workspace.toml` 的那个）。默认：当前文件夹。 |
+| `--folder <path>` | 导入到工作区的这个文件夹中，例如 `users/admin`。 |
+| `--format <format>` | 跳过检测：`curl`、`postman-collection`、`postman-environment`、`openapi`、`swagger`、`insomnia`、`har`、`paw` 或 `mcp-config`。 |
+
+## echolot export [#echolot-export]
+
+```sh
+echolot export <output> [--workspace <workspace>] [--folder <folder>] --format <format> [--no-environments] [--force]
+```
+
+`<output>` 是写出的位置：Postman 和 Insomnia 为文件，Bruno、Echolot 工作区以及带环境的 Postman 为文件夹。
+
+```sh
+echolot export /tmp/alpenglow.postman_collection.json -w Alpenglow.echolot --format postman
+```
+
+```text
+Exported 21 requests, 7 folders, 3 environments as Postman Collection v2.1.
+warning: 8 requests left out: Postman Collection v2.1 has no MCP requests. …
+  left out: realtime/order-updates
+  left out: inventory/reserve-stock
+  …
+warning: Response captures (Store in a Variable) are not exported; other tools set variables from scripts.
+warning: 1 password, token or key is written in clear: it is typed into an auth or header field rather than kept in a secret variable. Move it to the Keychain before sharing the file.
+/tmp/alpenglow.postman_collection.json
+```
+
+| 格式 | 接受 | 写出 |
+| --- | --- | --- |
+| `echolot` | 每种请求 | 一个带有自己 ID 的新工作区文件夹。导出文件夹时会保留它上面的各级文件夹。 |
+| `postman` | HTTP 和 GraphQL | 一个 Postman Collection v2.1 文件，或一个包含集合及其环境的文件夹。 |
+| `insomnia` | HTTP、GraphQL、WebSocket、Socket.IO 和 gRPC | 一个 Insomnia v5 文件。 |
+| `bruno` | HTTP 和 GraphQL | 一个 Bruno 集合文件夹。 |
+
+格式容纳不了的内容会在标准错误中指明：它无法容纳的请求（`left out:`），以及在转换中有所变化的部分，例如响应捕获，或另一个工具没有的动态值。
+
+**机密值绝不会写出。** 机密变量只按名称导出。如果某个凭据是直接输入在认证或标头字段中，而不是保存在机密变量里，Echolot 会发出警告，因为这样的凭据会照原样写出。
+
+Echolot 绝不会覆盖你所导出的工作区，也不会写入它的内部或周围；除非你传入 `--force`，否则也绝不会替换输出路径上的任何内容；被替换的内容会移到废纸篓。
+
+### 选项 [#options]
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹。默认：当前文件夹。 |
+| `--folder <path>` | 只导出工作区的这个文件夹，例如 `users/admin`。 |
+| `--format <format>` | `echolot`、`postman`、`insomnia` 或 `bruno`。必填。 |
+| `--no-environments` | 不导出环境。 |
+| `--force` | 替换输出路径上已有的内容。 |
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | 已导入或已导出。警告不会改变它。 |
+| `1` | 无法读取或写入文件。 |
+| `64` | 未知格式，或输出路径已存在而未带 `--force`。 |

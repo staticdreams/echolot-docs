@@ -1,0 +1,127 @@
+---
+title: "Routen per Skript"
+description: "Beantworte die Anfragen eines Mocks in JavaScript, bevor seine anderen Routen und seine Spec greifen, mit Zustand, der erhalten bleibt, solange der Mock läuft."
+---
+
+[Von Hand angelegte Routen](/docs/mocks/routes) und eine Spec antworten mit Antworten, die du aufschreibst. Manchmal
+muss ein Mock mehr können: sich die Bestellung merken, die ein Client gerade aufgegeben hat, eine Antwort berechnen oder
+beim dritten Aufruf fehlschlagen. **Routen in JavaScript** sind kleine Handler, die die Anfragen eines Mocks zuerst
+beantworten. Ihre Variablen leben, solange der Mock läuft, sie können also Zustand zwischen Anfragen behalten. Alles,
+was eine Route nicht behandelt, geht weiter an die von Hand angelegten Routen des Mocks und dann an seine Spec.
+
+## Routen schreiben [#writing-routes]
+
+Öffne einen Mock auf der Seite „Mocks“ und scrolle zur Karte **Routen in JavaScript**. Schreibe die Routen im Editor und
+klicke dann auf **Routen sichern**. **Zurücksetzen** geht zum gesicherten Stand zurück.
+
+<Shot id="mocks-routes" alt="Die Karte „Routen in JavaScript“ eines Mocks mit Code, der Bestellungen in einer Liste hält, der Zeile „Läuft: POST /orders, GET /orders/:id“ unter dem Editor und dem Protokoll, das bei jeder Bestellanfrage die Skript-Route nennt, die geantwortet hat" />
+
+Dieses Beispiel für einen Mock der Alpenglow-Spec hält die Bestellungen, die ein Client aufgibt, und liefert sie per ID
+zurück:
+
+```js
+let orders = []
+
+mock.post("/orders", (req, res) => {
+  const order = { id: "ord_" + (orders.length + 1), status: "pending", ...req.json() }
+  orders.push(order)
+  res.status(201).header("Location", "/v1/orders/" + order.id).json(order)
+})
+
+mock.get("/orders/:id", (req, res) => {
+  const order = orders.find(o => o.id === req.params.id)
+  return order ?? res.status(404).json({ error: "no such order" })
+})
+```
+
+Nach dem Sichern listet die Karte die Routen, die das Skript registriert hat (`Running: POST /orders, GET /orders/:id`),
+oder, in Orange, warum das Skript nicht geladen wurde. Die Routen liegen in `mocks/<name>.js` neben den Einstellungen des
+Mocks und kommen so mit dem Arbeitsbereich in Git.
+
+## Wann Routen laufen [#when-routes-run]
+
+- Routen in JavaScript antworten **zuerst**, vor den von Hand angelegten Routen und der Spec. Die erste Route, deren
+  Methode und Pfad passen, antwortet.
+- Pfade liegen **unterhalb des Serverpfads der Spec**, wenn der Mock eine Spec bereitstellt: Schreibe `/orders`, nicht
+  `/v1/orders`.
+- Eine Route, die nichts festlegt und nichts zurückgibt, **gibt die Anfrage weiter** an die von Hand angelegten Routen
+  und die Spec, die wie gewohnt antworten. Damit behandelst du nur einige Anfragen, etwa eine mit einem bestimmten
+  Query-Parameter.
+- Das Skript läuft einmal, wenn der Mock startet. Seine Variablen auf oberster Ebene und das Objekt `state` leben, bis
+  der Mock stoppt.
+- **Das Sichern startet die Routen neu, mit frischem Zustand.** Änderungen an der Spec, an den von Hand angelegten
+  Routen oder an den Einstellungen des Mocks lassen ihn bestehen.
+- Anfragen werden nacheinander behandelt, sodass der Zustand konsistent bleibt.
+
+Das [Protokoll](/docs/mocks#the-log) des Mocks markiert jede Anfrage, die eine Route behandelt hat, mit dem Namen der
+Route: Halte den Zeiger darauf für **Von dieser Route beantwortet** oder **Von dieser Route weitergegeben** (an die von
+Hand angelegten Routen oder die Spec). Was eine Route mit `console.log` schreibt, erscheint im Protokoll unter der
+Anfrage.
+
+## Die Routen-API [#the-routes-api]
+
+Registriere Routen mit `mock` und einer Methode:
+
+| Funktion | Trifft auf |
+| --- | --- |
+| `mock.get(path, handler)` | `GET` |
+| `mock.post`, `mock.put`, `mock.patch`, `mock.delete`, `mock.head`, `mock.options` | Diese Methode |
+| `mock.any(path, handler)` | Jede Methode |
+
+In einem Pfad passt `:name` auf ein Segment und legt es in `req.params.name` ab; `*` passt auf den Rest.
+
+Ein Handler bekommt `req` und `res`:
+
+| `req` | Was es enthält |
+| --- | --- |
+| `req.method` | Die Methode, in Großbuchstaben. |
+| `req.path` | Der Pfad, unterhalb des Serverpfads der Spec. |
+| `req.params` | Die `:name`-Segmente des Pfads. |
+| `req.query` | Die Query-Parameter, je Name der letzte Wert. |
+| `req.headers` | Die Header, mit Namen in Kleinbuchstaben. |
+| `req.body` | Der Body als Text. |
+| `req.json()` | Der Body als JSON gelesen oder `null`, wenn es keinen gibt. |
+
+| `res` | Was es tut |
+| --- | --- |
+| `res.status(code)` | Legt den Status fest. Standard ist `200`. |
+| `res.header(name, value)` | Fügt einen Header hinzu. |
+| `res.json(value)` | Sendet den Wert als JSON, mit `Content-Type: application/json`, sofern du keinen setzt. |
+| `res.send(text)` | Sendet Text, mit `Content-Type: text/plain; charset=utf-8`, sofern du keinen setzt. |
+
+Jede Funktion von `res` gibt `res` zurück, die Aufrufe lassen sich also verketten: `res.status(201).json(order)`. Ein
+Wert, den der Handler zurückgibt, wird als JSON gesendet, `return order` ist also dasselbe wie `res.json(order)`.
+Handler dürfen `async` sein.
+
+`state` (auch `mock.state`) ist ein Objekt, das zwischen Anfragen erhalten bleibt, für das, was du lieber nicht in einer
+eigenen Variablen hältst:
+
+```js
+mock.get("/me", (req, res) => {
+  state.calls = (state.calls ?? 0) + 1
+  if (state.calls % 3 === 0) return res.status(503).json({ error: "try again" })
+  // Nothing set: the routes made by hand or the spec answer this request.
+})
+```
+
+## Grenzen [#limits]
+
+Routen laufen in derselben Sandbox wie [Anfrageskripte](/docs/requests/scripts-and-tests), nicht in Node: kein
+Dateisystem und kein Netzwerk. Jede Anfrage darf 2 Sekunden lang JavaScript ausführen, und das Skript hat 2 Sekunden zum
+Starten. Ein Handler, der eine Ausnahme wirft, antwortet mit `500` und dem Fehler, der auch im Protokoll erscheint.
+
+## Routen vertrauen [#trusting-routes]
+
+Routen sind Code, der auf deinem Mac läuft, deshalb gilt für sie dieselbe Regel wie für Anfrageskripte. Routen, die du in
+Echolot schreibst und sicherst, laufen. Routen von außerhalb, über Git, einen Import oder eine andere App, die die Datei
+bearbeitet, laufen nicht: Die Karte meldet **Diese Skripte stammen nicht aus Echolot**, und der Mock startet erst, wenn
+du sie gelesen und auf **Skripten vertrauen** geklickt hast. Ändern sie sich außerhalb von Echolot erneut, fragt Echolot
+wieder nach.
+
+Agenten können die Routen eines Mocks lesen, aber nie schreiben.
+
+## Über die Befehlszeile [#from-the-command-line]
+
+`echolot mock -w <workspace> <mock>` führt den Mock eines Arbeitsbereichs mit allen seinen Routen aus; `--routes <file>`
+führt Routen in JavaScript aus einer anderen Datei aus, auch mit einer Spec-Datei. Siehe
+[echolot mock](/docs/cli/mock).

@@ -1,0 +1,106 @@
+---
+title: "echolot spec"
+description: "Prüfe OpenAPI-Dokumente in CI und halte einen Ordner, der einer Spec folgt, mit ihr auf dem neuesten Stand."
+---
+
+`echolot spec` bringt zwei Dinge der [Seite „Specs“](/docs/specs) ins Terminal: den Linter und die Verknüpfung zwischen
+einer Spec und dem Ordner mit den Anfragen, die daraus gemacht wurden.
+
+| Unterbefehl | Was er macht |
+| --- | --- |
+| `echolot spec lint` | Prüft ein OpenAPI- oder Swagger-Dokument; endet mit 1, wenn es Fehler hat (mit `--strict` auch bei Warnungen). |
+| `echolot spec check` | Listet auf, was sich in der Spec geändert hat, der ein Ordner folgt; endet mit 1, wenn der Ordner nicht aktuell ist. |
+| `echolot spec apply` | Wendet die Änderungen der Spec auf den Ordner an und behält Änderungen, die im Arbeitsbereich gemacht wurden. |
+
+## echolot spec lint [#echolot-spec-lint]
+
+```sh
+echolot spec lint <file> [--strict] [--hints]
+```
+
+`<file>` ist die Spec, YAML oder JSON. Dateien, auf die sie mit `$ref` verweist, werden von daneben gelesen.
+
+```sh
+echolot spec lint Alpenglow.echolot/specs/alpenglow.yaml
+```
+
+```text
+0 errors, 0 warnings.
+```
+
+Jedes Problem ist eine Zeile in der Standardausgabe, mit Datei, Zeile und Spalte, dem Schweregrad, der Meldung und der
+Regel in Klammern, damit Editoren und CI darauf zeigen können. Die Anzahl geht in die Standardfehlerausgabe:
+
+```text
+api.yaml:2:1: error: info needs a version (of the API, such as 1.0.0). [info]
+api.yaml:7:7: error: GET /x documents no responses. [responses]
+api.yaml:6:5: hint: GET /x has no operationId; code generators and agents name it from one. [operation-id]
+2 errors, 0 warnings.
+```
+
+| Option | Bedeutung |
+| --- | --- |
+| `--strict` | Auch bei Warnungen fehlschlagen. |
+| `--hints` | Auch Hinweise auflisten: gute Praxis, etwa operationIds und Beschreibungen. Hinweise lassen nie fehlschlagen. |
+
+Die Regeln sind dieselben wie auf der Seite „Specs“; siehe [Specs bearbeiten](/docs/specs/editing).
+
+## echolot spec check [#echolot-spec-check]
+
+```sh
+echolot spec check [--workspace <workspace>] <folder> [--refresh]
+```
+
+Ein Ordner, der durch den Import einer Spec entstand oder in der App mit einer verknüpft wurde, folgt dieser Spec.
+`check` vergleicht den Ordner mit der Spec, wie sie jetzt ist, und listet jede Operation auf, die `added`, `changed`
+(mit den Feldern) oder `removed` wurde. Bei einer Änderung an etwas, das du im Arbeitsbereich bearbeitet hast, steht
+das dabei: Diese Änderungen bleiben erhalten.
+
+```sh
+echolot spec check -w Shop.echolot pets
+```
+
+```text
+added    POST /pets
+changed  GET /pets/{id}  (parameters, responses)
+removed  DELETE /pets/{id}
+3 changes, 12 unchanged.
+```
+
+| Option | Bedeutung |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Der Ordner des Arbeitsbereichs. Standard: der aktuelle Ordner. |
+| `--refresh` | Die Spec zuerst erneut von ihrer URL abrufen. |
+
+`<folder>` ist der Pfad des verknüpften Ordners, etwa `pets`. Nutze `check` in CI, um einen Build fehlschlagen zu
+lassen, wenn die Anfragen hinter der Spec zurückgeblieben sind.
+
+## echolot spec apply [#echolot-spec-apply]
+
+```sh
+echolot spec apply [--workspace <workspace>] <folder> [--operation <operation> ...]
+```
+
+Schreibt die Änderungen der Spec in den Ordner: Neue Operationen werden Anfragen, geänderte werden aktualisiert,
+entfernte werden entfernt. Was du in einer Anfrage bearbeitet hast, bleibt erhalten. Eine Anfrage, die du bearbeitet
+hast und deren Operation die Spec nicht mehr hat, bleibt ebenfalls und folgt der Spec nicht mehr. Jede Zeile sagt, was
+passiert ist:
+
+```text
+added    pets/create-pet
+updated  pets/get-pet  kept edits to headers
+removed  pets/delete-pet
+```
+
+| Option | Bedeutung |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Der Ordner des Arbeitsbereichs. Standard: der aktuelle Ordner. |
+| `--operation <operation>` | Nur diese Operation, etwa `"GET /pets"`. Wiederholbar; jede Änderung, wenn weggelassen. |
+
+## Exit-Codes [#exit-codes]
+
+| Code | Wann |
+| --- | --- |
+| `0` | `lint`: keine Fehler (und mit `--strict` keine Warnungen). `check`: Der Ordner ist aktuell. `apply`: angewendet. |
+| `1` | `lint`: Fehler oder mit `--strict` Warnungen. `check`: Es gibt Änderungen, die anzuwenden sind. |
+| `64` | Eine falsche Option oder ein Ordner, der keiner Spec folgt. |

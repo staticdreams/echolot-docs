@@ -1,0 +1,147 @@
+---
+title: "Modèles"
+description: "Démarrez un flux à partir d’un modèle prêt à l’emploi (connexion par appareil, jeton d’actualisation, pagination et export, surveillance de disponibilité, création et nettoyage de données) dans l’app ou avec echolot flow new."
+---
+
+Les modèles sont des flux prêts à l’emploi pour des tâches qui reviennent dans la plupart des API. Un modèle apporte les
+blocs, les liens entre eux et une remarque sur le canevas. Il ne connaît pas votre API : ses blocs Requête et
+Interroger n’ont donc pas encore de requête, et le flux signale un problème pour chacun jusqu’à ce que vous en
+choisissiez une ; la remarque indique laquelle choisir.
+
+## Créer un flux à partir d’un modèle [#create-a-flow-from-a-template]
+
+**Dans l’app :**
+
+1. Sur la page Flux, cliquez sur **+** à côté de **Flux** dans la barre latérale.
+2. Sous **À partir d’un modèle**, choisissez un modèle. Pointez-le pour lire ce qu’il fait.
+3. Le flux s’ouvre avec le nom du modèle et s’ajuste à la vue. Renommez-le sous **Nom** dans l’inspecteur.
+4. Lisez la remarque, puis sélectionnez chaque bloc Requête ou Interroger et choisissez sa **Requête**. Quand le
+   compteur de problèmes de la barre d’outils a disparu, le flux peut s’exécuter.
+
+<Shot id="flows-new-from-template" alt="Le menu du bouton + à côté de Flux dans la barre latérale : Flux vide, puis À partir d’un modèle avec Connexion par appareil, Jeton d’actualisation, Paginer et exporter, Surveillance de disponibilité et Peupler puis nettoyer" />
+
+**En ligne de commande :**
+
+```sh
+# List the templates
+echolot flow new
+
+# Create a flow from one
+echolot flow new "Export products" --template paginate-and-export -w Alpenglow.echolot
+```
+
+`echolot flow new` écrit `flows/export-products.flow.toml` et imprime son chemin. Sans `--template`, il crée un flux
+vide : un bloc Démarrer relié à un bloc Sortie. Choisissez les requêtes dans l’app, ou dans le fichier du flux. Voir
+[echolot flow](/docs/cli/flow).
+
+Les agents peuvent aussi créer des flux à partir de modèles, via le serveur MCP d’Echolot.
+
+## Connexion par appareil [#device-sign-in]
+
+`device-sign-in`. Se connecte avec l’octroi OAuth 2.0 par appareil (RFC 8628) : demande un code d’appareil, vous montre
+le code et le lien, interroge le point de terminaison du jeton jusqu’à ce que vous approuviez, et enregistre les jetons
+d’accès et d’actualisation comme variables secrètes.
+
+| Bloc | Type | Ce qu’il fait |
+| --- | --- | --- |
+| Ask for a device code | Requête | Envoie la requête qui répond `device_code`, `user_code`, `verification_uri`, `interval` et `expires_in`. **Choisissez cette requête.** |
+| Codes | Extraire | Extrait ces cinq valeurs du corps (`code` est `$.body.device_code`). |
+| Show the code | Afficher et attendre | Affiche `Open {{verification_uri}} and enter the code. This goes on by itself once you have approved it.`, le code utilisateur avec **Copier le code**, et le lien avec **Ouvrir dans le navigateur** et un code QR. |
+| Wait for approval | Interroger | Envoie la requête de jeton toutes les `{{interval}}` secondes jusqu’à ce qu’elle réponde 200 avec un `access_token`, pendant `{{expires_in}}` secondes au plus. Sa variable `code` est le code d’appareil. **Choisissez cette requête.** |
+| Save the tokens | Définir une variable | Enregistre `accessToken` et `refreshToken` comme secrets dans l’environnement. |
+| Done | Modèle | `Signed in; the tokens are in the Keychain.` |
+| Output | Sortie | Renvoie ce texte. |
+
+<Shot id="flows-template-device-sign-in" alt="Un flux créé à partir du modèle Connexion par appareil : Démarrer, Ask for a device code, Codes, Show the code et Wait for approval côte à côte, Save the tokens, Done et Output, avec la remarque indiquant quelles requêtes choisir" />
+
+Show the code et Wait for approval s’exécutent côte à côte : la feuille reste ouverte pendant que Interroger envoie, et
+se ferme d’elle-même quand Interroger réussit (son `success` est relié au `until` de la feuille).
+
+La requête de jeton envoie `grant_type` `urn:ietf:params:oauth:grant-type:device_code` avec `device_code={{code}}`. Vos
+autres requêtes utilisent ensuite `{{accessToken}}`. Comme les jetons sont enregistrés dans l’environnement, exécutez le
+flux avec un environnement choisi.
+
+## Jeton d’actualisation [#refresh-token]
+
+`refresh-token`. Obtient un nouveau jeton d’accès avec le jeton d’actualisation et enregistre les deux comme variables
+secrètes. Donnez-lui une [planification](/docs/flows/running-and-triggers#schedule) sur le bloc Démarrer pour garder le
+jeton à jour.
+
+| Bloc | Type | Ce qu’il fait |
+| --- | --- | --- |
+| Refresh the token | Requête | Envoie la requête de jeton : `grant_type=refresh_token` avec `refresh_token={{refreshToken}}`. **Choisissez cette requête.** |
+| Save the tokens | Définir une variable | Enregistre `accessToken` et `refreshToken` comme secrets dans l’environnement. Une réponse sans nouveau jeton d’actualisation conserve l’ancien. |
+| Valid for | Extraire | Extrait `$.body.expires_in`. |
+| Output | Sortie | Renvoie pendant combien de secondes le nouveau jeton est valide. |
+| Say it failed | Notifier | Quand la requête échoue : `The token could not be refreshed` et `The server answered {{status}}. Sign in again.` |
+
+## Paginer et exporter [#paginate-and-export]
+
+`paginate-and-export`. Envoie une requête par page, rassemble les éléments de chaque page en une seule liste et l’écrit
+dans `exports/items.json` dans le dossier de l’espace de travail. Son entrée `pages` (un nombre, 3 par défaut) indique
+combien de pages récupérer.
+
+| Bloc | Type | Ce qu’il fait |
+| --- | --- | --- |
+| Each page | Répéter | S’exécute `{{pages}}` fois. |
+| Page number | Évaluer | `return { page: index + 1 };`, pour que les pages soient 1, 2, 3… |
+| Fetch the page | Requête | Envoie la requête avec `{{page}}` défini, par exemple `?page={{page}}`. **Choisissez cette requête.** |
+| Items | Extraire | Extrait `$.body`, la liste d’une page. |
+| All pages | Collecter | Rassemble les listes de chaque page. |
+| One list | Évaluer | `return pages.flat();` les joint. |
+| Export | Écrire un fichier | Écrit `exports/items.json` en JSON. |
+| Output | Sortie | Renvoie le chemin du fichier. |
+
+Quand la liste n’est pas tout le corps, changez le chemin dans **Items**. Avec **Catalog › List products** d’Alpenglow,
+ajoutez `&page={{page}}` à son adresse et réglez **Items** sur `$.body.items` : l’API de démo renvoie les produits sous
+`items`.
+
+## Surveillance de disponibilité [#smoke-monitor]
+
+`smoke-monitor`. Envoie une requête toutes les heures et vérifie qu’elle répond 200 en moins de deux secondes ; une
+notification signale quand ce n’est pas le cas. La planification (toutes les 60 minutes) est déjà sur le bloc Démarrer :
+cliquez sur **Autoriser** pour la lancer, ou exécutez-la avec `echolot flow serve`.
+
+| Bloc | Type | Ce qu’il fait |
+| --- | --- | --- |
+| Send | Requête | Envoie la requête à surveiller. **Choisissez cette requête.** |
+| Healthy | Vérifier | Vérifie **Answers 200** (`value.status === 200`) et **Within two seconds** (`value.time < 2000`). |
+| Output | Sortie | Reçoit la réponse quand les deux vérifications passent. |
+| Unhealthy | Notifier | Quand une vérification échoue : `Smoke check failed` et `{{url}} answered {{status}} in {{time}} ms.` |
+| Failed | Notifier | Quand la requête échoue : `Smoke check failed` et `The request failed or did not answer with a 2xx status.` |
+
+Comme les vérifications de Vérifier sont des tests, `echolot flow run` échoue quand l’API est en mauvais état, ce qui
+fait du même flux un contrôle de CI.
+
+## Peupler puis nettoyer [#seed-and-clean-up]
+
+`seed-and-clean-up`. Crée un enregistrement par élément d’une liste, journalise ce qui a été créé, puis supprime chaque
+enregistrement. Placez les vérifications qui ont besoin des données là où se trouve le journal.
+
+| Bloc | Type | Ce qu’il fait |
+| --- | --- | --- |
+| Records | Valeur | `[{"title": "First"}, {"title": "Second"}, {"title": "Third"}]`. |
+| Each record | Pour chaque | Envoie chaque enregistrement à tour de rôle. |
+| Create | Requête | Crée un enregistrement : les clés de chaque enregistrement sont des variables de l’envoi, la requête utilise donc `{{title}}`. **Choisissez cette requête.** |
+| Its id | Extraire | Extrait `$.body.id`. |
+| Made | Collecter | Rassemble les nouveaux ID. |
+| Use the data | Journal | Journalise `Seeded {{value}}`. Remplacez-le par ce qui a besoin des données. |
+| Each id | Pour chaque | Envoie chaque ID à tour de rôle. |
+| Delete | Requête | Supprime l’enregistrement, avec `{{id}}` comme variable. **Choisissez cette requête.** |
+| Deleted | Collecter | Rassemble ce qui a été supprimé. |
+| Count | Évaluer | `return { deleted: gone.length };` |
+| Output | Sortie | Renvoie combien ont été supprimés. |
+
+Changez **Its id** quand le nouvel ID se trouve ailleurs dans la réponse.
+
+## Les flux d’Alpenglow [#the-flows-in-alpenglow]
+
+L’espace de travail d’exemple contient trois flux à regarder en parallèle des modèles :
+
+- **Place a test order** : se connecte, passe une commande, vous demande avec un bloc Approuver si vous la gardez, et
+  l’annule si vous refusez. Il est proposé aux agents sous le nom `place_test_order`.
+- **Morning stock check** : chaque jour à 6 h 00, liste les produits et affiche une notification quand une tente
+  vient à manquer à Berne.
+- **Order status on webhook** : répond à `POST /order-status` avec une commande.
+
+[Automatiser avec des flux](/docs/tutorials/automate-with-flows) en construit un pas à pas.

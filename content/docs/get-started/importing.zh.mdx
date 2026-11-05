@@ -1,0 +1,97 @@
+---
+title: "导入"
+description: "把 cURL、Postman、Insomnia、OpenAPI、Swagger、HAR、Paw 和 Bruno 中的请求导入工作区，并读懂导入报告。"
+---
+
+Echolot 可以把你在其他工具中已有的内容导入工作区：请求、文件夹、认证、变量、环境和脚本。它会根据内容判断格式，把凭据移入钥匙串，并在报告中告诉你哪些内容无法带过来。
+
+## Echolot 导入什么 [#what-echolot-imports]
+
+| 格式 | 文件 | 带过来的内容 |
+| --- | --- | --- |
+| **cURL** | 一条 `curl …` 命令，粘贴或位于文本文件中 | 一个请求：方法、地址、标头、正文、Basic 认证，以及重定向和 TLS 检查等设置。 |
+| **Postman** | Collection v2.0 和 v2.1，环境（`.json`） | 文件夹、请求、认证、集合变量、请求前脚本和测试脚本；环境会成为[环境](/docs/workspaces/environments)。 |
+| **Insomnia** | v4 JSON 导出文件，v5 YAML 集合 | 文件夹、请求、认证、环境。 |
+| **OpenAPI** | OpenAPI 3.0 和 3.1，Swagger 2.0，JSON 或 YAML | 每个操作对应一个请求，包含其参数、示例正文和安全方案的认证。服务器地址会成为变量 `{{baseUrl}}`。 |
+| **HAR** | 来自浏览器或代理的 HTTP Archive 1.2（`.har`） | 会话中的 API 调用；有多个主机时，每个主机一个文件夹。 |
+| **Paw** | Paw 和 RapidAPI for Mac 文档（`.paw`） | 分组、请求、环境；Paw 的动态值会尽可能成为 Echolot 的[变量和动态值](/docs/requests/dynamic-values)。 |
+| **Bruno** | 集合文件夹（含 `bruno.json` 或 `.bru` 文件） | 文件夹、请求、认证、环境、脚本和测试，保持原样。 |
+
+集合、规范、HAR 文件或 Bruno 文件夹会放入一个以它命名的单独文件夹。一条 cURL 命令则成为一个请求。
+
+来自 Claude Desktop、Claude Code、Cursor、VS Code 和 Codex 的 MCP 服务器配置也可以作为 MCP 服务器导入：参见[添加服务器](/docs/mcp-servers/adding-servers)。
+
+## 在 App 中导入 [#import-in-the-app]
+
+以下方式任选其一。导入的内容会放入边栏中选中的文件夹，或者工作区的顶层。
+
+- **文件 › 导入…**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd>），或边栏 **+** 菜单中的**导入…**，或[命令面板](/docs/get-started/the-window#the-command-palette)。选取一个或多个文件，或者一个 Bruno 集合文件夹。
+- 把文件或 Bruno 文件夹**拖放**到窗口内容面板的任意位置，或者边栏中的某个文件夹上。
+- 把 cURL 命令，或者集合或规范的文本**粘贴**到边栏（焦点在边栏时按 <kbd>⌘</kbd><kbd>V</kbd>）。
+- **把 cURL 命令粘贴到请求的地址栏。** 这种方式不会创建请求：它会替换已打开请求的方法、地址、标头、正文、认证和设置，并保留其名称和位置。无法使用的内容会在地址栏下方列为 **cURL 注释**。
+
+<Shot id="get-started-import-report" alt="导入 Postman 集合后的导入报告：导入的请求和文件夹数量、无法原样导入的内容的注释，以及移入钥匙串的机密" />
+
+### 导入报告 [#the-import-report]
+
+导入完成后会打开一份报告。标题说明导入了什么（“已导入 22 个请求、7 个文件夹”）；标题下方说明来自哪些格式，以及是否全部导入。然后按文件列出：
+
+- **注释**：所有无法原样带过来的内容。没有注释就不会丢弃任何内容。
+- **机密**：存入钥匙串而不是文件的值的名称。绝不会显示值本身。
+
+**在边栏中显示**会选中导入的内容；**完成**会关闭报告。没有任何注释的单条 cURL 命令会直接打开，不显示报告。
+
+## 机密存入钥匙串 [#secrets-go-to-the-keychain]
+
+工作区文件中绝不会出现明文的密码、令牌或密钥，因此你可以放心地把它们提交到 Git。
+
+- **输入到请求中的凭据**（在认证中、在 `Authorization` 标头中、在 API 密钥标头中）会成为机密变量，以请求和字段命名。例如，`curl -u heidi:alpenglow https://demo.echolot.dev/echo/basic-auth/heidi/alpenglow` 会生成一个名为 `heidi-alpenglow` 的请求，它的密码是 `{{heidi_alpenglow_password}}`；值存入钥匙串。
+- **环境和集合中的机密值**也以同样的方式存入钥匙串。
+
+地址查询字符串中、正文中以及 `user:password@` 形式的地址中的凭据目前不会被移走：提交导入的工作区之前，请先检查这些地方。参见[机密](/docs/workspaces/secrets)。
+
+## 脚本 [#scripts]
+
+来自 Postman 的请求前脚本和测试脚本会被带过来，并在 Echolot 的 `pm.*` 沙盒中运行。App 只有在你信任导入的脚本后才会运行它们：报告会说明有多少个脚本，第一次需要它们的发送会请你查看（**查看脚本…**）。Bruno 的脚本和测试会原样带过来，但 Bruno 的 `bru`、`req` 和 `res` 不是 Postman 的 `pm`，所以运行之前可能需要修改。参见[脚本与测试](/docs/requests/scripts-and-tests)。
+
+## 无法带过来的内容 [#what-doesnt-come-across]
+
+出现下列情况时，报告会逐一指明：
+
+| 格式 | 省略或更改的内容 |
+| --- | --- |
+| cURL | Cookie 文件、Echolot 没有对应设置的选项、没有冒号的标头。从文件读取的正文或表单字段（`-d @file`、`-F field=@file`）会在发送请求时从该文件读取。 |
+| Postman | Echolot 没有的认证类型。文件正文和文件字段：请重新选取文件。 |
+| Insomnia | Echolot 没有的项目类型。Echolot 没有对应功能的模板标签（`{% … %}`）会保留为文本。Echolot 没有的认证类型。文件正文和字段。Echolot 不提供的 OAuth 2.0 授权方式会变成授权码授权。 |
+| OpenAPI | 位于请求无法容纳的位置的参数、类型无法容纳的请求正文、OAuth 流程（请手动设置认证）、以 Cookie 发送的 API 密钥（请添加 `Cookie` 标头）。没有服务器或服务器地址为相对地址的规范：发送前请设置 `{{baseUrl}}`。已弃用的操作仍会导入。 |
+| HAR | 图片、字体、脚本和样式表。重复的请求只导入一次。携带浏览器会话凭据的标头：请改为在文件夹上设置认证。 |
+| Paw | Echolot 没有的类型的动态值会变成空文本。文件引用和客户端证书：请重新设置。 |
+| Bruno | Echolot 没有的正文和认证模式。整个文件夹共用的标头（Echolot 的文件夹没有标头）：请把它们添加到请求或请求前脚本中。Echolot 没有对应运算符的断言。 |
+
+## OpenAPI 文件保持关联 [#openapi-files-stay-linked]
+
+导入 OpenAPI 或 Swagger 文件时，也会在工作区的 `specs/` 文件夹中保留一份副本，新的请求文件夹会跟随这份规范：规范更改时，Echolot 可以显示改了什么，并应用到请求上。请在[规范](/docs/specs)页面编辑规范。
+
+## 通过命令行导入 [#import-from-the-command-line]
+
+`echolot import` 可把同样的格式导入工作区文件夹，因此你可以用脚本完成迁移，或在 CI 中导入：
+
+```sh
+echolot import Alpenglow.postman_collection.json -w "Alpenglow.echolot"
+echolot import staging.postman_environment.json -w "Alpenglow.echolot"
+echolot import openapi.yaml -w "Alpenglow.echolot" --folder catalog
+pbpaste | echolot import - -w "Alpenglow.echolot"       # a cURL command from the clipboard
+```
+
+它会根据内容检测格式；`--format` 可跳过检测（`curl`、`postman-collection`、`postman-environment`、`openapi`、`swagger`、`insomnia`、`har`、`paw` 或 `mcp-config`）。它会输出同样的报告：
+
+```txt
+Imported 22 requests, 7 folders from Postman collection v2.1.
+warning: 19 pre-request or test scripts were imported; Echolot runs them once you trust them.
+```
+
+在 Mac 上，机密会像在 App 中一样存入钥匙串。没有钥匙串的地方（Linux，或设置了 `ECHOLOT_KEYCHAIN=0`），它们不会写入文件，工具会告诉你在发送的位置要设置哪些 `ECHOLOT_SECRET_<NAME>` 变量。命令行工具本身会不经询问地运行所有脚本，与 Newman 相同。
+
+运行 Postman 集合并不需要先导入：`echolot run collection.json` 会按原样运行它。参见[导入和导出](/docs/cli/import-export)和 [`echolot run`](/docs/cli/run)。
+
+反向操作请参见[导出](/docs/workspaces/exporting)。

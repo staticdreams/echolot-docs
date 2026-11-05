@@ -1,0 +1,134 @@
+---
+title: "첫 번째 작업 공간"
+description: "데모 API를 대상으로 요청, 폴더, 환경, 비밀 값, Git을 갖춘 작업 공간을 처음부터 만듭니다."
+---
+
+이 튜토리얼에서는 Alpenglow 숍을 위한 작업 공간을 직접 만듭니다. 폴더 안의 요청 두 개, 서버 주소를 담은 환경, 키체인에 보관하는 암호, 그리고 이 모두를 담는
+Git 저장소입니다.
+
+- **소요 시간:** 15분.
+- **필요한 것:** Echolot, 그리고 마지막 부분을 위한 Git(터미널에서 `git --version`. macOS가 설치를 제안합니다).
+- **배우는 내용:** 작업 공간이 디스크에 어떻게 구성되는지, 그리고 커밋해도 안전한 이유.
+
+## 1. 작업 공간 만들기 [#1-make-the-workspace]
+
+1. <strong>Echolot에 오신 것을 환영합니다</strong> 윈도우에서 <strong>새로운 작업 공간…</strong>을 선택합니다. 작업 공간 윈도우에서는 <strong>파일 › 새로운 작업 공간…</strong>
+   (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>)을 선택합니다.
+2. **새로운 작업 공간** 패널에서 이름을 `Alpenglow Shop`으로 하고 `~/Projects` 같은 폴더를 고릅니다. Echolot이 `.echolot` 확장자를 붙입니다.
+3. **생성**을 선택합니다.
+
+**이 작업 공간은 비어 있음**이 표시된 윈도우가 열립니다. 디스크에서 `Alpenglow Shop.echolot`은 `workspace.toml`과 빈 `requests` 폴더를 담은 폴더입니다.
+Finder에서는 파일 하나처럼 보이며, 더블 클릭하면 작업 공간이 열립니다.
+
+## 2. 첫 번째 요청 보내기 [#2-send-your-first-request]
+
+1. 빈 페이지에서 **새로운 요청**을 선택하거나 **파일 › 새로운 요청**(<kbd>⌘</kbd><kbd>N</kbd>)을 선택합니다. 요청이 이름을 편집할 수 있는 상태로 사이드바에
+   나타납니다.
+2. `List products`를 입력하고 <kbd>↩</kbd>를 누릅니다.
+3. 메서드는 **GET**으로 둡니다. URL 필드에 다음을 입력합니다.
+
+   ```text
+   https://demo.echolot.dev/v1/products?category=tents
+   ```
+
+   쿼리 매개변수는 **매개변수** 탭에도 나타나며, 거기서 표로 편집할 수 있습니다.
+4. **보내기**(<kbd>⌘</kbd><kbd>R</kbd> 또는 <kbd>⌘</kbd><kbd>↩</kbd>)를 선택합니다.
+
+응답 패널에 `200 OK`와 시간, 크기가 표시됩니다. **본문** 탭에는 상품이 JSON으로 들어 있습니다. 보기를 **JSON 트리**로 바꾸면 목록을 접고 펼칠 수 있습니다.
+각 탭은 [응답 페이지](/docs/requests/responses)에서 설명합니다.
+
+저장 명령은 없습니다. Echolot은 입력을 멈춘 직후 요청을 저장합니다. 사이드바 아래쪽에 **모두 저장됨**이라고 표시됩니다.
+
+## 3. 요청을 폴더에 넣기 [#3-put-requests-in-a-folder]
+
+1. **파일 › 새로운 폴더**(<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>)를 선택하고 `Catalog`를 입력한 뒤 <kbd>↩</kbd>를 누릅니다.
+2. **List products**를 **Catalog**로 드래그합니다.
+3. **Catalog**를 오른쪽 클릭하고 **새로운 요청**을 선택합니다. 이름을 `Get product`로 합니다.
+4. URL을 `https://demo.echolot.dev/v1/products/TNT-MH-2P`로 설정하고 보냅니다.
+
+텐트 하나, 마터호른 2P가 가격과 취리히, 베른의 재고와 함께 나옵니다. 각 요청은 별도의 파일입니다. `requests/catalog/get-product.req.toml`입니다. 폴더는 그 안의
+모든 요청에 적용되는 인증, 변수, 스크립트도 가질 수 있습니다. [폴더](/docs/workspaces/folders)를 참고하십시오.
+
+## 4. 주소를 환경으로 옮기기 [#4-move-the-address-into-an-environment]
+
+모든 요청에 서버 주소를 직접 입력하면 서버를 바꾸기 어렵습니다. 대신 환경에 넣습니다.
+
+1. <strong>보기 › 환경</strong>(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>)을 선택하거나, 페이지 헤더의 환경 메뉴를 열고 <strong>환경 관리…</strong>를 선택합니다.
+2. **+**(**환경 추가**)를 선택합니다. **새로운 환경**이 나타납니다. **이름**을 `Demo`로 바꿉니다.
+3. **변수 추가**를 선택합니다. **이름**을 `baseURL`로, **값**을 `https://demo.echolot.dev/v1`로 설정합니다.
+4. 이름이 `Local`이고 `baseURL`이 `http://localhost:8787/v1`인 두 번째 환경을 추가합니다. 이는 사용자의 Mac에서 실행하는 데모 API이며, 이 튜토리얼에서는 실행하지
+   않아도 됩니다.
+5. 페이지 헤더의 환경 메뉴에서 **Demo**를 선택합니다.
+6. **List products**로 돌아가 URL을 `{{baseURL}}/products?category=tents`로 바꿉니다. **Get product**도 같게 합니다. `{{baseURL}}/products/TNT-MH-2P`입니다.
+
+`{{`를 입력하는 동안 변수 목록이 나타납니다. URL에서 `{{baseURL}}`은 토큰으로 표시되며, 포인터를 올리면 현재 환경에서의 값을 볼 수 있습니다. 두 요청을 다시 보내면 여전히
+데모 API에 도달합니다. **Local**을 선택하면 다른 변경 없이 사용자의 Mac으로 가게 됩니다.
+
+<Shot id="tutorials-first-workspace-environment" alt="환경 하나가 선택된 환경 페이지: baseURL과 wsURL 변수, 그리고 비밀 값인 password" />
+
+## 5. 암호를 비밀로 유지하기 [#5-keep-a-password-secret]
+
+숍에 로그인하려면 암호가 필요합니다. 암호는 커밋하는 파일에 절대 들어가면 안 됩니다.
+
+1. **환경** 페이지에서 **Demo**를 선택하고 **변수 추가**를 선택합니다.
+2. 이름을 `password`로 하고 **비밀 키** 체크 상자를 선택합니다. 값 필드가 **이 Mac에 설정되지 않음**이라고 표시되는 암호 필드로 바뀝니다.
+3. `alpenglow`를 입력하고 <kbd>↩</kbd>를 누릅니다(또는 **저장**을 선택합니다). 열쇠 아이콘은 값이 키체인에 있다는 뜻입니다.
+4. 폴더 `Auth`를 만들고 그 안에 요청 `Sign in`을 만듭니다. 메서드를 **POST**로, URL을 `{{baseURL}}/auth/token`으로 설정합니다.
+5. **본문** 탭에서 **JSON**을 선택하고 다음을 입력합니다.
+
+   ```json
+   { "email": "heidi@alpenglow.ch", "password": "{{password}}" }
+   ```
+
+6. 보냅니다.
+
+`access_token`이 포함된 `200 OK`가 옵니다. JSON 본문이면 Echolot이 `Content-Type: application/json`을 직접 추가합니다. `environments/demo.toml`을 보면
+`password` 변수가 `secret = true`로 있고 값은 없습니다. 값은 이 Mac의 키체인에만 있으므로 작업 공간을 여는 사람마다 직접 설정합니다.
+[비밀 값](/docs/workspaces/secrets)을 참고하십시오.
+
+[다음 튜토리얼](/docs/tutorials/chain-requests)에서는 이 토큰을 필요로 하는 요청에 사용합니다.
+
+## 6. 작업 공간을 Git에 넣기 [#6-put-the-workspace-in-git]
+
+Echolot에는 자체 Git 명령이 없습니다. 작업 공간은 일반 TOML 파일이므로 코드와 마찬가지로 Git을 사용합니다.
+
+1. 사이드바 아래쪽에서 작업 공간 메뉴를 열고 **Finder에서 보기**를 선택합니다. `Alpenglow Shop.echolot` 폴더를 터미널 아이콘으로 드래그하거나 `cd`로 들어갑니다.
+2. 다음을 실행합니다.
+
+   ```sh
+   git init
+   git add .
+   git commit -m "Alpenglow Shop: catalog and sign-in"
+   ```
+
+커밋한 내용은 다음과 같습니다.
+
+```text
+Alpenglow Shop.echolot/
+├── workspace.toml
+├── environments/
+│   ├── demo.toml
+│   └── local.toml
+└── requests/
+    ├── _folder.toml
+    ├── auth/
+    │   ├── _folder.toml
+    │   ├── sign-in.req.toml
+    │   └── sign-in.body.json
+    └── catalog/
+        ├── _folder.toml
+        ├── get-product.req.toml
+        └── list-products.req.toml
+```
+
+비밀인 것은 하나도 없고 `.gitignore`가 필요한 것도 없습니다. 응답과 기록은 작업 공간 밖의 Echolot 자체 저장소에 보관됩니다. 각 파일은 매번 같은 방식으로 기록되므로
+diff에는 바꾼 내용만 나타납니다.
+
+다른 사람이 변경 사항을 가져오면 열려 있는 윈도우가 스스로 반영합니다. 저장하지 않은 수정 사항이 있는 동안 디스크의 파일이 바뀌면 **디스크에서 이 요청이 변경되었습니다**라는
+막대가 표시됩니다. **디스크 버전 사용** 또는 **내 변경 사항 유지**를 선택합니다. 자세한 내용은 [Git과 팀](/docs/workspaces/git-and-teams)에 있습니다.
+
+## 다음 단계 [#next-steps]
+
+- [요청 연결하기](/docs/tutorials/chain-requests): **Sign in**의 토큰을 필요한 모든 요청에 보냅니다.
+- [보호된 환경](/docs/workspaces/protected-environments): 중요한 서버로 보낼 때마다 Echolot이 먼저 묻게 합니다.
+- [작업 공간 파일](/docs/reference/workspace-files): 모든 파일과 필드.

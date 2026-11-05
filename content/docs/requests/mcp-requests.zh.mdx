@@ -1,0 +1,87 @@
+---
+title: "MCP 请求"
+description: "调用 MCP 服务器的工具、读取它的资源、获取它的提示词，或发送任何 JSON-RPC 方法，并作为带检查的请求存储。"
+---
+
+MCP 请求是对工作区某个 [MCP 服务器](/docs/mcp-servers)的已存储调用：工具调用、资源读取、提示词，或任何 JSON-RPC 方法。存储你常用的调用，添加检查，
+并像其他任何请求一样在[运行器](/docs/requests/runner)中运行它们。
+
+<Shot id="requests-mcp-call" alt="Agent tools › search_catalog：Alpenglow MCP 上的服务器菜单，已选取“工具”，JSON 参数及其下方工具的字段，以及带绿色“结果”标记的结果" />
+
+## 在“MCP 服务器”页面试一次调用 [#try-a-call-from-the-mcp-servers-page]
+
+最快的开始方式是在服务器本身上：
+
+1. 打开 **MCP 服务器** 页面并选取一个服务器，例如 **Alpenglow MCP**，它指向 `https://demo.echolot.dev/mcp`。
+2. 如果还没检查过，选取 **检查**。页面会列出服务器的 **工具**、**资源** 和 **提示词**。
+3. 点按某个工具、资源或提示词。会打开一个面板，显示它的参数。
+4. 填写参数，可以用根据输入 Schema 生成的 **表单**，也可以用 **JSON**，然后选取 **调用**。
+5. 结果显示在下方，附有 **结果** 或 **错误** 以及所用的时间。
+6. 选取 **存储为请求**，把这次调用连同其参数存储为 MCP 请求。
+
+<Shot id="requests-mcp-call-panel" alt="“MCP 服务器”页面上 search_catalog 工具的调用面板，其中有 query 和 limit 的表单，下方是 JSON 结果" />
+
+## 创建 MCP 请求 [#create-an-mcp-request]
+
+在边栏中 **请求** 旁边的 **+** 菜单里选取 **新建 MCP 调用**。编辑器的栏中包含这次调用：
+
+1. 从开头的菜单中选取服务器。同一菜单中的 **MCP 服务器…** 会打开“MCP 服务器”页面。
+2. 选取要调用的内容：**工具**、**资源**、**提示词** 或 **方法**。
+3. 输入目标：**工具名称**、**资源 URI**、**提示词名称**，或 JSON-RPC 方法，例如 `ping`。输入时会在 **来自服务器** 下提供服务器最近一次检查得到的名称。
+4. 选取 **调用**（<kbd>⌘</kbd><kbd>R</kbd>）。运行期间，**取消**（<kbd>⌘</kbd><kbd>.</kbd>）可以停止它。
+
+| 操作 | 发送的内容 | 参数是什么 |
+| --- | --- | --- |
+| **工具** | `tools/call`，带工具的名称 | 工具的参数 |
+| **资源** | `resources/read`，带 URI | 不使用 |
+| **提示词** | `prompts/get`，带提示词的名称 | 提示词的参数 |
+| **方法** | 任何 JSON-RPC 方法 | 方法的 params |
+
+编辑器有这些标签页：**文档**、**参数**、**变量**、**测试** 和 **设置**。MCP 请求自身没有标头、认证或脚本：服务器的连接设置、标头和登录都在“MCP 服务器”页面上。
+见[添加服务器](/docs/mcp-servers/adding-servers)。
+
+## 参数 [#arguments]
+
+**参数** 标签页包含一个 JSON 对象，可以使用 `{{variables}}`：
+
+```json
+{
+  "query": "ultralight tent",
+  "limit": 3
+}
+```
+
+当服务器最近一次检查已知该工具时，标签页会在编辑器上方显示它的说明，下方显示它的字段，例如 `Fields: query*, limit`；星号标出必填字段。**从 Schema 填充** 会把参数替换为
+工具输入 Schema 的每个字段，作为起点。
+
+Alpenglow 工作区在 **Agent tools** 中有两个调用：**search_catalog**，参数如上；以及 **order_status**，它查询 `{"order_id": "ord_7Hk2Lw"}`。
+
+## 结果 [#results]
+
+响应窗格在 **正文** 标签页中以 JSON 显示结果，和任何[响应](/docs/requests/responses)一样。响应摘要中的标记显示绿色的 **结果** 或红色的 **错误**，并附有服务器所用的协议版本。
+将指针指向它，可查看是谁应答的，或哪里出了问题。
+
+调用可能以两种方式失败，Echolot 会把它们分开：
+
+- 服务器返回错误：标记为错误的工具结果，或 JSON-RPC 错误。标记显示 **错误**，正文是服务器所说的内容。
+- 调用始终没有得到应答：连不上服务器、服务器无法启动，或违反协议。响应窗格会说明原因。请在“MCP 服务器”页面检查服务器：它的消息日志显示最近一次检查的每条消息。
+
+每次调用都保存在[历史记录](/docs/workspaces/history)中。
+
+## MCP 的检查 [#checks-for-mcp]
+
+在 **测试** 标签页中：
+
+- **MCP 错误** 等于 `false`，在调用成功时通过。失败时会显示服务器的消息。
+- **工具输出 Schema** 依据工具声明的 `outputSchema` 检查结果的 `structuredContent`。工具没有声明，或结果没有 `structuredContent` 时，检查失败。
+- **JSON 值** 检查结果的任意值，例如 `$.structuredContent.results.length` 大于 `0`，或 `$.content[0].type` 等于 `text`。
+
+每种检查和比较见[脚本和测试](/docs/requests/scripts-and-tests)。
+
+<Edition only="appstore">
+  App Store 版本通过 HTTP 调用 MCP 服务器。作为本地程序运行（stdio）的服务器仍保留在工作区中，但调用它们需要直接下载版本或命令行工具。
+</Edition>
+
+## 通过命令行 [#from-the-command-line]
+
+`echolot run` 运行已存储的 MCP 请求及其检查，`echolot mcp check` 检查服务器。见 [echolot mcp](/docs/cli/mcp)。

@@ -1,0 +1,351 @@
+---
+title: "API de scripts"
+description: "Todo lo que puede usar un script previo a la solicitud o de prueba, el objeto pm, expect, los ayudantes de JSON Schema y las bibliotecas, y lo que no hay."
+---
+
+Los scripts son JavaScript que se ejecuta antes de enviar una solicitud (previo a la solicitud) o cuando llega su
+respuesta (de prueba). Usan la API `pm` de Postman, así que los scripts de las colecciones de Postman se ejecutan tal
+cual. Esta página lista todo. Para escribirlos en la app y leer sus resultados, consulta
+[scripts y pruebas](/docs/requests/scripts-and-tests).
+
+## Dónde se ejecutan los scripts [#where-scripts-run]
+
+- Los scripts de una solicitud están en su pestaña **Scripts**, guardados como `<slug>.pre.js` y `<slug>.test.js` junto
+  a la solicitud. Las carpetas y el espacio de trabajo también tienen scripts (`_folder.pre.js`, `_folder.test.js`);
+  consulta [archivos del espacio de trabajo](/docs/reference/workspace-files#_foldertoml).
+- Para cada solicitud, se ejecuta primero el script del espacio de trabajo, después el de cada carpeta de fuera adentro
+  y, por último, el de la propia solicitud. Todos los scripts de un mismo evento comparten un sandbox.
+- Las llamadas MCP no tienen scripts.
+- Los scripts que llegaron de fuera de Echolot (una importación, Git, otro editor) se ejecutan solo cuando confías en
+  ellos: **Confiar en los scripts**, tras leerlos con **Revisar scripts…**.
+- La herramienta de línea de comandos también ejecuta scripts, en [`echolot run`](/docs/cli/run) y
+  [`echolot send`](/docs/cli/send).
+
+## El sandbox [#the-sandbox]
+
+Los scripts se ejecutan en un motor de JavaScript aislado (QuickJS) dentro de Echolot, sin sistema de archivos, sin red
+propia y sin módulos de Node.js. La única salida es `pm.sendRequest`, que envía a través de Echolot.
+
+| Límite | Valor |
+| --- | --- |
+| Tiempo de JavaScript para todos los scripts de un evento | 5 segundos |
+| Memoria | 128 MB |
+| Espera de cada respuesta de `pm.sendRequest` | 30 segundos |
+| Cuerpo de respuesta que ve un script | Los primeros 32 MB |
+
+Un script que lanza una excepción, o que supera un límite, se notifica como un error de script, que cuenta como una
+prueba fallida.
+
+## pm.test [#pmtest]
+
+```js
+pm.test("Status is 200", () => {
+  pm.response.to.have.status(200);
+});
+
+pm.test("Has products", () => {
+  const body = pm.response.json();
+  pm.expect(body.items).to.be.an("array").that.is.not.empty;
+});
+```
+
+| Forma | Significado |
+| --- | --- |
+| `pm.test(name, fn)` | Una prueba con nombre. Se supera cuando `fn` termina sin lanzar una excepción. |
+| `pm.test(name, async () => { … })` | Una prueba que devuelve una promesa se supera cuando la promesa se resuelve. |
+| `pm.test(name, done => { … })` | Una prueba que recibe un argumento se supera cuando llama a `done()`, falla con `done(error)` o si nunca lo llama. |
+| `pm.test.skip(name, fn)` | Una prueba omitida, listada pero no contada. |
+| `tests[name] = condition` | La forma antigua: se supera cuando la condición es verdadera. |
+
+Las pruebas de los scripts previos a la solicitud también cuentan.
+
+## pm.expect [#pmexpect]
+
+`pm.expect(value)` (o `expect(value)`) es una aserción al estilo de Chai. Los fallos se leen como los de Chai:
+`expected 401 to equal 200`.
+
+**Palabras de encadenamiento**, que se leen bien y no hacen nada: `to`, `be`, `been`, `is`, `that`, `which`, `and`,
+`has`, `have`, `with`, `at`, `of`, `same`, `but`, `does`, `still`, `also`.
+
+**Indicadores:** `not` (niega), `deep` (compara por valor), `nested` (rutas con puntos en `property`), `own`, `any`,
+`all`, `ordered`.
+
+| Aserción | Se supera cuando |
+| --- | --- |
+| `.equal(x)`, `.equals`, `.eq` | El valor es `x` (`===`; por valor con `deep`). |
+| `.eql(x)`, `.eqls` | El valor es profundamente igual a `x`. |
+| `.above(n)`, `.gt`, `.greaterThan` | El valor es mayor que `n`. |
+| `.least(n)`, `.gte`, `.greaterThanOrEqual` | El valor es al menos `n`. |
+| `.below(n)`, `.lt`, `.lessThan` | El valor es menor que `n`. |
+| `.most(n)`, `.lte`, `.lessThanOrEqual` | El valor es como mucho `n`. |
+| `.within(a, b)` | El valor está entre `a` y `b`, ambos incluidos. |
+| `.closeTo(x, delta)`, `.approximately` | El valor está a menos de `delta` de `x`. |
+| `.a(type)`, `.an(type)` | El tipo del valor es `type`: `string`, `number`, `boolean`, `object`, `array`, `null`, `undefined`, `regexp`, `date`, `error`, `function`. |
+| `.instanceof(C)`, `.instanceOf` | El valor es una instancia de `C`. |
+| `.include(x)`, `.includes`, `.contain`, `.contains` | Una cadena contiene `x`, un array tiene `x`, un objeto tiene las claves y los valores de `x`. |
+| `.ok` | El valor es verdadero (truthy). |
+| `.true`, `.false`, `.null`, `.undefined`, `.NaN` | El valor es exactamente eso. |
+| `.exist`, `.exists` | El valor no es ni `null` ni `undefined`. |
+| `.empty` | Una cadena o un array no tiene elementos, un objeto no tiene claves, un Map o un Set no tiene entradas. |
+| `.finite` | El valor es un número finito. |
+| `.property(name)`, `.property(name, value)` | El objeto tiene la propiedad, con ese valor si se indica. Continúa con el valor de la propiedad. También `.ownProperty`, `.haveOwnProperty`. |
+| `.lengthOf(n)`, `.length(n)` | El `length` del valor (o el tamaño de un Map o un Set) es `n`. |
+| `.match(regex)`, `.matches` | Una cadena coincide con la expresión regular. |
+| `.string(s)` | Una cadena contiene `s`. |
+| `.keys(…)`, `.key` | Un objeto tiene exactamente estas claves (con `any`, una de ellas; tras `include`, al menos estas). |
+| `.members(array)` | Un array tiene los mismos miembros (con `include`, al menos estos; con `ordered`, en este orden). |
+| `.oneOf(array)` | El valor es uno de los elementos del array. |
+| `.satisfy(fn)`, `.satisfies` | `fn(value)` devuelve true. |
+| `.throw()`, `.throws`, `.Throw` | La función lanza una excepción (con un mensaje que contiene una cadena o coincide con una expresión regular, o de una clase, si se indica). |
+| `.jsonSchema(schema)` | El valor coincide con el JSON Schema. Consulta [JSON Schema](#json-schema). |
+
+En una respuesta, `expect` también admite las aserciones de respuesta de Postman:
+`pm.expect(pm.response).to.have.status(200)`, `.header(name)`, `.jsonBody(…)`, `.body(…)`, `.responseTime(…)`, y
+`pm.expect(pm.response).to.be.ok`, `.success`, `.json` y los demás de más abajo.
+
+## pm.response [#pmresponse]
+
+En los scripts de prueba, la respuesta.
+
+| Miembro | Significado |
+| --- | --- |
+| `code` | El código de estado: `200`. |
+| `status` | La frase de motivo: `"OK"`. También `reason()`. |
+| `headers` | Las cabeceras, como una [lista](#lists). `pm.response.headers.get("Content-Type")`. |
+| `responseTime` | El tiempo en milisegundos. |
+| `responseSize` | El tamaño del cuerpo en bytes. También `size()`, que devuelve `{ body, header, total }`. |
+| `text()` | El cuerpo como texto. |
+| `json(reviver)` | El cuerpo analizado como JSON; lanza una excepción cuando no es JSON. |
+
+**Aserciones de respuesta:** `pm.response.to.have.…` y `pm.response.to.not.have.…`:
+
+| Aserción | Se supera cuando |
+| --- | --- |
+| `status(200)`, `status("OK")` | El código es 200, o el motivo es OK. También `statusCode(n)`, `statusReason(text)`. |
+| `header(name)`, `header(name, value)` | La cabecera está, con ese valor si se indica. |
+| `body()`, `body(text)`, `body(regex)`, `body(object)` | El cuerpo no está vacío, es el texto, coincide, o es ese JSON. |
+| `jsonBody()`, `jsonBody(path)`, `jsonBody(path, value)`, `jsonBody(object)` | El cuerpo es JSON, tiene la ruta con puntos, con ese valor, o es igual al objeto. |
+| `responseTime(ms)` | La respuesta tardó como mucho `ms`. |
+
+`pm.response.to.be.…`:
+
+| Propiedad | Se supera cuando el código es |
+| --- | --- |
+| `info` | de 100 a 199 |
+| `success` | de 200 a 299 |
+| `ok` | 200 |
+| `accepted` | 202 |
+| `redirection` | de 300 a 399 |
+| `clientError` | de 400 a 499 |
+| `serverError` | 500 o más |
+| `error` | 400 o más |
+| `badRequest`, `unauthorized` (o `unauthorised`), `forbidden`, `notFound`, `rateLimited` | 400, 401, 403, 404, 429 |
+| `json`, `html`, `xml`, `text` | (el `Content-Type` contiene esa palabra) |
+| `withBody` | (el cuerpo no está vacío) |
+
+## pm.request [#pmrequest]
+
+La solicitud. En un script previo a la solicitud, los cambios que le hagas son lo que se envía.
+
+| Miembro | Significado |
+| --- | --- |
+| `url` | La URL, como un objeto; consulta más abajo. `String(pm.request.url)` es el texto. |
+| `method` | El método; puedes cambiarlo. |
+| `headers` | Las cabeceras, como una [lista](#lists). |
+| `body` | El cuerpo: `{ mode: "raw", raw: "…" }`, o `undefined`. |
+| `name`, `id` | El nombre de la solicitud y su ruta en el espacio de trabajo. |
+| `addHeader(item)`, `removeHeader(name)`, `upsertHeader(item)` | Cambian las cabeceras. Un elemento es `{ key, value }` o `"Name: value"`. |
+| `addQueryParams(params)`, `removeQueryParams(names)` | Cambian la consulta: `"a=1&b=2"`, `{ key, value }` o arrays de ellos. |
+| `to.have.header(name, value)` | Una aserción sobre las cabeceras de la solicitud. |
+
+```js
+pm.request.headers.upsert({ key: "X-Request-Id", value: pm.variables.replaceIn("{{$guid}}") });
+pm.request.url.addQueryParams("per_page=50");
+```
+
+El objeto `url` tiene `protocol`, `host` (un array de etiquetas), `port`, `path` (un array de segmentos), `query` (una
+lista), `hash`, y `getHost()`, `getPath()`, `getQueryString()`, `getPathWithQuery()`, `getRemote()`, `update(text)`,
+`addQueryParams(…)`, `removeQueryParams(…)`, `toString()`. Una URL que no cambias conserva su texto exacto,
+`{{variables}}` incluidas; Echolot las resuelve después de los scripts.
+
+## Variables [#variables]
+
+| Ámbito | Es |
+| --- | --- |
+| `pm.environment` | Las variables del entorno activo. `pm.environment.name` es su nombre. |
+| `pm.collectionVariables` | Las variables del espacio de trabajo. |
+| `pm.globals` | Las variables globales. |
+| `pm.iterationData` | La fila actual de una ejecución guiada por datos. Solo lectura. |
+| `pm.variables` | Todos los ámbitos a la vez, del más cercano al más lejano. `set` y `unset` cambian solo valores locales. |
+
+Cada ámbito tiene `get(name)`, `has(name)`, `set(name, value)`, `unset(name)`, `clear()`, `toObject()` y
+`replaceIn(text)`. `set` convierte los objetos en texto JSON.
+
+`pm.variables.get` busca en este orden: valores locales, la fila de datos, variables de carpeta y de solicitud, el
+entorno, el espacio de trabajo, las globales.
+
+```js
+// Pre-request: sign the body
+const signature = CryptoJS.HmacSHA256(pm.request.body.raw, pm.environment.get("apiSecret")).toString();
+pm.request.headers.upsert({ key: "X-Signature", value: signature });
+
+// Test: keep the new order's ID for the next requests
+pm.collectionVariables.set("orderId", pm.response.json().id);
+```
+
+**Qué conserva `set`.** Los valores que fijan los scripts son los “valores actuales” de Postman: duran lo que dure la
+ventana de la app, o el comando en la línea de comandos, y prevalecen sobre los valores guardados de su ámbito cuando se
+resuelven las solicitudes. Nunca se escriben en los archivos del espacio de trabajo. Para guardar un valor de una
+respuesta, usa una [captura de respuesta](/docs/requests/captures). Los valores locales de `pm.variables.set` se olvidan
+cuando empieza una ejecución.
+
+`replaceIn(text)` rellena las `{{variables}}` de los ámbitos anteriores. De los valores dinámicos, conoce
+`{{$guid}}`, `{{$randomUUID}}`, `{{$timestamp}}`, `{{$isoTimestamp}}` y `{{$randomInt}}`; cualquier otro `{{$…}}` se deja
+como está, para que Echolot lo resuelva al enviar la solicitud.
+
+## pm.info [#pminfo]
+
+| Miembro | Significado |
+| --- | --- |
+| `eventName` | `"prerequest"` o `"test"`. |
+| `iteration` | La iteración de la ejecución, desde 0. |
+| `iterationCount` | Cuántas iteraciones tiene la ejecución. |
+| `requestName` | El nombre de la solicitud. |
+| `requestId` | La ruta de la solicitud en el espacio de trabajo. |
+
+## pm.sendRequest [#pmsendrequest]
+
+Envía otra solicitud desde un script, a través de Echolot: se aplican los proxies, los certificados y las cookies como en
+cualquier solicitud.
+
+```js
+pm.sendRequest("https://demo.echolot.dev/v1/categories", (error, response) => {
+  if (error) { console.error(error); return; }
+  pm.collectionVariables.set("firstCategory", response.json().items[0].id);
+});
+
+// or with a promise
+pm.sendRequest({
+  url: pm.variables.replaceIn("{{baseURL}}/auth/token"),
+  method: "POST",
+  header: { "Content-Type": "application/json" },
+  body: { mode: "raw", raw: JSON.stringify({ email: "heidi@alpenglow.ch", password: pm.environment.get("password") }) }
+}).then(response => {
+  pm.environment.set("token", response.json().access_token);
+});
+```
+
+- El primer argumento es una URL, o un objeto con `url`, `method` (`GET` por omisión), `header` (un array de
+  `{ key, value }`, un objeto o una lista) y `body`.
+- `body` es una cadena, `{ mode: "raw", raw }`, `{ mode: "urlencoded", urlencoded: [{ key, value }] }` o
+  `{ mode: "graphql", graphql: { query, variables } }`. Los dos últimos fijan su `Content-Type` cuando no lo haces tú.
+- Las `{{variables}}` de la URL se rellenan, con el entorno de la solicitud.
+- La función de retorno recibe `(error, response)`; `response` es como `pm.response`. Sin función de retorno, devuelve
+  una promesa.
+- La solicitud no tiene autenticación propia (no se aplica la del espacio de trabajo) y no ejecuta scripts.
+- El `pm.sendRequest` de un agente pasa por las aprobaciones del agente, como sus otros envíos.
+
+## Controlar una ejecución [#controlling-a-run]
+
+| Llamada | Qué hace |
+| --- | --- |
+| `pm.execution.setNextRequest(name)` | En una ejecución, continúa con esa solicitud a continuación. `null` termina la ejecución. También `pm.setNextRequest`, `postman.setNextRequest`. |
+| `pm.execution.skipRequest()` | En un script previo a la solicitud: no envía esta solicitud. |
+
+## pm.cookies [#pmcookies]
+
+Las cookies de este intercambio: las que envió la solicitud y las que fijó la respuesta. Una [lista](#lists), con
+`pm.cookies.get(name)`, `has(name)`, `toObject()` y `one(name)`, que devuelve `{ name, key, value }`.
+
+## Listas [#lists]
+
+Las cabeceras, los parámetros de consulta y las cookies son listas de propiedades de Postman:
+
+| Método | Qué hace |
+| --- | --- |
+| `get(key)` | El valor; las claves ignoran mayúsculas y minúsculas. |
+| `one(key)` | El elemento completo, `{ key, value, disabled }`. |
+| `has(key)`, `has(key, value)` | Si está (con ese valor). |
+| `add(item)`, `append(item)`, `upsert(item)` | Añade un elemento, o lo añade o lo reemplaza. |
+| `remove(key)`, `remove(fn)`, `clear()` | Quitan elementos. |
+| `toObject()`, `all()`, `count()`, `idx(i)` | Los elementos como objeto, como array, cuántos hay, el que está en un índice. |
+| `each(fn)`, `map(fn)`, `filter(fn)`, `find(fn)` | Recorren los elementos. |
+| `toString()` | Líneas `Name: value`. |
+
+## console [#console]
+
+`console.log`, `info`, `warn`, `error`, `debug` y `trace` escriben en la **Consola** de la solicitud, y en la línea de
+comandos bajo `── console ──`. Los objetos se escriben como JSON.
+
+## Temporizadores [#timers]
+
+`setTimeout`, `setInterval` y `setImmediate` ejecutan sus funciones después del script, en el orden de sus retrasos, sin
+esperar de verdad. `setInterval` se ejecuta una vez. `clearTimeout` y los demás los cancelan.
+
+## JSON Schema [#json-schema]
+
+Tres formas, todas con el validador de JSON Schema propio de Echolot:
+
+```js
+const schema = {
+  type: "object",
+  required: ["sku", "price"],
+  properties: { sku: { type: "string" }, price: { type: "object" } }
+};
+
+// Chai
+pm.expect(pm.response.json()).to.have.jsonSchema(schema);
+
+// ajv
+const Ajv = require("ajv");
+const validate = new Ajv().compile(schema);
+pm.test("Matches the schema", () => pm.expect(validate(pm.response.json()), JSON.stringify(validate.errors)).to.be.true);
+
+// tv4
+pm.test("Matches the schema", () => pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true);
+```
+
+| Ayudante | Tiene |
+| --- | --- |
+| `require("ajv")` | Una clase: `new Ajv(options)`, `validate(schema, data)`, `compile(schema)` (una función con `.errors`), `addSchema(schema, key)`, `getSchema(key)`, `errorsText(errors)` y `errors`. `addFormat` y `addKeyword` se aceptan y no hacen nada. |
+| `tv4` (también `require("tv4")`) | `validate(data, schema)` con `tv4.error`, `validateResult(data, schema)`, `validateMultiple(data, schema)`. |
+| `.jsonSchema(schema)` | La aserción de Chai anterior. |
+
+Una comprobación de JSON Schema también funciona sin script: la comprobación **JSON Schema** de la pestaña **Pruebas**.
+
+## Bibliotecas [#libraries]
+
+| Nombre | Tiene |
+| --- | --- |
+| `CryptoJS` (también `require("crypto-js")`) | `MD5`, `SHA1`, `SHA256`, `SHA384`, `SHA512`, `HmacMD5`, `HmacSHA1`, `HmacSHA256`, `HmacSHA384`, `HmacSHA512`; `enc.Hex`, `enc.Utf8`, `enc.Base64`, `enc.Latin1`; `lib.WordArray.create(bytes)` y `lib.WordArray.random(n)`. Los resultados tienen `toString(encoder)`. |
+| `_` (también `require("lodash")`) | Las funciones de lodash que usan las colecciones: `each`/`forEach`, `map`, `filter`, `reject`, `find`, `findIndex`, `some`, `every`, `reduce`, `includes`/`contains`, `get`, `has`, `set`, `keys`, `values`, `size`, las pruebas `is…` (`isArray`, `isString`, `isEmpty`, `isEqual` y las demás), `startsWith`, `endsWith`, `trim`, `toLower`, `toUpper`, `capitalize`, `parseInt`, `toNumber`, `toString`, `first`/`head`, `last`, `tail`, `initial`, `uniq`, `flatten`, `compact`, `concat`, `range`, `times`, `sortBy`, `groupBy`, `keyBy`, `countBy`, `pick`, `omit`, `assign`/`extend`, `clone`, `cloneDeep`, `merge`, `random`, `sample`, `sum`, `max`, `min`, `noop`, `identity`, `now`, `uniqueId`. |
+| `require("uuid")` | `v4()`, un UUID aleatorio. |
+| `btoa`, `atob` (también `require("btoa")`, `require("atob")`) | Base64 de texto Latin-1, y a la inversa. |
+
+## Los antiguos globales de Postman [#the-old-postman-globals]
+
+Los scripts de colecciones más antiguas los usan, y funcionan:
+
+| Global | Es |
+| --- | --- |
+| `tests["name"] = condition` | Una prueba. |
+| `responseBody`, `responseCode` (`code`, `name`, `detail`), `responseHeaders`, `responseTime` | La respuesta. |
+| `request` (`url`, `method`, `headers`, `data`, `name`, `description`) | La solicitud. |
+| `environment`, `globals`, `data`, `iteration` | Las variables como objetos, la fila de datos, la iteración. |
+| `postman.setEnvironmentVariable`, `getEnvironmentVariable`, `clearEnvironmentVariable`, `clearEnvironmentVariables` | El entorno. |
+| `postman.setGlobalVariable`, `getGlobalVariable`, `clearGlobalVariable`, `clearGlobalVariables` | Las globales. |
+| `postman.getResponseHeader(name)`, `postman.getResponseCookie(name)`, `postman.setNextRequest(name)` | La respuesta y la ejecución. |
+| `"text".has("x")` | Si una cadena contiene otra. |
+
+## Lo que no hay [#what-is-not-there]
+
+- Otros módulos: un `require` de cualquier cosa que no esté en la lista anterior (`cheerio`, `xml2js`, `moment`, los
+  módulos propios de Node) lanza “The module … is not available in Echolot scripts.”
+- Esperas reales: los temporizadores se ejecutan sin retraso, y no hay `fetch` ni `XMLHttpRequest`. Usa
+  `pm.sendRequest`.
+- Archivos y procesos: los scripts no pueden leer ni escribir archivos ni iniciar programas.
+- `pm.visualizer.set` se acepta, así que los scripts que lo usan se ejecutan, pero Echolot no muestra ninguna
+  visualización.
+- `xml2Json`, `pm.require` y la biblioteca de paquetes de Postman, y `pm.vault`.
+- Secretos en archivos: los scripts leen las variables secretas como cualquier otra, pero lo que `set` fija nunca llega
+  a los archivos del espacio de trabajo.

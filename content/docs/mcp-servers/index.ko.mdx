@@ -1,0 +1,131 @@
+---
+title: "MCP 서버"
+description: "MCP 서버에 연결해 제공하는 도구, 리소스, 프롬프트를 확인하고, 호출하고, 달라지는 점을 지켜봅니다."
+---
+
+MCP 서버 페이지는 [Model Context Protocol](https://modelcontextprotocol.io) 서버를 살펴보고 디버그하는 곳입니다. 직접 만드는 서버와
+AI 클라이언트가 사용하는 서버가 모두 해당됩니다. Echolot은 서버에 연결하고, 서버가 어떤 프로토콜 버전을 쓰는지 알아내고, 각 단계가
+작동하는지 확인하고, 서버가 제공하는 것을 나열하며, 도구, 리소스, 프롬프트를 호출하고 그 호출을 요청으로 저장할 수 있게 합니다.
+
+사이드바의 모듈 전환기에서 <strong>MCP 서버</strong>를 선택하거나 <kbd>⌘</kbd><kbd>2</kbd>를 눌러 엽니다. 사이드바에는 작업 공간의 서버가
+나열되고, 페이지에는 선택한 서버가 표시됩니다.
+
+<Shot id="mcp-server-detail" alt="Alpenglow MCP가 선택된 MCP 서버 페이지. 편집, 감시, 검사 버튼이 있는 서버 헤더, 연결 정상 카드, 프로토콜, 핑, 도구 수가 있는 서버 카드, 도구 카드가 보입니다" />
+
+## 데모 서버로 시험해 보기 [#try-it-with-the-demo-server]
+
+데모 API는 `https://demo.echolot.dev/mcp`에서 MCP 서버를 실행합니다. Alpenglow 예제 작업 공간에는 이미 <strong>Alpenglow MCP</strong>로 들어 있습니다.
+다른 작업 공간에 추가하려면 다음과 같이 합니다.
+
+1. 사이드바의 <strong>서버</strong> 헤더에서 <strong>+</strong>를 클릭하고 <strong>MCP 서버 추가…</strong>를 선택합니다.
+2. <strong>이름</strong>(예: `Alpenglow MCP`)을 입력하고 <strong>전송 방식</strong>을 <strong>HTTP(Streamable HTTP)</strong>로 설정합니다.
+3. <strong>URL</strong>에 `https://demo.echolot.dev/mcp`를 입력하고 <strong>추가</strong>를 클릭합니다.
+
+Echolot이 바로 서버를 검사합니다. 서버는 도구 세 개(`search_catalog`, `get_product`, `order_status`)와 리소스 하나, 프롬프트 하나를
+제공합니다. 로컬 서버, 다른 앱에서 서버 가져오기, 헤더, OAuth는 [서버 추가](/docs/mcp-servers/adding-servers)에서 다룹니다.
+
+## 서버 목록 [#the-server-list]
+
+각 행에는 서버의 이름과 연결 방식이 표시되고, 검사한 뒤에는 도구 수도 표시됩니다. 첫 검사 전에는 `http · demo.echolot.dev`, 검사 후에는
+`http · 3 tools`, 로컬 명령은 `stdio · npx`처럼 표시됩니다. 녹색 점은 마지막 검사가 통과했다는 뜻이고, 빨간 점은 실패했다는 뜻입니다.
+
+서버를 Control 키를 누른 채 클릭하거나 오른쪽 클릭하면 <strong>편집…</strong>, <strong>연결 확인</strong>, <strong>삭제…</strong>가 나옵니다. 헤더의 <strong>−</strong> 버튼은 선택한 서버를
+삭제합니다. Echolot이 먼저 묻고, 서버의 파일은 휴지통으로 이동합니다.
+
+각 서버는 작업 공간의 `mcp-servers` 폴더에 있는 파일이므로 Git으로 작업 공간과 함께 이동합니다. 비밀 값은 그렇지 않습니다.
+[값과 비밀 값](/docs/mcp-servers/adding-servers#values-and-secrets)을 참조하십시오.
+
+## 서버 검사 [#checking-a-server]
+
+Echolot은 서버를 열 때 서버를 검사하고, <strong>검사</strong>를 클릭하면 다시 검사합니다. 검사는 연결하고, 프로토콜을 감지하고, 서버에 핑을 보내고,
+도구, 리소스, 프롬프트를 나열합니다. Echolot이 이전에 시작한 적 없는 로컬 서버는 예외입니다. 사용자가 그 명령을 검토할 때까지
+기다립니다([실행 전 검토](/docs/mcp-servers/adding-servers#review-before-running) 참조).
+
+결과는 위에서 아래로 카드에 표시됩니다.
+
+| 카드 | 표시되는 내용 |
+| --- | --- |
+| <strong>연결 정상</strong> 또는 <strong>연결 문제</strong> | 검사의 각 단계와 통과 여부: <strong>서버 시작</strong>(로컬 서버), <strong>서버 연결 가능</strong>, <strong>권한 부여</strong>, <strong>프로토콜</strong>, <strong>응답 확인</strong>(핑), <strong>도구</strong>, <strong>리소스</strong>, <strong>프롬프트</strong>. 실패한 단계는 무엇이 잘못되었는지 알려 주고 해결 방법을 제안합니다. |
+| <strong>서버</strong> | 프로토콜 버전(<strong>프로토콜(상태 비저장)</strong> 또는 <strong>프로토콜(세션)</strong>), <strong>핑</strong>과 <strong>연결</strong> 시간, 도구 수, 서버의 이름과 버전, <strong>기능</strong>, 둘 이상을 나열하면 <strong>지원</strong>하는 버전, 모델을 위한 <strong>지침</strong>. |
+| <strong>도구</strong>, <strong>리소스</strong>, <strong>프롬프트</strong> | 서버가 제공하는 것과 각 항목의 설명. 항목을 클릭하면 호출합니다. |
+| <strong>모델이 이 서버를 보는 방식</strong> | 도구 목록이 매 턴마다 모델에 드는 비용과 모델이 혼동할 만한 부분. [도구와 품질](/docs/mcp-servers/tools-and-quality)을 참조하십시오. |
+| <strong>모델로 시도</strong> | 입력한 프롬프트에 모델이 어떤 도구를 고를지. [도구와 품질](/docs/mcp-servers/tools-and-quality#try-with-a-model)을 참조하십시오. |
+| <strong>실시간</strong> | 감시 중인 서버가 알린 내용. [서버 감시](#watching-a-server)를 참조하십시오. |
+| <strong>메시지</strong> | 마지막 검사의 모든 메시지. [메시지 로그](#the-message-log)를 참조하십시오. |
+
+서버가 OAuth를 요구하면 <strong>로그인 필요</strong> 카드가 맨 위에 나옵니다. [OAuth로 로그인](/docs/mcp-servers/adding-servers#signing-in-with-oauth)을
+참조하십시오.
+
+서버가 정의를 잘못 만든 도구는 <strong>도구</strong> 단계에서 집계됩니다. 그 단계는 실패하며 도구와 무엇이 잘못되었는지 알려 줍니다.
+
+## 도구, 리소스, 프롬프트 호출 [#calling-tools-resources-and-prompts]
+
+카드에서 도구, 리소스, 프롬프트를 클릭합니다. 이름과 인수가 있는 패널이 열립니다.
+
+- 입력 스키마가 있는 도구는 매개변수마다 필드가 하나씩 있는 양식을 받습니다. 필수 필드는 이름 뒤에 `*`가 붙습니다. 필드 위에 포인터를
+  올리면 설명이 표시됩니다. <strong>인수</strong>를 <strong>JSON</strong>으로 바꾸면 인수를 직접 쓸 수 있으며, JSON은 스키마의 모든 필드로 시작합니다.
+- 프롬프트는 인수마다 필드를 받습니다.
+- 리소스에는 인수가 필요하지 않습니다.
+
+<strong>호출</strong>을 클릭하거나 <kbd>↩</kbd>를 누릅니다. 응답이 인수 아래에 걸린 시간과 함께 표시됩니다. 오류를 보고하는 도구는 오류를 빨간색으로
+표시합니다.
+
+<strong>요청으로 저장</strong>은 호출을 인수와 함께 작업 공간의 MCP 요청으로 저장하므로, 다시 실행하고, 검사를 추가하고,
+[실행](/docs/requests/runner)에서 실행할 수 있습니다. [MCP 요청](/docs/requests/mcp-requests)을 참조하십시오. <strong>닫기</strong>(<kbd>esc</kbd>)는
+저장하지 않고 나갑니다.
+
+인수의 값에는 활성 [환경](/docs/workspaces/environments)의 `{{variables}}`를 쓸 수 있습니다. 호출은 다른 모든 요청과 같은 엔진을
+거치므로 작업 공간의 프록시와 인증서 설정이 적용되며, 각 호출은 [기록](/docs/workspaces/history)에 남습니다.
+
+### 서버가 사용자에게 무언가를 요청할 때 [#when-the-server-asks-you-something]
+
+도구를 호출하는 동안 서버가 되돌려 무언가를 요청할 수 있습니다. Echolot이 시트를 표시합니다.
+
+| 시트의 내용 | 할 일 |
+| --- | --- |
+| <strong>서버가 정보를 요청합니다</strong> | 서버가 보낸 양식을 채우고 <strong>제출</strong>을 클릭하거나, <strong>거절</strong> 또는 <strong>취소</strong>를 선택합니다. |
+| <strong>서버가 페이지를 열도록 요청합니다</strong> | <strong>브라우저에서 열기</strong>를 클릭하고, 거기서 마친 다음 <strong>완료</strong>를 클릭합니다. |
+| <strong>서버가 모델 응답을 요청합니다</strong> | 시트에 서버가 모델이 답해 주기를 원하는 메시지가 표시됩니다. 응답을 직접 쓰고 <strong>응답 보내기</strong>를 클릭하거나 <strong>거절</strong>합니다. |
+
+요청한 서버만 사용자의 답을 받습니다.
+
+## 서버 감시 [#watching-a-server]
+
+<strong>감시</strong>를 클릭하면 연결을 열어 둡니다. 버튼이 <strong>감시 중</strong>으로 바뀌고, <strong>실시간</strong> 카드에 서버가 알리는 내용이 최신순으로 표시됩니다.
+도구, 리소스, 프롬프트 목록의 변경과 리소스 업데이트입니다. 목록이 바뀌면 Echolot이 다시 읽으므로 카드가 최신 상태로 유지됩니다.
+<strong>감시 중</strong>을 클릭하면 중지합니다.
+
+## 메시지 로그 [#the-message-log]
+
+<strong>메시지</strong> 카드에는 마지막 검사의 모든 JSON-RPC 메시지가 검사 시작 이후의 시간과 함께 나열됩니다. 서버로 보낸 메시지, 받은 메시지,
+연결의 이벤트, 로컬 서버라면 서버가 오류 출력에 쓴 내용입니다. 처음 12개가 표시되고 <strong>모두 보기</strong>를 누르면 나머지가 나열됩니다.
+
+메시지 위에 포인터를 올리면 전체가 서식을 갖춰 표시되며, 메서드, ID, 결과인지 오류인지 알림인지, 크기가 함께 나옵니다. <strong>복사</strong>를
+누르면 복사됩니다.
+
+검사가 실패하면 여기를 보십시오. 로컬 서버의 오류 출력에 서버가 멈춘 이유가 나오는 경우가 많고, OAuth 문제는 각 검색 단계가
+표시됩니다.
+
+## 보호된 환경 [#protected-environments]
+
+[보호된 환경](/docs/workspaces/protected-environments)이 활성화되어 있으면 서버가 프로덕션일 수 있으므로 <strong>검사</strong>, <strong>감시</strong>, 모든 호출이
+먼저 묻습니다. 그 환경이 활성화된 동안 Echolot은 서버를 스스로 검사하지 않습니다. 검사하려면 <strong>검사</strong>를 클릭하십시오.
+
+## 프로토콜 버전 [#protocol-versions]
+
+Echolot은 두 종류의 MCP를 모두 지원합니다.
+
+- <strong>상태 비저장 MCP</strong>, 개정판 `2026-07-28`. `server/discover`로 찾습니다. <strong>서버</strong> 카드에는 <strong>프로토콜(상태 비저장)</strong>이라고 표시됩니다.
+- 핸드셰이크 기반 개정판 `2025-11-25`, `2025-06-18`, `2025-03-26`, `2024-11-05`. `initialize`로 세션을 시작합니다. 카드에는
+  <strong>프로토콜(세션)</strong>이라고 표시됩니다.
+
+HTTP에서는 Echolot이 Streamable HTTP를 사용합니다. 서버가 이를 거부하면 Echolot이 `2024-11-05`의 이전 HTTP+SSE 전송을 스스로 시도합니다.
+`/sse`로 끝나는 URL은 HTTP+SSE를 먼저 시도합니다.
+
+## 명령줄에서 [#from-the-command-line]
+
+`echolot mcp check`는 터미널이나 CI에서 같은 검사를 실행하고, `echolot mcp sign-in`은 OAuth를 요구하는 서버에 로그인합니다.
+[echolot mcp](/docs/cli/mcp)를 참조하십시오.
+
+AI 클라이언트가 Echolot 자체의 MCP 서버를 통해 작업 공간을 사용하게 하려면 [에이전트](/docs/ai/agents)를 참조하십시오. 튜토리얼
+[MCP 서버 살펴보고 디버그하기](/docs/tutorials/inspect-an-mcp-server)에서 이 페이지를 단계별로 안내합니다.

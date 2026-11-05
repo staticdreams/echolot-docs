@@ -1,0 +1,186 @@
+---
+title: "Raccourcis clavier"
+description: "Tous les raccourcis clavier d’Echolot, depuis les menus et depuis les pages, regroupés selon l’endroit où vous les utilisez."
+---
+
+Chaque action des menus a son raccourci à côté. Cette page les rassemble, avec les touches qui fonctionnent sur une page
+ou dans une liste. <kbd>⌘</kbd> est Commande, <kbd>⌥</kbd> Option, <kbd>⇧</kbd> Majuscule, <kbd>⌃</kbd> Contrôle.
+
+## Espaces de travail et fichiers [#workspaces-and-files]
+
+| Action | Touches | Menu |
+| --- | --- | --- |
+| Nouvelle requête | <kbd>⌘</kbd><kbd>N</kbd> | Fichier |
+| Nouveau dossier | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd> | Fichier (quand la barre latérale affiche les requêtes) |
+| Nouvel espace de travail… | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd> | Fichier |
+| Ouvrir un espace de travail… | <kbd>⌘</kbd><kbd>O</kbd> | Fichier |
+| Changer d’espace de travail… | <kbd>⌘</kbd><kbd>P</kbd> | Fichier |
+| Fermer l’onglet | <kbd>⌘</kbd><kbd>W</kbd> | Fichier |
+| Fermer la fenêtre | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd> | Fichier |
+| Importer… | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd> | Fichier |
+| Exporter l’espace de travail… | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd> | Fichier |
+| Dupliquer | <kbd>⌘</kbd><kbd>D</kbd> | Édition |
+| Annuler, Rétablir | <kbd>⌘</kbd><kbd>Z</kbd>, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd> | Édition |
+| Réglages | <kbd>⌘</kbd><kbd>,</kbd> | Echolot |
+
+<kbd>⌘</kbd><kbd>W</kbd> ferme l’onglet affiché, jamais la fenêtre de l’espace de travail ; <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd>
+ferme la fenêtre. Dans les autres fenêtres, comme les Réglages, <kbd>⌘</kbd><kbd>W</kbd> ferme la fenêtre.
+
+Les éléments **Nouvelle requête GraphQL**, **Nouvelle requête WebSocket**, **Nouvelle requête Socket.IO**, **Nouvelle
+requête MQTT** et **Nouvelle requête gRPC** du menu Fichier, **Exporter le dossier…** et **Renommer** n’ont pas de
+raccourci.
+
+## Onglets [#tabs]
+
+| Action | Touches | Menu |
+| --- | --- | --- |
+| Afficher l’onglet suivant | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> | Onglets |
+| Afficher l’onglet précédent | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> | Onglets |
+| Rouvrir l’onglet fermé | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> | Onglets |
+
+## Pages et panneaux [#pages-and-panels]
+
+| Action | Touches | Menu |
+| --- | --- | --- |
+| Requêtes | <kbd>⌘</kbd><kbd>1</kbd> | Affichage |
+| Serveurs MCP | <kbd>⌘</kbd><kbd>2</kbd> | Affichage |
+| Specs | <kbd>⌘</kbd><kbd>3</kbd> | Affichage |
+| Mocks | <kbd>⌘</kbd><kbd>4</kbd> | Affichage |
+| Flux | <kbd>⌘</kbd><kbd>5</kbd> | Affichage |
+| Accueil | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd> | Affichage |
+| Tests | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> | Affichage |
+| Exécution | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd> | Affichage |
+| Environnements | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd> | Affichage |
+| Historique | <kbd>⌘</kbd><kbd>Y</kbd> | Affichage |
+| Afficher la barre latérale, Masquer la barre latérale | <kbd>⌘</kbd><kbd>B</kbd> | Affichage |
+| Afficher l’Assistant, Masquer l’Assistant | <kbd>⌘</kbd><kbd>J</kbd> | Affichage |
+| Afficher les variables, Masquer les variables | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>V</kbd> | Affichage |
+| Palette de commandes… | <kbd>⌘</kbd><kbd>K</kbd> | Requête |
+
+<kbd>⌘</kbd><kbd>1</kbd> à <kbd>⌘</kbd><kbd>5</kbd> changent le module de la barre latérale et reviennent à ce qu’il
+affichait en dernier. Voir [la fenêtre](/docs/get-started/the-window).
+
+## Requêtes et réponses [#requests-and-responses]
+
+| Action | Touches | Menu |
+| --- | --- | --- |
+| Envoyer | <kbd>⌘</kbd><kbd>R</kbd> ou <kbd>⌘</kbd><kbd>↩</kbd> | Requête |
+| Annuler | <kbd>⌘</kbd><kbd>.</kbd> | Requête |
+| Copier en tant que cURL | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> | Requête |
+| Générer du code… | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> | Requête |
+| Rechercher dans le corps | <kbd>⌘</kbd><kbd>F</kbd> | Requête |
+| Résultat suivant, résultat précédent | <kbd>⌘</kbd><kbd>G</kbd>, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> | (dans la barre de recherche) |
+
+Tant qu’un [environnement protégé](/docs/workspaces/protected-environments) est actif, l’élément se lit **Envoyer à
+&lt;Environnement&gt;…** et demande d’abord confirmation. **Annuler** y est le bouton par défaut : <kbd>↩</kbd> n’envoie donc
+jamais par accident.
+
+**Exporter l’échange en HAR…** dans le menu Requête n’a pas de raccourci.
+
+## Taille du code [#code-size]
+
+| Action | Touches | Menu |
+| --- | --- | --- |
+| Agrandir le code | <kbd>⌘</kbd><kbd>+</kbd> | Affichage |
+| Réduire le code | <kbd>⌘</kbd><kbd>-</kbd> | Affichage |
+| Taille réelle du code | <kbd>⌘</kbd><kbd>0</kbd> | Affichage |
+
+**Retour à la ligne automatique** et **Volets › Réinitialiser la taille des volets** dans le menu Affichage n’ont pas de
+raccourci.
+
+## Modifier du texte [#editing-text]
+
+| Action | Touches | Où |
+| --- | --- | --- |
+| Suggestions | <kbd>⌃</kbd><kbd>Space</kbd> | Éditeurs de code : corps, scripts, requêtes |
+| Insérer une variable ou une valeur dynamique | Tapez `{{` | Champs et éditeurs qui acceptent des variables |
+| Gras, italique | <kbd>⌘</kbd><kbd>B</kbd>, <kbd>⌘</kbd><kbd>I</kbd> | L’éditeur de documentation d’une requête ou d’un dossier |
+
+## Sessions [#sessions]
+
+| Action | Touches | Où |
+| --- | --- | --- |
+| Envoyer un message | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | WebSocket : la zone de message |
+| Émettre un événement | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | Socket.IO : la zone d’événement |
+| Publier un message | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | MQTT : la zone de charge utile |
+
+## La barre latérale [#the-sidebar]
+
+| Action | Touches |
+| --- | --- |
+| Déplacer la sélection | <kbd>↑</kbd>, <kbd>↓</kbd> |
+| Ouvrir un dossier | <kbd>→</kbd> |
+| Fermer un dossier, ou aller au dossier au-dessus | <kbd>←</kbd> |
+| Renommer la sélection | <kbd>↩</kbd> |
+| Arrêter de renommer | <kbd>Esc</kbd> |
+| Placer une requête dans la corbeille | <kbd>⌫</kbd> (demande d’abord confirmation) |
+
+<kbd>⌫</kbd> ne fonctionne que pour une seule requête. Aucune touche ne supprime un dossier ou plusieurs éléments :
+utilisez **Placer dans la corbeille…** (ou **Placer N éléments dans la corbeille…**) dans le menu contextuel, qui demande
+d’abord confirmation. Sur la page Serveurs MCP, <kbd>⌫</kbd> propose de supprimer le serveur sélectionné.
+
+## Listes [#lists]
+
+| Action | Touches | Où |
+| --- | --- | --- |
+| Déplacer la sélection | <kbd>↑</kbd>, <kbd>↓</kbd> | Historique, en-têtes de réponse, palette de commandes, Envoi rapide |
+| Ouvrir l’échange sélectionné | <kbd>↩</kbd> | Historique |
+| Coup d’œil, et le fermer | <kbd>Space</kbd>, <kbd>Esc</kbd> | Historique, en-têtes de réponse |
+| Exécuter la commande en surbrillance | <kbd>↩</kbd> | La palette de commandes |
+| Envoyer la requête sélectionnée | <kbd>↩</kbd> | Envoi rapide |
+| Fermer | <kbd>Esc</kbd> | La palette de commandes, Envoi rapide |
+
+## Exécution et mocks [#runner-and-mocks]
+
+| Action | Touches | Où |
+| --- | --- | --- |
+| Exécuter, ou **Exécuter dans &lt;Environnement&gt;…** | <kbd>⌘</kbd><kbd>R</kbd> | Exécution |
+| Arrêter | <kbd>⌘</kbd><kbd>.</kbd> | Exécution |
+| Démarrer le mock | <kbd>⌘</kbd><kbd>R</kbd> | Mocks |
+
+## Flux [#flows]
+
+| Action | Touches |
+| --- | --- |
+| Exécuter, ou **Exécuter dans &lt;Environnement&gt;…** | <kbd>⌘</kbd><kbd>R</kbd> |
+| Arrêter l’exécution | <kbd>⌘</kbd><kbd>.</kbd> |
+| Ajouter un bloc | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd> |
+| Dupliquer les blocs sélectionnés | <kbd>⌘</kbd><kbd>D</kbd> |
+| Ajuster : afficher tout le flux | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd> |
+| Copier, couper, coller des blocs (avec les liens entre eux) | <kbd>⌘</kbd><kbd>C</kbd>, <kbd>⌘</kbd><kbd>X</kbd>, <kbd>⌘</kbd><kbd>V</kbd> |
+| Supprimer la sélection | <kbd>⌫</kbd> |
+| Sélectionner le bloc le plus proche dans une direction | <kbd>↑</kbd>, <kbd>↓</kbd>, <kbd>←</kbd>, <kbd>→</kbd> |
+| Effacer la sélection | <kbd>Esc</kbd> |
+| Tracer un cadre de sélection | <kbd>⇧</kbd> ou <kbd>⌘</kbd> et faire glisser sur le canevas |
+
+Un simple glissement sur le canevas vide le déplace. Voir [flux](/docs/flows).
+
+## Assistant [#assistant]
+
+| Action | Touches |
+| --- | --- |
+| Afficher ou masquer l’Assistant | <kbd>⌘</kbd><kbd>J</kbd> |
+| Arrêter l’Assistant | <kbd>⌘</kbd><kbd>.</kbd> |
+
+## Envoi rapide [#quick-send]
+
+| Action | Touches |
+| --- | --- |
+| Ouvrir Envoi rapide depuis n’importe quelle app | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> |
+
+Envoi rapide est désactivé tant que vous ne l’activez pas dans **Réglages › Général**, où vous pouvez aussi enregistrer un
+autre raccourci. Voir [Envoi rapide](/docs/mac/quick-send).
+
+## Réglages et aide [#settings-and-help]
+
+| Action | Touches | Où |
+| --- | --- | --- |
+| Rechercher dans les réglages | <kbd>⌘</kbd><kbd>F</kbd> | Réglages |
+| Documentation d’Echolot | <kbd>⌘</kbd><kbd>?</kbd> | Menu Aide |
+
+**Aide pour cette page** ouvre la page de la documentation qui correspond à la page de la fenêtre au premier plan.
+
+## Feuilles et dialogues [#sheets-and-dialogs]
+
+<kbd>↩</kbd> choisit le bouton par défaut et <kbd>Esc</kbd> annule. Un dialogue qui supprime quelque chose n’a pas de
+touche pour son bouton rouge : vous devez toujours cliquer dessus.

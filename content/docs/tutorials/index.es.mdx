@@ -1,0 +1,72 @@
+---
+title: "Tutoriales"
+description: "Lecciones paso a paso con la tienda de demostración Alpenglow, desde tu primera solicitud hasta los agentes y CI."
+---
+
+Cada tutorial lleva un trabajo de principio a fin. Todos usan **Alpenglow**, una tienda ficticia de material de montaña:
+la [API de demostración](/docs/tutorials/demo-api) en `https://demo.echolot.dev` y un espacio de trabajo de ejemplo que
+ya contiene una solicitud de cada tipo. Necesitas Echolot en un Mac con macOS 15 o posterior y Apple silicon. Nada de
+lo que envías a la demo se guarda.
+
+## El espacio de trabajo Alpenglow [#the-alpenglow-workspace]
+
+La mayoría de los tutoriales construyen su propio espacio de trabajo o parten de Alpenglow. Para conseguirlo:
+
+1. Descarga [Alpenglow.echolot.zip](/examples/Alpenglow.echolot.zip).
+2. Haz doble clic en el zip en el Finder para descomprimirlo. Obtienes `Alpenglow.echolot`.
+3. Haz doble clic en `Alpenglow.echolot`. Echolot lo abre en una ventana de espacio de trabajo. También puedes elegir
+   **Archivo › Abrir espacio de trabajo…** (<kbd>⌘</kbd><kbd>O</kbd>) y seleccionarlo.
+
+Alpenglow funciona con **Sin entorno** elegido: las variables de su espacio de trabajo apuntan a la API de
+demostración. Contiene:
+
+| Carpeta | Qué hay en ella |
+| --- | --- |
+| Auth | **Sign in**, que guarda el token de acceso en la variable secreta `{{token}}`; **Who am I**; **Orders with OAuth 2** |
+| Catalog | **List products**, **Search**, **Get product**, **Categories**, la solicitud GraphQL **Search products**, **Export the catalog** (14 MB) |
+| Orders | **List orders**, **Create order**, **Get order**, **Cancel order**, todas enviando el token mediante la autenticación Bearer de la carpeta |
+| Realtime | **Order updates** (WebSocket), **Order events** (Server-Sent Events), **Support chat** (Socket.IO), **Warehouse sensors** (MQTT) |
+| Inventory | Tres llamadas gRPC: **List warehouses**, **Watch stock**, **Reserve stock** |
+| Agent tools | Dos solicitudes MCP, **search_catalog** y **order_status**, al servidor **Alpenglow MCP** |
+| Echo | Solicitudes a los endpoints `/echo`: lo que enviaste, un estado, redirecciones, autenticación Basic, una cookie, XML y HTML |
+
+También tiene tres entornos (**Local**, **Staging** y el protegido **Production**; Staging y Production son direcciones
+ficticias), tres flujos (**Place a test order**, **Morning stock check**, **Order status on webhook**), el servidor MCP
+**Alpenglow MCP** y las especificaciones `alpenglow.yaml`, `shop.graphql` e `inventory.proto`.
+
+<Shot id="tutorials-alpenglow-window" alt="El espacio de trabajo Alpenglow con sus carpetas en la barra lateral y Catalog › List products abierto" />
+
+## Servidores en tu Mac para gRPC, Socket.IO y MQTT [#servers-on-your-mac-for-grpc-socketio-and-mqtt]
+
+La API de demostración no puede servir gRPC, Socket.IO ni MQTT. En el repositorio de la documentación, en
+`examples/servers`, hay pequeños servidores para ellos. Necesitan [Bun](https://bun.sh) y escuchan solo en tu Mac:
+
+```sh
+git clone https://github.com/staticdreams/echolot-docs.git
+cd echolot-docs/examples/servers
+bun install
+bun run realtime   # Socket.IO on http://localhost:3001 (namespace /support), MQTT on mqtt://localhost:1883
+bun run grpc       # the Inventory service on localhost:50051 (in a second Terminal window)
+```
+
+Las solicitudes **Support chat**, **Warehouse sensors** e **Inventory** de Alpenglow ya apuntan a estas direcciones.
+Detén un servidor con <kbd>Control</kbd>-<kbd>C</kbd>.
+
+## Los tutoriales [#the-tutorials]
+
+| Tutorial | Qué aprendes | Tiempo |
+| --- | --- | --- |
+| [Tu primer espacio de trabajo](/docs/tutorials/first-workspace) | Crear un espacio de trabajo desde cero: solicitudes, una carpeta, un entorno, un secreto y Git | 15 minutos |
+| [Encadenar solicitudes](/docs/tutorials/chain-requests) | Iniciar sesión, guardar el token y enviarlo a todas partes mediante la autenticación de la carpeta; valores dinámicos; una `Idempotency-Key` | 15 minutos |
+| [Probar una API y ejecutarla en CI](/docs/tutorials/test-in-ci) | Añadir comprobaciones, ejecutar el espacio de trabajo en Ejecución y después `echolot run` con un informe JUnit en GitHub Actions | 20 minutos |
+| [Diseñar primero la especificación y simularla](/docs/tutorials/spec-first) | Traer o diseñar una especificación OpenAPI, validarla, simularla con un mock, enviar solicitudes al mock y comprobarlas con la especificación | 20 minutos |
+| [Automatizar con un flujo](/docs/tutorials/automate-with-flows) | Crear un flujo en el lienzo: iniciar sesión, listar pedidos, decidir, notificar; ejecutarlo, programarlo e iniciarlo desde un webhook | 20 minutos |
+| [Inspeccionar un servidor MCP](/docs/tutorials/inspect-an-mcp-server) | Añadir el servidor MCP de demostración, mirar sus herramientas, llamarlas, leer la tarjeta de calidad y guardar las llamadas como solicitudes con comprobaciones | 15 minutos |
+| [Deja que un agente use tu espacio de trabajo con seguridad](/docs/tutorials/agents-safely) | Conectar Claude Code u otro cliente, definir lo que puede hacer, aprobar sus envíos, proteger un entorno; o usar el Asistente integrado | 20 minutos |
+| [Tiempo real](/docs/tutorials/realtime) | WebSocket y Server-Sent Events con la API de demostración; Socket.IO y MQTT con los servidores locales | 20 minutos |
+| [Si vienes de Postman](/docs/tutorials/coming-from-postman) | Importar una colección y sus entornos, ver qué equivale a qué, ejecutarla y exportarla de vuelta | 15 minutos |
+
+<Callout title="La API de demostración tiene límites">
+  Acepta 120 solicitudes por minuto desde una dirección, y 10 por minuto para la exportación, WebSocket y Server-Sent
+  Events. Si superas un límite, responde `429 Too Many Requests`; espera un minuto y vuelve a enviar.
+</Callout>

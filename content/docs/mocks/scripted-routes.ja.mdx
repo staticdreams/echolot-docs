@@ -1,0 +1,106 @@
+---
+title: "JavaScriptのルート"
+description: "モックのリクエストに、ほかのルートや仕様より先にJavaScriptで応答します。状態はモックの動作中、保持されます。"
+---
+
+[手書きのルート](/docs/mocks/routes)と仕様は、書き留めたレスポンスで応答します。モックにはそれ以上のことが必要な場合もあります。クライアントがいま行った注文を覚えておく、応答を計算する、3回目の呼び出しで失敗させる、などです。
+**JavaScriptのルート**は、モックのリクエストに最初に応答する小さなハンドラです。変数はモックの動作中ずっと保持されるため、リクエスト間で状態を持てます。
+ルートが処理しなかったリクエストは、モックの手書きのルートに渡され、その次に仕様に渡されます。
+
+## ルートを書く [#writing-routes]
+
+モックページでモックを開き、**JavaScriptのルート**カードまでスクロールします。エディタにルートを書いて、**ルートを保存**をクリックします。**元に戻す**は、保存した内容に戻します。
+
+<Shot id="mocks-routes" alt="モックのJavaScriptのルートカード。注文をリストに保持するコード、エディタの下の「Running: POST /orders, GET /orders/:id」の行、各注文リクエストに応答したスクリプトのルートを示すログが表示されている" />
+
+次の例は、Alpenglow仕様のモックで、クライアントが行った注文を保持し、IDで返します。
+
+```js
+let orders = []
+
+mock.post("/orders", (req, res) => {
+  const order = { id: "ord_" + (orders.length + 1), status: "pending", ...req.json() }
+  orders.push(order)
+  res.status(201).header("Location", "/v1/orders/" + order.id).json(order)
+})
+
+mock.get("/orders/:id", (req, res) => {
+  const order = orders.find(o => o.id === req.params.id)
+  return order ?? res.status(404).json({ error: "no such order" })
+})
+```
+
+保存すると、カードにスクリプトが登録したルート（`Running: POST /orders, GET /orders/:id`）が表示されます。スクリプトを読み込めなかった場合は、その理由がオレンジ色で表示されます。
+ルートは、モックの設定の横にある`mocks/<name>.js`に保存されるため、ワークスペースとともにGitに入ります。
+
+## ルートが実行されるとき [#when-routes-run]
+
+- JavaScriptのルートが**最初に**応答します。手書きのルートと仕様より先です。メソッドとパスが一致する最初のルートが応答します。
+- モックが仕様を提供している場合、パスは**仕様のサーバパスより下**です。`/v1/orders`ではなく`/orders`と書きます。
+- 何も設定せず何も返さないルートは、リクエストを手書きのルートと仕様に**渡し**、それらが通常どおり応答します。クエリパラメータが1つあるときなど、一部のリクエストだけを処理したいときに使います。
+- スクリプトはモックの開始時に一度実行されます。トップレベルの変数と`state`オブジェクトは、モックが停止するまで保持されます。
+- <strong>保存すると、ルートは新しい状態で再起動します。</strong>仕様、手書きのルート、モックの設定を変更しても、状態は保持されます。
+- リクエストは1つずつ処理されるため、状態は一貫しています。
+
+モックの[ログ](/docs/mocks#the-log)では、ルートが処理した各リクエストにルートの名前が付きます。ポインタを置くと、**このルートが応答**または**このルートが受け渡し**（手書きのルートまたは仕様へ）と表示されます。
+ルートが`console.log`で書き出した内容は、ログのリクエストの下に表示されます。
+
+## ルートのAPI [#the-routes-api]
+
+ルートは`mock`とメソッドで登録します。
+
+| 関数 | 一致するもの |
+| --- | --- |
+| `mock.get(path, handler)` | `GET` |
+| `mock.post`、`mock.put`、`mock.patch`、`mock.delete`、`mock.head`、`mock.options` | そのメソッド |
+| `mock.any(path, handler)` | すべてのメソッド |
+
+パスの中で、`:name`は1つのセグメントに一致して`req.params.name`に入り、`*`は残りすべてに一致します。
+
+ハンドラは`req`と`res`を受け取ります。
+
+| `req` | 内容 |
+| --- | --- |
+| `req.method` | メソッド（大文字）。 |
+| `req.path` | パス（仕様のサーバパスより下）。 |
+| `req.params` | パスの`:name`セグメント。 |
+| `req.query` | クエリパラメータ。同じ名前の最後の値。 |
+| `req.headers` | ヘッダー。名前は小文字。 |
+| `req.body` | テキストとしてのボディ。 |
+| `req.json()` | JSONとして解析したボディ。ボディがない場合は`null`。 |
+
+| `res` | 動作 |
+| --- | --- |
+| `res.status(code)` | ステータスを設定します。デフォルトは`200`です。 |
+| `res.header(name, value)` | ヘッダーを追加します。 |
+| `res.json(value)` | 値をJSONとして送信します。設定しなければ`Content-Type: application/json`が付きます。 |
+| `res.send(text)` | テキストを送信します。設定しなければ`Content-Type: text/plain; charset=utf-8`が付きます。 |
+
+`res`の各関数は`res`を返すので、`res.status(201).json(order)`のようにつなげて呼び出せます。ハンドラが返した値はJSONとして送信されるため、`return order`は`res.json(order)`と同じです。ハンドラは`async`にできます。
+
+`state`（`mock.state`でも同じ）は、リクエスト間で保持されるオブジェクトで、自分の変数に保持したくないものに使います。
+
+```js
+mock.get("/me", (req, res) => {
+  state.calls = (state.calls ?? 0) + 1
+  if (state.calls % 3 === 0) return res.status(503).json({ error: "try again" })
+  // Nothing set: the routes made by hand or the spec answer this request.
+})
+```
+
+## 制限 [#limits]
+
+ルートは、Nodeではなく、[リクエストのスクリプト](/docs/requests/scripts-and-tests)と同じサンドボックスで実行されます。ファイルシステムとネットワークは使えません。
+リクエストごとにJavaScriptを実行できるのは2秒間で、スクリプトの起動にも2秒の猶予があります。例外を投げるハンドラは、エラーとともに`500`で応答し、そのエラーはログにも表示されます。
+
+## ルートを信頼する [#trusting-routes]
+
+ルートはMac上で実行されるコードなので、リクエストのスクリプトと同じルールに従います。Echolotで書いて保存したルートは実行されます。
+Git、読み込み、ファイルを編集する別のアプリなど、外部から来たルートは実行されません。カードに**これらのスクリプトはEcholotの外部から来たものです**と表示され、内容を読んで**スクリプトを信頼**をクリックするまで、モックは開始しません。
+Echolotの外部で再び変更された場合は、もう一度確認が表示されます。
+
+エージェントはモックのルートを読めますが、書くことはできません。
+
+## コマンドラインから [#from-the-command-line]
+
+`echolot mock -w <workspace> <mock>`は、ワークスペースのモックをすべてのルートとともに実行します。`--routes <file>`は、別のファイルのJavaScriptのルートを実行し、仕様ファイルとも併用できます。[echolot mock](/docs/cli/mock)を参照してください。

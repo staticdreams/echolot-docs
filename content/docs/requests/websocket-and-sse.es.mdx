@@ -1,0 +1,102 @@
+---
+title: "WebSocket y SSE"
+description: "Conéctate a servidores WebSocket, envía mensajes guardados y puntuales, y sigue los streams de server-sent events a medida que llegan."
+---
+
+Las solicitudes WebSocket abren una conexión que se mantiene: envías mensajes y ves los del servidor a medida que llegan.
+Los server-sent events (SSE) son solicitudes HTTP normales cuya respuesta sigue emitiéndose; Echolot muestra cada evento
+cuando llega.
+
+## Solicitudes WebSocket [#websocket-requests]
+
+<Shot id="requests-websocket-log" alt="Realtime › Order updates conectada a la API de demostración: la pestaña Mensajes con los mensajes guardados Subscribe y Ping, y el registro de mensajes del panel de respuesta con eventos de pedidos enviados y recibidos" />
+
+### Conectar [#connect]
+
+1. Elige **Archivo › Nueva solicitud WebSocket**, o **Nueva solicitud WebSocket** en el menú **+** junto a **Solicitudes**
+   en la barra lateral.
+2. Escribe la dirección, que empieza por `ws://` o `wss://`. **Realtime › Order updates** de Alpenglow usa
+   `{{wsURL}}/orders`, que es `wss://demo.echolot.dev/v1/orders`.
+3. Elige **Conectar** (<kbd>⌘</kbd><kbd>R</kbd>).
+
+Mientras la conexión está abierta, el botón dice **Desconectar** (<kbd>⌘</kbd><kbd>R</kbd> otra vez). Con un entorno
+protegido activo dice **Conectar a Production…** (con el nombre de ese entorno) y pide confirmación antes. Consulta
+[entornos protegidos](/docs/workspaces/protected-environments).
+
+El editor tiene estas pestañas: **Docs**, **Mensajes**, **Cabeceras**, **Parámetros**, **Autenticación**, **Variables**,
+**Pruebas**, **Scripts** y **Ajustes**. Las cabeceras, los parámetros de consulta y la autenticación van con el handshake
+de apertura (la actualización de HTTP), de modo que un servidor que quiere un token en una cabecera o en la dirección lo
+recibe ahí. Los ajustes como la verificación de TLS, el proxy y los certificados se aplican como en las
+[solicitudes HTTP](/docs/requests/settings).
+
+### Subprotocolos [#subprotocols]
+
+En la parte superior de la pestaña **Mensajes**, **Subprotocolos** lista los protocolos que ofrecer al servidor, separados
+por comas, como `graphql-ws, chat.v2`. Déjalo vacío para ninguno.
+
+### Envía mensajes [#send-messages]
+
+En la parte inferior de la pestaña **Mensajes**, escribe un mensaje y elige **Enviar**
+(<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>). Las `{{variables}}` funcionan en él. El campo dice
+**Conéctate para enviar mensajes** hasta que la conexión está abierta.
+
+Los mensajes que envías a menudo se pueden guardar con la solicitud. Elige **+** junto al campo para guardar lo que
+escribiste. Cada mensaje guardado tiene un nombre, su texto y su propio botón **Enviar**. Order updates tiene dos:
+
+```json
+{"op":"subscribe","channel":"orders"}
+```
+
+```json
+{"op":"ping"}
+```
+
+La casilla del principio de un mensaje guardado, **Enviar en las ejecuciones**, decide si se envía cuando la solicitud se
+ejecuta sin ti: en la [Ejecución](/docs/requests/runner), desde la línea de comandos o para un agente. Estos envían los
+mensajes activados en orden tras conectarse, y después escuchan durante 10 segundos y cierran.
+
+### El registro de mensajes [#the-message-log]
+
+La pestaña **Mensajes** del panel de respuesta muestra la sesión a medida que ocurre: todos los mensajes en ambos
+sentidos, los más recientes al final, con su hora y tamaño, y los momentos en que la conexión se abrió y se cerró.
+
+- **Todos**, **Enviado** y **Recibido** filtran por dirección.
+- **Filtrar mensajes** encuentra mensajes por su texto.
+- **Más** muestra un mensaje JSON con formato legible; **Menos** lo pliega de nuevo.
+- El botón de copiar copia un mensaje.
+
+Echolot responde por sí mismo a los pings del servidor. Un mensaje reunido a partir de fragmentos puede ocupar hasta 64
+MB; uno mayor cierra la conexión con el código 1009.
+
+Cuando la conexión se cierra, la sesión se conserva en el [Historial](/docs/workspaces/history): el handshake como
+solicitud y el registro de mensajes como cuerpo de la respuesta.
+
+## Server-sent events [#server-sent-events]
+
+Un stream de server-sent events es una respuesta HTTP de tipo `text/event-stream` que sigue enviando eventos. Usa una
+solicitud HTTP normal para él: no hay nada que configurar aparte de la dirección.
+
+<Shot id="requests-sse-events" alt="Realtime › Order events enviada a la API de demostración: la pestaña Eventos del panel de respuesta con eventos numerados, cada uno con su nombre de evento, id y datos JSON" />
+
+1. Abre **Realtime › Order events** en el espacio de trabajo Alpenglow. Envía `GET {{baseURL}}/orders/events` con
+   `Accept: text/event-stream`.
+2. Elige **Enviar**.
+3. Elige la pestaña **Eventos** en el panel de respuesta.
+
+La pestaña **Eventos** lista cada evento en orden, numerado, con su nombre de evento y su id (`id:`), y los datos como
+JSON cuando lo son. Sigue los eventos nuevos mientras el stream está activo y los cuenta. La pestaña **Cuerpo** muestra el
+stream tal como lo escribió el servidor, creciendo a medida que llega.
+
+El stream sigue hasta que el servidor lo termina o eliges **Cancelar** (<kbd>⌘</kbd><kbd>.</kbd>); lo que llegó se
+conserva. Una vez que un stream ha empezado, el tiempo de espera total de la solicitud ya no se le aplica. En las
+ejecuciones, desde la línea de comandos y para los agentes, un stream se termina a los 10 segundos.
+
+Para reanudar un stream donde se detuvo, devuelve el id del último evento en una cabecera `Last-Event-ID`. El stream de la
+API de demostración envía 20 eventos con un segundo de separación, luego `end`, y respeta `Last-Event-ID`.
+
+Las suscripciones GraphQL sobre HTTP también usan server-sent events: consulta [GraphQL](/docs/requests/graphql).
+
+## Desde la línea de comandos [#from-the-command-line]
+
+`echolot send` abre sesiones WebSocket y Socket.IO y sigue streams de eventos desde el terminal. Consulta
+[echolot send](/docs/cli/send) y el [tutorial de tiempo real](/docs/tutorials/realtime).

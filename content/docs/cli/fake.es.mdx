@@ -1,0 +1,89 @@
+---
+title: "echolot fake"
+description: "Genera datos ficticios a partir de una plantilla en el terminal, para fixtures, datos semilla y cuerpos de mocks, con los mismos valores ficticios que las rutas de los mocks."
+---
+
+`echolot fake` rellena una plantilla con datos ficticios: nombres, correos, direcciones, precios, fechas, lorem ipsum y
+unos 120 valores más. Usa las mismas plantillas que los cuerpos de las
+[rutas creadas a mano](/docs/mocks/routes#bodies-with-fake-data), así que puedes probar un cuerpo, o escribir fixtures
+y datos semilla para pruebas.
+
+```sh
+echolot fake [<template>] [--file <file>] [--count <count>] [--seed <seed>] [--type <type>]
+echolot fake list
+```
+
+La plantilla viene del argumento, de `--file` o de la entrada estándar. El resultado va a la salida estándar.
+
+## Generar una lista [#make-a-list]
+
+`--count` hace de la plantilla un elemento de una lista JSON:
+
+```sh
+echolot fake '{"id": {{@number}}, "name": "{{$randomFullName}}", "email": "{{$randomEmail}}"}' --count 3
+```
+
+```json
+[
+{"id": 1, "name": "Henry Adams", "email": "stella.meyer.45@yahoo.com"},
+{"id": 2, "name": "Jack Grant", "email": "bianca.ivanova.11@icloud.com"},
+{"id": 3, "name": "Theo Sato", "email": "samuel.lee.88@yahoo.com"}
+]
+```
+
+Con `--type xml` o `--type text`, los elementos salen uno tras otro:
+
+```sh
+echolot fake '<city>{{$randomCity}}</city>' --count 2 --type xml
+```
+
+```xml
+<city>Kyoto</city>
+<city>Athens</city>
+```
+
+Una plantilla puede generar listas por sí misma con `{{#repeat 10}}` … `{{/repeat}}`; mira
+[listas](/docs/mocks/routes#lists).
+
+## Los mismos datos otra vez [#the-same-data-again]
+
+`--seed` genera los mismos datos cada vez, para fixtures que no deben cambiar entre ejecuciones:
+
+```sh
+echolot fake --file user.json.template --count 50 --seed 7 > users.json
+```
+
+## Escape [#escaping]
+
+`--type` decide cómo se escapan los valores: `json` (el predeterminado) escapa los valores dentro de cadenas JSON, `xml`
+escapa `&`, `<`, `>` y las comillas para XML y HTML, y `text` no escapa nada. Mira [escape](/docs/mocks/routes#escaping).
+
+## Los valores [#the-values]
+
+`echolot fake list` imprime todos los valores por grupos, con sus argumentos:
+
+```text
+COMMON
+  $randomUUID  A random UUID: 3f2c1e0a-…
+  $randomInt(Minimum, Maximum)  A whole number, 0 to 1000 unless bounds are given.
+  $randomFloat(Minimum, Maximum, Decimals)  A decimal number between the bounds (0 to 1000), with 2 decimals unless told otherwise.
+…
+```
+
+[Los valores dinámicos](/docs/reference/dynamic-values#fake-data) los lista todos. Los tokens sobre la solicitud, como
+`{{request.params.id}}`, pertenecen a las rutas de los mocks y aquí se quedan tal como están escritos.
+
+## Opciones [#options]
+
+| Opción | Significado |
+| --- | --- |
+| `<template>` | La plantilla, o `list` para listar los valores ficticios. |
+| `-f`, `--file <file>` | Lee la plantilla de un archivo. |
+| `-c`, `--count <count>` | Genera esta cantidad de elementos, hasta 10 000: una lista JSON, o un elemento tras otro con `--type xml` y `text`. |
+| `--seed <seed>` | Genera los mismos datos cada vez. |
+| `--type <type>` | `json` (predeterminado), `xml` o `text`. |
+
+## Códigos de salida [#exit-codes]
+
+`0` cuando se generó cada valor. `1` cuando no se pudo generar un valor, como `{{$randomInt(9, 1)}}`: el motivo va a la
+salida de error estándar y el token se queda tal como está escrito en la salida. `64` para una opción incorrecta.

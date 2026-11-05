@@ -1,0 +1,95 @@
+---
+title: "MCPサーバを調べる"
+description: "デモショップのMCPサーバを追加し、提供される内容を確認し、ツールを呼び出し、モデルから見たサーバの姿を読み、呼び出しをチェック付きのリクエストとして保存します。"
+---
+
+MCPサーバは、AIエージェントにツール、リソース、プロンプトを提供します。エージェントに渡す前に、何が提供されているかを確認し、自分でツールを呼び出し、ツールの一覧がモデルにとってどれだけの負担になるかを調べましょう。
+このチュートリアルでは、デモショップのサーバ`https://demo.echolot.dev/mcp`でそれを行い、ツールの呼び出しをチェック付きのリクエストとして保存します。
+
+- <strong>所要時間：</strong>15分。
+- **必要なもの：**任意のワークスペース。[Alpenglow](/docs/tutorials#the-alpenglow-workspace)には、このサーバが**Alpenglow MCP**としてすでに入っています。最初から進めるには、別のワークスペースを使ってください。
+- <strong>学べること：</strong>サーバの追加、チェック、ツールの呼び出し、<strong>モデルから見たこのサーバ</strong>カード、MCPリクエスト。
+
+## 1. サーバを追加する [#1-add-the-server]
+
+1. **MCPサーバ**に切り替えます（<kbd>⌘</kbd><kbd>2</kbd>）。
+2. <strong>MCPサーバを追加…</strong>を選びます（空のページ、またはサイドバーの<strong>+</strong>メニューにあります）。
+3. **MCPサーバを追加**で、次のように設定します。
+   - **名前**：`Demo shop`
+   - **トランスポート**：**HTTP（Streamable HTTP）**
+   - **URL**：`https://demo.echolot.dev/mcp`
+4. **追加**を選びます。
+
+サーバは、ワークスペースの`mcp-servers`フォルダにファイルとして保存されます。<strong>+</strong>メニューからは、Claude Desktop、Claude Code、Cursor、VS Code、Codexのサーバを読み込むこともできます。
+
+<Edition only="direct">
+  Macでプログラムとして動作するサーバ（**ローカルコマンド（stdio）**。`npx`や`uvx`のサーバなど）は、直接ダウンロード版で動作します。App Store版では、HTTP経由でサーバを追加するか、`echolot mcp check`で確認してください。
+</Edition>
+
+## 2. チェックする [#2-check-it]
+
+1. **チェック**を選びます。Echolotは接続し、サーバが話すプロトコルのバージョンを調べ、pingを送り、ツール、リソース、プロンプトを一覧します。
+2. ページには、カードごとに内容が表示されます。
+   - **接続は正常です**、続いて**サーバ**：プロトコル（MCP 2025-11-25、セッションあり）、pingと接続にかかった時間、ツールの数、機能、そして**指示**：「The Alpenglow demo shop from docs.echolot.dev. Read-only: search the catalog, look up products and orders.」
+   - **ツール**：`search_catalog`、`get_product`、`order_status`と、それぞれの説明。
+   - **リソース**：`categories`（`alpenglow://catalog/categories`）。
+   - **プロンプト**：`pack_for_a_trip`。`trip`を受け取ります。
+   - **メッセージ**：チェックのすべてのJSON-RPCメッセージ。**すべて表示**を選ぶと、すべてが見えます。
+
+<strong>監視</strong>は接続を開いたままにして、一覧の変更やリソースの更新をそのつど表示します。OAuthが必要なサーバでは、ここに<strong>サインイン…</strong>が表示されます。[サーバの追加](/docs/mcp-servers/adding-servers)を参照してください。
+
+<Shot id="tutorials-mcp-server-checked" alt="Alpenglow MCPをチェックした後のMCPサーバのページ：サーバカード、3つのツール、モデルから見たこのサーバカード" />
+
+## 3. ツールを呼び出す [#3-call-a-tool]
+
+1. **ツール**カードで、`search_catalog`を選びます。呼び出しシートが開きます。
+2. **引数**の下の**フォーム**には、パラメータごとにフィールドが表示されます。`query`を`ultralight tent`、`limit`を`3`にします。**JSON**では、同じ引数がテキストで表示されます。
+3. **呼び出す**を選びます（<kbd>↩</kbd>）。
+
+**結果**の下に、かかった時間とともに結果が表示されます。商品ごとに1行で、名前、SKU、CHFでの価格、在庫です。失敗したツールには、**エラー**と赤いテキストが表示されます。
+`order_status`を、`order_id`を`ord_7Hk2Lw`にして試してみてください。また、**リソース**の`categories`を選ぶと、同じようにリソースを読み取れます。
+
+## 4. モデルから見たサーバを確認する [#4-see-how-a-model-sees-the-server]
+
+ツールの名前、説明、入力スキーマは、会話のターンごとにモデルへ送られます。**モデルから見たこのサーバ**カードは、その大きさを測定します。
+
+- **Anthropicトークン**、**OpenAIトークン**、**Google Geminiトークン**：3つのツールが1ターンで消費するトークン数。このサーバでは数百トークンです。
+- **サイズの大きいツール**：最も消費の大きいツール。
+- モデルがつまずきそうな問題の一覧（説明がない、スキーマがわかりにくいなど）と、それぞれの修正案。デモのサーバでは、**モデルがつまずきそうな問題はありません**と表示されます。
+- **プロバイダが受け取るリスト**：各プロバイダのAPIが受け取るとおりのツール一覧。**コピー**できます。
+
+その下の**モデルで試す**カードは、入力したタスクをこれらのツールとともにモデルに送り、どのツールを選ぶかを確かめます。これには[アシスタントのプロバイダ](/docs/ai/assistant)が必要です。コマンドラインツールも同じ測定値を出力します。
+
+```sh
+echolot mcp check --quality --url https://demo.echolot.dev/mcp
+```
+
+```text
+How a model sees the tools (estimates)
+  Anthropic      572 tokens a turn, 0.3% of a 200k context
+  OpenAI         166 tokens a turn, 0.1% of a 200k context
+  Google Gemini  225 tokens a turn, 0.1% of a 200k context
+  largest: search_catalog 98, get_product 66, order_status 62
+Nothing a model would stumble over.
+```
+
+詳しくは[ツールと品質](/docs/mcp-servers/tools-and-quality)を参照してください。
+
+## 5. 呼び出しをチェック付きのリクエストとして保存する [#5-save-the-call-as-a-request-with-checks]
+
+1. `search_catalog`をもう一度呼び出して、**リクエストとして保存**を選びます。`search_catalog`という名前のリクエストが**リクエスト**の下に現れ、サーバ、ツール、引数が入っています。
+2. それを開きます。**オペレーション**は**ツール**です。**呼び出す**（<kbd>⌘</kbd><kbd>R</kbd>）で、ほかのリクエストと同じように実行されます。
+3. **テスト**タブで**テストを追加**を開いて、次を追加します。
+   - **MCPエラー**が`false`と等しい：ツールがエラーを報告しなかった。
+   - **ボディ**が`TNT-`を含む：テントが一覧されている。
+   - **JSONの値**`$.content[0].text`が`CHF`を含む。
+4. 呼び出します。**3件成功**と表示されます。
+
+保存した呼び出しは、[ランナー](/docs/requests/runner)でも、CIの`echolot run`でも実行できます。サーバのツールが変わったときに、エージェントではなくビルドが失敗します。Alpenglowの**Agent tools**フォルダに、そのようなリクエストが2つあります。
+**ツールの出力スキーマ**は、出力スキーマを宣言しているサーバについて、結果をそのスキーマと照合します。[MCPリクエスト](/docs/requests/mcp-requests)を参照してください。
+
+## 次のステップ [#next-steps]
+
+- [エージェントにワークスペースを安全に使わせる](/docs/tutorials/agents-safely)：EcholotもMCPサーバです。
+- [MCPサーバ](/docs/mcp-servers)：stdioサーバ、OAuth、他のアプリの設定の読み込み。
+- [`echolot mcp`](/docs/cli/mcp)：`check`、`sign-in`、その他。

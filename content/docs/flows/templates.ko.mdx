@@ -1,0 +1,136 @@
+---
+title: "템플릿"
+description: "앱에서 또는 echolot flow new로 기기 로그인, 토큰 갱신, 페이지 가져와 내보내기, 상태 모니터, 데이터 생성 후 정리 같은 기성 템플릿으로 플로를 시작합니다."
+---
+
+템플릿은 대부분의 API에서 자주 나오는 작업을 위한 기성 플로입니다. 템플릿에는 블록, 블록 사이의 연결, 캔버스의 메모가 들어 있습니다. 템플릿은 사용자의
+API를 알지 못하므로 요청 블록과 폴링 블록에 아직 요청이 없습니다. 요청을 고르기 전까지는 블록마다 문제가 표시되며, 메모에 무엇을 골라야 하는지
+적혀 있습니다.
+
+## 템플릿으로 플로 만들기 [#create-a-flow-from-a-template]
+
+**앱에서:**
+
+1. 플로 페이지의 사이드바에서 <strong>플로</strong> 옆의 <strong>+</strong>를 클릭합니다.
+2. **템플릿에서** 아래에서 템플릿을 선택합니다. 항목 위에 포인터를 올리면 하는 일을 읽을 수 있습니다.
+3. 플로가 템플릿의 이름으로 열리고 보기에 맞춰집니다. 인스펙터의 **이름**에서 이름을 바꿉니다.
+4. 메모를 읽은 다음 요청 블록이나 폴링 블록을 하나씩 선택하고 **요청**을 고릅니다. 툴바의 문제 개수가 사라지면 플로를 실행할 수 있습니다.
+
+<Shot id="flows-new-from-template" alt="사이드바에서 플로 옆 + 버튼의 메뉴: 빈 플로, 그리고 템플릿에서 아래의 기기 로그인, 토큰 갱신, 페이지 가져와 내보내기, 상태 모니터, 데이터 생성 후 정리" />
+
+**명령줄에서:**
+
+```sh
+# 템플릿을 나열합니다
+echolot flow new
+
+# 템플릿 하나로 플로를 만듭니다
+echolot flow new "Export products" --template paginate-and-export -w Alpenglow.echolot
+```
+
+`echolot flow new`는 `flows/export-products.flow.toml`을 쓰고 그 경로를 출력합니다. `--template`을 생략하면 시작 블록이 출력 블록에 연결된 빈
+플로를 만듭니다. 요청은 앱에서, 또는 플로의 파일에서 고르세요. [echolot flow](/docs/cli/flow)를 참조하세요.
+
+에이전트도 Echolot의 MCP 서버를 통해 템플릿으로 플로를 만들 수 있습니다.
+
+## 기기 로그인 [#device-sign-in]
+
+`device-sign-in`. OAuth 2.0 기기 승인(RFC 8628)으로 로그인합니다. 기기 코드를 요청하고, 코드와 링크를 보여 주고, 사용자가 승인할 때까지 토큰
+엔드포인트를 폴링한 다음, 액세스 토큰과 리프레시 토큰을 비밀 변수로 저장합니다.
+
+| 블록 | 종류 | 하는 일 |
+| --- | --- | --- |
+| Ask for a device code | 요청 | `device_code`, `user_code`, `verification_uri`, `interval`, `expires_in`을 돌려주는 요청을 보냅니다. **Pick this request.** |
+| Codes | 추출 | 본문에서 이 다섯 값을 골라냅니다(`code`는 `$.body.device_code`). |
+| Show the code | 표시 후 대기 | `Open {{verification_uri}} and enter the code. This goes on by itself once you have approved it.`, **코드 복사**가 있는 사용자 코드, **브라우저에서 열기**와 QR 코드가 있는 링크를 표시합니다. |
+| Wait for approval | 폴링 | `access_token`이 있는 200으로 응답할 때까지, 최대 `{{expires_in}}`초 동안 `{{interval}}`초마다 토큰 요청을 보냅니다. 변수 `code`는 기기 코드입니다. **Pick this request.** |
+| Save the tokens | 변수 설정 | `accessToken`과 `refreshToken`을 환경에 비밀 값으로 저장합니다. |
+| Done | 템플릿 | `Signed in; the tokens are in the Keychain.` |
+| Output | 출력 | 그 텍스트를 돌려줍니다. |
+
+<Shot id="flows-template-device-sign-in" alt="기기 로그인 템플릿으로 만든 플로: 시작, Ask for a device code, Codes, 나란히 놓인 Show the code와 Wait for approval, Save the tokens, Done, 출력, 그리고 어떤 요청을 골라야 하는지 알려 주는 메모" />
+
+Show the code와 Wait for approval은 나란히 실행됩니다. 폴링이 요청을 보내는 동안 시트는 열려 있고, 폴링이 성공하면(`success`가 시트의 `until`에
+연결되어 있습니다) 시트가 저절로 닫힙니다.
+
+토큰 요청은 `grant_type`으로 `urn:ietf:params:oauth:grant-type:device_code`를, `device_code={{code}}`와 함께 보냅니다. 이후 다른 요청들은
+`{{accessToken}}`을 사용합니다. 토큰이 환경에 저장되므로 환경을 선택한 상태에서 플로를 실행하세요.
+
+## 토큰 갱신 [#refresh-token]
+
+`refresh-token`. 리프레시 토큰으로 새 액세스 토큰을 받고 둘 다 비밀 변수로 저장합니다. 토큰을 계속 최신 상태로 유지하려면 시작 블록에
+[일정](/docs/flows/running-and-triggers#schedule)을 지정하세요.
+
+| 블록 | 종류 | 하는 일 |
+| --- | --- | --- |
+| Refresh the token | 요청 | 토큰 요청을 보냅니다. `grant_type=refresh_token`과 `refresh_token={{refreshToken}}`입니다. **Pick this request.** |
+| Save the tokens | 변수 설정 | `accessToken`과 `refreshToken`을 환경에 비밀 값으로 저장합니다. 새 리프레시 토큰이 없는 응답은 기존 토큰을 유지합니다. |
+| Valid for | 추출 | `$.body.expires_in`을 고릅니다. |
+| Output | 출력 | 새 토큰이 유효한 초 수를 돌려줍니다. |
+| Say it failed | 알림 | 요청이 실패했을 때: `The token could not be refreshed`와 `The server answered {{status}}. Sign in again.` |
+
+## 페이지 가져와 내보내기 [#paginate-and-export]
+
+`paginate-and-export`. 페이지마다 요청을 한 번씩 보내고, 모든 페이지의 항목을 하나의 목록으로 모아 작업 공간 폴더의 `exports/items.json`에 씁니다.
+입력 `pages`(숫자, 기본값 3)가 가져올 페이지 수를 정합니다.
+
+| 블록 | 종류 | 하는 일 |
+| --- | --- | --- |
+| Each page | 반복 | `{{pages}}`번 실행합니다. |
+| Page number | 평가 | `return { page: index + 1 };`로 페이지가 1, 2, 3…이 됩니다. |
+| Fetch the page | 요청 | `{{page}}`를 설정해 요청을 보냅니다(예: `?page={{page}}`). **Pick this request.** |
+| Items | 추출 | 한 페이지의 목록인 `$.body`를 고릅니다. |
+| All pages | 수집 | 모든 페이지의 목록을 모읍니다. |
+| One list | 평가 | `return pages.flat();`로 하나로 합칩니다. |
+| Export | 파일 쓰기 | `exports/items.json`을 JSON으로 씁니다. |
+| Output | 출력 | 파일의 경로를 돌려줍니다. |
+
+목록이 본문 전체가 아니라면 **Items**의 경로를 바꾸세요. Alpenglow의 **Catalog › List products**에서는 주소에 `&page={{page}}`를 추가하고
+**Items**를 `$.body.items`로 설정합니다. 데모 API는 상품을 `items` 아래에 돌려줍니다.
+
+## 상태 모니터 [#smoke-monitor]
+
+`smoke-monitor`. 한 시간마다 요청을 보내 2초 안에 200으로 응답하는지 확인하며, 그렇지 않으면 알림으로 알려 줍니다. 일정(60분마다)이 이미 시작 블록에
+설정되어 있습니다. 시작하려면 거기서 **허용**을 클릭하거나 `echolot flow serve`로 실행하세요.
+
+| 블록 | 종류 | 하는 일 |
+| --- | --- | --- |
+| Send | 요청 | 지켜볼 요청을 보냅니다. **Pick this request.** |
+| Healthy | 검증 | **Answers 200**(`value.status === 200`)과 **Within two seconds**(`value.time < 2000`)를 검사합니다. |
+| Output | 출력 | 두 검사가 모두 통과하면 응답을 받습니다. |
+| Unhealthy | 알림 | 검사가 실패했을 때: `Smoke check failed`와 `{{url}} answered {{status}} in {{time}} ms.` |
+| Failed | 알림 | 요청이 실패했을 때: `Smoke check failed`와 `The request failed or did not answer with a 2xx status.` |
+
+검증 블록의 검사는 테스트이므로 API가 정상이 아니면 `echolot flow run`이 실패하며, 이 덕분에 같은 플로를 CI 검사로 쓸 수 있습니다.
+
+## 데이터 생성 후 정리 [#seed-and-clean-up]
+
+`seed-and-clean-up`. 목록의 항목마다 레코드를 하나씩 만들고, 만든 내용을 로그에 남긴 다음, 각 레코드를 다시 삭제합니다. 데이터가 필요한 검사는
+로그가 있는 자리에 넣으세요.
+
+| 블록 | 종류 | 하는 일 |
+| --- | --- | --- |
+| Records | 값 | `[{"title": "First"}, {"title": "Second"}, {"title": "Third"}]`. |
+| Each record | 각 항목 반복 | 각 레코드를 차례로 보냅니다. |
+| Create | 요청 | 레코드를 만듭니다. 각 레코드의 키가 이번 전송의 변수이므로 요청은 `{{title}}`을 사용합니다. **Pick this request.** |
+| Its id | 추출 | `$.body.id`를 고릅니다. |
+| Made | 수집 | 새 ID를 모읍니다. |
+| Use the data | 로그 | `Seeded {{value}}`를 기록합니다. 데이터가 필요한 작업으로 바꾸세요. |
+| Each id | 각 항목 반복 | 각 ID를 차례로 보냅니다. |
+| Delete | 요청 | `{{id}}`를 변수로 하여 레코드를 삭제합니다. **Pick this request.** |
+| Deleted | 수집 | 삭제된 항목을 모읍니다. |
+| Count | 평가 | `return { deleted: gone.length };` |
+| Output | 출력 | 삭제된 개수를 돌려줍니다. |
+
+새 ID가 응답의 다른 위치에 있다면 **Its id**를 바꾸세요.
+
+## Alpenglow의 플로 [#the-flows-in-alpenglow]
+
+예제 작업 공간에는 템플릿과 함께 살펴볼 플로가 세 개 있습니다.
+
+- **Place a test order**: 로그인하고, 주문을 넣고, 유지할지를 승인 블록으로 묻고, 사용자가 거절하면 주문을 취소합니다. 에이전트에게
+  `place_test_order`로 제공됩니다.
+- **Morning stock check**: 매일 6:00에 상품을 나열하고 Bern에서 텐트가 부족해지면 알림을 표시합니다.
+- **Order status on webhook**: `POST /order-status`에 주문으로 응답합니다.
+
+[플로로 자동화하기](/docs/tutorials/automate-with-flows)에서 하나를 단계별로 만들어 봅니다.

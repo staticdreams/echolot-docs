@@ -1,0 +1,130 @@
+---
+title: "내보내기"
+description: "작업 공간이나 폴더를 Echolot 작업 공간, Postman, Insomnia, Bruno 컬렉션으로 내보내고, 요청을 cURL, 코드, HAR로 내보냅니다."
+---
+
+작업 공간이나 그 폴더 중 하나를 내보내면 다른 도구를 쓰는 사람에게 전달하거나 사본을 다른 Mac으로 옮길 수 있습니다. Echolot은 네 가지 형식으로 기록합니다.
+Echolot 작업 공간, Postman Collection v2.1, Insomnia v5 파일, Bruno 컬렉션입니다. 비밀 값은 키체인 밖으로 나가지 않습니다.
+
+## 작업 공간이나 폴더 내보내기 [#export-a-workspace-or-a-folder]
+
+1. 내보내기를 시작합니다.
+   - 작업 공간 전체: **파일 › 작업 공간 내보내기…**(<kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd>) 또는 사이드바에서 **요청** 옆의 **+** 메뉴에 있는
+     **작업 공간 내보내기…**.
+   - 폴더 하나: 폴더를 Control 키를 누른 채 클릭하고 <strong>폴더 내보내기…</strong>를 선택하거나, 폴더를 선택하고 <strong>파일 › 폴더 내보내기…</strong>를 선택합니다.
+2. 형식을 선택합니다. 각 형식에는 요청을 몇 개 담을 수 있는지 표시됩니다.
+3. 환경도 함께 내보내려면 **환경 포함**을 체크한 채로 두고, 내보내지 않으려면 체크를 해제합니다.
+4. <strong>내보내기…</strong>를 클릭하고 위치를 고른 다음 <strong>내보내기</strong>를 클릭합니다.
+
+Echolot이 형식을 추천합니다. 모든 요청을 담을 수 있으면 Postman, 그렇지 않으면 가장 많이 담는 형식, 다른 형식이 하나도 담지 못하면 Echolot
+작업 공간입니다. 요청을 하나도 담지 못하는 형식은 선택할 수 없습니다.
+
+<Shot id="workspaces-export-sheet" alt="Alpenglow의 작업 공간 내보내기 시트: 네 가지 형식, 선택된 Postman Collection v2.1, 요청 29개 중 각 형식이 담는 개수와 제외되는 종류" />
+
+## 형식 [#the-formats]
+
+| 형식 | 용도 | 담을 수 있는 요청 종류 | 저장 형태 |
+| --- | --- | --- | --- |
+| **Echolot 작업 공간** | “다른 Mac이나 팀원을 위한 전체 내용으로, 모든 종류의 요청을 포함합니다.” | 전체 | 작업 공간 폴더(`.echolot`) |
+| **Postman Collection v2.1** | “대부분의 API 도구가 가져올 수 있는 형식입니다: Postman, Insomnia, Bruno, Hoppscotch, Apidog.” | HTTP, GraphQL | `.postman_collection.json` 파일. 환경을 함께 내보내면 폴더 |
+| **Insomnia v5** | “Insomnia 10 이상용 YAML 파일 하나로, 환경이 포함됩니다.” | HTTP, GraphQL, WebSocket, Socket.IO, gRPC | `.yaml` 파일 |
+| **Bruno 컬렉션** | “Git에 보관하고 Bruno에서 열 수 있는 .bru 파일 폴더입니다.” | HTTP, GraphQL | 폴더 |
+
+MQTT 요청과 저장된 MCP 호출은 Echolot 작업 공간으로만 내보낼 수 있습니다. 각 형식은 내보내기 전에 제외되는 종류를 표시합니다. Alpenglow의 경우 Postman에는
+“요청 29개 중 21개 · MCP, MQTT, Socket.IO, WebSocket, gRPC 요청 제외”라고 표시됩니다.
+
+## 폴더가 함께 가져가는 것 [#what-a-folder-takes-with-it]
+
+폴더는 상속하는 내용과 함께 내보내집니다. 작업 공간과 그 폴더를 감싸는 폴더들의 변수, 인증, 스크립트입니다. 그러면 요청은 다른 도구에서도 Echolot에서
+보내던 것과 같은 내용을 보냅니다.
+
+## 보고서 [#the-report]
+
+내보내기가 끝나면 시트에 “요청 21개, 폴더 7개, 환경 3개를 Postman Collection v2.1로 …에 내보냈습니다” 같이 무엇이 기록되었는지 표시됩니다. 알릴
+내용이 있으면 두 목록이 이어집니다.
+
+- **제외됨**: 형식에 들어갈 자리가 없는 모든 요청과 그 이유(“Postman Collection v2.1은 MQTT 요청을 지원하지 않습니다.”).
+- **내보내면서 변경됨**: 다르게 나온 모든 부분.
+
+<Shot id="workspaces-export-report" alt="Alpenglow를 Postman으로 내보낸 뒤의 내보내기 보고서: 제외됨에는 gRPC, WebSocket, Socket.IO, MQTT, MCP 요청 여덟 개가, 내보내면서 변경됨에는 캡처, 동적 값, 평문으로 기록된 비밀 값이 나열됨" />
+
+내보낸 결과를 보려면 **Finder에서 보기**를, 닫으려면 **닫기**를 클릭하세요.
+
+Postman, Insomnia, Bruno에서 보통 바뀌는 내용은 다음과 같습니다.
+
+- **응답 캡처**는 내보내지 않습니다. 다른 도구는 스크립트로 변수를 설정합니다.
+- **요청별 설정**(시간 초과, TLS, 리디렉션, HTTP 버전)은 형식에 같은 설정이 있는 경우를 제외하고 내보내지 않습니다.
+- **검사**는 다른 도구에 대응하는 것이 있으면 그 도구의 테스트가 됩니다. 보고서에는 JSON 스키마, OpenAPI, JSONPath 필터 검사처럼 대응하는 것이 없는
+  검사의 개수가 표시됩니다.
+- **스크립트**는 Postman의 `pm` API용으로 작성됩니다. Postman으로는 그대로 가고, Insomnia용은 `insomnia`로 바뀌며, Bruno용은 그대로 넘어가므로 Bruno의
+  API에 맞게 수정해야 할 수 있습니다.
+- 다른 도구에 대응하는 것이 없는 **동적 값**은 작성된 그대로 유지됩니다. 그쪽으로 보내기 전에 바꾸세요.
+- **파일 본문**은 사용자의 Mac에 있는 파일의 경로를 가리킵니다. 컬렉션을 여는 곳에서 파일을 다시 선택하세요.
+- 다른 도구에 없는 **인증**은 제외되거나 변경되며, 보고서에 이름이 나옵니다.
+- WebSocket을 통한 **GraphQL 구독**은 일반 GraphQL 요청이 되며, GraphQL 파일 업로드는 내보내지 않습니다.
+
+## 비밀 값은 밖으로 나가지 않습니다 [#secrets-stay-home]
+
+비밀 변수는 모든 형식에서 값 없이 이름만 내보냅니다. 내보낸 파일을 여는 사람이 자신의 도구에서 값을 설정합니다.
+
+비밀 변수에 보관하지 않고 인증 또는 헤더 필드에 직접 입력한 비밀번호, 토큰, 키는 평문으로 기록됩니다. 보고서가 그 개수를 알려 줍니다. “비밀번호, 토큰 또는
+키 1개가 평문으로 기록되어 있습니다…” Alpenglow에서는 **Auth › Orders with OAuth 2**의 OAuth 2.0 클라이언트 비밀 값이 그에 해당합니다. 파일을
+공유하기 전에 그런 값을 키체인으로 옮기세요. [비밀 값](/docs/workspaces/secrets)을 참조하세요.
+
+## Echolot 작업 공간 사본 [#an-echolot-workspace-copy]
+
+**Echolot 작업 공간**으로 내보낸 파일은 자체 ID를 가진 새 작업 공간이므로 사용자의 키체인 비밀 값을 공유하지 않습니다.
+
+- 작업 공간 전체는 모든 것을 가져갑니다. 요청, 환경, MCP 서버, 명세, 모의 서버, 플로, 공유한 어시스턴트 대화입니다.
+- 폴더는 환경, MCP 서버, 명세를 가져가며 자신의 위치를 유지합니다. 위의 폴더들이 함께 따라오되 각각 바로 아래 폴더 하나만 담으므로, 폴더가 상속하는
+  내용과 요청 사이의 참조가 그대로 유지됩니다. 플로, 모의 서버, 공유한 어시스턴트 대화는 작업 공간에 남으며 보고서에 그렇게 표시됩니다.
+
+Git 자체의 폴더와 Finder의 `.DS_Store` 파일은 복사되지 않습니다.
+
+## 내보낼 수 있는 위치 [#where-an-export-may-go]
+
+Echolot은 내보내기를 원본 작업 공간 위에, 안에, 또는 그 주변에 절대 기록하지 않습니다. 이미 있는 파일이나 폴더를 선택하면 Echolot이 기존 항목을 휴지통으로
+이동하고 그 자리에 내보내기를 기록합니다.
+
+## 명령줄에서 [#on-the-command-line]
+
+`echolot export`는 같은 형식으로 기록합니다.
+
+```sh
+echolot export alpenglow.postman_collection.json -w Alpenglow.echolot --format postman
+echolot export orders-bruno -w Alpenglow.echolot --format bruno --folder orders --no-environments
+```
+
+`--format`은 `echolot`, `postman`, `insomnia`, `bruno` 중 하나입니다. 형식에 들어갈 자리가 없는 것은 표준 오류에 이름이 표시됩니다.
+[가져오기와 내보내기](/docs/cli/import-export)를 참조하세요.
+
+## 요청을 코드로 복사 [#copy-a-request-as-code]
+
+요청 페이지에서, 열려 있는 요청에 대해 다음을 사용합니다.
+
+- **요청 › cURL로 복사**(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd>)는 변수와 비밀 값을 해석한 `curl` 명령을 클립보드에 넣습니다.
+- **요청 › 코드 생성…**(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd>)은 변수를 해석한 요청을 코드로 보여 줍니다. 스크립트는 실행되지 않으며 비밀 값은 그대로 나타납니다.
+  언어를 고른 다음 <strong>복사</strong> 또는 <strong>저장…</strong>을 선택하세요.
+
+코드 생성은 cURL, Swift(URLSession), JavaScript(fetch, axios), TypeScript(fetch), Python(requests, httpx), Go(net/http), Kotlin(OkHttp),
+Java(HttpClient), C#(HttpClient), PHP(cURL), Rust(reqwest)를 지원합니다.
+
+언어를 추가하려면 **템플릿 폴더 열기**를 클릭하고 `.template` 파일을 넣으세요. 첫 줄이 목록에 표시되는 이름이며 주석 형태입니다. `{{! Ruby · Net::HTTP }}`.
+`python-requests.template`처럼 기본 제공 템플릿과 파일 이름이 같은 템플릿은 그것을 대체합니다.
+
+<Callout type="warn">
+  코드와 cURL 명령에는 요청의 비밀 값이 평문으로 들어 있습니다. 다른 사람이 읽을 수 있는 곳에 붙여넣지 마세요.
+</Callout>
+
+## 교환을 HAR로 내보내기 [#export-an-exchange-as-har]
+
+교환 하나를 일어난 그대로 보관하거나 공유하려면 <strong>요청 › 교환을 HAR로 내보내기…</strong>를 선택하거나, 응답 본문 위의 저장 메뉴에서 <strong>교환을 HAR로 내보내기…</strong>를
+선택하세요. HAR 파일에는 요청과 응답이 들어 있습니다.
+
+[실행](/docs/requests/runner)은 한 번의 실행에서 이루어진 모든 교환을 HAR 파일 하나로 내보내며, 명령줄에서는 `echolot run --reporter har`가 같은 일을
+합니다.
+
+응답 본문 위의 저장 메뉴에는 <strong>본문 저장…</strong>, <strong>기본 앱에서 열기</strong>와, 압축되었거나 gRPC인 응답에서는 도착한 그대로의 바이트인 <strong>인코딩된 본문 저장…</strong>도
+있습니다.
+
+명세는 [명세](/docs/specs) 페이지에서 내보냅니다.

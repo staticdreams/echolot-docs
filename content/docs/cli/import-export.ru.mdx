@@ -1,0 +1,123 @@
+---
+title: "echolot import и export"
+description: "Загрузите в рабочее пространство команды cURL, коллекции, спецификации и файлы HAR и запишите рабочее пространство для других инструментов."
+---
+
+`echolot import` превращает то, что у вас есть, в файлы рабочего пространства: команду cURL, коллекцию Postman,
+Insomnia, Paw или Bruno, спецификацию OpenAPI или Swagger, файл HAR. `echolot export` записывает рабочее пространство
+или одну из его папок как коллекцию Postman, Insomnia или Bruno либо как копию рабочего пространства Echolot. Они
+делают то же, что **Файл › Импортировать…** и **Файл › Экспортировать рабочее пространство…** в приложении; см.
+[импорт](/docs/get-started/importing) и [экспорт](/docs/workspaces/exporting).
+
+## echolot import [#echolot-import]
+
+```sh
+echolot import <file> [--workspace <workspace>] [--folder <folder>] [--format <format>]
+```
+
+`<file>` — это импортируемый файл, папка коллекции Bruno или `-`, чтобы читать стандартный ввод.
+
+Формат определяется по содержимому. Коллекция или спецификация попадает в свою собственную папку; команда cURL
+становится одним запросом. Пути к записанному идут в стандартный вывод, по одному в строке, а сводка — в стандартный
+поток ошибок:
+
+```sh
+pbpaste | echolot import - -w Alpenglow.echolot --folder auth
+```
+
+```text
+Imported 1 request from cURL.
+note: 1 credential kept out of the workspace files but not saved, as there is no Keychain here: auth_token_token. Set ECHOLOT_SECRET_AUTH_TOKEN_TOKEN where Echolot sends.
+auth/auth-token
+```
+
+| Что вы импортируете | Название формата |
+| --- | --- |
+| Команда cURL | `curl` |
+| Коллекция Postman | `postman-collection` |
+| Окружение Postman | `postman-environment` |
+| Документ OpenAPI 3 (YAML или JSON) | `openapi` |
+| Документ Swagger 2 | `swagger` |
+| Экспорт Insomnia | `insomnia` |
+| Файл HAR | `har` |
+| Файл Paw | `paw` |
+| Конфигурация MCP-клиента (его серверы) | `mcp-config` |
+| Коллекция Bruno | сама папка, формат не нужен |
+
+**Учётные данные никогда не попадают в файлы.** Пароли, токены, API-ключи и другие секретные значения, найденные в
+настройках авторизации и заголовках с учётными данными, становятся секретными переменными, названными по запросу и
+полю (`me_password`), а в файле остаётся `{{me_password}}`. На Mac они попадают в Связку ключей. Без неё (Linux, CI,
+`ECHOLOT_KEYCHAIN=0`) значение опускается, а Echolot называет переменную `ECHOLOT_SECRET_<NAME>`, которую нужно
+задать. В отчёте названы секреты, но никогда не их значения.
+
+Импорт спецификации создаёт папку, которая следует за спецификацией. Echolot сообщает об этом
+(`note: the folder follows …`); поддерживайте её в актуальном состоянии с помощью
+[`echolot spec check` и `apply`](/docs/cli/spec).
+
+### Параметры [#options]
+
+| Параметр | Значение |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Папка рабочего пространства (та, в которой лежит `workspace.toml`). По умолчанию — текущая папка. |
+| `--folder <path>` | Импортировать в эту папку рабочего пространства, например `users/admin`. |
+| `--format <format>` | Пропустить определение: `curl`, `postman-collection`, `postman-environment`, `openapi`, `swagger`, `insomnia`, `har`, `paw` или `mcp-config`. |
+
+## echolot export [#echolot-export]
+
+```sh
+echolot export <output> [--workspace <workspace>] [--folder <folder>] --format <format> [--no-environments] [--force]
+```
+
+`<output>` — куда писать: файл для Postman и Insomnia, папка для Bruno, для рабочего пространства Echolot и для
+Postman с окружениями.
+
+```sh
+echolot export /tmp/alpenglow.postman_collection.json -w Alpenglow.echolot --format postman
+```
+
+```text
+Exported 21 requests, 7 folders, 3 environments as Postman Collection v2.1.
+warning: 8 requests left out: Postman Collection v2.1 has no MCP requests. …
+  left out: realtime/order-updates
+  left out: inventory/reserve-stock
+  …
+warning: Response captures (Store in a Variable) are not exported; other tools set variables from scripts.
+warning: 1 password, token or key is written in clear: it is typed into an auth or header field rather than kept in a secret variable. Move it to the Keychain before sharing the file.
+/tmp/alpenglow.postman_collection.json
+```
+
+| Формат | Принимает | Записывает |
+| --- | --- | --- |
+| `echolot` | Запросы любого вида | Новую папку рабочего пространства с собственным ID. Экспорт папки сохраняет папки над ней. |
+| `postman` | HTTP и GraphQL | Файл Postman Collection v2.1 или папку с коллекцией и её окружениями. |
+| `insomnia` | HTTP, GraphQL, WebSocket, Socket.IO и gRPC | Файл Insomnia v5. |
+| `bruno` | HTTP и GraphQL | Папку коллекции Bruno. |
+
+То, для чего в формате нет места, называется в стандартном потоке ошибок: запросы, которые он не вмещает
+(`left out:`), и части, которые по дороге меняются, например захваты ответов или динамические значения, которых нет у
+другого инструмента.
+
+**Секретные значения никогда не записываются.** Секретные переменные уходят только по имени. Echolot предупреждает о
+любых учётных данных, которые введены в поле авторизации или заголовка, а не хранятся в секретной переменной, потому
+что такие записываются как есть.
+
+Echolot никогда не пишет поверх рабочего пространства, из которого вы экспортируете, внутрь него или рядом с ним, и
+никогда ничего не заменяет по пути вывода, если вы не передали `--force`; то, что он заменяет, попадает в Корзину.
+
+### Параметры [#options]
+
+| Параметр | Значение |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Папка рабочего пространства. По умолчанию — текущая папка. |
+| `--folder <path>` | Экспортировать только эту папку рабочего пространства, например `users/admin`. |
+| `--format <format>` | `echolot`, `postman`, `insomnia` или `bruno`. Обязательно. |
+| `--no-environments` | Не включать окружения. |
+| `--force` | Заменить то, что лежит по пути вывода. |
+
+## Коды выхода [#exit-codes]
+
+| Код | Когда |
+| --- | --- |
+| `0` | Импорт или экспорт выполнен. Предупреждения его не меняют. |
+| `1` | Файл не удалось прочитать или записать. |
+| `64` | Неизвестный формат или путь вывода, который существует, без `--force`. |

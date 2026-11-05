@@ -1,0 +1,70 @@
+---
+title: "튜토리얼"
+description: "Alpenglow 데모 숍을 대상으로 첫 요청부터 에이전트와 CI까지 단계별로 배우는 학습 과정입니다."
+---
+
+각 튜토리얼은 하나의 작업을 처음부터 끝까지 다룹니다. 모두 가상의 아웃도어 용품점 **Alpenglow**를 사용합니다. `https://demo.echolot.dev`의
+[데모 API](/docs/tutorials/demo-api)와, 모든 종류의 요청이 하나씩 들어 있는 예제 작업 공간입니다. macOS 15 이상이 설치된 Apple 실리콘 Mac에 Echolot이
+있어야 합니다. 데모로 보내는 내용은 저장되지 않습니다.
+
+## Alpenglow 작업 공간 [#the-alpenglow-workspace]
+
+대부분의 튜토리얼은 자체 작업 공간을 만들거나 Alpenglow에서 시작합니다. 받는 방법은 다음과 같습니다.
+
+1. [Alpenglow.echolot.zip](/examples/Alpenglow.echolot.zip)을 내려받습니다.
+2. Finder에서 zip을 더블 클릭하여 압축을 풉니다. `Alpenglow.echolot`이 생깁니다.
+3. `Alpenglow.echolot`을 더블 클릭합니다. Echolot이 작업 공간 윈도우에서 엽니다. **파일 › 작업 공간 열기…**(<kbd>⌘</kbd><kbd>O</kbd>)를 선택하고 고를 수도
+   있습니다.
+
+Alpenglow는 **환경 없음**을 선택한 상태로 작동합니다. 작업 공간 변수가 데모 API를 가리키기 때문입니다. 구성은 다음과 같습니다.
+
+| 폴더 | 내용 |
+| --- | --- |
+| Auth | **Sign in**: 액세스 토큰을 비밀 변수 `{{token}}`에 저장합니다. **Who am I**, **Orders with OAuth 2** |
+| Catalog | **List products**, **Search**, **Get product**, **Categories**, GraphQL 요청 **Search products**, **Export the catalog**(14 MB) |
+| Orders | **List orders**, **Create order**, **Get order**, **Cancel order**. 모두 폴더의 Bearer 인증으로 토큰을 보냅니다. |
+| Realtime | **Order updates**(WebSocket), **Order events**(서버 전송 이벤트), **Support chat**(Socket.IO), **Warehouse sensors**(MQTT) |
+| Inventory | gRPC 호출 세 개: **List warehouses**, **Watch stock**, **Reserve stock** |
+| Agent tools | MCP 요청 두 개, **search_catalog**와 **order_status**. 서버 **Alpenglow MCP**로 보냅니다. |
+| Echo | `/echo` 엔드포인트로 보내는 요청: 보낸 내용, 상태, 리디렉션, Basic 인증, 쿠키, XML, HTML |
+
+또한 환경 세 개(**Local**, **Staging**, 보호된 **Production**. Staging과 Production은 가상의 주소입니다), 플로 세 개(**Place a test order**,
+**Morning stock check**, **Order status on webhook**), MCP 서버 **Alpenglow MCP**, 명세 `alpenglow.yaml`, `shop.graphql`, `inventory.proto`가
+있습니다.
+
+<Shot id="tutorials-alpenglow-window" alt="사이드바에 폴더가 보이는 Alpenglow 작업 공간과 열려 있는 Catalog › List products" />
+
+## gRPC, Socket.IO, MQTT를 위한 Mac의 서버 [#servers-on-your-mac-for-grpc-socketio-and-mqtt]
+
+데모 API는 gRPC, Socket.IO, MQTT를 제공할 수 없습니다. 이를 위한 작은 서버가 문서 저장소의 `examples/servers`에 있습니다. [Bun](https://bun.sh)이 필요하며
+Mac에서만 수신 대기합니다.
+
+```sh
+git clone https://github.com/staticdreams/echolot-docs.git
+cd echolot-docs/examples/servers
+bun install
+bun run realtime   # Socket.IO on http://localhost:3001 (namespace /support), MQTT on mqtt://localhost:1883
+bun run grpc       # the Inventory service on localhost:50051 (in a second Terminal window)
+```
+
+Alpenglow의 **Support chat**, **Warehouse sensors**, **Inventory** 요청은 이미 이 주소를 가리킵니다. 서버를 멈추려면
+<kbd>Control</kbd>-<kbd>C</kbd>를 누릅니다.
+
+## 튜토리얼 목록 [#the-tutorials]
+
+| 튜토리얼 | 배우는 내용 | 소요 시간 |
+| --- | --- | --- |
+| [첫 번째 작업 공간](/docs/tutorials/first-workspace) | 처음부터 작업 공간 만들기: 요청, 폴더, 환경, 비밀 값, Git | 15분 |
+| [요청 연결하기](/docs/tutorials/chain-requests) | 로그인하고 토큰을 저장한 다음 폴더 인증으로 모든 곳에 보내기, 동적 값, `Idempotency-Key` | 15분 |
+| [API를 테스트하고 CI에서 실행하기](/docs/tutorials/test-in-ci) | 검사 추가, 실행에서 작업 공간 실행, GitHub Actions에서 JUnit 보고서와 함께 `echolot run` | 20분 |
+| [명세 우선으로 설계하고 모의 서버 만들기](/docs/tutorials/spec-first) | OpenAPI 명세 가져오기 또는 설계, 린트, 모의 서버 만들기, 모의 서버로 요청 보내기, 명세와 대조하여 검사 | 20분 |
+| [플로로 자동화하기](/docs/tutorials/automate-with-flows) | 캔버스에서 플로 만들기: 로그인, 주문 목록, 판단, 알림. 실행하고, 일정을 잡고, 웹훅으로 시작하기 | 20분 |
+| [MCP 서버 살펴보기](/docs/tutorials/inspect-an-mcp-server) | 데모 MCP 서버 추가, 도구 확인, 호출, 품질 카드 읽기, 호출을 검사가 있는 요청으로 저장 | 15분 |
+| [에이전트가 작업 공간을 안전하게 사용하게 하기](/docs/tutorials/agents-safely) | Claude Code 등 클라이언트 연결, 허용할 작업 설정, 전송 승인, 환경 보호. 또는 내장 어시스턴트 사용 | 20분 |
+| [실시간 통신](/docs/tutorials/realtime) | 데모 API로 WebSocket과 서버 전송 이벤트, 로컬 서버로 Socket.IO와 MQTT | 20분 |
+| [Postman에서 옮겨 오기](/docs/tutorials/coming-from-postman) | 컬렉션과 환경 가져오기, 대응 관계 확인, 실행, 다시 내보내기 | 15분 |
+
+<Callout title="데모 API에는 제한이 있습니다">
+  한 주소에서 분당 120개의 요청을 받으며, 내보내기, WebSocket, 서버 전송 이벤트는 분당 10개입니다. 제한을 넘으면 `429 Too Many Requests`로 응답합니다.
+  1분 기다린 뒤 다시 보내십시오.
+</Callout>

@@ -1,0 +1,101 @@
+---
+title: "echolot mock"
+description: "在终端或 CI 中提供模拟服务器，可以是工作区中手工创建的路由，也可以是 OpenAPI 文档，支持延迟、注入失败和请求检查。"
+---
+
+`echolot mock` 提供一个模拟服务器：可以是存储在工作区中的模拟服务器，带有它的[手工创建的路由](/docs/mocks/routes)和规范（如果有的话），也可以是一个 OpenAPI 文档，
+其操作用文档中的示例或根据 Schema 生成的正文来应答。用它可以在 API 存在之前构建客户端，或给 CI 任务一个按你的意愿应答的服务器。它提供的模拟服务器与[模拟服务器页面](/docs/mocks)中的相同。
+
+```sh
+echolot mock <source> [--workspace <workspace>] [--port <port>] [--share] [--delay <ms>] [--failure-rate <percent>] [--no-validate] [--routes <file>]
+```
+
+`<source>` 是规范文件（YAML 或 JSON）；配合 `--workspace` 时，则是存储在该工作区中的某个模拟服务器的名称。
+
+## 模拟一个规范 [#mock-a-spec]
+
+```sh
+echolot mock Alpenglow.echolot/specs/alpenglow.yaml --port 4010
+```
+
+```text
+Mock of Alpenglow demo shop: 9 operations at http://127.0.0.1:4010/v1 (Ctrl-C stops it)
+```
+
+模拟服务器在规范的第一个服务器的路径（这里是 `/v1`）上应答。它应答的每个请求占标准输出上的一行：状态、方法和路径、匹配到的操作、应答的来源，以及耗时。请求存在的问题会列在它下面。
+
+```text
+200 GET /v1/products/TNT-MH-2P  → GET /products/{sku} (generated)  0 ms
+400 POST /v1/orders  → POST /orders  0 ms
+    body $.lines: expected array, got string
+```
+
+**请求会对照规范检查。** 参数或正文违反规范的请求会得到 `400`，其中说明了问题所在：
+
+```json
+{
+  "error" : "The request does not match the spec (POST /orders).",
+  "problems" : [
+    "body $.lines: expected array, got string"
+  ]
+}
+```
+
+`--no-validate` 则对这类请求照常应答。
+
+**选择应答。** 默认情况下，操作用它的第一个成功响应和第一个示例来应答。请求可以通过 `Prefer: code=404, example=empty`，或 Postman 的 `x-mock-response-code` 和
+`x-mock-response-name` 标头，要求使用另一个。
+
+## 模拟工作区的模拟服务器 [#mock-a-workspaces-mock]
+
+使用 `--workspace` 时，`<source>` 是存储在“模拟服务器”页面中的某个模拟服务器的名称（即 `mocks/` 中不带 `.toml` 的文件名，或它的名称）。它的端口、延迟、失败率、请求检查、
+所选响应和路由都会生效，你给出的选项会覆盖它们。它的 JavaScript 路由（`mocks/<name>.js`）最先应答，然后是手工创建的路由，最后是它的规范；
+参见[脚本路由](/docs/mocks/scripted-routes)和[路由与示例数据](/docs/mocks/routes)。
+
+```sh
+echolot mock shop -w Alpenglow.echolot --delay 300
+```
+
+由路由组成的模拟服务器不需要规范：
+
+```sh
+echolot mock storefront -w Shop.echolot
+```
+
+```text
+Mock of Storefront: 3 routes at http://127.0.0.1:4321 (Ctrl-C stops it)
+200 GET /users/42  → GET /users/{id} (OK)  1 ms
+404 GET /users/0  → GET /users/{id} (Not found)  0 ms
+```
+
+每行都会指出应答的路由，并在括号中给出它返回的响应。正文中的示例值会为每个请求重新生成。要在没有服务器的情况下生成示例数据，参见 [echolot fake](/docs/cli/fake)。
+
+## 选项 [#options]
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 存放该模拟服务器的工作区文件夹。 |
+| `--port <port>` | 端口。默认：模拟服务器自己的端口，或 4010。 |
+| `--share` | 在每个网络接口上应答，而不仅是这台 Mac：用于容器和手机。 |
+| `--delay <ms>` | 每次应答之前等待的毫秒数。 |
+| `--failure-rate <percent>` | 以注入的 `500` 应答的请求所占的百分比。 |
+| `--no-validate` | 对违反规范的请求照常应答，而不是用 `400` 拒绝它们。 |
+| `--routes <file>` | 先于规范应答的 JavaScript 路由。默认：工作区模拟服务器的 `mocks/<name>.js`。 |
+
+不带 `--share` 时，模拟服务器只监听 127.0.0.1，所以网络上的其他设备都无法访问它。带 `--share` 时，任何能访问你 Mac 的人都可以访问。
+
+超过模拟服务器限制的请求正文会得到 `413`，并且永远不会到达路由。
+
+## 在 CI 中 [#in-ci]
+
+在后台启动模拟服务器，并针对它运行。Alpenglow 的 **Local** 环境将 `{{baseURL}}` 指向 `http://localhost:8787/v1`，所以 8787 端口上的模拟服务器会应答它的请求：
+
+```sh
+echolot mock Alpenglow.echolot/specs/alpenglow.yaml --port 8787 &
+echolot run Alpenglow.echolot --env local --folder catalog
+kill %1
+```
+
+## 退出码 [#exit-codes]
+
+模拟服务器一直运行，直到你停止它。选项有误或工作区中没有该名称的模拟服务器时，它以 `64` 退出；无法读取规范或端口已被占用时，以 `1` 退出。

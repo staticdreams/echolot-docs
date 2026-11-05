@@ -1,0 +1,86 @@
+---
+title: "デモAPI"
+description: "demo.echolot.devにある架空のアウトドア用品店Alpenglow。Echolotのあらゆる機能を試すためのAPIです。"
+---
+
+<strong>https://demo.echolot.dev</strong>は、Echolotを学ぶために作られたAPIです。チューリッヒとベルンにあるアウトドア用品店、Alpenglowです。
+中身に非公開のものはなく、送信した内容も保存されません。`GET https://demo.echolot.dev/`で、すべてのエンドポイントを一覧できます。
+
+## サインイン [#sign-in]
+
+デモアカウントは`heidi@alpenglow.ch`、パスワードは`alpenglow`です。
+
+```http
+POST https://demo.echolot.dev/v1/auth/token
+Content-Type: application/json
+
+{ "email": "heidi@alpenglow.ch", "password": "alpenglow" }
+```
+
+レスポンスには`access_token`（JWT、有効期間は1時間）が含まれます。`/v1/me`と`/v1/orders`には、`Authorization: Bearer <token>`として送信します。
+同じエンドポイントで、OAuth 2のクライアント資格情報も使えます。クライアントIDは`alpenglow-demo`、クライアントシークレットは`demo-secret`です。
+
+## ショップ [#the-shop]
+
+| エンドポイント | 内容 |
+| --- | --- |
+| `GET /v1/products` | 商品の一覧。`q`、`category`、`tag`、`in_stock=true`、`sort`（`name`、`price`、`-price`、`rating`）、`page`、`per_page`を指定できます。ページ送りは`Link`ヘッダーと`X-Total-Count`ヘッダーにあります。 |
+| `GET /v1/products/{sku}` | `TNT-MH-2P`のような1つの商品。`ETag`付き（`If-None-Match`を送ると304）。 |
+| `GET /v1/products/export` | 商品40,000件、約14 MB。サイズの大きいレスポンスでビューアを試せます。 |
+| `GET /v1/categories` | カテゴリと商品数。 |
+| `GET /v1/me` | サインイン中のユーザー。 |
+| `GET /v1/orders` | Heidiの注文。`?status=shipped`で絞り込めます。 |
+| `POST /v1/orders` | `{"lines": [{"sku": "TNT-MH-2P", "quantity": 1}]}`。`Location`付きで201、問題点を示して422を返します。同じ`Idempotency-Key`には、同じ注文をもう一度返します。 |
+| `GET /v1/orders/{id}` | `ord_7Hk2Lw`のような1つの注文。 |
+| `DELETE /v1/orders/{id}` | キャンセル。204、発送済みなら409。実際には何も変わりません。 |
+
+エラーは、問題の内容を示すproblem details（`application/problem+json`）で返ります。ショップのOpenAPI仕様は`https://demo.echolot.dev/openapi.yaml`にあります。
+
+## GraphQL [#graphql]
+
+`POST https://demo.echolot.dev/v1/graphql`。イントロスペクションに対応しているため、Echolotは入力中にフィールドを補完します。スキーマは`/shop.graphql`にあります。
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } stock { warehouse available } }
+  }
+}
+```
+
+## ライブイベント [#live-events]
+
+- **WebSocket** `wss://demo.echolot.dev/v1/orders`：1.5秒ごとに注文イベント。`{"op": "subscribe", "channel": "orders"}`、`{"op": "ping"}`、または`id`を含む任意のJSONを送ると、確認応答が返ります。
+  セッションは3分間続きます。メッセージは最大8 KB、10秒間に最大20件です。
+- **Server-Sent Events** `GET https://demo.echolot.dev/v1/orders/events`：1秒おきに20件のイベントが届き、その後`end`が届きます。`Last-Event-ID`を送ると再開できます。
+
+## MCP [#mcp]
+
+`https://demo.echolot.dev/mcp`は、Streamable HTTPのMCPサーバです。MCPサーバのページで追加すると、ツール（`search_catalog`、`get_product`、`order_status`）、リソース、プロンプトを試せます。
+
+## Echo [#echo]
+
+リクエストエディタを試すためのエンドポイントです。
+
+| エンドポイント | 内容 |
+| --- | --- |
+| `/echo/anything` | 送信したメソッド、クエリ、ヘッダー、ボディを返します。 |
+| `/echo/headers` | 送信したヘッダーを返します。 |
+| `/echo/status/{code}` | そのステータスで応答します。 |
+| `/echo/delay/{seconds}` | 最大5秒待ってから、内容を返します。 |
+| `/echo/redirect/{n}` | `n`回リダイレクトしてから、`/echo/anything`に着きます。 |
+| `/echo/cookies`、`/echo/cookies/set?name=value`、`/echo/cookies/delete?name` | Cookieの表示、設定、削除。 |
+| `/echo/basic-auth/{user}/{password}` | Basic認証が一致すれば200、そうでなければ401。 |
+| `/echo/bearer` | Bearerトークンがあれば（どんな値でも）200、なければ401。 |
+| `/echo/bytes/{n}` | ランダムな`n`バイト（最大1 MB）。 |
+| `/echo/xml`、`/echo/html` | XMLドキュメントとHTMLページ。 |
+
+## 制限 [#limits]
+
+デモは共有のため、アドレスごとに制限があります。1分あたり120リクエスト、書き出し、`bytes`、`delay`、WebSocket、SSEは1分あたり10リクエストです。
+上限を超えると、`Retry-After`付きの`429 Too Many Requests`が返ります。ボディは最大64 KBです。
+
+gRPC、Socket.IO、MQTTはここでは動かせません。それぞれのチュートリアルでは、Macで動かす小さなサーバを使います。
+
+デモAPIのソースは[ドキュメントのリポジトリ](https://github.com/staticdreams/echolot-docs/tree/main/demo-api)にあります。

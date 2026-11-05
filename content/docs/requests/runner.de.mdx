@@ -1,0 +1,152 @@
+---
+title: "Ausführung"
+description: "Einen Ordner, einige Anfragen oder den ganzen Arbeitsbereich mit ihren Prüfungen ausführen, beliebig oft oder einmal je Zeile einer Datendatei."
+---
+
+Die Ausführung (der Runner) sendet Anfragen nacheinander und sagt dir, welche bestanden haben. Eine Anfrage besteht,
+wenn
+sie eine Antwort bekommt und jede Prüfung aus ihrem [Tab „Tests“ und ihren Skripten](/docs/requests/scripts-and-tests)
+erfüllt ist. Nutze sie, um nach einer Änderung eine ganze API auszuprobieren, dieselben Anfragen für viele Eingaben
+auszuführen oder einen Bericht zu erstellen.
+
+<Shot id="requests-runner-results" alt="Die Seite „Ausführung“ nach dem Ausführen des ganzen Alpenglow-Arbeitsbereichs: links die Karte „Ausführen“, die Zahlen für Anfragen, bestanden, fehlgeschlagen und fehlgeschlagene Prüfungen und die Liste der Ergebnisse mit Statuscodes und Zeiten" />
+
+## Durchlauf starten [#start-a-run]
+
+Es gibt mehrere Wege hinein:
+
+- Klicke in der Seitenleiste einen Ordner mit der rechten Maustaste an und wähle **Ordner ausführen**, oder eine Anfrage
+  und wähle **Anfrage ausführen**. Der Durchlauf startet sofort und die Seite „Ausführung“ öffnet sich.
+- Wähle in der Seitenleiste mehrere Ordner oder Anfragen aus, klicke sie mit der rechten Maustaste an und wähle
+  **N Objekte ausführen**.
+- Wähle **Arbeitsbereich ausführen** in der Befehlspalette.
+- Öffne die Seite „Ausführung“, richte den Durchlauf ein und wähle **Ausführen**. Die Ausführung steht in der
+  Seitenleiste unter **Tests**, oder wähle **Ansicht › Ausführung** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd>).
+
+Auf der Seite „Ausführung“ enthält die Karte **Ausführen** die Einstellungen:
+
+| Einstellung | Was sie tut |
+| --- | --- |
+| **Was** | **Ganzer Arbeitsbereich**, ein Ordner aus **Ordner** oder eine einzelne Anfrage aus **Eine Anfrage** |
+| **Umgebung** | Die Umgebung, gegen die sich die Anfragen auflösen, wie im Rest des Fensters |
+| **Daten** | **CSV oder JSON auswählen …** für eine Datendatei: eine Iteration pro Zeile |
+| **Iterationen** | Wie oft alles ausgeführt wird, von 1 bis 1000. Mit einer Datendatei steht dort **Eine pro Datenzeile** |
+| **Verzögern** | Eine Pause zwischen Anfragen, von 0 bis 60.000 ms in Schritten von 100 |
+| **Wiederholungen** | Zusätzliche Versuche für eine Anfrage, die fehlschlägt, von 0 bis 5 |
+| **Gleichzeitig** | Wie viele Iterationen nebeneinander laufen, von 1 bis 32. Wird gezeigt, wenn es mehr als eine Iteration gibt |
+| **Beim ersten Fehler stoppen** | Beendet den Durchlauf bei der ersten Anfrage, die fehlschlägt |
+
+Wähle **Ausführen** (<kbd>⌘</kbd><kbd>R</kbd>) zum Starten und **Stoppen** (<kbd>⌘</kbd><kbd>.</kbd>), um einen
+Durchlauf
+vorzeitig zu beenden. Ist eine geschützte Umgebung aktiv, heißt der Knopf **In Production ausführen …** (mit dem Namen
+dieser Umgebung), und der Durchlauf fragt nach, bevor er etwas sendet. Siehe
+[Geschützte Umgebungen](/docs/workspaces/protected-environments).
+
+## Was in welcher Reihenfolge läuft [#what-runs-and-in-which-order]
+
+Anfragen laufen in ihrer Reihenfolge in der Seitenleiste: die Anfragen eines Ordners von oben nach unten, Ordner darin
+an ihrer Stelle. Jede Anfrage wird genau so gesendet, als hättest du sie selbst gesendet: mit denselben Variablen,
+derselben
+Auth, denselben Skripten und Prüfungen. Spätere Anfragen können die Antworten früherer im selben Durchlauf nutzen, über
+[Antwortwerte](/docs/requests/dynamic-values) und Variablen, die Skripte oder [Erfassungen](/docs/requests/captures)
+setzen. So sendet ein Durchlauf des Alpenglow-Arbeitsbereichs zuerst **Auth › Sign in**, das das Token erfasst, das die
+Anfragen unter **Orders** senden.
+
+Jede Art von Anfrage kann laufen:
+
+- HTTP-, GraphQL- und gRPC-Anfragen sowie MCP-Aufrufe werden wie alle anderen gesendet und geprüft.
+- WebSocket-, Socket.IO- und MQTT-Anfragen verbinden sich, senden ihre gesicherten Nachrichten, Ereignisse oder
+  Veröffentlichungen, die für Durchläufe eingeschaltet sind (und MQTT abonniert seine aktivierten Filter), hören 10
+  Sekunden zu und schließen dann. Das Nachrichtenlog ist die Antwort, sodass Prüfungen auf dem **Body** damit
+  funktionieren. Um eine andere Zeit zuzuhören, setze `stream-limit` (in Sekunden) unter `[settings]` in der
+  Anfragedatei.
+- Ein Server-Sent-Events-Stream wird 10 Sekunden gehalten und dann beendet.
+
+Ein Pre-Request-Skript kann eine Anfrage mit `pm.execution.skipRequest()` überspringen; das Ergebnis sagt
+**Von einem Pre-Request-Skript übersprungen**. Ein Skript kann auch mit `pm.execution.setNextRequest("Request name")`
+springen und
+den Durchlauf mit `pm.execution.setNextRequest(null)` beenden. Ein Durchlauf, der immer wieder zurückspringt, wird nach
+10.000 Sendungen in einer Iteration gestoppt.
+
+## Iterationen und Datendateien [#iterations-and-data-files]
+
+**Iterationen** führt alles so oft aus. `{{$…}}`-Werte wie `{{$uuid}}` sind jedes Mal neu, und `pm.info.iteration` sagt,
+welche Iteration es ist (ab 0).
+
+Eine Datendatei macht den Durchlauf datengetrieben: eine Iteration pro Zeile, jede Spalte eine Variable, die die
+Anfragen wie jede andere nutzen, etwa `{{sku}}`. Skripte lesen die Zeile mit `pm.iterationData.get("sku")`.
+
+- **CSV**: eine Kopfzeile mit den Variablennamen, dann eine Zeile pro Iteration. Anführungszeichen, doppelte
+  Anführungszeichen und Zeilenumbrüche in Anführungszeichen funktionieren.
+- **JSON**: ein Array von Objekten, ein Objekt pro Iteration.
+
+Zum Beispiel `skus.csv` für eine Anfrage an `{{baseURL}}/products/{{sku}}` mit einer Prüfung, dass `$.sku` gleich
+`{{sku}}` ist:
+
+```csv
+sku,quantity
+TNT-MH-2P,1
+PCK-TIT-30,2
+```
+
+oder dasselbe als JSON:
+
+```json
+[
+  { "sku": "TNT-MH-2P", "quantity": 1 },
+  { "sku": "PCK-TIT-30", "quantity": 2 }
+]
+```
+
+Das Feld **Daten** zeigt den Namen der Datei und die Zahl ihrer Zeilen. Das Kreuz daneben entfernt die Datei.
+
+## Parallele Iterationen [#parallel-iterations]
+
+Bei mehr als einer Iteration lässt **Gleichzeitig** mehrere Iterationen nebeneinander laufen. Die Anfragen innerhalb
+einer Iteration bleiben in Reihenfolge, und jede Iteration behält die Variablen, die ihre eigenen Skripte setzen, sodass
+das Token einer Iteration nie in eine andere gelangt. Lass es bei **1 (nacheinander)**, wenn Iterationen voneinander
+abhängen oder der Server begrenzt, wie schnell du ihn aufrufen darfst.
+
+## Wiederholungen, Verzögerungen und Stoppen [#retries-delays-and-stopping]
+
+- **Wiederholungen** sendet eine fehlschlagende Anfrage erneut, bis zu so oft. Eine Anfrage schlägt fehl, wenn sie keine
+  Antwort bekommt oder eine Prüfung fehlschlägt. Das Ergebnis zeigt, wie viele Versuche es gebraucht hat, etwa
+  **3 Versuche**, und behält den letzten.
+- **Verzögern** wartet zwischen Anfragen, für Server mit Ratenbegrenzung wie die [Demo-API](/docs/tutorials/demo-api).
+- **Beim ersten Fehler stoppen** beendet den Durchlauf, wenn eine Anfrage fehlschlägt, nach ihren Wiederholungen. Die
+  Zusammenfassung sagt dann **Bei einem Fehler gestoppt**.
+
+## Ergebnisse [#results]
+
+Während der Durchlauf läuft, füllt sich die Liste und zeigt die Anfrage, die gerade gesendet wird. Darüber stehen die
+Zahlen: **Anfragen**, **Bestanden**, **Fehlgeschlagen**, **Fehlgeschlagene Prüfungen** und am Ende **Dauer**, mit
+**Alle bestanden** oder **N fehlgeschlagen**.
+
+Jede Zeile zeigt die Art oder Methode der Anfrage, ihren Namen und ihre Adresse, den Status und die Dauer. Bei mehreren
+Iterationen sagt `#2`, zu welcher Iteration eine Zeile gehört. Unter einer fehlgeschlagenen Anfrage stehen die
+Prüfungen, die fehlgeschlagen sind, jeweils mit ihrer Meldung, oder der Grund, warum es keine Antwort gab. Klicke auf
+eine Zeile, um die Anfrage zu öffnen.
+
+Die Seite behält den letzten Durchlauf, solange das Fenster offen ist. Jeder Austausch eines Durchlaufs steht auch im
+[Verlauf](/docs/workspaces/history), markiert als aus der Ausführung stammend.
+
+## Berichte [#reports]
+
+Nach einem Durchlauf sichert **Bericht sichern** in der Karte **Ergebnisse** ihn als Datei:
+
+| Format | Wofür |
+| --- | --- |
+| **JUnit XML …** | CI-Systeme und Test-Dashboards |
+| **JSON …** | Deine eigenen Werkzeuge |
+| **HTML …** | Eine Seite zum Lesen oder Teilen |
+| **HAR (jeder Austausch) …** | Jede Anfrage und Antwort des Durchlaufs, für die Entwicklerwerkzeuge eines Browsers oder andere HTTP-Werkzeuge |
+
+Die Berichte als JUnit, JSON und HTML maskieren Secrets in den Adressen, Prüfwerten und Meldungen, Skript-Tests und
+Logs,
+die sie enthalten.
+
+## In der Befehlszeile ausführen [#run-from-the-command-line]
+
+`echolot run` führt denselben Arbeitsbereich mit denselben Einstellungen aus, für CI und das Terminal: Iterationen,
+Datendateien, Verzögerungen, Wiederholungen, parallele Iterationen und dieselben Berichtsformate. Siehe
+[echolot run](/docs/cli/run) und [Ausführen in CI](/docs/cli/ci).

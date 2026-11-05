@@ -1,0 +1,146 @@
+---
+title: "Serveurs MCP"
+description: "Connectez-vous à des serveurs MCP, consultez les outils, ressources et prompts qu’ils proposent, appelez-les et suivez ce qui change."
+---
+
+La page Serveurs MCP sert à inspecter et déboguer des serveurs [Model Context Protocol](https://modelcontextprotocol.io) :
+ceux que vous construisez et ceux qu’utilisent vos clients IA. Echolot se connecte, détermine la version du protocole
+que parle le serveur, vérifie que chaque étape fonctionne, liste ce qu’il propose, et vous permet d’appeler n’importe
+quel outil, ressource ou prompt et d’enregistrer l’appel comme requête.
+
+Ouvrez-la avec **Serveurs MCP** dans le sélecteur de modules de la barre latérale, ou avec <kbd>⌘</kbd><kbd>2</kbd>.
+La barre latérale liste les serveurs de l’espace de travail ; la page affiche celui que vous sélectionnez.
+
+<Shot id="mcp-server-detail" alt="La page Serveurs MCP avec Alpenglow MCP sélectionné : l’en-tête du serveur avec Modifier, Surveiller et Vérification, la carte La connexion fonctionne, la carte Serveur avec le protocole, le ping et le nombre d’outils, et la carte Outils" />
+
+## Essayer avec le serveur de démonstration [#try-it-with-the-demo-server]
+
+L’API de démonstration fait tourner un serveur MCP à l’adresse `https://demo.echolot.dev/mcp`. L’espace de travail
+d’exemple Alpenglow l’a déjà sous le nom **Alpenglow MCP**. Pour l’ajouter à un autre espace de travail :
+
+1. Dans l’en-tête **Serveurs** de la barre latérale, cliquez sur **+** et choisissez **Ajouter un serveur MCP…**.
+2. Saisissez un **Nom**, comme `Alpenglow MCP`, et réglez **Transport** sur **HTTP (Streamable HTTP)**.
+3. Saisissez l’**URL** `https://demo.echolot.dev/mcp` et cliquez sur **Ajouter**.
+
+Echolot vérifie le serveur immédiatement. Il propose trois outils (`search_catalog`, `get_product`, `order_status`),
+une ressource et un prompt. [Ajouter des serveurs](/docs/mcp-servers/adding-servers) traite des serveurs locaux, de
+l’import de serveurs depuis d’autres apps, des en-têtes et d’OAuth.
+
+## La liste des serveurs [#the-server-list]
+
+Chaque ligne affiche le nom du serveur, la façon dont il se connecte et, une fois vérifié, son nombre d’outils :
+`http · demo.echolot.dev` avant la première vérification, `http · 3 tools` après, `stdio · npx` pour une commande
+locale. Un point vert signifie que la dernière vérification a réussi, un point rouge qu’elle a échoué.
+
+Faites un clic droit sur un serveur pour **Modifier…**, **Vérifier la connexion** et **Supprimer…**. Le bouton **−** de
+l’en-tête supprime le serveur sélectionné. Echolot demande d’abord confirmation, et le fichier du serveur va dans la
+corbeille.
+
+Chaque serveur est un fichier dans le dossier `mcp-servers` de l’espace de travail : il voyage donc avec l’espace de
+travail dans Git. Les secrets, non : voir [Valeurs et secrets](/docs/mcp-servers/adding-servers#values-and-secrets).
+
+## Vérifier un serveur [#checking-a-server]
+
+Echolot vérifie un serveur quand vous l’ouvrez, et de nouveau quand vous cliquez sur **Vérification**. Une vérification se
+connecte, détecte le protocole, envoie un ping au serveur, et liste ses outils, ses ressources et ses prompts. Les
+serveurs locaux qu’Echolot n’a encore jamais démarrés font exception : ils attendent que vous examiniez leur commande
+(voir [À vérifier avant l’exécution](/docs/mcp-servers/adding-servers#review-before-running)).
+
+Le résultat apparaît dans des cartes, de haut en bas :
+
+| Carte | Ce qu’elle montre |
+| --- | --- |
+| **La connexion fonctionne** ou **Problème de connexion** | Chaque étape de la vérification, réussie ou en échec : **Démarrage du serveur** (serveurs locaux), **Serveur joignable**, **Autorisation**, **Protocole**, **Réactivité** (le ping), **Outils**, **Ressources** et **Prompts**. Une étape en échec dit ce qui s’est mal passé et suggère une solution. |
+| **Serveur** | La version du protocole (**Protocole (sans état)** ou **Protocole (session)**), les durées de **Ping** et de **Connecter**, le nombre d’outils, le nom et la version du serveur, ses **Capacités**, les versions qu’il **Prend en charge** quand il en liste plusieurs, et ses **Instructions** pour les modèles. |
+| **Outils**, **Ressources**, **Prompts** | Ce que le serveur propose, avec la description de chaque élément. Cliquez sur l’un d’eux pour l’appeler. |
+| **Comment un modèle voit ce serveur** | Ce que la liste des outils coûte à un modèle à chaque tour, et ce sur quoi un modèle pourrait trébucher. Voir [Outils et qualité](/docs/mcp-servers/tools-and-quality). |
+| **Essayer avec un modèle** | Quel outil un modèle choisirait pour un prompt que vous saisissez. Voir [Outils et qualité](/docs/mcp-servers/tools-and-quality#try-with-a-model). |
+| **En direct** | Ce qu’un serveur surveillé a annoncé. Voir [Surveiller un serveur](#watching-a-server). |
+| **Messages** | Chaque message de la dernière vérification. Voir [Le journal des messages](#the-message-log). |
+
+Quand un serveur demande OAuth, une carte **Connexion requise** vient en premier. Voir
+[Se connecter avec OAuth](/docs/mcp-servers/adding-servers#signing-in-with-oauth).
+
+Un outil dont le serveur a mal défini la définition est compté dans l’étape **Outils**, qui échoue et nomme l’outil et ce
+qui ne va pas.
+
+## Appeler des outils, des ressources et des prompts [#calling-tools-resources-and-prompts]
+
+Cliquez sur un outil, une ressource ou un prompt dans sa carte. Un panneau s’ouvre avec son nom et ses arguments :
+
+- Un outil avec un schéma d’entrée obtient un formulaire, un champ par paramètre. Les champs obligatoires ont un `*`
+  après le nom. S’arrêter sur un champ affiche sa description. Passez **Arguments** sur **JSON** pour écrire vous-même
+  les arguments ; le JSON commence avec tous les champs du schéma.
+- Un prompt obtient un champ pour chacun de ses arguments.
+- Une ressource n’a pas besoin d’arguments.
+
+Cliquez sur **Appeler** ou appuyez sur <kbd>↩</kbd>. La réponse apparaît sous les arguments, avec sa durée. Un outil qui
+signale une erreur l’affiche en rouge.
+
+**Enregistrer comme requête** enregistre l’appel avec ses arguments comme requête MCP dans l’espace de travail : vous
+pouvez ainsi l’exécuter de nouveau, y ajouter des vérifications et l’exécuter dans l’[Exécution](/docs/requests/runner).
+Voir [requêtes MCP](/docs/requests/mcp-requests). **Fermer** (<kbd>esc</kbd>) quitte sans enregistrer.
+
+Les valeurs des arguments peuvent utiliser les `{{variables}}` de l’[environnement](/docs/workspaces/environments)
+actif. Les appels passent par le même moteur que chaque requête : les réglages de proxy et de certificat de l’espace de
+travail s’appliquent donc, et chaque appel est conservé dans l’[historique](/docs/workspaces/history).
+
+### Quand le serveur vous demande quelque chose [#when-the-server-asks-you-something]
+
+Pendant que vous appelez un outil, un serveur peut demander quelque chose en retour. Echolot affiche une feuille :
+
+| La feuille dit | Que faire |
+| --- | --- |
+| **Le serveur demande des informations** | Remplissez le formulaire envoyé par le serveur et cliquez sur **Valider**, ou choisissez **Refuser** ou **Annuler**. |
+| **Le serveur vous demande d’ouvrir une page** | Cliquez sur **Ouvrir dans le navigateur**, terminez là-bas, puis cliquez sur **Terminé**. |
+| **Le serveur demande une réponse du modèle** | La feuille montre les messages auxquels le serveur veut qu’un modèle réponde. Écrivez vous-même la réponse et cliquez sur **Envoyer la réponse**, ou sur **Refuser**. |
+
+Seul le serveur qui a posé la question reçoit votre réponse.
+
+## Surveiller un serveur [#watching-a-server]
+
+Cliquez sur **Surveiller** pour garder une connexion ouverte. Le bouton devient **Surveillance en cours**, et une carte
+**En direct** montre, du plus récent au plus ancien, ce que le serveur annonce : changements de ses listes d’outils, de
+ressources ou de prompts, et mises à jour de ressources. Quand une liste change, Echolot la relit : les cartes restent
+donc à jour. Cliquez sur **Surveillance en cours** pour arrêter.
+
+## Le journal des messages [#the-message-log]
+
+La carte **Messages** liste chaque message JSON-RPC de la dernière vérification, avec le temps écoulé depuis le début de
+la vérification : les messages envoyés au serveur, les messages reçus, les événements de la connexion et, pour un
+serveur local, ce qu’il a écrit sur sa sortie d’erreur. Les 12 premiers s’affichent ; **Tout afficher** liste les
+autres.
+
+Arrêtez le pointeur sur un message pour le voir en entier et mis en forme, avec sa méthode, son ID, s’il s’agit d’un
+résultat, d’une erreur ou d’une notification, et sa taille. **Copier** le copie.
+
+Quand une vérification échoue, c’est ici qu’il faut regarder : la sortie d’erreur d’un serveur local dit souvent
+pourquoi il s’est arrêté, et un problème d’OAuth montre chaque étape de la découverte.
+
+## Environnements protégés [#protected-environments]
+
+Quand un [environnement protégé](/docs/workspaces/protected-environments) est actif, **Vérification**, **Surveiller** et
+chaque appel vous demandent d’abord confirmation, car le serveur peut être un serveur de production. Echolot ne
+vérifie pas les serveurs de lui-même tant que cet environnement est actif ; cliquez sur **Vérification** quand vous le
+souhaitez.
+
+## Versions du protocole [#protocol-versions]
+
+Echolot parle les deux sortes de MCP :
+
+- **MCP sans état**, révision `2026-07-28`, découverte via `server/discover`. La carte **Serveur** indique
+  **Protocole (sans état)**.
+- Les révisions à négociation `2025-11-25`, `2025-06-18`, `2025-03-26` et `2024-11-05`, qui démarrent une session avec
+  `initialize`. La carte indique **Protocole (session)**.
+
+Sur HTTP, Echolot utilise Streamable HTTP. Quand un serveur le refuse, Echolot essaie de lui-même l’ancien transport
+HTTP+SSE de `2024-11-05`. Une URL qui se termine par `/sse` est d’abord essayée en HTTP+SSE.
+
+## Depuis la ligne de commande [#from-the-command-line]
+
+`echolot mcp check` exécute la même vérification dans un terminal ou en CI, et `echolot mcp sign-in` se connecte à un
+serveur qui demande OAuth. Voir [echolot mcp](/docs/cli/mcp).
+
+Pour laisser des clients IA utiliser votre espace de travail via le serveur MCP d’Echolot, voir
+[Agents](/docs/ai/agents). Le tutoriel [Inspecter et déboguer un serveur MCP](/docs/tutorials/inspect-an-mcp-server)
+parcourt cette page pas à pas.

@@ -1,0 +1,170 @@
+---
+title: "echolot run"
+description: "ワークスペース、その一部のフォルダやリクエスト、またはPostmanコレクションを、チェック、データファイル、レポート付きで実行します。"
+---
+
+`echolot run` は、ワークスペースのリクエストを順番に送信し、スクリプトとチェックを実行して、何が成功したかを報告します。
+[ランナー](/docs/requests/runner)からウインドウを取り除いたもので、CI向けに作られています。Postmanコレクションも、読み込まずにそのまま実行できます。
+
+```sh
+echolot run [<options>] <source>
+```
+
+`<source>` は、ワークスペースのフォルダ（`workspace.toml` があるフォルダ）か、Postmanコレクションのファイルです。
+
+## ワークスペースを実行する [#run-a-workspace]
+
+```sh
+echolot run Alpenglow.echolot --folder auth/sign-in --folder catalog
+```
+
+```text
+catalog, auth/sign-in
+
+✓ POST   auth/sign-in  200 150 ms
+    ✓ Status equals 200
+    ✓ JSON value $.access_token exists
+✓ GET    catalog/list-products  200 74 ms
+    ✓ Status equals 200
+    ✓ JSON value $.items.length is greater than 0
+    ✓ Header Content-Type contains json
+    ✓ Response time (ms) is less than 1000
+✓ GET    catalog/search  200 69 ms
+    ✓ Status equals 200
+✓ GET    catalog/get-product  200 70 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ GET    catalog/categories  200 73 ms
+    ✓ Status equals 200
+✓ GQL    catalog/search-products  200 37 ms
+✓ GET    catalog/export  200 410 ms
+    ✓ Status equals 200
+
+All 7 requests passed  11/11 checks passed · 0.90 s
+```
+
+- `--folder` を指定しない場合は、すべてが実行されます。`--folder` にはフォルダ（`catalog`）またはリクエスト（`auth/sign-in`）を、`requests/` 以下のスラッグのパスで指定し、
+  複数回指定できます。リクエストはワークスペースの順序で実行されます。
+- `--env` には、環境のファイル名から `.toml` を除いたもの（`staging`）か、環境の名前（`Staging`）を指定します。
+- 各リクエストのチェックと `pm.test` の結果が集計されます。リクエストは、レスポンスがない場合やチェックが失敗した場合に失敗となり、実行は終了コード1で終わります。
+- 変数にキャプチャされたレスポンス、OAuth 2のクライアント認証情報で取得したトークン、スクリプトが設定した値は、アプリと同じように、実行中の後続のリクエストに引き継がれます。
+  スクリプトの値はその実行の間だけ有効で、ファイルに書き込まれることはありません。
+
+<Callout type="warn">
+  キーチェーンがない場合（CI、Linux、`ECHOLOT_KEYCHAIN=0` の場合）、**シークレット**変数へのレスポンスのキャプチャは、次のリクエストに引き継がれません。
+  Alpenglowでは、**Sign in** が `{{token}}` をシークレットとしてキャプチャするため、このような実行では **Who am I** とOrdersフォルダが401になります。
+  このような実行では、`ECHOLOT_SECRET_TOKEN` を自分で設定するか、シークレットではない変数にキャプチャしてください。
+</Callout>
+
+## データ駆動の実行 [#data-driven-runs]
+
+`--data` を指定すると、データファイルの行ごとに1回ずつ、すべてを実行します。
+
+- ヘッダー行のあるCSVファイル：各列が、その行の変数になります。
+- オブジェクトの配列を含むJSONファイル：各キーが変数になります。
+
+```sh
+echolot run Alpenglow.echolot --folder catalog/get-product --data skus.csv
+```
+
+```text
+catalog/get-product · skus.csv, 2 rows
+
+✓ #1 GET    catalog/get-product  200 133 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ #2 GET    catalog/get-product  200 88 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+
+All 2 requests passed  4/4 checks passed · 0.22 s
+```
+
+スクリプトは `pm.iterationData` で行を読み取ります。データファイルがない場合は、`--iterations` で実行を繰り返します。`--concurrency` は、指定した数の反復を並行して実行します。
+1つの反復のスクリプトが設定した値は、その反復の中にとどまります。
+
+## レポート [#reports]
+
+`--reporter` はレポートを選び、複数回指定できます。`--out` は、`console` 以外の各レポートのファイル名を、`--reporter` オプションの順に指定します。ファイルのないレポートは標準出力に書き出されます。
+
+| レポーター | 書き出す内容 |
+| --- | --- |
+| `console` | 上のような行。ターミナルでは色付きです。`--reporter` を指定しない場合のデフォルトです。 |
+| `junit` | JUnit XML：リクエストごとに1つのテストスイート、チェックごとに1つのテストケース。ほとんどのCIシステムが読み取れます。 |
+| `json` | 実行全体をJSONで：すべてのリクエストと、そのステータス、所要時間、サイズ、試行回数、各チェックの結果。 |
+| `html` | ブラウザで開くレポート。 |
+| `har` | 実行中のすべてのやり取りを、HTTP Archiveとして書き出します。 |
+
+```sh
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out results.xml \
+  --reporter html --out report.html
+```
+
+チェックが失敗した実行のJUnitレポートです。
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Alpenglow" tests="4" failures="1" errors="0" time="0.377" timestamp="2026-11-01T09:23:04Z">
+  <testsuite name="auth/sign-in" tests="2" failures="0" errors="0" skipped="0" time="0.155">
+    <testcase name="Status equals 200" classname="auth.sign-in" time="0"/>
+    <testcase name="JSON value $.access_token exists" classname="auth.sign-in" time="0"/>
+  </testsuite>
+  <testsuite name="auth/who-am-i" tests="1" failures="1" errors="0" skipped="0" time="0.083">
+    <testcase name="Status equals 200" classname="auth.who-am-i" time="0">
+      <failure message="expected “200”, got “401”" type="AssertionFailure"/>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+どのレポートも、URL、ヘッダー、チェックのメッセージ、ログに含まれるシークレットの値をマスクするので、レポートをCIのアーティファクトとして保存しても安全です。
+
+## Postmanコレクションを実行する [#run-a-postman-collection]
+
+```sh
+echolot run shop.postman_collection.json --env-file staging.postman_environment.json --data users.csv
+```
+
+コレクションはそのまま実行されます。Echolotはコレクションを一時的なワークスペースに読み込み、実行後に破棄します。認証情報はメモリ上にのみ残ります。
+リクエスト前スクリプトとテストスクリプトは、Newmanと同じように実行されます。`--env-file` にはPostmanの環境ファイルを指定します。`--env` はワークスペース用です。
+`--folder` には、コレクション自身のトップフォルダを除いた、コレクション内のフォルダ名を指定できます。
+
+コレクションを引き続き使うには、代わりに[読み込んでください](/docs/cli/import-export)。
+
+## オプション [#options]
+
+| オプション | 意味 |
+| --- | --- |
+| `-e`、`--env <env>` | 環境：ファイル名から `.toml` を除いたもの、または環境の名前。 |
+| `--env-file <file>` | コレクションと併用するPostmanの環境ファイル。 |
+| `--folder <path>` | 実行するフォルダまたはリクエスト（`users`、`users/list-users` など）。複数回指定できます。省略するとすべて実行します。 |
+| `-d`、`--data <file>` | ヘッダー行のあるCSVファイル、またはオブジェクトのJSON配列：1行につき1反復。 |
+| `-n`、`--iterations <n>` | データファイルがない場合に、すべてを何回実行するか。デフォルトは1。 |
+| `--delay <ms>` | リクエスト間に待機するミリ秒数。デフォルトは0。 |
+| `--retries <n>` | 失敗したリクエストの追加試行回数。デフォルトは0。 |
+| `--bail` | 最初に失敗したリクエストで停止します。 |
+| `--concurrency <n>` | 並行して実行する反復の数。1は順番に実行します。デフォルトは1。 |
+| `--reporter <name>` | `console`、`junit`、`json`、`html`、`har`。複数回指定できます。省略すると `console`。 |
+| `-o`、`--out <file>` | コンソール以外の各レポーターのファイル。`--reporter` の順に指定します。ない場合は標準出力。 |
+| `--secrets <file>` | シークレットの値を書いた `NAME=value` 行のファイル。`ECHOLOT_SECRET_<NAME>` 変数に加えて使います。 |
+| `-k`、`--insecure` | TLS証明書の検証をスキップします。 |
+| `--proxy <url>` | このプロキシ経由で送信します：`http://host:port`、`https://…`、`socks5://user:password@host:port`。 |
+| `--no-proxy` | `HTTP_PROXY` などを無視して直接接続します。 |
+| `--cacert <file>` | このPEMファイル内のCA証明書も信頼します。複数回指定できます。 |
+| `--cert <file>` | このクライアント証明書を送信します：PEMファイル（`--key` と併用）または `.p12`/`.pfx` ファイル。 |
+| `--key <file>` | クライアント証明書のPEM秘密鍵。証明書ファイルに鍵が含まれていない場合に使います。 |
+| `--pass <passphrase>` | 鍵またはPKCS#12ファイルのパスフレーズ。`ECHOLOT_CERT_PASSPHRASE` の使用をおすすめします。 |
+| `--timeout <seconds>` | 各リクエストのタイムアウト。デフォルトは60。 |
+| `--no-color` | 装飾なしのコンソール出力。`NO_COLOR` が設定されている場合や、出力がターミナルでない場合も同様です。 |
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | すべてのリクエストがレスポンスを受け取り、すべてのチェックに合格しました。 |
+| `1` | リクエストが失敗しました：レスポンスがない、またはチェックの失敗。 |
+| `64` | オプションが正しくない、ワークスペースでもPostmanコレクションでもないソース、不明な環境、または行のないデータファイル。 |
+
+完全なパイプラインは[CI](/docs/cli/ci)を、シークレットの値の取得元は[シークレット](/docs/cli#secrets)を参照してください。

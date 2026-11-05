@@ -1,0 +1,144 @@
+---
+title: "コマンドラインツール"
+description: "echolotコマンドのインストール方法と、すべてのコマンドに共通する事項（シークレット、環境変数、終了コード）を説明します。"
+---
+
+`echolot` は、アプリで作成したものをターミナルやCIジョブから実行します。リクエストの送信、ワークスペースのチェック付き実行とレポートの作成、
+コレクションの読み込みと書き出し、仕様のリント、モックの提供、フローの実行、MCP経由でのAIエージェントへのワークスペースの提供ができます。
+アプリと同じワークスペースのファイルを読み込むので、変換は必要ありません。
+
+## コマンドラインツールを入手する [#get-the-command-line-tool]
+
+<Tabs items={["アプリから", "リリースのzipから"]}>
+  <Tab value="アプリから">
+    直接ダウンロード版では、ツールがアプリの中に含まれています。`PATH` に追加するには、次のようにします。
+
+    1. <strong>Echolot › コマンドラインツールをインストール…</strong>を選ぶか、<strong>設定 › 一般</strong>を開き、<strong>コマンドラインツール</strong>の下にある
+       <strong>コマンドラインツールをインストール…</strong>をクリックします。
+    2. Echolotは、アプリ内のツールへの `echolot` リンクを `/opt/homebrew/bin` または `/usr/local/bin` に作成します。
+       どちらのフォルダにも書き込めない場合は、macOSが管理者パスワードを求めます。
+    3. 新しいターミナルウインドウを開き、`echolot --help` と入力します。
+
+    <strong>設定 › 一般 › コマンドラインツール</strong>には、内蔵ツールの場所と、`PATH` 上のリンクが表示されます。アプリを移動したあとは
+    <strong>再インストール</strong>を使い、リンクを取り除くには<strong>削除</strong>を使います。Echolotが置いたものではない `echolot` というファイルが邪魔になっている場合は、
+    置き換える前にEcholotが確認し、そのファイルはゴミ箱に入れられます。
+
+    リンクはアプリの中を指しているため、ツールはアプリとともに更新されます。
+
+    <Shot id="cli-settings-command-line-tool" alt="設定の一般ペイン。コマンドラインツールのセクションに、内蔵ツールのパスと、PATH上のリンクが表示されている" />
+  </Tab>
+  <Tab value="リリースのzipから">
+    すべてのリリースには、ツール単体の `echolot-<version>-macos.zip` が
+    [リリースページ](https://github.com/staticdreams/echolot-public/releases)に用意されています。中身は `echolot` ファイル1つで、アプリと同様に
+    署名と公証が済んでいます。展開して、`PATH` 上のフォルダに移動します。
+
+    ```sh
+    unzip echolot-0.5.0-macos.zip
+    sudo mv echolot /usr/local/bin/
+    echolot --version
+    ```
+
+    アプリのないMac、CIランナー、Mac App Store版では、このzipを使ってください。
+  </Tab>
+</Tabs>
+
+<Edition only="appstore">
+  Mac App Store版には、ツールも<strong>コマンドラインツールをインストール…</strong>の項目もありません。代わりに、リリースページのzipからツールをインストールしてください。
+  同じワークスペースで動作します。
+</Edition>
+
+コマンドラインツールは、アプリのベータ版でも期限切れになりません。Macでの動作には、macOS 15以降が必要です。
+
+## コマンド [#commands]
+
+| コマンド | 動作 |
+| --- | --- |
+| [`echolot send`](/docs/cli/send) | 1つのリクエスト（URLまたは保存済みのリクエストファイル）を送信し、ボディを標準出力に書き出します。 |
+| [`echolot run`](/docs/cli/run) | ワークスペース、その一部のフォルダやリクエスト、またはPostmanコレクションを、チェックとレポート付きで実行します。 |
+| [`echolot validate`](/docs/cli/validate) | ワークスペースのすべてのファイルが読み込めること、すべてのリクエストが解決できることをチェックします。 |
+| [`echolot import`、`echolot export`](/docs/cli/import-export) | コレクションをワークスペースに読み込み、ワークスペースをPostman、Insomnia、Bruno、Echolotの形式で書き出します。 |
+| [`echolot mcp`](/docs/cli/mcp) | MCPサーバのチェックとサインイン、エージェントへのワークスペースの提供、クライアント設定の出力を行います。 |
+| [`echolot spec`](/docs/cli/spec) | OpenAPIドキュメントをリントし、仕様に追従するフォルダへの仕様変更をチェックして適用します。 |
+| [`echolot graphql diff`](/docs/cli/graphql) | 2つのGraphQLスキーマを比較し、すべての変更を評価します。 |
+| [`echolot grpc`](/docs/cli/grpc) | gRPCサービスを記述し、そのメソッドを呼び出します。 |
+| [`echolot mqtt`](/docs/cli/mqtt) | MQTTブローカーにサブスクライブし、パブリッシュします。 |
+| [`echolot mock`](/docs/cli/mock) | モックを提供します：ワークスペースのモックのルート、またはOpenAPIドキュメント。 |
+| [`echolot fake`](/docs/cli/fake) | テンプレートからダミーデータを作成します。フィクスチャやシードデータ用です。 |
+| [`echolot flow`](/docs/cli/flow) | ワークスペースのフローを一覧表示、実行、作成、提供します。 |
+| [`echolot agent`](/docs/cli/agent) | 内蔵のエージェントを、承認の代わりにポリシーを使ってタスクで実行します。 |
+
+`echolot help <command>` と `echolot <command> --help` は、コマンドのすべてのオプションを出力します。サブコマンドがあるコマンドも同じ形式です：
+`echolot mcp serve --help`。
+
+## すべてのコマンドにあるオプション [#options-every-command-has]
+
+| オプション | 意味 |
+| --- | --- |
+| `--version` | バージョンとビルドを出力します（`0.5.0 (8)` など）。 |
+| `-h`、`--help` | コマンドのオプションを出力します。 |
+
+## ワークスペースと環境 [#workspaces-and-environments]
+
+ワークスペースを扱うコマンドは、`workspace.toml` があるフォルダを指定します。引数として受け取るもの（`echolot run Alpenglow.echolot`）と、
+`-w` または `--workspace` で受け取るもの（`echolot flow list -w Alpenglow.echolot`）があります。どちらかは各コマンドのページに書かれています。
+省略できる場合は、カレントフォルダが使われます。
+
+`--env` は、環境をファイル名から `.toml` を除いたもの（`staging`）で指定します。`run`、`validate`、`flow` では、環境の名前（`Staging`）でも指定できます。
+`--env` を指定しない場合、リクエストはワークスペース自身の変数で解決されます。[環境](/docs/workspaces/environments)を参照してください。
+
+## シークレット [#secrets]
+
+シークレットの値はワークスペースのファイルには保存されません。ファイルにはシークレット変数の名前だけが書かれます。コマンドラインツールは、
+次の順序で各値を探します。
+
+1. 環境変数 `ECHOLOT_SECRET_<NAME>`。名前は変数名を大文字にし、英字と数字以外の文字をすべて `_` にしたものです：`token` は
+   `ECHOLOT_SECRET_TOKEN`、`me_password` は `ECHOLOT_SECRET_ME_PASSWORD` になります。
+2. `echolot run` では、`--secrets` で指定したファイル：1行に `NAME=value` を1つ、コメントは `#`、値を囲む引用符は取り除かれます。`NAME` は変数名
+   （`token=…`）か、環境変数名全体（`ECHOLOT_SECRET_TOKEN=…`）です。ファイル内の値は、環境変数より優先されます。
+3. Macでは、アプリが保持しているキーチェーンの項目。アプリで設定したシークレットや、サインインしたMCPサーバは、ターミナルでも使えます。
+
+```sh
+export ECHOLOT_SECRET_PASSWORD="$(op read 'op://Shop/Alpenglow staging/password')"
+echolot run Alpenglow.echolot --env staging
+```
+
+`CI` が設定されている（空、`0`、`false` 以外）場合や、`ECHOLOT_KEYCHAIN=0` の場合は、キーチェーンは使われません。これにより、CIジョブがキーチェーンの
+プロンプトで待たされることがなくなります。[シークレット](/docs/workspaces/secrets)を参照してください。
+
+## 環境変数 [#environment-variables]
+
+| 変数 | 使用するコマンド | 意味 |
+| --- | --- | --- |
+| `ECHOLOT_SECRET_<NAME>` | リクエストを解決するすべてのコマンド | シークレット変数 `<NAME>` の値。 |
+| `ECHOLOT_KEYCHAIN=0` | すべてのコマンド | キーチェーンを読み書きしません。 |
+| `CI` | すべてのコマンド | 設定されていると、`ECHOLOT_KEYCHAIN=0` と同様にキーチェーンがオフになります。 |
+| `HTTPS_PROXY`、`HTTP_PROXY`、`ALL_PROXY`、`NO_PROXY` | `send`、`run`、`mqtt` など | プロキシ。curlと同じように読み取られます。`--proxy` と `--no-proxy` が優先され、ワークスペース自身のプロキシ設定はそれより優先されます。 |
+| `ECHOLOT_CERT_PASSPHRASE` | `send`、`run`、`mqtt` | `--cert` または `--key` で指定した鍵またはPKCS#12ファイルのパスフレーズ。 |
+| `ECHOLOT_MQTT_PASSWORD` | `mqtt` | ブローカーのパスワード。 |
+| `ECHOLOT_MCP_TOKEN` | `mcp serve --http` | クライアントが送信するBearerトークン。指定しない場合はランダムなものが使われます。 |
+| `ECHOLOT_WEBHOOK_TOKEN` | `flow serve` | Webhookの呼び出し元が送信するトークン。指定しない場合はランダムなものが使われます。 |
+| `ECHOLOT_BROWSER` | `mcp sign-in` | デフォルトのブラウザの代わりにサインインページを開くコマンド。 |
+| `ANTHROPIC_API_KEY`、`OPENAI_API_KEY`、`GEMINI_API_KEY` | `agent` | モデルプロバイダのAPIキー。 |
+| `NO_COLOR` | `run` | 装飾なしのコンソール出力。 |
+
+## 出力と終了コード [#output-and-exit-codes]
+
+結果は標準出力に書き出されます：レスポンスのボディ、レポート、サブスクリプションが出力する行。進行状況、警告、テスト結果、所要時間は標準エラーに書き出されるため、
+出力をそのままパイプでつなげます。
+
+```sh
+echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
+```
+
+| 終了コード | 意味 |
+| --- | --- |
+| `0` | すべて成功し、すべてのチェックに合格しました。 |
+| `1` | 何かが失敗しました：レスポンスがない、チェックやテストの失敗、問題の検出（`validate`、`spec lint`）、破壊的変更（`graphql diff`）、OK以外のgRPCステータス、MQTT接続の拒否、完了しなかったエージェント。 |
+| `22` | `echolot send` のみ：レスポンスのステータスが400以上でした。`curl --fail` と同じです。 |
+| `64` | コマンドライン自体が正しくありません：不明なオプション、存在しないファイル、存在しない環境。理由が出力されます。 |
+
+## 次のステップ [#next]
+
+- [ワークスペースを実行する](/docs/cli/run)、および[CIで実行する](/docs/cli/ci)。
+- [エージェントにワークスペースを提供する](/docs/cli/mcp)。
+- [CIでAPIをテストする](/docs/tutorials/test-in-ci)（チュートリアル）。

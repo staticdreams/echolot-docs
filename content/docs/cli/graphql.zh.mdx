@@ -1,0 +1,67 @@
+---
+title: "echolot graphql diff"
+description: "比较两个 GraphQL Schema，并在出现破坏性更改时让构建失败。"
+---
+
+`echolot graphql diff` 列出一个 GraphQL Schema 到另一个的变化，并为每处更改评级，这样构建就可以在某项更改破坏 API 的客户端之前停下来。
+
+```sh
+echolot graphql diff <old> <new> [--fail-on <level>] [--json]
+```
+
+`<old>` 和 `<new>` 是更改前和更改后的 Schema：SDL 文件（`.graphql`）或内省结果（JSON），可以任意混用。
+
+## 比较两个 Schema [#compare-two-schemas]
+
+```sh
+git show main:specs/shop.graphql > before.graphql
+echolot graphql diff before.graphql Alpenglow.echolot/specs/shop.graphql
+```
+
+```text
+Breaking (1)
+  The field Product.weightGrams was removed
+Dangerous (1)
+  The argument inStock was added to Query.search
+Safe (1)
+  The field Product.colors was added
+```
+
+| 等级 | 含义 |
+| --- | --- |
+| Breaking（破坏性） | 以前能运行的查询现在可能失败：移除了类型、字段、输入字段、参数、枚举值或指令；新增了必需的参数或输入字段；字段的类型改变了（将输出改为非空除外）；移除了联合成员或接口。 |
+| Dangerous（危险） | 查询仍能运行，但行为可能不同：新增了可选参数、默认值改变、新增了枚举值或联合成员、新增了接口、某项内容被弃用。 |
+| Safe（安全） | 现有查询察觉不到：新增了类型、字段、可选输入字段或指令，描述改变，取消了弃用。 |
+
+`--json` 将更改打印为 JSON 数组，每项带有其 `severity`、`path` 和 `message`：
+
+```json
+[
+  {
+    "message" : "The field Product.weightGrams was removed",
+    "path" : "Product.weightGrams",
+    "severity" : "breaking"
+  },
+  {
+    "message" : "The argument inStock was added to Query.search",
+    "path" : "Query.search(inStock)",
+    "severity" : "dangerous"
+  }
+]
+```
+
+## 选项 [#options]
+
+| 选项 | 含义 |
+| --- | --- |
+| `--fail-on <level>` | `breaking`（默认）在有破坏性更改时以 1 退出；`dangerous` 在有破坏性和危险的更改时；`none` 从不。 |
+| `--json` | 将更改打印为 JSON。 |
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | 没有达到 `--fail-on` 等级或更高的更改。 |
+| `1` | 有达到 `--fail-on` 等级或更高的更改，或无法读取某个 Schema。 |
+
+要从运行中的服务器获取 Schema，请用 App 的 GraphQL 请求发送内省查询，或参见 [GraphQL 请求](/docs/requests/graphql)。

@@ -1,0 +1,104 @@
+---
+title: "Editionen"
+description: "Der Direktdownload und die Mac-App-Store-Edition im Vergleich, welche du wählen solltest und wie du zwischen ihnen wechselst."
+---
+
+Echolot gibt es in zwei Editionen aus demselben Code: als **Direktdownload** von [echolot.dev](https://echolot.dev) und
+als **Mac-App-Store**-Edition. Die App-Store-Edition läuft in Apples App Sandbox. Die Sandbox erlaubt einer App, das
+Netzwerk zu nutzen, Dateien zu lesen und zu schreiben, die du auswählst, und eigene Daten zu speichern. Sie erlaubt
+nicht, andere Programme auf deinem Mac zu starten oder Dateien anderer Apps zu lesen und zu schreiben. Fast alle
+Unterschiede unten gehen darauf zurück.
+
+Die App-Store-Edition ist noch nicht im App Store. Alles auf dieser Seite beschreibt, wie sie gebaut ist.
+
+## Was jede Edition bietet [#what-each-edition-has]
+
+| | Direktdownload | Mac App Store |
+| --- | --- | --- |
+| Alle Protokolle: HTTP/1.1, HTTP/2, HTTP/3, GraphQL, gRPC, WebSocket, SSE, Socket.IO, MQTT | ✓ | ✓ |
+| Arbeitsbereiche als Dateien, Git, Umgebungen, Secrets im Schlüsselbund | ✓ | ✓ |
+| Skripte, Tests, die Ausführung, datengesteuerte Durchläufe | ✓ | ✓ |
+| Verlauf, gespeicherte Antworten, Verschlüsselung im Ruhezustand | ✓ | ✓ |
+| Specs, Mocks, Flows mit Zeitplänen und Webhooks | ✓ | ✓ |
+| Importe und Exporte | ✓ | ✓ |
+| Schnellversand, sein globales Tastenkürzel, Kurzbefehle-Aktionen, Übersicht | ✓ | ✓ |
+| MCP-Server über HTTP | ✓ | ✓ |
+| MCP-Server, die als lokales Programm laufen (stdio: `npx`, `uvx` …) | ✓ | Bleiben im Arbeitsbereich, werden aber nicht gestartet. Nutze das Befehlszeilentool oder den Direktdownload. |
+| Der Assistent mit API-Schlüsseln, Ollama und anderen kompatiblen Servern, Apples On-Device-Modell | ✓ | ✓ |
+| Der Assistent mit Befehlszeilen-Agenten (Claude Code, Codex, Gemini CLI) | ✓ | ✗ |
+| Echo und seine KI-Kommentare | ✓ | ✓ |
+| Echolots MCP-Server für externe Agenten | ✓ | ✓, über das separat installierte Befehlszeilentool |
+| MCP-Server aus den Konfigurationen anderer Apps importieren | Wird automatisch gefunden | Du wählst die Konfigurationsdatei; das Fenster öffnet sich im passenden Ordner |
+| Claude Code, Cursor, VS Code, Codex verbinden | ✓ | ✓, über das separat installierte Befehlszeilentool |
+| Claude-Desktop-Erweiterung (`.mcpb`), **Zu Claude hinzufügen** | ✓ | ✗ |
+| Das Befehlszeilentool | In der App; **Echolot › Befehlszeilentool installieren …** | Einzeln installiert (Zip von der Releases-Seite) |
+| Updates | In der App, **Echolot › Nach Updates suchen …** | Der App Store |
+| Beta-Builds laufen ab | Ja, 30 Tage nach der Veröffentlichung | Nie (Betas laufen über TestFlight) |
+
+Auch Dateien außerhalb eines Arbeitsbereichs funktionieren anders. In der App-Store-Edition kann Echolot eine Datei erst
+lesen, nachdem du sie in einem Öffnen-Dialog ausgewählt hast. Echolot merkt sich jeden Arbeitsbereich, den du öffnest,
+und jede Datei, die du für eine Anfrage wählst (einen Body, der aus einer Datei gestreamt wird, ein Formularfeld, ein
+Client-Zertifikat), auch nach einem Neustart und wenn die Datei verschoben wird. Ein Senden, das eine Datei braucht,
+die Echolot nie erhalten hat, etwa ein Pfad, den du von Hand in eine Anfragedatei geschrieben hast, schlägt mit
+`Echolot is not allowed to read “…”` fehl; wähle in der fehlgeschlagenen Antwort **Zugriff erlauben …** und wähle die
+Datei aus. Siehe [Fehlerbehebung](/docs/troubleshooting).
+
+## Welche Edition passt [#which-to-choose]
+
+Wähle den **Direktdownload**, wenn du:
+
+- MCP-Server nutzt, die als lokale Programme laufen (die meisten Server, die mit `npx`, `uvx`, `docker` oder einer
+  Binärdatei gestartet werden),
+- den Assistenten Claude Code, Codex oder Gemini CLI steuern lassen willst,
+- das Befehlszeilentool zusammen mit der App installieren und aktualisieren oder die Claude-Desktop-Erweiterung mit
+  einem Klick nutzen willst.
+
+Wähle die **App-Store-Edition**, wenn du Apps lieber aus dem App Store beziehst, mit seinen Updates und der Sandbox um
+die App, und deine MCP-Server über HTTP erreichbar sind.
+
+Beide öffnen dieselben Arbeitsbereiche, du kannst dich also später umentscheiden.
+
+## Zwischen den Editionen wechseln [#moving-between-editions]
+
+Für macOS sind beide Editionen dieselbe App. Installiere deshalb immer nur eine: Beende die Edition, die du verlässt,
+und entferne sie ([Deinstallieren](/docs/get-started/install#uninstall)), dann installiere die andere.
+
+- **Arbeitsbereiche** sind einfache Ordner und lassen sich in beiden öffnen. Öffne in der App-Store-Edition jeden einmal
+  mit **Datei › Arbeitsbereich öffnen …** oder aus dem Finder, damit die Sandbox Echolot das Lesen erlaubt; danach
+  bleibt er unter **Datei › Benutzte Dokumente öffnen**.
+- **Secrets** bleiben in deinem Anmeldeschlüsselbund und werden gemeinsam genutzt. Wenn die andere Edition zum ersten
+  Mal ein Secret liest, das sie nicht angelegt hat, fragt macOS einmal pro Eintrag nach; wähle **Immer erlauben**. Das
+  Befehlszeilentool fragt auf dieselbe Weise.
+- **Modellschlüssel** für den Assistenten werden in der anderen Edition ebenfalls einmal abgefragt, oder du trägst sie
+  unter **Einstellungen › Assistent** neu ein.
+- **Verlauf und gespeicherte Antworten** bleiben bei der Edition, die sie aufgezeichnet hat: Jede Edition hat ihren
+  eigenen Speicherordner. Anfragen gehen nie verloren, nur ihre früheren Antworten.
+
+## Wo jede Edition ihre Daten ablegt [#where-each-edition-keeps-its-data]
+
+Arbeitsbereiche liegen in beiden Editionen dort, wo du sie sicherst. Echolots eigene Daten (gespeicherte
+Antwort-Bodys, Verlauf, Absturzberichte, Unterhaltungen mit dem Assistenten und der Beispiel-Arbeitsbereich) liegen
+hier:
+
+| Edition | Ordner |
+| --- | --- |
+| Direktdownload | `~/Library/Application Support/Echolot` |
+| Mac App Store | `~/Library/Containers/com.staticdreams.Echolot/Data/Library/Application Support/Echolot` |
+
+**Einstellungen › Über › Antworten und Verlauf › Im Finder anzeigen** öffnet den richtigen. Löschst du ihn, gehen
+Verlauf und gespeicherte Antworten verloren, nie aber Anfragen.
+
+## Das Befehlszeilentool für App-Store-Nutzer [#the-command-line-tool-for-app-store-users]
+
+Die App-Store-Edition enthält kein Befehlszeilentool, weil der App Store nicht erlaubt, Code außerhalb der App zu
+installieren. Installiere das Tool einzeln: Lade `echolot-<version>-macos.zip` von der
+[Releases-Seite](https://github.com/staticdreams/echolot-public/releases) herunter. Das Tool läuft nie ab. Siehe
+[Befehlszeilentool](/docs/cli).
+
+Du brauchst es, um:
+
+- Arbeitsbereiche im Terminal und in CI auszuführen,
+- MCP-Server auszuführen, die als lokale Programme starten (`echolot mcp check`, `echolot mcp serve`),
+- externe Agenten wie Claude Code, Cursor, VS Code und Codex zu verbinden. Ihre Konfigurationen nennen das Tool; solange
+  der Arbeitsbereich in der App geöffnet ist, laufen ihre Aufrufe in der App, wo du sie genehmigst. Siehe
+  [Agenten](/docs/ai/agents).

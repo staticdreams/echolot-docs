@@ -1,0 +1,13 @@
+{
+  "title": "시작하기",
+  "pages": [
+    "install",
+    "editions",
+    "first-request",
+    "the-window",
+    "home",
+    "tour",
+    "importing"
+  ],
+  "defaultOpen": true
+}

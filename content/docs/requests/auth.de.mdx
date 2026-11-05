@@ -1,0 +1,264 @@
+---
+title: "Authentifizierung"
+description: "Anfragen mit Basic, Digest, Bearer, API-Schlüsseln, OAuth 1.0, OAuth 2.0, AWS Signature, JWT, Hawk, Akamai EdgeGrid oder NTLM authentifizieren und Auth über Ordner teilen."
+---
+
+Der Tab **Auth** legt fest, wie sich eine Anfrage ausweist. Wähle einen **Typ**, fülle die Felder aus, und Echolot
+fügt die Zugangsdaten bei jedem Senden hinzu. Lege die Auth einmal für einen Ordner oder den Arbeitsbereich fest, und
+jede Anfrage darin kann sie nutzen.
+
+<Shot id="requests-http-auth-oauth" alt="Der Tab „Auth“ von Orders with OAuth 2: OAuth 2.0 mit dem Grant „Client-Anmeldedaten“, Token-URL, Client-ID und Scope, unten die Token-Leiste mit „Token holen“" />
+
+## Zugangsdaten aus Dateien heraushalten [#keep-credentials-out-of-files]
+
+Jedes Feld nimmt `{{variables}}`. Lege Passwörter, Tokens und Schlüssel in
+[geheimen Variablen](/docs/workspaces/secrets) ab, die im Schlüsselbund liegen, und schreibe `{{password}}` ins Feld.
+So enthält die Anfragedatei kein Secret, und du kannst sie committen.
+
+Tippst du einen festen Wert in ein Feld für Zugangsdaten, erscheint darunter eine Warnung:
+**Als Klartext in der Arbeitsbereichsdatei gespeichert.** Klicke auf **In den Schlüsselbund verschieben**, und Echolot
+legt den Wert als
+geheime Variable des Arbeitsbereichs ab und schreibt stattdessen `{{name}}` hinein.
+
+Die Zugangsdaten, die Echolot hinzufügt, sind dort maskiert, wo die Anfrageseite sie zeigt: in den Headern unter
+**AUTOMATISCH** und in der URL-Vorschau unter der URL-Leiste.
+
+## Von Ordnern und vom Arbeitsbereich übernehmen [#inherit-from-folders-and-the-workspace]
+
+**Übernehmen** ist der Standard. Eine Anfrage, die übernimmt, nutzt die Auth des nächsten Ordners über ihr, der eine
+festlegt, danach die des Arbeitsbereichs. Unter **Nutzt** sagt der Tab, welche gilt, etwa
+`Folder “Orders”: Bearer Token`, mit einem Knopf, der sie öffnet: **Ordner-Auth bearbeiten …** oder
+**Arbeitsbereichs-Auth bearbeiten …**. Legt darüber nichts eine Auth fest, sendet die Anfrage keine.
+
+<Shot id="requests-http-auth-inherit" alt="Der Tab „Auth“ einer Anfrage auf „Übernehmen“: „Nutzt Folder „Orders“: Bearer-Token“ mit dem Knopf „Ordner-Auth bearbeiten …“ und darunter die Auth des Arbeitsbereichs" />
+
+Eine Anfrage mit eigener Auth behält sie, und ihr Tab **Auth** zeigt außerdem eine Zeile **Arbeitsbereichs-Auth** mit
+der Auth des Arbeitsbereichs und einem Knopf, der sie öffnet: **Arbeitsbereichs-Auth …**, oder
+**Arbeitsbereichs-Auth einrichten …**, wenn der Arbeitsbereich noch keine hat. **Arbeitsbereichs-Auth …** gibt es auch
+in der Befehlspalette (<kbd>⌘</kbd><kbd>K</kbd>).
+
+So legst du die Auth für viele Anfragen auf einmal fest:
+
+1. Klicke in der Seitenleiste einen Ordner mit der rechten Maustaste an und wähle **Ordnereinstellungen …**. Für den
+   Arbeitsbereich nutzt du **Arbeitsbereichs-Auth …** im Tab **Auth** einer Anfrage oder in der Befehlspalette, oder du
+   klickst unten in der Seitenleiste auf den Arbeitsbereichs-Umschalter und wählst **Arbeitsbereichseinstellungen …**.
+2. Öffne den Tab **Auth** und wähle einen Typ. Ein Ordner kann auch übernehmen; der Arbeitsbereich nicht. Unter den
+   Einstellungen sagt der Tab, wie viele Anfragen auf **Übernehmen** diese Auth nutzen.
+3. Bei OAuth 2.0 meldest du dich gleich dort an: Die Token-Leiste unten funktioniert wie in einer Anfrage (siehe
+   [OAuth 2.0](#oauth-20)), und jede Anfrage, die die Auth übernimmt, nutzt dieses Token. **Token holen** sichert die
+   Auth zuerst. Die Leiste zeigt das eigene Token des Ordners oder Arbeitsbereichs erst, wenn seine Auth gesichert
+   ist, sodass sie nie ein Token zeigt oder vergisst, das zur Auth darüber gehört.
+4. Klicke auf **Fertig**.
+
+<Shot id="workspaces-folder-auth-oauth" alt="Die Ordnereinstellungen im Tab „Auth“ mit gewähltem OAuth 2.0, Token-URL und Client, der Token-Leiste mit „Token holen“ und der Zahl der Anfragen, die sie übernehmen" />
+
+Im Alpenglow-Beispiel setzt der Ordner **Orders** **Bearer-Token** mit `{{token}}`, und jede Bestellanfrage übernimmt
+es. **Auth › Sign in** füllt `{{token}}` per [Erfassung](/docs/requests/captures) aus seiner Antwort.
+
+## Typ wählen [#choose-a-type]
+
+| Typ | Was Echolot tut |
+| --- | --- |
+| **Übernehmen** | Nutzt die Auth des Ordners oder des Arbeitsbereichs. |
+| **Keine Auth** | Sendet keine Zugangsdaten, auch wenn ein Ordner welche festlegt. |
+| **Basic** | Fügt `Authorization: Basic …` aus Benutzername und Passwort hinzu. |
+| **Digest** | Beantwortet die Digest-Challenge des Servers. |
+| **Bearer-Token** | Fügt `Authorization: Bearer <token>` hinzu. |
+| **API-Schlüssel** | Fügt einen Schlüssel als Header oder Query-Parameter hinzu. |
+| **OAuth 1.0** | Signiert jede Anfrage mit OAuth 1.0, mit einem Token, das du schon hast. |
+| **OAuth 2.0** | Holt ein Zugriffstoken und sendet es als Bearer-Token oder in der Adresse. |
+| **AWS Signature** | Signiert jede Anfrage mit AWS Signature Version 4. |
+| **JWT Bearer** | Signiert bei jedem Senden ein neues JSON Web Token. |
+| **Hawk** | Signiert jede Anfrage mit Hawk. |
+| **Akamai EdgeGrid** | Signiert jede Anfrage mit EG1-HMAC-SHA256. |
+| **NTLM** | Beantwortet die NTLM-Challenge des Servers. |
+
+Ein `Authorization`-Header, den du selbst im Tab **Header** hinzufügst, wird anstelle des Headers gesendet, den der Tab
+**Auth** hinzufügen würde.
+
+### Basic [#basic]
+
+Fülle **Benutzername** und **Passwort** aus. Echolot sendet sie Base64-codiert im `Authorization`-Header. Probiere es
+mit **Echo › Basic auth** in Alpenglow aus.
+
+### Digest [#digest]
+
+Fülle **Benutzername** und **Passwort** aus. Das erste Senden geht ohne Zugangsdaten; antwortet der Server mit 401 und
+einer Digest-Challenge, beantwortet Echolot sie einmal mit einer zweiten Anfrage. Beide erscheinen im Austausch als
+Hops.
+
+### Bearer-Token [#bearer-token]
+
+Fülle **Token** aus, meist `{{token}}`. **Präfix** ist standardmäßig `Bearer`; ändere es für einen Server, der ein
+anderes Wort will, oder leere es, um das Token allein zu senden.
+
+### API-Schlüssel [#api-key]
+
+Fülle **Schlüssel** (den Namen des Headers oder Parameters, standardmäßig `X-API-Key`) und **Wert** aus und wähle dann
+unter **Hinzufügen zu**, wohin er kommt: **Header** oder **Abfrage**.
+
+### OAuth 2.0 [#oauth-20]
+
+Echolot holt das Zugriffstoken für dich und fügt es als `Authorization: Bearer <token>` hinzu.
+
+| Feld | Bedeutung |
+| --- | --- |
+| **Grant** | **Autorisierungscode**, **Client-Anmeldedaten**, **Gerätecode** oder **Passwort (veraltet)**. |
+| **Autorisierungs-URL** | Wo du dich anmeldest (Autorisierungscode). |
+| **Geräte-URL** | Woher der Gerätecode kommt (Gerätecode). |
+| **Token-URL** | Woher Tokens kommen. |
+| **Benutzername**, **Passwort** | Die eigene Anmeldung der Person (Passwort). Das Passwort lässt sich wie jede andere Zugangsdate in den Schlüsselbund verschieben. |
+| **Client-ID**, **Client-Secret** | Die Zugangsdaten des Clients. Öffentliche Clients lassen das Secret leer. |
+| **Ebene** | Die angefragten Scopes, durch Leerzeichen getrennt, etwa `read write`. |
+| **Audience** | Für Server, die eine verlangen. |
+| **Redirect-URI** | Autorisierungscode. Leer heißt automatisch: eine Loopback-Adresse, `http://127.0.0.1:<port>/callback`, auf einem freien Port. |
+| **PKCE (S256)** | Autorisierungscode. Standardmäßig an. |
+| **Client-Authentifizierung** | Wie Client-ID und Secret zur Token-URL gelangen: **HTTP Basic** (Standard) oder **Im Body**. |
+| **Token hinzufügen zu** | **Header** (Standard) oder **URL**: das Token als Query-Parameter, benannt unter **Parameter** (standardmäßig `access_token`). Adressen landen in Logs und im Verlauf, nutze URL also nur für APIs, die nichts anderes annehmen. |
+| **Header-Präfix** | Das Wort vor dem Token im Header, standardmäßig `Bearer`. |
+
+Unten im Tab zeigt die Token-Leiste, ob es ein Token gibt. Klicke auf **Token holen**:
+
+- **Autorisierungscode** öffnet deinen Browser bei der Autorisierungs-URL. Melde dich dort an; Echolot fängt die
+  Weiterleitung ab und zeigt **Schließe die Anmeldung in deinem Browser ab …**, bis du fertig bist.
+- **Gerätecode** zeigt **Auf einem anderen Gerät anmelden** mit einem Code. Klicke auf **Öffnen** (mit dem Hostnamen
+  der Seite), gib dort den Code ein und genehmige; Echolot wartet mit **Warte auf Genehmigung …**.
+- **Client-Anmeldedaten** fragt direkt bei der Token-URL an. Für diesen Grant musst du nicht auf **Token holen**
+  klicken: Das erste Senden holt von selbst ein Token.
+-  **Passwort (veraltet)** sendet Benutzername und Passwort an die Token-URL und braucht ebenfalls keinen Klick: Das
+  erste
+  Senden holt ein Token. Nutze es nur für ältere APIs, die es verlangen. Der Grant ist veraltet, weil das Passwort
+  selbst deinen Mac verlässt; nimm also lieber den Autorisierungscode, wenn der Server ihn anbietet.
+
+Echolot bietet den Implicit Grant nicht an, der ebenfalls veraltet ist. Die meisten Server, die ihn noch anbieten,
+bieten auch den Autorisierungscode an, zu dem ein importierter Implicit Grant wird; prüfe, ob der Server ihn
+akzeptiert.
+
+Sobald es ein Token gibt, steht in der Leiste **Zugriffstoken im Schlüsselbund**, mit seinem Typ, wann es abläuft,
+dem Hinweis **wird automatisch erneuert** (wenn es das tut) und seiner Ebene. **Neues Token holen** ersetzt es;
+**Vergessen** löscht es.
+
+Wie Tokens aufbewahrt und genutzt werden:
+
+- Tokens liegen im Schlüsselbund, nie in Arbeitsbereichsdateien.
+- Ein Token gehört zu der Anfrage, dem Ordner oder dem Arbeitsbereich, die die Auth festlegen, sowie zu der Umgebung
+  und den Einstellungen, für die es ausgestellt wurde: Wechselst du die Umgebung oder änderst die Token-URL, die
+  Client-ID, die Ebene oder eine andere Einstellung, die bestimmt, für wen das Token gilt, nutzt oder holt Echolot ein
+  eigenes Token und sendet nie eines, das für etwas anderes ausgestellt wurde. Anfragen, die OAuth von einem Ordner
+  übernehmen, teilen dessen Tokens. **Vergessen** löscht die Tokens aller Umgebungen.
+- Ist ein Token abgelaufen, erneuert das nächste Senden es mit seinem Refresh-Token. Ein Token der Client-Anmeldedaten
+  oder des Passworts wird neu geholt. Andernfalls bricht das Senden ab mit
+  **Diese Anfrage braucht ein OAuth-Token: Hol dir zuerst eins im Tab „Auth“.** oder
+  **Das OAuth-Token ist abgelaufen und ließ sich nicht erneuern: Hol dir ein neues im Tab „Auth“.**
+
+Zum Ausprobieren sendest du **Auth › Orders with OAuth 2** in Alpenglow: Es nutzt die Client-Anmeldedaten gegen die
+Demo-API.
+
+#### Erweitert [#advanced]
+
+Die meisten Server brauchen nichts davon, deshalb ist es unter **Erweitert** eingeklappt. Der Bereich öffnet sich von
+selbst, wenn darin etwas gesetzt ist.
+
+<Shot id="requests-http-auth-oauth-advanced" alt="Der Bereich „Erweitert“ von OAuth 2.0: „Automatisch erneuern“, die Refresh-URL und die Parametertabellen für Autorisierungsanfrage, Token-Anfrage und Refresh-Anfrage" />
+
+- **Automatisch erneuern** ist standardmäßig an. Schalte es aus, um ein abgelaufenes Token unverändert zu senden und zu
+  sehen, wie die API darauf antwortet. Ein erstes Token wird bei Client-Anmeldedaten und Passwort trotzdem geholt.
+- **Refresh-URL** ist für Server, deren Refresh-Endpunkt nicht die Token-URL ist. Leer heißt: die Token-URL.
+- **Autorisierungsanfrage**, **Token-Anfrage** und **Refresh-Anfrage** fügen Parameter für Server hinzu, die mehr als
+  die Standardfelder wollen: `access_type = offline` bei Google (damit es ein Refresh-Token gibt), `resource` bei
+  Azure AD, einen Tenant oder eine API-Version. Jede Zeile hat einen Schlüssel, einen Wert (Variablen funktionieren,
+  Secrets können also im Schlüsselbund bleiben) und, bei Token- und Refresh-Anfrage, wohin sie kommt: **Body**,
+  **Header** oder **URL**. Ein Parameter mit demselben Namen wie ein Standardparameter ersetzt diesen. Die Parameter
+  der Autorisierungsanfrage kommen in die Anmeldeadresse, beim Gerätecode in die Geräteautorisierungsanfrage. Sie
+  ersetzen nie `state` oder die PKCE-Challenge.
+
+### OAuth 1.0 [#oauth-10]
+
+Für APIs, die noch OAuth 1.0 nutzen: unter anderem NetSuite, Magento und Adobe Commerce, die v1.1-Endpunkte von X
+sowie Application Links von Jira oder Confluence Server. Echolot signiert jede Anfrage mit einem Token, das du schon
+hast. Den dreibeinigen Flow, der eines holt, führt es nicht aus, Postman auch nicht.
+
+<Shot id="requests-http-auth-oauth1" alt="Der Tab „Auth“ mit OAuth 1.0: Signaturmethode, Consumer-Key und -Secret, Zugriffstoken und Token-Secret und „Hinzufügen zu“ auf Header" />
+
+1. Wähle die **Signaturmethode**: **HMAC-SHA1** (die häufigste), **HMAC-SHA256**, **HMAC-SHA512**, **RSA-SHA1**,
+   **RSA-SHA256**, **RSA-SHA512** oder **PLAINTEXT**.
+2. Fülle **Consumer-Key** aus, dann **Consumer-Secret**, oder bei RSA einen **Privaten Schlüssel** (füge ihn ein oder
+   klicke auf **PEM-Datei wählen …**, um ihn direkt in den Schlüsselbund zu legen).
+3. Fülle **Zugriffstoken** aus und, außer bei RSA, **Token-Secret**. Lass sie leer für eine Anfrage, die gestellt wird,
+   bevor es ein Token gibt.
+4. Wähle unter **Hinzufügen zu** **Header** (`Authorization: OAuth …`, der Standard), **URL** oder **Body**. **Body**
+   signiert in einen Formular-Body hinein oder, bei einer Anfrage ohne, in die Adresse.
+5. **Erweitert** enthält **Realm**, **Callback-URL** und **Verifier** (für die Schritte des dreibeinigen Flows, die du
+   von Hand ausführst), **oauth_version="1.0" hinzufügen** (standardmäßig an) und
+   **Body-Hash in die Signatur aufnehmen** (`oauth_body_hash`, für Bodys, die keine Formulare sind).
+
+Jede Anfrage wird beim Senden signiert, mit neuem Zeitstempel und neuer Nonce, über die Methode, die Adresse, ihre
+Query und die Felder eines Formular-Body.
+
+### AWS Signature [#aws-signature]
+
+Fülle **Zugriffsschlüssel-ID**, **Geheimer Zugriffsschlüssel**, **Region** (standardmäßig `us-east-1`) und **Service**
+(standardmäßig `execute-api`; `s3`, `lambda`, `es` und so weiter) aus. **Sitzungstoken** ist nur für temporäre
+Zugangsdaten. Jede Anfrage wird beim Senden signiert, mit der Zeit, dem Host und dem Body, mit denen sie hinausgeht.
+
+### JWT Bearer [#jwt-bearer]
+
+Echolot signiert bei jedem Senden ein neues Token.
+
+1. Wähle den **Algorithmus**: **HS256**, **HS384** oder **HS512** (HMAC mit einem Secret), **RS256**, **RS384**,
+   **RS512**, **PS256**, **PS384** oder **PS512** (privater RSA-Schlüssel) oder **ES256** oder **ES384** (privater
+   Schlüssel auf elliptischer Kurve).
+2. Fülle bei HMAC **Geheim** aus; setze das Häkchen bei **Secret ist Base64**, wenn der Anbieter es dir so gegeben
+   hat. Einen privaten Schlüssel fügst du bei **Privater Schlüssel** ein oder klickst auf **PEM-Datei wählen …**: Der
+   Schlüssel geht direkt in den Schlüsselbund, und das Feld verweist mit Namen darauf. Schlüssel können PEM im Format
+   PKCS #8, PKCS #1 oder SEC 1 sein.
+3. Schreibe die **Claims** als JSON. Sie dürfen Variablen enthalten: `{"sub": "{{userID}}"}`.
+4. Füge **Header-Felder** wie `kid` hinzu, wenn der Server sie braucht. `alg` und `typ` werden für dich gesetzt.
+5. **„iat“ (Ausstellungszeit) hinzufügen** ist standardmäßig an. **Läuft ab nach** fügt `exp` so viele Sekunden in der
+   Zukunft hinzu (standardmäßig 300); 0 fügt keines hinzu. Claims, die du selbst im JSON setzt, bleiben wie
+   geschrieben.
+6. Wähle unter **Hinzufügen zu** **Header** (mit einem **Präfix**, standardmäßig `Bearer`) oder **Abfrage** (mit einem
+   **Parameter**-Namen, standardmäßig `token`).
+
+### Hawk [#hawk]
+
+Fülle **ID** und **Schlüssel** aus, wähle den **Algorithmus** (**SHA-256** oder **SHA-1**) und füge **App-Daten (ext)**
+hinzu, wenn der Server sie will. Setze das Häkchen bei **Body-Hash in die Signatur aufnehmen**, um den Hash der
+Nutzdaten
+einzubeziehen. Jede Anfrage wird mit der Zeit, einer Nonce, der Methode, dem Pfad, dem Host und dem Port signiert.
+
+### Akamai EdgeGrid [#akamai-edgegrid]
+
+Fülle **Client-Token**, **Client-Secret** und **Zugriffstoken** aus. **Zu signierende Header** ist eine durch Kommas
+getrennte Liste, meist leer. **Signierte Body-Bytes** begrenzt, wie viel eines POST-Body gehasht wird (standardmäßig
+131072).
+
+### NTLM [#ntlm]
+
+Fülle **Benutzername** und **Passwort** aus, dazu **Domain** und **Arbeitsstation**, wenn dein Server sie braucht.
+Echolot spricht NTLMv2: Es beantwortet die Challenge des Servers auf derselben Verbindung, und die 401er bleiben im
+Austausch als Hops stehen.
+
+NTLM authentifiziert eine Verbindung, keine Anfrage, und braucht deshalb HTTP/1.1. Steht die HTTP-Version auf
+**Automatisch**, nutzt Echolot für NTLM-Anfragen HTTP/1.1; ist **HTTP/2** oder **HTTP/3** gewählt, wird das Senden
+verweigert. Siehe [Anfrageeinstellungen](/docs/requests/settings#http-version).
+
+## Zugangsdaten bleiben bei ihrem Ursprung [#credentials-stay-with-their-origin]
+
+Führt eine Weiterleitung zu einem anderen Ursprung (anderes Schema, anderer Host oder anderer Port), nimmt Echolot
+deine Zugangsdaten nicht mit. Es lässt weg:
+
+- die Header `Authorization`, `Proxy-Authorization` und `Cookie`,
+- gängige API-Schlüssel-Header (`X-API-Key`, `Api-Key`, `Apikey`, `X-Auth-Token`, `X-Access-Token`, `Private-Token`,
+  `X-Functions-Key`), den Header, den deine **API-Schlüssel**-Auth nutzt, und jeden Header, dessen Wert eine geheime
+  Variable enthält,
+- das Signieren mit Digest, AWS Signature, OAuth 1.0, Hawk, EdgeGrid und NTLM sowie das Client-Zertifikat, das für den
+  ersten Host gewählt wurde.
+
+Die Zertifikate und der Proxy des neuen Hosts gelten für den Hop, der dorthin geht. Siehe
+[Anfrageeinstellungen](/docs/requests/settings#redirects).
+
+## Geschützte Umgebungen [#protected-environments]
+
+Auch **Token holen** sendet eine Anfrage. Ist die Umgebung des Fensters geschützt, fragt es vorher nach, genau wie
+**Senden**. Siehe [Geschützte Umgebungen](/docs/workspaces/protected-environments).

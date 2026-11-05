@@ -1,0 +1,105 @@
+---
+title: "Especificación a partir de respuestas"
+description: "Escribe una especificación OpenAPI a partir de las solicitudes que has enviado y las respuestas que recibieron."
+---
+
+A menudo tienes solicitudes antes de tener una especificación: una colección que alguien importó, o llamadas que
+probaste mientras explorabas una API. **Especificación a partir de respuestas** las convierte en un documento OpenAPI.
+Cada solicitud se convierte en una operación, documentada a partir de la última respuesta que recibió: su ruta y sus
+parámetros, el cuerpo que envió y la respuesta con un JSON Schema de su cuerpo y un ejemplo. Añade a una especificación
+que ya tengas y solo ganará lo que le falte.
+
+## Documentar una carpeta [#documenting-a-folder]
+
+<Steps>
+<Step>
+
+Envía las solicitudes que quieres documentar, para que cada una tenga una respuesta. En Alpenglow, por ejemplo, envía
+las solicitudes de la carpeta **Catalog**.
+
+</Step>
+<Step>
+
+Haz clic con el botón derecho en la carpeta en la barra lateral Solicitudes y elige
+**Documentar en la especificación OpenAPI…**. Para documentar todo el espacio de trabajo, elige **+** ›
+**Nueva especificación a partir de respuestas…** en la barra lateral Especificaciones, **A partir de respuestas…** en
+una página Especificaciones vacía, o **Nueva especificación a partir de respuestas…** en la paleta de comandos.
+
+</Step>
+<Step>
+
+En la hoja **Documentar en una especificación OpenAPI**, revisa las opciones:
+
+| Opción | Qué significa |
+| --- | --- |
+| **Solicitudes** | **Todo el espacio de trabajo**, o una carpeta. Se incluyen las solicitudes de sus subcarpetas. |
+| **Especificación** | **Nueva especificación**, o una especificación del espacio de trabajo a la que añadir. Una carpeta que ya sigue una especificación añade a esa. |
+| **Título** | El título de una especificación nueva. Empieza siendo el nombre de la carpeta, o el del espacio de trabajo. |
+| **Vincular “carpeta” a la especificación** | Activado de forma predeterminada. Las solicitudes de la carpeta siguen entonces las operaciones en que se convirtieron, para que los cambios posteriores de la especificación se puedan aplicar a ellas. |
+
+</Step>
+<Step>
+
+Haz clic en **Documentar**. La hoja dice lo que ha pasado, y **Abrir especificación** abre el resultado.
+
+</Step>
+</Steps>
+
+<Shot id="specs-from-responses" alt="La hoja Documentar en una especificación OpenAPI tras documentar la carpeta Catalog: las operaciones nuevas, las solicitudes omitidas con sus motivos y el botón Abrir especificación" />
+
+## Qué obtienes [#what-you-get]
+
+El resultado lista:
+
+| Encabezado | Significado |
+| --- | --- |
+| **Operaciones nuevas** | Operaciones que la especificación no tenía, como `GET /products/{sku}`. |
+| **Respuesta añadida** | Operaciones que tenía y que ahora documentan otra respuesta, como un `404`. |
+| **Ya documentada** | Operaciones que ya documentaba tal como se respondieron. No cambió nada. |
+| **Omitido** | Solicitudes que no se documentaron, cada una con el motivo. |
+
+También dice cuántas solicitudes siguen ahora sus operaciones y cuántos errores encuentra la validación en el
+resultado, si hay alguno.
+
+Qué entra en cada operación:
+
+- **La ruta**, en forma OpenAPI: los segmentos de ruta que venían de variables se convierten en parámetros de ruta,
+  documentados con los valores enviados. La parte de servidor de la URL se deja fuera de la ruta.
+- **Los parámetros de consulta y las cabeceras** que fija la solicitud.
+- **El cuerpo de la solicitud** y **la respuesta**, con un JSON Schema creado a partir del cuerpo y un ejemplo. Los
+  ejemplos grandes se omiten y el esquema se queda; los arrays largos conservan unos pocos elementos en el ejemplo.
+- **El nombre de la solicitud** como resumen de la operación, y **su subcarpeta** como etiqueta de la operación.
+- **La autenticación de la solicitud** como esquema de seguridad. Donde OpenAPI no tiene un esquema para ella (OAuth 2
+  con la concesión de código de dispositivo), una nota lo indica.
+
+Los secretos se enmascaran: las variables secretas y los valores bajo claves que parecen secretas (tokens, contraseñas,
+claves) aparecen como `••••••` en los ejemplos.
+
+## Añadir a una especificación que ya tienes [#adding-to-a-spec-you-have]
+
+Elige la especificación en **Especificación**. Echolot añade solo lo que falta: operaciones, respuestas, esquemas y
+esquemas de seguridad que aún no nombra. Lo que la especificación ya dice se queda como está escrito. No se puede añadir
+a especificaciones Swagger 2.0; solo a documentos OpenAPI 3.
+
+## Documentar respuestas sueltas desde el Historial [#documenting-single-responses-from-history]
+
+En el [Historial](/docs/workspaces/history), haz clic con el botón derecho en un intercambio HTTP que recibió una
+respuesta y elige **Añadir a la especificación OpenAPI…**. Se abre la misma hoja, para esa única respuesta. Es útil para
+una respuesta que viste una sola vez, como un error.
+
+## Qué se deja fuera [#what-is-left-out]
+
+- Las solicitudes que no son HTTP (GraphQL, gRPC, WebSocket y las demás): en OpenAPI solo se documentan solicitudes HTTP.
+- Las solicitudes que aún no tienen respuesta: envíalas primero.
+- Las solicitudes cuyo envío falló antes de que hubiera respuesta.
+- Las solicitudes de una subcarpeta que sigue su propia especificación.
+
+## Mantenerla al día [#keep-it-current]
+
+Cuando la carpeta sigue la especificación, la especificación es el contrato. Edítala en la página Especificaciones y
+aplica sus cambios a las solicitudes con **Buscar cambios en “carpeta”…**. Consulta
+[Solicitudes que siguen la especificación](/docs/specs#requests-that-follow-the-spec). También puedes dar las
+respuestas de la especificación a un [mock](/docs/mocks), para que los frontends puedan trabajar contra ella.
+
+Los agentes pueden hacer lo mismo mediante la herramienta `add_to_spec`, cuando el conjunto de herramientas
+**Especificaciones** está activado: consulta [Agentes](/docs/ai/agents).

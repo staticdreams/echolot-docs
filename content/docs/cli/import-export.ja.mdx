@@ -1,0 +1,114 @@
+---
+title: "echolot import / echolot export"
+description: "cURLコマンド、コレクション、仕様、HARファイルをワークスペースに読み込み、ワークスペースをほかのツール向けに書き出します。"
+---
+
+`echolot import` は、手元にあるものをワークスペースのファイルに変換します：cURLコマンド、Postman・Insomnia・Paw・Brunoのコレクション、OpenAPIまたはSwaggerの仕様、HARファイル。
+`echolot export` は、ワークスペースまたはそのフォルダを、Postman・Insomnia・Brunoのコレクション、またはEcholotワークスペースのコピーとして書き出します。
+アプリの<strong>ファイル › 読み込む…</strong>と<strong>ファイル › ワークスペースを書き出す…</strong>と同じことを行います。[読み込み](/docs/get-started/importing)と
+[書き出し](/docs/workspaces/exporting)を参照してください。
+
+## echolot import [#echolot-import]
+
+```sh
+echolot import <file> [--workspace <workspace>] [--folder <folder>] [--format <format>]
+```
+
+`<file>` は読み込むファイル、Brunoコレクションのフォルダ、または標準入力から読み込む `-` です。
+
+形式は内容から判別されます。コレクションや仕様は専用のフォルダに入り、cURLコマンドは1つのリクエストになります。書き出されたもののパスは1行に1つずつ標準出力に、
+概要は標準エラーに出力されます。
+
+```sh
+pbpaste | echolot import - -w Alpenglow.echolot --folder auth
+```
+
+```text
+Imported 1 request from cURL.
+note: 1 credential kept out of the workspace files but not saved, as there is no Keychain here: auth_token_token. Set ECHOLOT_SECRET_AUTH_TOKEN_TOKEN where Echolot sends.
+auth/auth-token
+```
+
+| 読み込むもの | 形式名 |
+| --- | --- |
+| cURLコマンド | `curl` |
+| Postmanコレクション | `postman-collection` |
+| Postman環境 | `postman-environment` |
+| OpenAPI 3ドキュメント（YAMLまたはJSON） | `openapi` |
+| Swagger 2ドキュメント | `swagger` |
+| Insomniaのエクスポート | `insomnia` |
+| HARファイル | `har` |
+| Pawファイル | `paw` |
+| MCPクライアントの設定（そのサーバ） | `mcp-config` |
+| Brunoコレクション | フォルダ自体を指定します。形式の指定は不要です |
+
+**認証情報がファイルに保存されることはありません。** 認証設定や認証情報のヘッダーにあるパスワード、トークン、APIキーなどのシークレットの値は、リクエストとフィールドにちなんだ名前
+（`me_password`）のシークレット変数になり、ファイルには `{{me_password}}` が残ります。Macでは、値はキーチェーンに保存されます。キーチェーンがない場合（Linux、CI、
+`ECHOLOT_KEYCHAIN=0`）は、値は保存されず、設定すべき `ECHOLOT_SECRET_<NAME>` 変数がEcholotから示されます。レポートにはシークレットの名前が表示され、値は表示されません。
+
+仕様の読み込みでは、仕様に追従するフォルダが作成されます。Echolotはその旨を表示します（`note: the folder follows …`）。最新に保つには
+[`echolot spec check` と `apply`](/docs/cli/spec)を使います。
+
+### オプション [#options]
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ（`workspace.toml` があるフォルダ）。デフォルトはカレントフォルダ。 |
+| `--folder <path>` | ワークスペースのこのフォルダに読み込みます（`users/admin` など）。 |
+| `--format <format>` | 自動判別を省略します：`curl`、`postman-collection`、`postman-environment`、`openapi`、`swagger`、`insomnia`、`har`、`paw`、`mcp-config`。 |
+
+## echolot export [#echolot-export]
+
+```sh
+echolot export <output> [--workspace <workspace>] [--folder <folder>] --format <format> [--no-environments] [--force]
+```
+
+`<output>` は書き出し先です。PostmanとInsomniaではファイル、Bruno、Echolotワークスペース、環境付きのPostmanではフォルダです。
+
+```sh
+echolot export /tmp/alpenglow.postman_collection.json -w Alpenglow.echolot --format postman
+```
+
+```text
+Exported 21 requests, 7 folders, 3 environments as Postman Collection v2.1.
+warning: 8 requests left out: Postman Collection v2.1 has no MCP requests. …
+  left out: realtime/order-updates
+  left out: inventory/reserve-stock
+  …
+warning: Response captures (Store in a Variable) are not exported; other tools set variables from scripts.
+warning: 1 password, token or key is written in clear: it is typed into an auth or header field rather than kept in a secret variable. Move it to the Keychain before sharing the file.
+/tmp/alpenglow.postman_collection.json
+```
+
+| 形式 | 対象 | 書き出す内容 |
+| --- | --- | --- |
+| `echolot` | すべての種類のリクエスト | 独自のIDを持つ新しいワークスペースフォルダ。フォルダの書き出しでは、その上位のフォルダも保持されます。 |
+| `postman` | HTTPとGraphQL | Postman Collection v2.1のファイル、またはコレクションとその環境を含むフォルダ。 |
+| `insomnia` | HTTP、GraphQL、WebSocket、Socket.IO、gRPC | Insomnia v5のファイル。 |
+| `bruno` | HTTPとGraphQL | Brunoコレクションのフォルダ。 |
+
+形式に含められないものは、標準エラーに表示されます：収められないリクエスト（`left out:`）と、変換の過程で変わる部分（レスポンスのキャプチャや、ほかのツールにない動的な値など）。
+
+**シークレットの値が書き出されることはありません。** シークレット変数は名前だけが出力されます。認証やヘッダーのフィールドに直接入力された認証情報は、シークレット変数に
+保存されていないため、そのまま書き出されます。Echolotはそのような認証情報について警告します。
+
+Echolotは、書き出し元のワークスペースの上書き、その内部への書き込み、その周辺への書き込みを決して行いません。また、`--force` を指定しない限り、出力パスにあるものを置き換えることもありません。
+置き換えられたものはゴミ箱に入ります。
+
+### オプション [#options]
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。デフォルトはカレントフォルダ。 |
+| `--folder <path>` | ワークスペースのこのフォルダだけを書き出します（`users/admin` など）。 |
+| `--format <format>` | `echolot`、`postman`、`insomnia`、`bruno`。必須です。 |
+| `--no-environments` | 環境を含めません。 |
+| `--force` | 出力パスにあるものを置き換えます。 |
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | 読み込みまたは書き出しが完了しました。警告があっても変わりません。 |
+| `1` | ファイルを読み込めなかった、または書き込めませんでした。 |
+| `64` | 不明な形式、または `--force` なしで既に存在する出力パス。 |

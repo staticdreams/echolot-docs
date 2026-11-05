@@ -1,0 +1,146 @@
+---
+title: "Espacios de trabajo"
+description: "Qué es un espacio de trabajo, cómo crear, abrir y cambiar de espacio de trabajo, y qué archivo guarda qué."
+---
+
+Un espacio de trabajo reúne todo lo de una API o un proyecto: sus solicitudes y carpetas, entornos, servidores MCP,
+especificaciones, mocks y flujos. Es una carpeta de archivos TOML de texto plano, un archivo por solicitud, así que
+puedes leerlo, revisarlo y mantenerlo en Git.
+
+## Crea un espacio de trabajo [#create-a-workspace]
+
+1. Elige **Archivo › Nuevo espacio de trabajo…** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>), o
+   **Nuevo espacio de trabajo…** en la ventana de bienvenida.
+2. Elige un lugar y un nombre. El campo del nombre empieza con `My API.echolot`.
+3. Haz clic en **Crear**.
+
+Echolot crea la carpeta con un `workspace.toml` y una carpeta `requests` vacía, y la abre en una ventana propia. El
+nombre del espacio de trabajo es el de la carpeta sin `.echolot`.
+
+Para probar Echolot sin crear nada, elige **Abrir ejemplos** en la ventana de bienvenida o en el menú Archivo: un
+espacio de trabajo ya preparado con solicitudes a APIs públicas, redirecciones y respuestas grandes. La [API de
+demostración](/docs/tutorials/demo-api) tiene un ejemplo más completo, Alpenglow.
+
+## Abre un espacio de trabajo [#open-a-workspace]
+
+- **Archivo › Abrir espacio de trabajo…** (<kbd>⌘</kbd><kbd>O</kbd>), o **Abrir espacio de trabajo…** en la ventana de
+  bienvenida. Elige un paquete `.echolot` o una carpeta normal que contenga un `workspace.toml`.
+- Haz doble clic en un paquete `.echolot` en el Finder, o arrástralo sobre Echolot en el Dock.
+- **Archivo › Abrir recientes** enumera los últimos diez espacios de trabajo que has abierto. **Borrar menú** olvida la
+  lista; los espacios de trabajo se quedan donde están.
+- Desde Terminal: `open "My API.echolot"`.
+
+Cada espacio de trabajo se abre en su propia ventana. Si abres uno que ya está abierto, su ventana pasa al frente.
+
+Echolot sigue a un espacio de trabajo que muevas o renombres en el Finder: se queda en Abrir recientes y se vuelve a
+abrir desde su nuevo lugar.
+
+<Shot id="workspaces-welcome" alt="La ventana de bienvenida: Nuevo espacio de trabajo, Abrir espacio de trabajo y Abrir ejemplos a la izquierda, los espacios de trabajo recientes a la derecha" />
+
+## La ventana de bienvenida [#the-welcome-window]
+
+Cuando no hay ningún espacio de trabajo abierto, Echolot muestra la ventana de bienvenida. A la izquierda:
+**Nuevo espacio de trabajo…**, **Abrir espacio de trabajo…** y **Abrir ejemplos**. A la derecha:
+**Espacios de trabajo recientes**, cada uno con la carpeta en la que está. Haz clic en uno para abrirlo.
+
+## Cambia de espacio de trabajo [#switch-between-workspaces]
+
+- **Archivo › Cambiar de espacio de trabajo…** (<kbd>⌘</kbd><kbd>P</kbd>) muestra una lista flotante de espacios de
+  trabajo recientes. Escribe para filtrarla y pulsa <kbd>↩</kbd>.
+- El selector de espacio de trabajo al pie de la barra lateral muestra el nombre del espacio de trabajo y si todo está
+  guardado. Haz clic en él para ver **Espacios de trabajo recientes**, **Nuevo espacio de trabajo…**,
+  **Abrir espacio de trabajo…**, **Ajustes del espacio de trabajo…** y **Mostrar en el Finder**.
+
+<Shot id="workspaces-switcher" alt="El selector de espacio de trabajo al pie de la barra lateral, abierto, con los espacios de trabajo recientes y los ajustes del espacio de trabajo" />
+
+## Guardar [#saving]
+
+No hay un comando Guardar. Echolot escribe cada cambio en su archivo un momento después de que dejas de escribir. El
+selector de espacio de trabajo muestra cómo van las cosas:
+
+| Se muestra | Significa |
+| --- | --- |
+| **Todo guardado** | Todas las ediciones están en los archivos. |
+| **Guardando…** | Hay una escritura en curso. |
+| **1 solicitud sin guardar** (o más) | Hay ediciones esperando a escribirse. Un punto junto a una solicitud en la barra lateral la marca. |
+| **No se ha podido guardar** | Ha fallado una escritura. Echolot conserva la edición y te dice qué ha pasado. |
+
+Al cerrar una ventana o salir de Echolot se escribe antes lo que quede. Si una edición no se puede escribir, Echolot
+pregunta antes de dejarla perder.
+
+## Deshacer y rehacer [#undo-and-redo]
+
+Toda edición se puede deshacer con **Editar › Deshacer** (<kbd>⌘</kbd><kbd>Z</kbd>) y rehacer con **Editar › Rehacer**
+(<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>): escribir en una solicitud, renombrar, mover y eliminar elementos, variables,
+entornos, ajustes de carpetas y del espacio de trabajo, especificaciones, mocks y flujos. Escribir cuenta como un solo
+paso hasta que haces una pausa. Deshacer pertenece a la ventana, así que funciona igual en todas las páginas.
+
+## Nada se elimina sin preguntar [#nothing-is-deleted-without-asking]
+
+Todo borrado pregunta antes: solicitudes, carpetas, entornos, servidores MCP, especificaciones y mocks. El botón rojo de
+la pregunta no tiene atajo de teclado, así que <kbd>↩</kbd> nunca elimina; <kbd>Esc</kbd> cancela. En la barra lateral,
+<kbd>⌫</kbd> solo ofrece eliminar una única solicitud; las carpetas y varios elementos se eliminan desde el menú
+contextual.
+
+Lo que eliminas va a la papelera del Finder, nunca directamente fuera del disco. Para recuperarlo, elige
+**Editar › Deshacer** o vuelve a mover los archivos de la papelera a la carpeta del espacio de trabajo.
+
+## En el Finder [#in-the-finder]
+
+Un espacio de trabajo `.echolot` es un paquete: el Finder lo muestra como un solo elemento con el icono de Echolot, y un
+doble clic lo abre. Para ver los archivos de dentro, haz Control-clic en él y elige **Mostrar contenido del paquete**, o
+usa **Mostrar en el Finder** en el selector de espacio de trabajo.
+
+Pulsa <kbd>Espacio</kbd> sobre un espacio de trabajo en el Finder para ver la [Vista rápida](/docs/mac/quick-look): su
+nombre, cuándo ha cambiado y cuántas solicitudes, carpetas, entornos, variables y comprobaciones tiene, con los nombres
+de sus entornos.
+
+Un espacio de trabajo no tiene por qué acabar en `.echolot`. Se abre cualquier carpeta con un `workspace.toml`, como la
+raíz de un repositorio de Git.
+
+## Qué vive dónde [#what-lives-where]
+
+```
+Alpenglow.echolot/
+  workspace.toml               nombre, ID, variables del espacio de trabajo, autenticación predeterminada, reglas de los agentes, proxy, certificados
+  environments/
+    staging.toml               un entorno: su nombre, si está protegido, sus variables
+    production.toml
+  requests/
+    _folder.toml               el orden de los elementos de nivel superior
+    _folder.pre.js             scripts de todas las solicitudes (y _folder.test.js)
+    auth/
+      _folder.toml             el nombre de la carpeta, su orden, documentación, autenticación y variables
+      sign-in.req.toml         una solicitud HTTP
+      sign-in.body.json        su cuerpo, al lado
+    catalog/
+      search-products.gql.toml una solicitud GraphQL
+      search-products.graphql  su consulta
+    inventory/
+      list-warehouses.grpc.toml
+    realtime/
+      order-updates.ws.toml    WebSocket (.sio.toml Socket.IO, .mqtt.toml MQTT)
+    agent-tools/
+      search-catalog.mcp.toml  una llamada MCP guardada
+  mcp-servers/                 servidores MCP, un archivo cada uno
+  specs/                       archivos OpenAPI, GraphQL y .proto
+  mocks/                       servidores mock, un archivo cada uno, y sus rutas con script
+  flows/                       flujos (.flow.toml)
+```
+
+Cada tipo de solicitud tiene su propio sufijo de archivo: `.req.toml` (HTTP), `.gql.toml` (GraphQL),
+`.grpc.toml`,`.ws.toml`, `.sio.toml`, `.mqtt.toml` y `.mcp.toml`. Los scripts están junto a su solicitud como
+`<name>.pre.js` y `<name>.test.js`. El formato completo está en los [archivos del espacio de
+trabajo](/docs/reference/workspace-files).
+
+Algunas cosas nunca van a la carpeta del espacio de trabajo:
+
+- **Los valores secretos.** Las variables secretas se escriben solo por su nombre; sus valores se quedan en el llavero de
+  tu Mac. Consulta los [secretos](/docs/workspaces/secrets).
+- **El historial y los cuerpos de respuesta.** Viven en el almacenamiento propio de Echolot. Consulta
+  [almacenamiento y cifrado](/docs/workspaces/storage-and-encryption).
+- **Tus elecciones en este Mac**: el entorno activo, la disposición de los paneles, qué scripts has aprobado y las
+  variables globales.
+
+Así, la carpeta del espacio de trabajo se puede compartir sin riesgo, y quien la abre empieza con las mismas solicitudes
+y con sus propios secretos. Consulta [Git y equipos](/docs/workspaces/git-and-teams).

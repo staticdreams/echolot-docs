@@ -1,0 +1,104 @@
+---
+title: "Ediciones"
+description: "La descarga directa y la edición de la Mac App Store, comparadas: cuál elegir y cómo pasar de una a otra."
+---
+
+Echolot viene en dos ediciones compiladas con el mismo código: la **descarga directa** desde
+[echolot.dev](https://echolot.dev) y una edición de la **Mac App Store**. La edición de la App Store se ejecuta en el
+App Sandbox de Apple. El sandbox deja que una app use la red, lea y escriba los archivos que elijas y guarde sus
+propios datos. No deja que una app inicie otros programas en tu Mac ni que lea y escriba los archivos de otras apps.
+Casi todas las diferencias de abajo vienen de ahí.
+
+La edición de la App Store todavía no está en la App Store. Todo lo que dice esta página describe cómo está construida.
+
+## Qué tiene cada edición [#what-each-edition-has]
+
+| | Descarga directa | Mac App Store |
+| --- | --- | --- |
+| Todos los protocolos: HTTP/1.1, HTTP/2, HTTP/3, GraphQL, gRPC, WebSocket, SSE, Socket.IO, MQTT | ✓ | ✓ |
+| Espacios de trabajo como archivos, Git, entornos, secretos en el llavero | ✓ | ✓ |
+| Scripts, pruebas, Ejecución, ejecuciones con datos | ✓ | ✓ |
+| Historial, respuestas guardadas, cifrado en reposo | ✓ | ✓ |
+| Especificaciones, mocks, flujos con programaciones y webhooks | ✓ | ✓ |
+| Importaciones y exportaciones | ✓ | ✓ |
+| Envío rápido, su atajo global, acciones de Atajos, Vista rápida | ✓ | ✓ |
+| Servidores MCP por HTTP | ✓ | ✓ |
+| Servidores MCP que se ejecutan como programa local (stdio: `npx`, `uvx` …) | ✓ | Se guardan en el espacio de trabajo, pero no se inician. Usa la herramienta de línea de comandos o la descarga directa. |
+| El Asistente con claves de API, Ollama y otros servidores compatibles, el modelo de Apple en el dispositivo | ✓ | ✓ |
+| El Asistente con agentes de línea de comandos (Claude Code, Codex, Gemini CLI) | ✓ | ✗ |
+| Echo y sus comentarios con IA | ✓ | ✓ |
+| El servidor MCP de Echolot para agentes externos | ✓ | ✓, mediante la herramienta de línea de comandos que se instala aparte |
+| Importar servidores MCP desde la configuración de otras apps | Se encuentran automáticamente | Eliges el archivo de configuración; el panel se abre en la carpeta correcta |
+| Conectar Claude Code, Cursor, VS Code, Codex | ✓ | ✓, mediante la herramienta de línea de comandos que se instala aparte |
+| Extensión para Claude Desktop (`.mcpb`), **Añadir a Claude** | ✓ | ✗ |
+| La herramienta de línea de comandos | Dentro de la app; **Echolot › Instalar herramienta de línea de comandos…** | Se instala aparte (zip de la página de versiones) |
+| Actualizaciones | En la app, **Echolot › Buscar actualizaciones…** | La App Store |
+| Las versiones beta caducan | Sí, 30 días después de su publicación | Nunca (las betas pasan por TestFlight) |
+
+Los archivos fuera de un espacio de trabajo también funcionan de otro modo. En la edición de la App Store, Echolot solo
+puede leer un archivo después de que lo elijas en un panel de apertura. Recuerda todos los espacios de trabajo que abres
+y todos los archivos que eliges para una solicitud (un cuerpo enviado desde un archivo, una parte de formulario, un
+certificado de cliente), también después de reiniciar y aunque el archivo cambie de sitio. Un envío que necesita un
+archivo que nunca se le dio a Echolot, como una ruta escrita a mano en un archivo de solicitud, falla con
+`Echolot is not allowed to read “…”`; elige **Permitir acceso…** en la respuesta fallida y escoge el archivo. Consulta
+[Solución de problemas](/docs/troubleshooting).
+
+## Cuál elegir [#which-to-choose]
+
+Elige la **descarga directa** si:
+
+- usas servidores MCP que se ejecutan como programas locales (la mayoría de los que se inician con `npx`, `uvx`,
+  `docker` o un binario),
+- quieres que el Asistente maneje Claude Code, Codex o Gemini CLI,
+- quieres la herramienta de línea de comandos instalada y actualizada junto con la app, o la extensión de Claude
+  Desktop con un clic.
+
+Elige la **edición de la App Store** si prefieres las apps de la App Store, con sus actualizaciones y el sandbox
+alrededor de la app, y tus servidores MCP son accesibles por HTTP.
+
+Las dos abren los mismos espacios de trabajo, así que puedes cambiar de idea más adelante.
+
+## Pasar de una edición a otra [#moving-between-editions]
+
+Para macOS, las dos ediciones son la misma app, así que instala solo una a la vez: cierra y elimina la que dejas
+([Desinstalar](/docs/get-started/install#uninstall)) y después instala la otra.
+
+- Los **espacios de trabajo** son carpetas normales y se abren en las dos. En la edición de la App Store, abre cada uno
+  una vez con **Archivo › Abrir espacio de trabajo…** o desde el Finder, para que el sandbox deje a Echolot leerlo;
+  después se queda en **Archivo › Abrir recientes**.
+- Los **secretos** se quedan en tu llavero de inicio de sesión y se comparten. La primera vez que la otra edición lee un
+  secreto que no creó, macOS te pregunta una vez por cada elemento; elige **Permitir siempre**. La herramienta de línea
+  de comandos pregunta del mismo modo.
+- Las **claves de modelos** del Asistente también se piden una vez en la otra edición, o puedes volver a añadirlas en
+  **Ajustes › Asistente**.
+- El **historial y las respuestas guardadas** se quedan con la edición que los registró: cada edición tiene su propia
+  carpeta de almacenamiento. Las solicitudes nunca se pierden, solo sus respuestas anteriores.
+
+## Dónde guarda cada edición sus datos [#where-each-edition-keeps-its-data]
+
+Los espacios de trabajo están donde los guardas, en las dos ediciones. Los datos propios de Echolot (cuerpos de
+respuestas guardados, historial, informes de fallos, conversaciones del Asistente y el espacio de trabajo de ejemplos)
+están aquí:
+
+| Edición | Carpeta |
+| --- | --- |
+| Descarga directa | `~/Library/Application Support/Echolot` |
+| Mac App Store | `~/Library/Containers/com.staticdreams.Echolot/Data/Library/Application Support/Echolot` |
+
+**Ajustes › Acerca de › Respuestas e historial › Mostrar en el Finder** abre la correcta. Si la borras, pierdes el
+historial y las respuestas guardadas, nunca las solicitudes.
+
+## La herramienta de línea de comandos para usuarios de la App Store [#the-command-line-tool-for-app-store-users]
+
+La edición de la App Store no lleva herramienta de línea de comandos, porque la App Store no permite instalar código
+fuera de la app. Instala la herramienta aparte: descarga `echolot-<version>-macos.zip` de la
+[página de versiones](https://github.com/staticdreams/echolot-public/releases). La herramienta nunca caduca. Consulta
+[Herramienta de línea de comandos](/docs/cli).
+
+La necesitas para:
+
+- ejecutar espacios de trabajo en Terminal y en CI,
+- ejecutar servidores MCP que se inician como programas locales (`echolot mcp check`, `echolot mcp serve`),
+- conectar agentes externos como Claude Code, Cursor, VS Code y Codex. Su configuración nombra la herramienta; mientras
+  el espacio de trabajo está abierto en la app, sus llamadas se ejecutan en la app, donde las apruebas. Consulta
+  [Agentes](/docs/ai/agents).

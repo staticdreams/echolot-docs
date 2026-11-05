@@ -1,0 +1,155 @@
+---
+title: "Outil en ligne de commande"
+description: "Installez la commande echolot et découvrez ce que toutes les commandes partagent : secrets, variables d’environnement et codes de sortie."
+---
+
+`echolot` exécute depuis un terminal ou une tâche de CI ce que vous construisez dans l’app : il envoie des requêtes,
+exécute un espace de travail avec ses vérifications et écrit des rapports, importe et exporte des collections, analyse
+des specs (lint), sert des mocks, exécute des flux et sert un espace de travail à des agents IA via MCP. Il lit les
+mêmes fichiers d’espace de travail que l’app : rien à convertir.
+
+## Obtenir l’outil en ligne de commande [#get-the-command-line-tool]
+
+<Tabs items={["Dans l’app", "Zip des versions"]}>
+  <Tab value="Dans l’app">
+    Le téléchargement direct embarque l’outil dans l’app. Pour le placer dans votre `PATH` :
+
+    1. Choisissez **Echolot › Installer l’outil en ligne de commande…**, ou ouvrez **Réglages › Général** et cliquez sur
+       **Installer l’outil en ligne de commande…** sous **Outil en ligne de commande**.
+    2. Echolot place dans `/opt/homebrew/bin` ou `/usr/local/bin` un lien `echolot` vers l’outil à l’intérieur de l’app.
+       Si aucun de ces dossiers n’est accessible en écriture, macOS demande un mot de passe d’administrateur.
+    3. Ouvrez une nouvelle fenêtre Terminal et saisissez `echolot --help`.
+
+    **Réglages › Général › Outil en ligne de commande** indique où se trouve l’outil intégré et le lien dans votre
+    `PATH`. Utilisez **Réinstaller** après avoir déplacé l’app, et **Retirer** pour supprimer le lien. Si un fichier
+    nommé `echolot` qu’Echolot n’a pas placé là gêne le passage, Echolot demande avant de le remplacer, et le fichier
+    va dans la corbeille.
+
+    Comme le lien pointe vers l’intérieur de l’app, l’outil se met à jour avec l’app.
+
+    <Shot id="cli-settings-command-line-tool" alt="Réglages, volet Général, section Outil en ligne de commande avec le chemin de l’outil intégré et le lien dans votre PATH" />
+  </Tab>
+  <Tab value="Zip des versions">
+    Chaque version propose l’outil seul, `echolot-<version>-macos.zip`, sur
+    [la page des versions](https://github.com/staticdreams/echolot-public/releases). Il contient un seul fichier,
+    `echolot`, signé et notarisé comme l’app. Décompressez-le et déplacez-le dans un dossier de votre `PATH` :
+
+    ```sh
+    unzip echolot-0.5.0-macos.zip
+    sudo mv echolot /usr/local/bin/
+    echolot --version
+    ```
+
+    Utilisez le zip sur un Mac sans l’app, sur un runner de CI, ou avec l’édition App Store.
+  </Tab>
+</Tabs>
+
+<Edition only="appstore">
+  L’édition App Store n’embarque pas l’outil et n’a pas d’élément **Installer l’outil en ligne de commande…**. Installez
+  plutôt l’outil depuis le zip de la page des versions. Il fonctionne avec les mêmes espaces de travail.
+</Edition>
+
+L’outil en ligne de commande n’expire jamais, y compris dans les builds bêta de l’app. Il nécessite macOS 15 ou
+ultérieur sur un Mac.
+
+## Commandes [#commands]
+
+| Commande | Effet |
+| --- | --- |
+| [`echolot send`](/docs/cli/send) | Envoie une requête, une URL ou un fichier de requête enregistré, et écrit le corps sur la sortie standard. |
+| [`echolot run`](/docs/cli/run) | Exécute un espace de travail, certains de ses dossiers ou requêtes, ou une collection Postman, avec des vérifications et des rapports. |
+| [`echolot validate`](/docs/cli/validate) | Vérifie que chaque fichier d’un espace de travail se lit et que chaque requête se résout. |
+| [`echolot import`, `echolot export`](/docs/cli/import-export) | Importe des collections dans un espace de travail et exporte un espace de travail en Postman, Insomnia, Bruno ou Echolot. |
+| [`echolot mcp`](/docs/cli/mcp) | Vérifie des serveurs MCP, s’y connecte, sert un espace de travail à des agents et affiche les configurations de clients. |
+| [`echolot spec`](/docs/cli/spec) | Analyse des documents OpenAPI (lint), et vérifie et applique les changements de spec au dossier qui suit la spec. |
+| [`echolot graphql diff`](/docs/cli/graphql) | Compare deux schémas GraphQL et note chaque changement. |
+| [`echolot grpc`](/docs/cli/grpc) | Décrit des services gRPC et appelle leurs méthodes. |
+| [`echolot mqtt`](/docs/cli/mqtt) | S’abonne à des brokers MQTT et y publie. |
+| [`echolot mock`](/docs/cli/mock) | Sert un mock : les routes d’un mock de l’espace de travail, ou un document OpenAPI. |
+| [`echolot fake`](/docs/cli/fake) | Produit des données fictives à partir d’un modèle, pour des jeux de test et des données d’amorçage. |
+| [`echolot flow`](/docs/cli/flow) | Liste, exécute, crée et sert les flux d’un espace de travail. |
+| [`echolot agent`](/docs/cli/agent) | Exécute l’agent intégré sur une tâche, avec une politique à la place des approbations. |
+
+`echolot help <command>` et `echolot <command> --help` affichent toutes les options d’une commande. Les commandes avec
+des sous-commandes les acceptent de la même façon : `echolot mcp serve --help`.
+
+## Options de toutes les commandes [#options-every-command-has]
+
+| Option | Signification |
+| --- | --- |
+| `--version` | Affiche la version et le build, par exemple `0.5.0 (8)`. |
+| `-h`, `--help` | Affiche les options de la commande. |
+
+## Espaces de travail et environnements [#workspaces-and-environments]
+
+Les commandes qui travaillent sur un espace de travail prennent son dossier, celui qui contient `workspace.toml`.
+Certaines le prennent en argument (`echolot run Alpenglow.echolot`), d’autres avec `-w` ou `--workspace`
+(`echolot flow list -w Alpenglow.echolot`) ; la page de chaque commande le précise. Quand il est facultatif, le
+dossier courant est utilisé.
+
+`--env` choisit un environnement par son nom de fichier sans `.toml` (`staging`). `run`, `validate` et `flow` acceptent
+aussi son nom (`Staging`). Sans `--env`, les requêtes se résolvent avec les variables propres de l’espace de travail.
+Voir [environnements](/docs/workspaces/environments).
+
+## Secrets [#secrets]
+
+Les valeurs secrètes ne vivent jamais dans les fichiers d’un espace de travail : un fichier nomme la variable secrète
+et rien de plus. L’outil en ligne de commande trouve chaque valeur dans cet ordre :
+
+1. Une variable d’environnement `ECHOLOT_SECRET_<NAME>`. Le nom est celui de la variable en majuscules, chaque
+   caractère qui n’est ni une lettre ni un chiffre étant remplacé par `_` : `token` donne `ECHOLOT_SECRET_TOKEN`,
+   `me_password` donne `ECHOLOT_SECRET_ME_PASSWORD`.
+2. Pour `echolot run`, un fichier donné avec `--secrets` : un `NAME=value` par ligne, `#` pour les commentaires, les
+   guillemets autour d’une valeur sont retirés. `NAME` est le nom de la variable (`token=…`) ou le nom complet de la
+   variable d’environnement (`ECHOLOT_SECRET_TOKEN=…`). Les valeurs du fichier l’emportent sur les variables
+   d’environnement.
+3. Sur un Mac, les éléments du trousseau que l’app conserve. Un secret que vous avez défini dans l’app, ou un serveur
+   MCP auquel vous vous êtes connecté, fonctionne aussi dans Terminal.
+
+```sh
+export ECHOLOT_SECRET_PASSWORD="$(op read 'op://Shop/Alpenglow staging/password')"
+echolot run Alpenglow.echolot --env staging
+```
+
+Le trousseau n’est jamais utilisé quand `CI` est défini (à autre chose que vide, `0` ou `false`), ou quand
+`ECHOLOT_KEYCHAIN=0`. Cela évite qu’une tâche de CI attende une invite du trousseau. Voir
+[secrets](/docs/workspaces/secrets).
+
+## Variables d’environnement [#environment-variables]
+
+| Variable | Utilisée par | Signification |
+| --- | --- | --- |
+| `ECHOLOT_SECRET_<NAME>` | Toutes les commandes qui résolvent des requêtes | La valeur de la variable secrète `<NAME>`. |
+| `ECHOLOT_KEYCHAIN=0` | Toutes les commandes | Ne pas lire ni écrire le trousseau. |
+| `CI` | Toutes les commandes | Quand elle est définie, le trousseau est désactivé, comme avec `ECHOLOT_KEYCHAIN=0`. |
+| `HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`, `NO_PROXY` | `send`, `run`, `mqtt` et d’autres | Les proxies, lus comme les lit curl. `--proxy` et `--no-proxy` les remplacent ; le réglage de proxy propre à un espace de travail passe en premier. |
+| `ECHOLOT_CERT_PASSPHRASE` | `send`, `run`, `mqtt` | La phrase secrète de la clé ou du fichier PKCS#12 donné avec `--cert` ou `--key`. |
+| `ECHOLOT_MQTT_PASSWORD` | `mqtt` | Le mot de passe du broker. |
+| `ECHOLOT_MCP_TOKEN` | `mcp serve --http` | Le jeton Bearer que les clients envoient ; un jeton aléatoire sinon. |
+| `ECHOLOT_WEBHOOK_TOKEN` | `flow serve` | Le jeton qu’envoient les appelants du webhook ; un jeton aléatoire sinon. |
+| `ECHOLOT_BROWSER` | `mcp sign-in` | La commande qui ouvre la page de connexion à la place du navigateur par défaut. |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | `agent` | La clé d’API du fournisseur de modèle. |
+| `NO_COLOR` | `run` | Sortie console sans couleur. |
+
+## Sortie et codes de sortie [#output-and-exit-codes]
+
+Les résultats vont sur la sortie standard : un corps de réponse, un rapport, les lignes qu’affiche un abonnement. La
+progression, les avertissements, les résultats de tests et les durées vont sur la sortie d’erreur, pour que vous
+puissiez chaîner la sortie :
+
+```sh
+echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
+```
+
+| Code de sortie | Signification |
+| --- | --- |
+| `0` | Tout a fonctionné et chaque vérification a réussi. |
+| `1` | Quelque chose a échoué : pas de réponse, une vérification ou un test en échec, des problèmes détectés (`validate`, `spec lint`), des changements incompatibles (`graphql diff`), un état gRPC autre que OK, une connexion MQTT refusée, un agent qui n’a pas terminé. |
+| `22` | `echolot send` uniquement : l’état de la réponse était 400 ou plus, comme avec `curl --fail`. |
+| `64` | La ligne de commande elle-même était erronée : une option inconnue, un fichier manquant, un environnement qui n’existe pas. La raison est affichée. |
+
+## Suite [#next]
+
+- [Exécuter un espace de travail](/docs/cli/run) et [l’exécuter en CI](/docs/cli/ci).
+- [Servir un espace de travail à des agents](/docs/cli/mcp).
+- [Tester une API en CI](/docs/tutorials/test-in-ci), un tutoriel.

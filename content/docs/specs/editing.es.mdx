@@ -1,0 +1,115 @@
+---
+title: "Editar una especificación"
+description: "Diseña un documento OpenAPI en el editor visual o en YAML, con validación mientras escribes, guardado y deshacer."
+---
+
+Una especificación se edita de dos maneras, y puedes cambiar entre ellas en cualquier momento con **Editor** en la
+cabecera de la página: **Visual** para tarjetas y campos, **Código** para el propio YAML o JSON. Las dos cambian el mismo
+texto. El texto es lo que guarda Echolot: una edición visual cambia solo las líneas de la parte que editaste, así que
+tus comentarios, el orden y el formato se conservan, y un diff de Git muestra exactamente lo que cambió.
+
+Para empezar una especificación, elige **+** › **Nueva especificación** en la cabecera **Especificaciones** de la barra
+lateral. Echolot escribe un documento OpenAPI 3.1 con el título `New API` en la carpeta `specs` y lo abre en el editor
+visual.
+
+## El editor visual [#the-visual-editor]
+
+<Shot id="specs-visual-endpoint" alt="El editor visual con el endpoint GET /products de la especificación Alpenglow abierto: método y ruta, resumen, descripción, ID de operación y etiquetas, y después las secciones Parámetros, Cuerpo de la solicitud y Respuestas" />
+
+Los campos del editor visual cambian el documento cuando terminas de editarlos: pulsa <kbd>↩</kbd> o pasa a otro campo.
+Los campos de descripción admiten Markdown, y <kbd>↩</kbd> empieza una línea nueva en ellos; el botón que hay junto a
+uno muestra la descripción tal como se leerá.
+
+La página tiene estas tarjetas:
+
+| Tarjeta | Qué editas |
+| --- | --- |
+| **Visión general** | El **Título**, la **Versión** y la **Descripción** de la API. |
+| **Servidores** | Las URL y las descripciones de los servidores. **Añadir servidor** añade uno; el **−** quita uno. Sin servidores, las solicitudes creadas a partir de la especificación empiezan por `{{baseUrl}}`, que defines tú. |
+| **Contacto y licencia** | **Mostrar** abre el nombre, el correo y la URL de contacto, la licencia y su URL, y los términos del servicio. |
+| **Endpoints** | Todas las operaciones. **Agrupar por** las lista por **Rutas** o por **Etiquetas** (las que no tienen etiqueta, en **Sin etiqueta**). Haz clic en una para abrirla. |
+| **Esquemas** | Los esquemas reutilizables, a los que pueden hacer referencia por nombre los cuerpos y las respuestas. Haz clic en uno para abrirlo. |
+
+### Añadir un endpoint [#adding-an-endpoint]
+
+Haz clic en **Añadir endpoint** en la tarjeta **Endpoints**. En la hoja **Nuevo endpoint**, elige el método, escribe la
+ruta (como `/products/{sku}`) y, si quieres, un resumen y una etiqueta, y haz clic en **Añadir endpoint**. Echolot
+define por ti los parámetros de la ruta y añade un cuerpo y una respuesta correcta como punto de partida. Un método y
+una ruta que ya existen se rechazan.
+
+Un endpoint abierto tiene:
+
+| Parte | Qué editas |
+| --- | --- |
+| **Endpoint** | El método y la ruta. Al cambiarlos se mueve la operación. |
+| **Resumen**, **Descripción** | Un nombre corto, como `List products`, y qué hace, qué necesita y qué devuelve. |
+| **ID de operación**, **Etiquetas** | El ID que usan los generadores de código, y las etiquetas separadas por comas. |
+| **Obsoleto** | Marca la operación como obsoleta. |
+| **Parámetros** | El nombre de cada parámetro, dónde va (**En**: `path`, `query`, `header` o `cookie`), su tipo, **Obligatorio** y su descripción. **Añadir parámetro** añade uno. Cuando la ruta nombra un parámetro que no está definido, un botón como **Añadir \{sku\}** lo define. Los parámetros marcados **DE TODA LA RUTA** están definidos para todos los métodos de la ruta. |
+| **Cuerpo de la solicitud** | **Añadir cuerpo** añade un cuerpo JSON; cada tipo de medio tiene un esquema y el cuerpo puede ser **Obligatorio**. **Eliminar cuerpo** lo quita. |
+| **Respuestas** | Una fila por código de estado, con su descripción y, tras **Añadir cuerpo**, sus tipos de medio y esquemas. **Añadir respuesta** añade el siguiente código habitual que aún no se usa (200, 201, 204, 400, 401, 403, 404, 409, 422, 500 y después `default`). Edita el código para cambiarlo. Una operación necesita al menos una respuesta. |
+
+El tipo de un parámetro, un cuerpo o una propiedad es un menú: un esquema reutilizable, `string`, `integer`, `number`,
+`boolean` u `object`, un **Array de** cualquiera de ellos, o **Ninguno**. Un esquema que el menú no puede expresar se
+muestra tal como está escrito y se conserva hasta que elijas otra cosa.
+
+Al pie de un endpoint abierto están el primer problema que ha encontrado la validación en él (sitúa el puntero sobre
+él para ver todos) y tres botones: **Abrir solicitud** (cuando una solicitud sigue esta operación), **Mostrar en el
+código** y **Eliminar endpoint**.
+
+### Añadir un esquema [#adding-a-schema]
+
+Haz clic en **Añadir esquema** en la tarjeta **Esquemas**, ponle un nombre como `Product` y haz clic en **Añadir**. Un
+esquema abierto tiene un **Nombre**, una **Descripción** y sus **Propiedades**: cada una con un nombre, un tipo,
+**Obligatorio** y una descripción. **Añadir propiedad** añade una.
+
+El esquema indica dónde se usa (**Se usa en 3 sitios**, o **Aún sin usar**). Al renombrarlo se cambian todas las
+referencias a él. **Eliminar esquema** pregunta antes cuando el esquema está en uso, porque esas referencias no
+apuntarían a nada. Un esquema que no es un objeto simple se describe y se edita en el código: **Mostrar en el código**
+te lleva allí.
+
+### Swagger 2.0 [#swagger-20]
+
+Los documentos Swagger 2.0 se abren en el editor visual para leerlos, y se editan en **Código**. Echolot diseña
+OpenAPI 3.
+
+## El editor de código [#the-code-editor]
+
+Cambia **Editor** a **Código** para editar el YAML o el JSON directamente. La validación se ejecuta mientras escribes,
+tras una breve pausa: los errores y las advertencias se subrayan en su línea, y al situar el puntero sobre uno aparece
+el mensaje.
+
+En un `$ref`, sitúa el puntero para ver a qué apunta; haz clic en él con <kbd>⌘</kbd> pulsada para ir allí. Una
+referencia a otro archivo abre ese archivo. Los archivos a los que hace referencia una especificación siempre se abren
+en código.
+
+Cuando el texto no se puede analizar, el editor visual dice
+**El editor visual necesita un documento que se pueda analizar.**, con la línea y el error. **Corregir en el código** va
+a esa línea.
+
+## Guardar [#saving]
+
+No hay nada que guardar a mano. Echolot escribe la especificación poco después de cada cambio, y cuando cambias a otra
+especificación, sales de la página o cierras la ventana. Los mocks en marcha de la especificación recogen el cambio.
+
+Si el archivo no se puede escribir (por ejemplo, porque pasó a ser de solo lectura), Echolot dice **No se ha podido
+guardar la especificación** y conserva tus ediciones en el editor:
+
+| Botón | Qué hace |
+| --- | --- |
+| **Reintentar** | Intenta escribir el archivo otra vez. |
+| **Guardar una copia…** | Escribe las ediciones en un archivo que eliges. |
+| **Descartar cambios** | Vuelve al archivo tal como está en el disco. |
+| **Seguir editando** | Cierra el mensaje. Las ediciones se quedan, y la página sigue en esta especificación hasta que se guarden. |
+
+## Deshacer [#undo]
+
+**Editar › Deshacer** (<kbd>⌘</kbd><kbd>Z</kbd>) deshace ediciones en cualquiera de los dos editores, y **Editar ›
+Rehacer** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>) las recupera. Cada edición visual es un paso; escribir es un paso hasta
+que haces una pausa. Un deshacer pertenece a la especificación que cambió: cuando abres otro archivo, no alcanza al
+anterior.
+
+## Con un agente [#with-an-agent]
+
+Los [agentes](/docs/ai/agents) externos pueden leer, escribir y validar las especificaciones del espacio de trabajo
+cuando activas para ellos el conjunto de herramientas **Especificaciones** en **Ajustes › Agentes**.

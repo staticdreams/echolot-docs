@@ -1,0 +1,160 @@
+---
+title: "echolot flow"
+description: "在终端中列出、运行和创建工作区的流程，并提供它们的计划和 Webhook。"
+---
+
+`echolot flow` 在没有 App 的情况下运行[流程](/docs/flows)：在终端或 CI 任务中运行一次，或作为服务，在计划的流程到期时运行它们并应答 Webhook。
+
+| 子命令 | 作用 |
+| --- | --- |
+| `echolot flow list` | 列出工作区的流程及其输入和问题。 |
+| `echolot flow run` | 运行一个流程，在每个块完成时打印它，然后打印流程的输出。 |
+| `echolot flow new` | 创建一个流程，空白的或来自模板；不带名称时列出模板。 |
+| `echolot flow serve` | 在计划的流程到期时运行它们并应答 Webhook，直到停止。 |
+
+每个子命令都用 `-w` 或 `--workspace` 指定工作区。
+
+## echolot flow list [#echolot-flow-list]
+
+```sh
+echolot flow list --workspace <workspace> [--json]
+```
+
+```sh
+echolot flow list -w Alpenglow.echolot
+```
+
+```text
+morning-stock-check  Morning stock check
+order-status-webhook  Order status on webhook
+place-test-order  Place a test order  MCP tool place_test_order
+```
+
+每行包含流程的 slug（它在 `flows/` 中不带 `.flow.toml` 的文件名）和名称，然后在有的情况下，依次是括号中的输入（可选的用方括号）、它作为哪个 MCP 工具提供，以及问题数量。
+`--json` 打印每个流程及其 `slug`、`name`、`description`、`inputs`、`blockCount`、`errors`、`warnings`，以及它的 `schedule` 或 `webhook`。
+
+## echolot flow run [#echolot-flow-run]
+
+```sh
+echolot flow run <flow> --workspace <workspace> [--env <env>] [--input <name=value> ...] [--json] [--no-input]
+```
+
+`<flow>` 是流程的 slug 或名称。
+
+```sh
+echolot flow run morning-stock-check -w Alpenglow.echolot
+```
+
+```text
+✓ start  Start  0 ms
+✓ list  List products  148 ms
+✓ low  Running low?  4 ms
+notification: Restock Bern — A tent is under five in Bern.
+✓ notify  Restock  0 ms
+Morning stock check: passed in 152 ms
+```
+
+- 每个块完成时打印一行：`✓` 或 `✗`、它的 ID、标题和耗时，失败时附带错误。日志块写出的内容以及每项测试的结果，各占其后的单独几行。
+- 通知输出到标准错误。
+- 流程的输出在最后以 JSON 打印，随后在标准错误中给出摘要。
+- `--input name=value` 设置一个输入，文本会转换为该输入的类型。每个输入给出一次。
+- 当流程需要有人参与时（没有值的输入、**批准**块），Echolot 会在终端中询问。`--no-input` 从不询问：流程会在那里失败，这正是 CI 中想要的。
+- `--json` 将整个运行记录打印为 JSON，而不是进度行。
+
+```sh
+echolot flow run "Place a test order" -w Alpenglow.echolot --env staging --no-input
+```
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹。必填。 |
+| `--env <env>` | 流程的请求所用的环境：不带 `.toml` 的文件名，或它的名称。 |
+| `--input <name=value>` | 一个输入；文本会转换为该输入的类型。可重复。 |
+| `--json` | 将运行记录打印为 JSON，而不是进度。 |
+| `--no-input` | 从不询问：需要有人参与的流程会在那里失败。 |
+
+流程失败或其中一项测试失败时，运行即告失败，并以 1 退出。
+
+## echolot flow new [#echolot-flow-new]
+
+```sh
+echolot flow new [<name>] [--workspace <workspace>] [--template <template>]
+```
+
+不带名称时，列出模板：
+
+```text
+device-sign-in  OAuth device sign-in: shows the code and link (with a QR code), waits until the person approves, saves the tokens to the Keychain.
+refresh-token  Trades the refresh token for a new access token and saves both to the Keychain; says so when it fails.
+paginate-and-export  Fetches a number of pages, gathers their items into one list and writes it to a JSON file in the workspace.
+smoke-monitor  Every hour, checks that a request answers 200 quickly; a notification when it does not.
+seed-and-clean-up  Creates a few records, leaves room for what needs them, then deletes each one again.
+```
+
+带名称时，写出一个新的流程文件：
+
+```sh
+echolot flow new "Export tents" --template paginate-and-export -w Alpenglow.echolot
+```
+
+```text
+Created flows/export-tents.flow.toml.
+```
+
+模板把请求留给你去选取，在 App 中或在流程的文件中皆可；画布上的一条备注会说明是哪些。参见[模板](/docs/flows/templates)。
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹。 |
+| `--template <template>` | 作为起点的模板：`device-sign-in`、`refresh-token`、`paginate-and-export`、`smoke-monitor` 或 `seed-and-clean-up`。不带它时，流程是空的。 |
+
+## echolot flow serve [#echolot-flow-serve]
+
+```sh
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+```
+
+在每个带计划的流程到期时运行它，并应答带有 Webhook 的流程的 Webhook，直到你用 <kbd>⌃</kbd><kbd>C</kbd> 停止它。在服务器或容器中运行它，可以在没有 App 的情况下让工作区的自动化继续运转。
+
+```sh
+echolot flow serve -w Alpenglow.echolot --port 4100
+```
+
+```text
+Serving Alpenglow (Ctrl-C stops it)
+  schedule  Morning stock check: 0 6 * * *
+  webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
+  token     3f9a…
+```
+
+每次运行会打印一行，包含时间、流程、结束的方式和耗时。
+
+**Webhook。** 调用方发送流程的 Webhook 的方法和路径，并用 `Authorization: Bearer <token>`、`X-Echolot-Token` 标头或 URL 中的 `?token=` 带上令牌。流程的输入来自查询和 JSON 正文；名为 `body` 的输入会得到整个正文。
+应答是流程的 JSON 输出；流程失败时为 `500` 并附带错误；没有正确的令牌时为 `401`；对于没有任何流程使用的路径，则为 `404` 并列出现有的路径。
+
+```sh
+curl -X POST http://127.0.0.1:4100/order-status \
+  -H "Authorization: Bearer $ECHOLOT_WEBHOOK_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"orderId": "ord_7Hk2Lw"}'
+```
+
+令牌取自 `--token`，否则取自 `ECHOLOT_WEBHOOK_TOKEN`，再否则是 Echolot 打印出来的新令牌。一次 Webhook 运行最长可达两分钟；超过 8 MB 的正文会被整个拒绝。
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹。必填。 |
+| `--env <env>` | 流程的请求所用的环境。 |
+| `--port <port>` | Webhook 端口；`0` 表示选取一个空闲端口。默认 4100。 |
+| `--share` | 在每个网络接口上应答 Webhook，而不仅是这台机器：用于容器。 |
+| `--token <token>` | Webhook 令牌。默认：`ECHOLOT_WEBHOOK_TOKEN`，否则是新生成并打印的令牌。 |
+
+App 中的计划和 Webhook 参见[运行流程与触发器](/docs/flows/running-and-triggers)。
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | `run`：流程通过且每项测试都通过。`list`、`new`：完成。 |
+| `1` | `run`：流程失败，或有测试失败。 |
+| `64` | 选项有误、流程或环境不存在，或 `--input` 不是 `name=value` 的形式。 |

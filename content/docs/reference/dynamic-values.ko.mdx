@@ -1,0 +1,350 @@
+---
+title: "동적 값"
+description: "Echolot의 모든 동적 값을 인수와 예시와 함께, `{{` 목록이 묶는 그룹별로 정리했습니다."
+---
+
+동적 값은 `{{ }}` 안에 쓰는 함수입니다. `{{$uuid}}`, `{{$base64('heidi:alpenglow')}}`,
+`{{$responseJSONPath('auth/sign-in', '$.access_token')}}` 같은 것입니다. Echolot은 요청을 보낼 때 값을 계산합니다. 동적 값은 변수를 쓸 수 있는
+모든 곳에서 동작합니다. URL, 헤더, 본문, 인증 필드, 메시지, 설정입니다. 앱에서 동적 값을 고르고 편집하는 방법은
+[동적 값](/docs/requests/dynamic-values)을 참고하세요.
+
+## 작성 방법 [#writing-them]
+
+- 동적 값은 `$`로 시작합니다. `{{$timestamp}}`처럼 씁니다. 인수가 없으면 괄호는 생략해도 됩니다.
+- 인수는 괄호 안에 쉼표로 구분해 씁니다. 따옴표로 묶은 텍스트(`'…'` 또는 `"…"`), 숫자, 따옴표 없는 변수 이름, 또는 다른 동적 값을 쓸 수
+  있습니다.
+- 텍스트 인수에는 자체 토큰을 넣을 수 있습니다. `{{$base64('{{email}}:{{password}}')}}`. 따옴표 안의 `}}`는 토큰을 끝내지 않습니다.
+- 구문 분석할 수 없는 것은 작성한 그대로 남고 보고되므로, 잘못 입력한 `{{`가 요청을 깨뜨리는 일은 없습니다.
+
+```text
+{{$sha256('{{body}}', 'base64')}}
+{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}
+{{$hmacSha256(apiSecret, $timestamp)}}
+```
+
+## 응답 [#responses]
+
+이 값들은 저장된 다른 요청의 최근 응답을 읽으며, 요청은 경로(`auth/sign-in`처럼 `folder/request`)로 지정합니다. 모든 값은 선택 사항인 마지막
+인수를 받으며, 이 인수는 그 요청을 먼저 보낼지를 정합니다.
+
+| 마지막 인수 | 의미 |
+| --- | --- |
+| `'if-missing'`(기본값) | 응답이 아직 없으면 먼저 보냅니다. |
+| `'fresh'` | 매번 먼저 보냅니다. 실행에서는 실행당 한 번입니다. |
+| `'latest'` | 보내지 않고 최근 응답을 사용합니다. |
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$responseJSONPath` | 요청, JSONPath | JSONPath로 고른 응답 본문의 값. `{{$responseJSONPath('auth/sign-in', '$.access_token')}}` |
+| `$responseKeyPath` | 요청, 키 경로 | `data.items.0.id` 같은 키 경로로 고른 값. `{{$responseKeyPath('orders/list-orders', 'items.0.id')}}` |
+| `$responseJq` | 요청, jq 필터 | jq 필터가 본문으로 만든 결과. 결과가 여러 개이면 한 줄에 하나씩 나옵니다. `{{$responseJq('catalog/list-products', '.items[0].sku')}}` |
+| `$responseXPath` | 요청, XPath | XML 응답의 값. `{{$responseXPath('echo/xml', '/catalog/product[1]/@sku')}}` |
+| `$responseRegex` | 요청, 패턴 | 본문에서 정규 표현식이 처음 일치한 부분. 그룹이 있으면 첫 번째 그룹. `{{$responseRegex('echo/html', '<title>(\\w+)</title>')}}` |
+| `$responseHeader` | 요청, 헤더 | 응답 헤더. `{{$responseHeader('orders/create-order', 'Location')}}` |
+| `$responseCookie` | 요청, 쿠키 | 응답이 설정한 쿠키의 값. `{{$responseCookie('echo/set-cookie', 'flavour')}}` |
+| `$responseStatus` | 요청 | 상태 코드. `{{$responseStatus('auth/sign-in')}}` |
+| `$responseBody` | 요청 | 텍스트로서의 본문 전체. `{{$responseBody('auth/who-am-i')}}` |
+| `$responseBodyLength` | 요청 | 본문의 크기(바이트). `{{$responseBodyLength('catalog/export')}}` |
+| `$response` | 요청, 쿼리 | 쿼리의 형식에 따라 위의 어느 것이든 가져옵니다. JSONPath(`$.token`), XPath(`/a/b` 또는 `xpath:…`), `regex:…`, `jq:…`, `keypath:…`, `header:Name`, `cookie:Name`. `{{$response('auth/sign-in', 'header:Content-Type')}}` |
+
+예를 들어 **Who am I**는 필요하면 **Sign in**을 먼저 보내서 토큰을 바로 가져올 수 있습니다.
+
+```text
+Authorization: Bearer {{$responseJSONPath('auth/sign-in', '$.access_token')}}
+```
+
+다른 요청의 응답을 순환해서 읽는 요청은 순환하는 요청의 이름과 함께 거부됩니다. [응답 캡처](/docs/requests/captures)는 요청 사이에 값을
+전달하는 또 다른 방법입니다.
+
+## 요청 [#requests]
+
+이 값들은 보내려는 요청을 해석된 상태로 읽습니다. 첫 번째 인수는 저장된 요청의 경로이며, 지금 보내는 요청에는 비워 둡니다(`''`).
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$requestURL` | 요청 | 해석된 URL. `{{$requestURL('')}}` |
+| `$requestMethod` | 요청 | 메서드. `{{$requestMethod('')}}` |
+| `$requestHeader` | 요청, 헤더 | 인증이 추가하는 것을 포함해 해석된 헤더. `{{$requestHeader('', 'Content-Type')}}` |
+| `$requestQuery` | 요청, 매개변수 | URL의 쿼리 매개변수를 디코딩한 값. `{{$requestQuery('', 'page')}}` |
+| `$requestBody` | 요청 | 해석된 본문을 텍스트로. `{{$requestBody('')}}` |
+| `$requestJSONPath` | 요청, JSONPath | JSON 본문의 값. `{{$requestJSONPath('orders/create-order', '$.lines[0].sku')}}` |
+| `$requestJq` | 요청, jq 필터 | jq 필터가 JSON 본문으로 만든 결과. `{{$requestJq('', '.lines[0].quantity')}}` |
+| `$requestVariable` | 요청, 변수 | 그 요청에서 보이는 변수. `{{$requestVariable('auth/sign-in', 'email')}}` |
+
+요청이 보내는 내용으로 요청에 서명하는 것이 일반적인 용도입니다.
+
+```text
+X-Signature: {{$hmacSha256(apiSecret, $requestBody(''))}}
+```
+
+## 인코딩 [#encoding]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$base64` | 텍스트 | 텍스트를 Base64로. `{{$base64('heidi:alpenglow')}}` |
+| `$base64Decode` | Base64 | Base64 또는 Base64URL을 텍스트로 디코딩. `{{$base64Decode('aGVpZGk=')}}` |
+| `$base64Url` | 텍스트 | 텍스트를 패딩 없는 Base64URL로. `{{$base64Url('{"alg":"none"}')}}` |
+| `$urlEncode` | 텍스트 | URL 구성 요소용으로 퍼센트 인코딩한 텍스트. `{{$urlEncode('ultralight tent')}}` |
+| `$urlDecode` | 텍스트 | 퍼센트 인코딩된 텍스트를 디코딩. `+`는 `+`로 남습니다. `{{$urlDecode('ultralight%20tent')}}` |
+| `$hex` | 텍스트 | 텍스트의 UTF-8 바이트를 16진수로. `{{$hex('Grüezi')}}` |
+| `$hexDecode` | 16진수 | 16진수를 텍스트로 디코딩. `{{$hexDecode('6869')}}` |
+| `$jsonEscape` | 텍스트 | JSON 문자열 안에 들어가도록 이스케이프한 텍스트(따옴표 제외). `{{$jsonEscape(note)}}` |
+| `$newline` | 없음 | 줄 바꿈(`\n`). |
+| `$cr` | 없음 | 캐리지 리턴(`\r`). |
+| `$crlf` | 없음 | 캐리지 리턴과 줄 바꿈(`\r\n`). |
+| `$tab` | 없음 | 탭. |
+| `$unescape` | 시퀀스 | 이스케이프 시퀀스를 문자로 바꾼 텍스트: `\n`, `\r`, `\t`, `\0`, `\\`, `\xHH`, `\uHHHH`. `{{$unescape('café')}}` |
+| `$basicAuth` | 사용자, 암호 | HTTP Basic용 `Authorization` 값. `Basic `과 `user:password`의 Base64. `{{$basicAuth(email, password)}}` |
+| `$jwt` | 페이로드, 비밀 값, 알고리즘(선택 사항) | JSON 페이로드를 비밀 값으로 서명한 JWT. `HS384` 또는 `HS512`를 고르지 않으면 `HS256`. `{{$jwt('{"sub": "heidi"}', jwtSecret)}}` |
+
+## 해시와 서명 [#hashes-and-signatures]
+
+각 해시는 텍스트와, 선택 사항으로 출력 형식을 받습니다. `'hex'`(기본값), `'base64'`, `'base64url'`. 각 HMAC는 키, 메시지, 그리고 선택 사항으로
+출력 형식을 받습니다.
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$md5` | 텍스트, 출력 | 텍스트의 MD5. `{{$md5('alpenglow')}}` |
+| `$sha1` | 텍스트, 출력 | SHA-1. `{{$sha1('alpenglow')}}` |
+| `$sha224` | 텍스트, 출력 | SHA-224. |
+| `$sha256` | 텍스트, 출력 | SHA-256. `{{$sha256($requestBody(''), 'base64')}}` |
+| `$sha384` | 텍스트, 출력 | SHA-384. |
+| `$sha512` | 텍스트, 출력 | SHA-512. |
+| `$hmacMd5` | 키, 메시지, 출력 | 키로 계산한 메시지의 HMAC-MD5. |
+| `$hmacSha1` | 키, 메시지, 출력 | HMAC-SHA1. |
+| `$hmacSha224` | 키, 메시지, 출력 | HMAC-SHA224. |
+| `$hmacSha256` | 키, 메시지, 출력 | HMAC-SHA256. `{{$hmacSha256(apiSecret, $timestamp)}}` |
+| `$hmacSha384` | 키, 메시지, 출력 | HMAC-SHA384. |
+| `$hmacSha512` | 키, 메시지, 출력 | HMAC-SHA512. |
+
+## 시간 [#time]
+
+모두 요청을 보내는 시점의 값입니다.
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$timestamp` | 없음 | 초 단위 Unix 시간: `1793525000`. |
+| `$timestampMs` | 없음 | 밀리초 단위 Unix 시간: `1793525000123`. |
+| `$isoTimestamp` | 없음 | 밀리초가 포함된 UTC의 ISO 8601: `2026-11-01T09:30:00.123Z`. |
+| `$httpDate` | 없음 | `Date`나 `If-Modified-Since`용 HTTP 날짜: `Sun, 01 Nov 2026 09:30:00 GMT`. |
+| `$date` | 형식, 초 단위 오프셋(선택 사항), 시간대(선택 사항) | Unicode 날짜 패턴으로 표현한 시간. 오프셋만큼 이동하며, 지정한 시간대(지정하지 않으면 UTC)를 사용합니다. `{{$date('yyyy-MM-dd')}}`, `{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
+
+## 무작위 [#random]
+
+보낼 때마다 새 값입니다.
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$uuid` | 없음 | 소문자 무작위 UUID. `$guid`와 `$randomUUID`도 같습니다. `{{$uuid}}` |
+| `$randomInt` | 최솟값, 최댓값 | 두 값 사이(양 끝 포함)의 정수. 인수가 하나면 0부터 그 값까지이고, 없으면 0부터 1000까지입니다. `{{$randomInt(1, 5)}}` |
+| `$randomString` | 길이, 문자(선택 사항) | 무작위 문자. 길이를 지정하지 않으면 16(최대 4096). 영문자와 숫자, 또는 지정한 문자. `{{$randomString(8, 'ABCDEF0123456789')}}` |
+| `$randomHex` | 바이트 | 16진수로 표현한 무작위 바이트. 지정하지 않으면 16(최대 2048). 자릿수는 두 배입니다. `{{$randomHex(8)}}` |
+
+Alpenglow의 **Create order**는 `Idempotency-Key: {{$uuid}}`를 보내므로, 주문할 때마다 새 주문이 됩니다.
+
+## 가짜 데이터 [#fake-data]
+
+요청 본문, 테스트 데이터, [모의 서버 경로](/docs/mocks/routes#bodies-with-fake-data)에 사용하는 만든 값입니다. 이름, 주소, 회사, 가격, 날짜,
+lorem ipsum 등이 있으며 보낼 때마다 새로 만들어집니다. 이름은 Postman의 동적 변수와 같으므로, 이를 사용하는 컬렉션은 여기서도 실제 값을
+보냅니다. `{{` 목록에서는 **가짜 데이터** 아래에 그룹별로 있습니다.
+
+인수는 선택 사항이며 숫자는 -10^15부터 10^15까지입니다. 모의 서버 본문에서는 [무작위](#random)와 [시간](#time)의 `$uuid`(`$randomUUID`로),
+`$randomInt`, `$randomString`, `$randomHex`, `$timestamp`, `$timestampMs`, `$isoTimestamp`도 사용할 수 있습니다. 터미널에서는
+[`echolot fake`](/docs/cli/fake)가 이 값들로 템플릿을 채웁니다.
+
+### 일반 [#common]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomFloat` | 최솟값, 최댓값, 소수 자릿수 | 범위(0~1000) 안의 소수. 따로 지정하지 않으면 소수 둘째 자리까지. |
+| `$randomDigits` | 길이 | 무작위 숫자 문자열. 길이를 지정하지 않으면 6자리. |
+| `$randomBoolean` | 없음 | true 또는 false. |
+| `$randomElement` | 선택지 | 인수 중 무작위로 고른 하나: $randomElement(active, paused, closed). |
+| `$randomAlphaNumeric` | 없음 | 영문자 또는 숫자 하나. |
+| `$randomColor` | 없음 | 색 이름: teal. |
+| `$randomHexColor` | 없음 | 16진수 색: #3f8acb. |
+| `$randomAbbreviation` | 없음 | 기술 약어: SQL. |
+
+### 이름과 직업 [#names-and-jobs]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomFirstName` | 없음 | 이름: Amelia. |
+| `$randomLastName` | 없음 | 성: Okafor. |
+| `$randomFullName` | 없음 | 이름과 성: Amelia Okafor. |
+| `$randomNamePrefix` | 없음 | Mr., Ms., Dr.… |
+| `$randomNameSuffix` | 없음 | Jr., PhD… |
+| `$randomJobArea` | 없음 | Mobility, Security… |
+| `$randomJobDescriptor` | 없음 | Lead, Senior… |
+| `$randomJobTitle` | 없음 | Senior Security Engineer. |
+| `$randomJobType` | 없음 | Engineer, Designer… |
+
+### 인터넷 [#internet]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomEmail` | 없음 | 이메일 주소: amelia.okafor@gmail.com. |
+| `$randomExampleEmail` | 없음 | example.com, example.net, example.org의 이메일 주소. |
+| `$randomUserName` | 없음 | 사용자 이름: amelia_okafor42. |
+| `$randomPassword` | 없음 | 무작위 영문자와 숫자 15자. |
+| `$randomUrl` | 없음 | https://northwind.io |
+| `$randomDomainName` | 없음 | northwind.io |
+| `$randomDomainSuffix` | 없음 | com, io, dev… |
+| `$randomDomainWord` | 없음 | northwind |
+| `$randomIP` | 없음 | IPv4 주소: 192.168.14.7. |
+| `$randomIPV6` | 없음 | IPv6 주소. |
+| `$randomMACAddress` | 없음 | MAC 주소: 3a:f1:0c:5e:92:b4. |
+| `$randomProtocol` | 없음 | http 또는 https. |
+| `$randomSemver` | 없음 | 유의적 버전: 2.14.3. |
+| `$randomLocale` | 없음 | 로캘: de_CH. |
+| `$randomUserAgent` | 없음 | 브라우저의 User-Agent. |
+
+### 주소와 장소 [#addresses-and-places]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomStreetName` | 없음 | Maple Avenue |
+| `$randomStreetAddress` | 없음 | 42 Maple Avenue |
+| `$randomCity` | 없음 | Lisbon |
+| `$randomZipCode` | 없음 | 다섯 자리 우편번호. `$randomZip`도 같습니다. |
+| `$randomCountry` | 없음 | Portugal |
+| `$randomCountryCode` | 없음 | ISO 3166 국가 코드: PT. |
+| `$randomLatitude` | 없음 | 위도: 38.7223. |
+| `$randomLongitude` | 없음 | 경도: -9.1393. |
+
+### 전화 [#phone]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomPhoneNumber` | 없음 | 전화번호: 555-201-4417. |
+| `$randomPhoneNumberExt` | 없음 | 국가 번호가 있는 전화번호: +44 555-201-4417. |
+
+### 회사 [#companies]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomCompanyName` | 없음 | Northwind Labs |
+| `$randomCompanySuffix` | 없음 | Inc, LLC, GmbH… |
+| `$randomBs` | 없음 | streamline seamless platforms |
+| `$randomBsAdjective` | 없음 | seamless |
+| `$randomBsBuzz` | 없음 | streamline |
+| `$randomBsNoun` | 없음 | platforms |
+| `$randomCatchPhrase` | 없음 | Adaptive real-time framework |
+| `$randomCatchPhraseAdjective` | 없음 | Adaptive |
+| `$randomCatchPhraseDescriptor` | 없음 | real-time |
+| `$randomCatchPhraseNoun` | 없음 | framework |
+
+### 금융 [#finance]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomPrice` | 최솟값, 최댓값 | 소수 둘째 자리까지의 가격. 범위를 지정하지 않으면 1~1000. |
+| `$randomCurrencyCode` | 없음 | EUR |
+| `$randomCurrencyName` | 없음 | Euro |
+| `$randomCurrencySymbol` | 없음 | € |
+| `$randomBankAccount` | 없음 | 8자리 계좌 번호. |
+| `$randomBankAccountName` | 없음 | Savings Account |
+| `$randomBankAccountIban` | 없음 | 유효한 체크 숫자가 있는 IBAN. |
+| `$randomBankAccountBic` | 없음 | BIC(SWIFT 코드). |
+| `$randomCreditCardMask` | 없음 | 카드의 마지막 네 자리. |
+| `$randomTransactionType` | 없음 | deposit, payment, refund… |
+| `$randomBitcoin` | 없음 | 만들어 낸 비트코인 주소. |
+
+### 상점과 제품 [#shops-and-products]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomProduct` | 없음 | Chair |
+| `$randomProductName` | 없음 | Ergonomic Wooden Chair |
+| `$randomProductAdjective` | 없음 | Ergonomic |
+| `$randomProductMaterial` | 없음 | Wooden |
+| `$randomDepartment` | 없음 | Garden |
+
+### 날짜 [#dates]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomDatePast` | 없음 | 지난 1년 안의 시점(ISO 8601). |
+| `$randomDateFuture` | 없음 | 앞으로 1년 안의 시점(ISO 8601). |
+| `$randomDateRecent` | 없음 | 지난 이틀 안의 시점(ISO 8601). |
+| `$randomDate` | 없음 | 지난 1년 안의 날짜: 2026-03-14. |
+| `$randomWeekday` | 없음 | Tuesday |
+| `$randomMonth` | 없음 | March |
+
+### 단어 [#words]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomWord` | 없음 | 단어 하나. |
+| `$randomWords` | 개수 | 몇 개의 단어. 개수를 지정하지 않으면 3개. |
+| `$randomNoun` | 없음 | router |
+| `$randomVerb` | 없음 | compile |
+| `$randomIngverb` | 없음 | compiling |
+| `$randomAdjective` | 없음 | wireless |
+| `$randomPhrase` | 없음 | 위의 단어들로 만든 짧은 구. |
+
+### Lorem ipsum [#lorem-ipsum]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomLoremWord` | 없음 | dolor |
+| `$randomLoremWords` | 개수 | Lorem 단어. 개수를 지정하지 않으면 3개. |
+| `$randomLoremSentence` | 없음 | 문장 하나. |
+| `$randomLoremSentences` | 개수 | 몇 개의 문장. 개수를 지정하지 않으면 2~6개. |
+| `$randomLoremParagraph` | 없음 | 문단 하나. |
+| `$randomLoremParagraphs` | 개수 | 문단. 개수를 지정하지 않으면 3개. |
+| `$randomLoremText` | 없음 | 문장 한 개 또는 몇 개. |
+| `$randomLoremSlug` | 없음 | dolor-sit-amet |
+| `$randomLoremLines` | 없음 | 한 줄에 하나씩, 몇 개의 문장. |
+
+### 파일 [#files]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomFileName` | 없음 | router_matrix.pdf |
+| `$randomFileType` | 없음 | image, text, video… |
+| `$randomFileExt` | 없음 | pdf |
+| `$randomCommonFileName` | 없음 | 흔한 확장자의 파일 이름. |
+| `$randomCommonFileType` | 없음 | image, video, text… |
+| `$randomCommonFileExt` | 없음 | png |
+| `$randomFilePath` | 없음 | /var/reports/router_matrix.pdf |
+| `$randomDirectoryPath` | 없음 | /var/reports |
+| `$randomMimeType` | 없음 | application/pdf |
+
+### 이미지 [#images]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomAvatarImage` | 없음 | 아바타 사진의 주소. |
+| `$randomImageUrl` | 없음 | 640×480 사진의 주소. |
+| `$randomAbstractImage` | 없음 | abstract 주제의 640×480 사진의 주소. 다른 주제는 `$randomAnimalsImage`, `$randomBusinessImage`, `$randomCatsImage`, `$randomCityImage`, `$randomFoodImage`, `$randomNightlifeImage`, `$randomFashionImage`, `$randomPeopleImage`, `$randomNatureImage`, `$randomSportsImage`, `$randomTransportImage`입니다. |
+| `$randomImageDataUri` | 없음 | data: URI로 된 작은 SVG 그림. |
+
+### 데이터베이스 [#databases]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$randomDatabaseColumn` | 없음 | createdAt |
+| `$randomDatabaseType` | 없음 | varchar |
+| `$randomDatabaseCollation` | 없음 | utf8mb4_unicode_ci |
+| `$randomDatabaseEngine` | 없음 | InnoDB |
+
+## 텍스트 [#text]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$lowercase` | 텍스트 | 소문자로 바꾼 텍스트. `{{$lowercase(email)}}` |
+| `$uppercase` | 텍스트 | 대문자로 바꾼 텍스트. `{{$uppercase(productId)}}` |
+| `$trim` | 텍스트 | 양 끝의 공백과 줄 바꿈을 없앤 텍스트. `{{$trim($responseBody('auth/who-am-i'))}}` |
+
+## 파일과 시스템 [#files-and-the-system]
+
+| 값 | 인수 | 결과 |
+| --- | --- | --- |
+| `$file` | 경로 | 파일의 내용. 작업 공간 기준 상대 경로 또는 절대 경로. `{{$file('fixtures/order.json')}}` |
+| `$env` | 이름 | Echolot 프로세스의 환경 변수. `{{$env('HOME')}}` |
+
+## 동적 값과 에이전트 [#dynamic-values-and-agents]
+
+AI 에이전트가 요청을 보낼 때(Echolot의 MCP 서버나 어시스턴트를 통해) `$env`는 아무것도 반환하지 않고, `$file`은 작업 공간 안의 파일만 읽습니다.
+비밀 값은 에이전트에 전달되지 않습니다. [에이전트](/docs/ai/agents)를 참고하세요.

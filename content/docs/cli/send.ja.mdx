@@ -1,0 +1,161 @@
+---
+title: "echolot send"
+description: "ターミナルから1つのリクエスト（URLまたは保存済みのリクエスト）を送信し、そのボディ、ヘッダー、所要時間、通信のバイト列を確認します。"
+---
+
+`echolot send` は1つのリクエストを送信し、レスポンスのボディを標準出力に書き出します。curlと同じようにURLを指定するか、ワークスペース内の保存済みリクエストのパスを指定します。
+保存済みリクエストはアプリと同じように送信され、変数、認証、スクリプト、チェックも含まれます。WebSocketとSocket.IOのセッションを開いたり、イベントストリームを待ち受けたりすることもできます。
+
+```sh
+echolot send [<options>] <url>
+```
+
+`<url>` は、URLか、ワークスペースの `requests` フォルダ内にある保存済みリクエストファイル（`.req.toml`、`.gql.toml`、`.mcp.toml`）のパスです。
+
+## URLを送信する [#send-a-url]
+
+```sh
+echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P
+```
+
+ボディは標準出力に書き出されるので、パイプでつなげたり（`| jq .`）、`-o` でファイルに書き出したりできます。指定しない限り、ほかには何も出力されません。
+
+- `-i` は、ボディの前にステータス行とヘッダーを出力します。
+- `-v` は、所要時間の内訳を標準エラーに出力します：DNS、接続、TLS、待機、転送、ボディのサイズとハッシュ、リモートアドレス、TLSのバージョン、選ばれたプロトコル、
+  サーバの証明書。デコードされたボディ（gzip、Brotli、zstd）では、デコード前後のサイズも表示されます。
+- `--wire` は、通信で捕捉された、送受信した正確なバイト列を標準エラーに出力します。
+
+ボディとヘッダーを指定する例です。
+
+```sh
+echolot send https://demo.echolot.dev/echo/anything -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"sku": "TNT-MH-2P"}' -v
+```
+
+```text
+── body ── decoded zstd 257 → 418 bytes
+── timing ──
+DNS          79.61 ms
+Connect      15.65 ms
+TLS          28.70 ms
+Waiting      19.75 ms
+Transfer      0.53 ms
+Total       146.36 ms
+Body      418 bytes, sha256 01facf0b2388ca67…
+Remote    [2606:4700:3031::6815:3cf1]:443
+── tls ── TLS 1.3, ALPN h2
+CN=echolot.dev
+  issuer CN=WE1,O=Google Trust Services,C=US, valid until 30 Jan 2027
+Alt-Svc   the server offers HTTP/3 (h3 on port 443); --http3 uses it, and so do later requests on Automatic in the same run
+```
+
+`-H` は、ヘッダーの順序と大文字小文字を保持します。`--data-file` は、ボディをメモリに読み込まずファイルからストリーミングするので、大きなアップロードにも使えます。
+`--raw` は、あなたが書いていないヘッダーを一切送信しません：`Host`、`Content-Length`、`Accept-Encoding` もありません。
+
+## 保存済みリクエストを送信する [#send-a-saved-request]
+
+リクエストファイルのパスを指定します。Echolotはその周りのワークスペースを見つけ、選んだ環境で `{{variables}}` を解決し、リクエストのスクリプトとチェックを実行して、
+結果を出力します。
+
+```sh
+echolot send Alpenglow.echolot/requests/catalog/get-product.req.toml -i
+```
+
+```text
+HTTP/2 200 OK
+content-type: application/json; charset=utf-8
+etag: W/"TNT-MH-2P-1"
+…
+
+{
+  "sku": "TNT-MH-2P",
+  "name": "Matterhorn 2P Tent",
+  …
+}
+── tests ──
+✓ Status equals 200
+✓ JSON value $.sku equals {{productId}}
+2 passed
+```
+
+- `-e staging` または `--env staging` は、`environments/staging.toml` の環境で解決します。
+- シークレット変数は、`ECHOLOT_SECRET_<NAME>` 変数から、Macではキーチェーンから取得されます。[シークレット](/docs/cli#secrets)を参照してください。
+- スクリプトがログに出力した内容は `── console ──` の下に、チェックと `pm.test` の結果は `── tests ──` の下に、標準エラーとして表示されます。
+  チェックが失敗すると、終了コードは1になります。
+- 解決できない変数は、リクエストを送信する前に警告として出力されます。
+- `-X`、`-H`、`-d`、`--data-file` はURL用です。保存済みリクエストは、ファイルに書かれた内容を送信します。`--timeout`、`--http1.1`、`--http2`、`--http3`、`--raw`、
+  `-k`、`--listen`、プロキシと証明書のオプションは、どちらにも適用されます。
+
+## イベントストリーム、WebSocket、Socket.IO [#event-streams-websocket-and-socketio]
+
+**Server-Sent Events。** `text/event-stream` のレスポンスは、届いたそばから標準出力にストリーミングされます。`--listen` は待ち受ける時間を指定します。
+デフォルトは10秒で、`0` はサーバがストリームを終了するまで待ち受けます。
+
+```sh
+echolot send https://demo.echolot.dev/v1/orders/events --listen 0
+```
+
+**WebSocket。** `ws://` または `wss://` のURLを指定すると、セッションが開きます。入力した（またはパイプで渡した）各行と `-d` は、テキストメッセージとして送信されます。
+届いたメッセージは1行ずつ出力され、バイナリのものはBase64で出力されます。入力が終わると、Echolotは `--listen` で指定した秒数だけ待ち受けてから閉じます。
+`--subprotocol` はサブプロトコルを提示し、複数回指定できます。`-i` または `-v` は、アップグレードのレスポンスを標準エラーに出力します。
+
+```sh
+echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolot.dev/v1/orders --listen 5
+```
+
+**Socket.IO。** `--socketio` は、`http(s)://` または `ws(s)://` のURLでSocket.IOを使います。入力の各行は1つのイベントで、イベント名に続いて
+JSONの引数を書きます（`chat {"text": "hi"}`。配列は複数の引数になります）。イベントは `name [arguments]` の形式で、確認応答は `ack id [arguments]` の形式で出力されます。
+
+```sh
+echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+```
+
+試せるサーバについては、[Socket.IOリクエスト](/docs/requests/socket-io)を参照してください。
+
+## オプション [#options]
+
+| オプション | 意味 |
+| --- | --- |
+| `-e`、`--env <env>` | 保存済みリクエストを解決する環境：ファイル名から `.toml` を除いたもの。 |
+| `-X`、`--request <method>` | HTTPメソッド。任意のトークンを指定できます。デフォルトは `GET`。 |
+| `-H`、`--header <header>` | `'Name: value'` 形式のヘッダー。複数回指定でき、順序と大文字小文字は保持されます。 |
+| `-d`、`--data <data>` | インラインで指定するリクエストボディ。 |
+| `--data-file <file>` | このファイルからリクエストボディをストリーミングします。 |
+| `-o`、`--output <file>` | ボディを標準出力ではなくこのファイルに書き出します。 |
+| `--raw` | 生モード：自動ヘッダーを一切送信しません。 |
+| `-k`、`--insecure` | TLS証明書の検証をスキップします。 |
+| `-i`、`--include` | ボディの前にステータス行とヘッダーを出力します。 |
+| `-v`、`--verbose` | 所要時間の内訳を標準エラーに出力します。 |
+| `--wire` | 送受信した正確なバイト列を標準エラーに出力します。 |
+| `--listen <seconds>` | イベントストリームを待ち受けてから終了するまでの秒数。`0` はサーバが終了するまで待ち受けます。デフォルトは10。 |
+| `--timeout <seconds>` | やり取り全体のタイムアウト。デフォルトは60。 |
+| `--http1.1` | HTTP/1.1のみで送信します。 |
+| `--http2` | HTTP/2のみで送信します：TLSではALPN、平文HTTPではprior knowledge。 |
+| `--http3` | QUIC上のHTTP/3のみで送信します：`https://` のみ、プロキシは使えません。macOS 27以降とLinuxで利用できます。 |
+| `--subprotocol <name>` | `ws://` と `wss://` のURL用：提示するサブプロトコル。複数回指定できます。 |
+| `--socketio` | Socket.IOを使います。入力の各行は `event [JSON arguments]` です。 |
+| `--namespace <namespace>` | `--socketio` 用：参加する名前空間。デフォルトはURLのパス、なければ `/`。 |
+| `--auth <json>` | `--socketio` 用：認証ペイロード（JSONオブジェクト）。 |
+| `--socketio-version <version>` | `--socketio` 用：サーバのSocket.IOバージョン。`4`（3も含む）または `2`。デフォルトは4。 |
+| `--socketio-path <path>` | `--socketio` 用：サーバが待ち受けるパス。デフォルトは `/socket.io/`。 |
+| `--proxy <url>` | このプロキシ経由で送信します：`http://host:port`、`https://…`、`socks5://user:password@host:port`。 |
+| `--no-proxy` | `HTTP_PROXY` などを無視して直接接続します。 |
+| `--cacert <file>` | このPEMファイル内のCA証明書も信頼します。複数回指定できます。 |
+| `--cert <file>` | このクライアント証明書を送信します：PEMファイル（`--key` と併用）または `.p12`/`.pfx` ファイル。 |
+| `--key <file>` | クライアント証明書のPEM秘密鍵。証明書ファイルに鍵が含まれていない場合に使います。 |
+| `--pass <passphrase>` | 鍵またはPKCS#12ファイルのパスフレーズ。環境変数 `ECHOLOT_CERT_PASSPHRASE` の使用をおすすめします。 |
+
+`--http1.1`、`--http2`、`--http3` のいずれも指定しない場合、Echolotはアプリの**自動**設定と同じようにバージョンを選びます。
+これらのうち指定できるのは1つだけです。
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | 400未満のレスポンスで、すべてのチェックに合格しました。 |
+| `1` | レスポンスがない（理由が出力されます）、またはチェックやテストが失敗しました。 |
+| `22` | レスポンスのステータスが400以上でした。ボディは書き出されます。 |
+| `64` | オプションが正しくない、URLではない、またはワークスペース外のファイル。 |
+
+`pm.execution.skipRequest()` を呼び出すリクエスト前スクリプトがある場合、何も送信せず、終了コード0で終了します。

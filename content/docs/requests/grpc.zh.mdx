@@ -1,0 +1,84 @@
+---
+title: "gRPC"
+description: "调用由 .proto 文件或服务器反射所描述的 gRPC 服务，消息以 JSON 编写和显示。"
+---
+
+gRPC 请求调用服务的一个方法。你把消息写成 JSON；Echolot 用服务的描述对它编码，通过 HTTP/2 发送，并以 JSON 显示应答及调用的状态。
+
+<Shot id="requests-grpc-message" alt="Inventory › Reserve stock：消息标签页，其中有 inventory.proto、Inventory 服务和 Reserve 方法（一元调用）、JSON 消息，以及状态为 OK、带一条消息的响应" />
+
+<Callout title="用 Alpenglow 试一试">
+  **Inventory** 文件夹中的请求调用 `localhost:50051` 上的 gRPC 服务器。它在文档仓库的 `examples/servers` 文件夹中（`bun run grpc`）。
+</Callout>
+
+## 创建 gRPC 请求 [#create-a-grpc-request]
+
+选取 **文件 › 新建 gRPC 请求**，或在边栏中 **请求** 旁边的 **+** 菜单里选取 **新建 gRPC 请求**。
+地址是服务器，例如 `http://localhost:50051`（在 Alpenglow 中是 `{{grpcURL}}`），不带路径。
+
+编辑器有这些标签页：**文档**、**消息**、**标头**、**认证**、**变量**、**测试**、**脚本** 和 **设置**。这里的标头就是调用的元数据。gRPC 调用始终是 POST，
+所以标记显示 **gRPC**，而不是某个方法。
+
+## 描述服务 [#describe-the-service]
+
+**消息** 标签页的开头是服务的描述来源：
+
+- 工作区 `specs/` 文件夹中的 `.proto` 文件，例如 `specs/inventory.proto`。它的 import 从旁边读取，而众所周知的 `google.protobuf` 类型不需要文件。
+  你在“规范”页面添加和编辑 `.proto` 文件：见 [proto 文件](/docs/specs/proto-files)。
+- **服务器反射**：Echolot 向服务器询问它的服务。服务器必须提供反射服务。反射调用会带着请求的标头、认证和变量，发往请求的地址。
+
+选取 **载入** 读取服务。然后选取服务和方法。方法旁边，Echolot 会显示它的类型：**unary**、**server streaming**、**client streaming** 或 **bidirectional streaming**。
+
+<Callout>
+  从“规范”页面的 `.proto` 文件开始更快：它的大纲列出每个方法，每个方法都有一个按钮，可为它生成带示例消息的 gRPC 请求。
+</Callout>
+
+## 编写消息 [#write-the-message]
+
+消息是 JSON，采用 protobuf 的 JSON 映射，可以包含 `{{variables}}`：
+
+```json
+{
+  "sku": "TNT-MH-2P",
+  "quantity": 1,
+  "order_id": "{{orderId}}"
+}
+```
+
+**示例** 会把消息替换为方法输入的每个字段（含嵌套消息）及其示例值，作为起点。
+
+在 JSON 映射中，64 位整数是字符串，bytes 是 Base64，枚举是它们的名称，map 是对象，而 `Timestamp`、`Duration`、`FieldMask`、包装类型、`Struct` 和 `Any`
+有各自通常的 JSON 形式。消息类型中没有的键会被拒绝，所以拼写错误不会被忽略。
+
+## 调用类型 [#call-kinds]
+
+| 类型 | 你编写的消息 | 响应 |
+| --- | --- | --- |
+| Unary | 一个 JSON 对象 | 一个 JSON 对象 |
+| Server streaming | 一个 JSON 对象 | 服务器发送的所有消息组成的 JSON 数组 |
+| Client streaming | 消息的 JSON 数组 | 一个 JSON 对象 |
+| Bidirectional streaming | 消息的 JSON 数组 | 服务器发送的所有消息组成的 JSON 数组 |
+
+对于 **Inventory › Watch stock** 这个 server streaming 调用，消息指明要关注的产品，响应则是服务器发送的库存水平列表。
+
+## 状态、元数据和尾部元数据 [#status-metadata-and-trailers]
+
+gRPC 在状态中报告调用的情况，状态在消息之后的尾部元数据（trailers）中到达。响应摘要会显示它：绿色的 `OK`，或红色的状态及其代码，例如 `NOT_FOUND (5)`，
+还有收到的消息数及其压缩方式。响应的 **标头** 标签页显示响应标头。
+
+要在测试中检查状态，请在 **测试** 标签页中添加一项 **gRPC 状态** 检查：它默认等于 `OK`，可以填名称（`NOT_FOUND`）或代码（`5`）。见[脚本和测试](/docs/requests/scripts-and-tests)。
+
+## 压缩和截止时间 [#compression-and-deadline]
+
+地址前面的 **gRPC** 标记是一个菜单：
+
+- **压缩消息**：**无**、**gzip** 或 **deflate**。无论这里如何设置，压缩的应答总是会被读取。
+- **截止时间**：**不限时**，或 500 毫秒、1 秒、5 秒或 30 秒。截止时间会发送给服务器，超过它的调用会以 `DEADLINE_EXCEEDED` 结束。
+
+## TLS 和证书 [#tls-and-certificates]
+
+`http://` 地址通过 HTTP/2 调用服务器，不使用 TLS。`https://` 地址使用 TLS，遵循工作区的证书规则，所以自定义 CA 证书和客户端证书都可用。见[请求设置](/docs/requests/settings)。
+
+## 通过命令行 [#from-the-command-line]
+
+`echolot grpc describe` 列出服务器的服务和方法，`echolot grpc call` 发起调用，遇到不是 `OK` 的状态时以 1 退出。见 [echolot grpc](/docs/cli/grpc)。

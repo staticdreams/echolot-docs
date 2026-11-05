@@ -1,0 +1,107 @@
+---
+title: "Herramientas y calidad"
+description: "Mira qué cuestan en cada turno las herramientas de un servidor a un modelo, con qué tropezaría un modelo y qué herramienta elegiría."
+---
+
+Un modelo nunca ve un servidor MCP. Ve la lista de herramientas del servidor, que se envía con cada turno de una
+conversación y se convierte al formato propio de cada proveedor. La tarjeta **Cómo ve un modelo este servidor** de la
+página Servidores MCP muestra esa lista tal como la recibe un modelo: lo que cuesta, qué herramientas cuestan más, y los
+nombres, descripciones y esquemas con los que un modelo se equivocaría. Úsala mientras construyes un servidor, o antes
+de entregar el servidor de otra persona a un agente.
+
+La tarjeta aparece bajo **Herramientas** cuando una comprobación ha listado al menos una herramienta.
+
+<Shot id="mcp-quality-card" alt="La tarjeta Cómo ve un modelo este servidor para Alpenglow MCP: recuentos de tokens para Anthropic, OpenAI y Google Gemini, las herramientas más grandes y la línea Nada con lo que un modelo vaya a tropezar" />
+
+## Qué cuestan las herramientas [#what-the-tools-cost]
+
+La parte superior de la tarjeta da los tokens que ocupa la lista de herramientas con **Anthropic**, **OpenAI** y
+**Google Gemini**, en cada turno, contados en el formato de cada proveedor. Debajo, una línea dice cuántas herramientas
+son y qué parte de un contexto de 200k ocupa la mayor de las tres.
+
+Los recuentos son estimaciones, con un margen de alrededor del 15 % respecto a lo que cuentan los proveedores. Sirven
+para comparar servidores y para ver qué efecto tiene un cambio en una descripción o en un esquema.
+
+**Herramientas más grandes** lista las cinco herramientas que más cuestan, con sus tokens. Un servidor con una sola
+herramienta omite esta lista.
+
+## Con qué tropezaría un modelo [#what-a-model-would-stumble-over]
+
+A continuación viene la lista de hallazgos, los peores primero. El encabezado los cuenta (por ejemplo
+`1 problem, 2 warnings`), o dice **Nada con lo que un modelo vaya a tropezar**. Cada hallazgo nombra la herramienta,
+dice qué está mal y sugiere una solución.
+
+| Tipo | Significado |
+| --- | --- |
+| Problema | Un proveedor rechaza la herramienta, o un modelo solo puede adivinar cómo usarla. Corrígelos primero. |
+| Aviso | Funciona, pero es probable que un modelo elija la herramienta equivocada o rellene mal los argumentos. |
+| Nota | Conviene saberlo, como una restricción que un proveedor descarta. |
+
+Lo que Echolot comprueba en cada herramienta:
+
+| Hallazgo | Tipo | Qué hacer |
+| --- | --- | --- |
+| El nombre no es uno que acepte un proveedor | Problema | Usa letras, dígitos, `_` y `-`, hasta 64 caracteres. Anthropic y OpenAI rechazan el resto. |
+| Sin descripción | Problema | Di qué hace la herramienta, qué necesita y qué devuelve. |
+| La descripción dice poco más que el nombre | Aviso | Di qué necesita y qué devuelve la herramienta, y cuándo usarla en lugar de una parecida. |
+| Una descripción larga (más de 1500 caracteres) | Nota | Se lee de nuevo en cada turno. |
+| El esquema de entrada no es un objeto | Problema | Todos los proveedores quieren `{"type": "object", "properties": …}`. Una herramienta sin parámetros dice `"properties": {}`. |
+| El esquema no tiene propiedades | Nota | Escribe `"properties": {}` si no hay parámetros, o describe los que hay. |
+| Acepta cualquier objeto | Aviso | Describe las propiedades que lee la herramienta, para que el modelo no invente argumentos. |
+| Exige un parámetro que las propiedades no definen | Problema | Define la propiedad, o quítala de `required`. |
+| Parámetros sin tipo | Problema | Da a cada uno un `type` (o un `enum`). Si no, un modelo adivina, y el modo estricto de OpenAI lo rechaza. |
+| Objetos de forma libre (sin propiedades) | Aviso | Describe las claves, o di en la descripción qué se espera. |
+| Parámetros sin descripción | Aviso | Una línea cada uno: qué es y un valor de ejemplo. |
+| Usa `$ref` | Aviso | Gemini lo descarta, así que el parámetro acepta cualquier cosa ahí; el modo estricto de OpenAI necesita que esté incorporado en línea. |
+| Palabras clave que Gemini descarta, como `oneOf`, `pattern` o `additionalProperties` | Nota | La restricción se pierde con Gemini. |
+| Un esquema grande (más de unos 1000 tokens) | Aviso | Divide la herramienta, o saca del esquema las opciones que se usan poco. |
+| Más de 25 parámetros | Aviso | Divide la herramienta, o agrupa las opciones. |
+| Anidado a más de 5 niveles | Aviso | Aplana los argumentos; los modelos rellenan mal las estructuras profundas. |
+| Un enum con más de 40 valores | Nota | Cada valor se lee en cada turno. |
+
+Y en la lista en conjunto:
+
+| Hallazgo | Tipo | Qué hacer |
+| --- | --- | --- |
+| Nombres que un modelo confundiría (el mismo una vez que se ignoran las mayúsculas, `_` y `-`) | Problema | Nombra las herramientas por lo que las distingue. |
+| Dos herramientas con la misma descripción | Problema | Di qué las distingue; un modelo elige entre herramientas por sus descripciones. |
+| Dos descripciones que dicen casi lo mismo (60 % o más de sus palabras en común) | Aviso | Di en cada una cuándo usarla en lugar de la otra. |
+| Más de 128 herramientas | Problema | OpenAI rechaza más de 128. Ofrece menos, o divide el servidor. |
+| Más de 40 herramientas | Aviso | Un modelo elige peor entre muchas. Ofrece menos a la vez, o divide el servidor por temas. |
+| La lista cuesta más de 20 000 tokens por turno | Aviso | Acorta las descripciones y los esquemas, u ofrece menos herramientas. |
+
+Después de cambiar el servidor, haz clic otra vez en **Comprobar**: la tarjeta sigue la nueva lista de herramientas.
+
+## La lista tal como la recibe un proveedor [#the-list-as-a-provider-receives-it]
+
+Abre **La lista tal como la recibe un proveedor** al pie de la tarjeta y elige **Anthropic**, **OpenAI** o
+**Google Gemini**. Verás la lista de herramientas tal como la recibe la API de ese proveedor, como JSON. **Copiar** la
+copia. Aquí ves, por ejemplo, lo que el formato de Gemini omite de un esquema.
+
+## Probar con un modelo [#try-with-a-model]
+
+La tarjeta **Probar con un modelo** de debajo pregunta a un modelo real qué herramienta llamaría. Escribe lo que alguien
+podría pedirle a un agente que hiciera con este servidor, como `Is the two-person tent in stock?`, y haz clic en
+**Probar**.
+
+<Shot id="mcp-try-with-a-model" alt="La tarjeta Probar con un modelo: un prompt sobre una tienda de campaña y la respuesta del modelo, una llamada a search_catalog con sus argumentos" />
+
+El modelo ve las herramientas del servidor y responde con las llamadas que haría. No se llama a nada. De cada llamada ves
+la herramienta y sus argumentos; los argumentos que no encajan con el esquema de la herramienta aparecen marcados, con lo
+que está mal. Así se delatan los nombres y las descripciones poco claros. Debajo, Echolot muestra los tokens usados y,
+para los modelos cuyo precio conoce, más o menos cuánto costó el turno.
+
+La tarjeta usa el modelo elegido en [Ajustes › Asistente](/docs/ai/assistant). Sin uno, dice que elijas allí un
+proveedor de modelos. La primera vez que pruebas, Echolot pregunta si puede enviar el prompt y las herramientas del
+servidor a ese proveedor; los modelos integrados en el dispositivo y los servidores de tu Mac no preguntan.
+
+## Desde la línea de comandos [#from-the-command-line]
+
+`echolot mcp check --quality` imprime el mismo informe en un terminal, y `--strict` hace que falle con el código de
+salida 1 cuando hay un problema, para que el CI de un servidor mantenga en forma su lista de herramientas.
+`--as anthropic`, `--as openai` o `--as gemini` imprime solo la lista tal como la recibe ese proveedor. Mira
+[echolot mcp](/docs/cli/mcp).
+
+```sh
+echolot mcp check --url https://demo.echolot.dev/mcp --quality
+```

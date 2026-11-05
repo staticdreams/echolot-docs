@@ -1,0 +1,556 @@
+---
+title: "工作区文件"
+description: "逐个文件、逐个键地说明工作区格式，可用于阅读差异、手写文件和生成文件。"
+---
+
+工作区是一个以 `.echolot` 结尾的文件夹，里面是纯文本的 TOML 文件：每个请求、环境、MCP 服务器、模拟服务器和流程各一个。访达把它显示为一个文档；在“终端”、Git 和你的编辑器中，它是一个普通文件夹。Echolot 每次都以相同的方式写入每个文件（键的顺序固定，取默认值的项不写入），因此 App 中的一处更改，在差异中也只是一处小改动。参见 [Git 和团队](/docs/workspaces/git-and-teams)。
+
+```text
+Alpenglow.echolot/
+  workspace.toml                     the workspace: ID, name, variables, auth, agents, proxy, certificates
+  environments/
+    staging.toml                     one environment
+  requests/
+    _folder.toml                     the order of the top level
+    _folder.pre.js                   the workspace's pre-request script (and _folder.test.js)
+    auth/
+      _folder.toml                   a folder: name, order, docs, variables, auth
+      sign-in.req.toml               an HTTP request
+      sign-in.body.json              its body
+      sign-in.pre.js                 its pre-request script
+      sign-in.test.js                its test script
+    catalog/
+      search-products.gql.toml       a GraphQL request
+      search-products.graphql        its query
+  mcp-servers/
+    alpenglow-mcp.toml               an MCP server
+  specs/
+    alpenglow.yaml                   an OpenAPI document
+    shop.graphql                     a GraphQL schema
+    inventory.proto                  a protobuf file
+  mocks/
+    shop.toml                        a mock server: settings and routes
+    shop.js                          its routes in JavaScript
+  flows/
+    place-test-order.flow.toml       a flow
+  assistant/
+    checking-orders.md               a shared Assistant conversation, to read
+    checking-orders.json             the same, to open in the app
+```
+
+## 所有文件的规则 [#rules-for-every-file]
+
+- 文件是 TOML 1.0，UTF-8 编码。
+- 每个文件都以 `echolot = 1` 开头，这是格式的版本号。版本号更高的文件是由更新的 Echolot 存储的，Echolot 会提示这一点，而不会打开它。
+- 文件名是 **slug**：小写字母、数字和连字符，最多 80 个字符，由项目的名称生成（`Sign in` 对应 `sign-in`）。名称本身存放在 `name` 键中。
+- 项目之间的路径是以 `/` 连接的 slug，相对于 `requests/`：`auth/sign-in`、`orders`。
+- 文本字段可以包含 `{{variables}}` 和[动态值](/docs/reference/dynamic-values)。
+- 事物的列表是 TOML 的表数组（`[[headers]]`）。带有 `enabled = false` 的内容会保留但处于关闭状态；没有该键则表示开启。
+
+## 绝不会写入文件的内容 [#what-never-goes-in-the-files]
+
+- <strong>机密值。</strong>机密变量只写入名称和 `secret = true`，不含值；值存放在你 Mac 的钥匙串中。需要机密的字段（密码、代理密码、客户端机密）应写成一个属于机密的 `{{variable}}`。Echolot 会提示把你输入的密码移到钥匙串中，导入时则自动这样处理。参见[机密](/docs/workspaces/secrets)。
+- OAuth 令牌和 MCP 登录信息：在钥匙串中。
+- 脚本用 `pm.environment.set` 等设置的值：它们只在窗口或命令的存续期间有效。
+- 历史记录和响应：存放在你 Mac 的 Application Support 中，每个工作区一份历史记录。参见[历史记录](/docs/workspaces/history)。
+- 你自己的布局：窗格布局及其大小、打开的标签页、你选择的环境。
+
+因此工作区可以放心地提交和共享。同事需要设置他们自己的机密值。
+
+## workspace.toml [#workspacetoml]
+
+```toml
+# Echolot workspace. Requests live in requests/, one file each.
+echolot = 1
+id = "0b7d4c1e-2f6a-4e38-9c51-7a1e3d9b5f20"
+name = "Alpenglow"
+
+[[variables]]
+name = "baseURL"
+value = "https://demo.echolot.dev/v1"
+
+[[variables]]
+name = "token"
+secret = true
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `id` | 工作区的 ID。钥匙串中的机密属于它，因此 ID 相同的副本会共享这些机密。导出的副本会得到新的 ID。 |
+| `name` | 工作区的名称。 |
+| `[[variables]]` | 工作区变量。参见[变量](#variables)。 |
+| `[auth]` | 对所有继承它的请求生效的认证。参见[认证](#auth)。默认：无。 |
+| `[agents]` | AI 智能体的规则。参见[智能体](#agents)。 |
+| `[proxy]` | 工作区自己的代理，取代 App 的代理。 |
+| `[[certificates]]` | 要信任的 CA 证书和要发送的客户端证书，按主机设置。 |
+
+### 代理 [#proxy]
+
+| 键 | 含义 |
+| --- | --- |
+| `mode` | `manual`（默认）、`system`、`environment`（`HTTPS_PROXY` 一类的变量）或 `none`。 |
+| `url` | 代理：`http://host:port`、`https://…` 或 `socks5://host:port`。 |
+| `username`、`password` | 代理的凭据。请把密码写成属于机密的 `{{variable}}`。 |
+| `bypass` | 直接访问的主机，是一个数组。 |
+
+### 证书 [#certificates]
+
+每个 `[[certificates]]` 表是针对一个主机的规则：
+
+| 键 | 含义 |
+| --- | --- |
+| `host` | 规则所针对的主机。 |
+| `trust` | 要信任的 CA 证书的 PEM 文件，是一个数组。 |
+| `certificate` | 客户端证书：一个 PEM 文件，或一个 `.p12`/`.pfx` 文件。 |
+| `key` | 客户端证书的 PEM 密钥，用于证书文件中不含密钥的情况。 |
+| `passphrase` | 密钥或 PKCS#12 文件的口令。请把它写成属于机密的 `{{variable}}`。 |
+
+### 智能体 [#agents]
+
+`[agents]` 设置 AI 智能体通过 Echolot 的 MCP 服务器和助手在此工作区中可以做什么。参见[智能体](/docs/ai/agents)。
+
+```toml
+[agents]
+allowed-hosts = ["demo.echolot.dev"]
+max-requests = 200
+max-requests-per-minute = 30
+
+[agents.rules]
+unsafe-send = "ask"
+destructive = "refuse"
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `enabled` | `false` 会为该工作区关闭智能体：它们从中什么也得不到。默认为 `true`。 |
+| `allowed-hosts` | 除其请求所用的主机外，也算作工作区自己的主机。 |
+| `max-requests` | 一次智能体会话总共可以发送的请求数。 |
+| `max-requests-per-minute` | 一次智能体会话每分钟可以发送的请求数。 |
+| `[agents.rules]` | 每类操作一条规则：`allow`、`ask` 或 `refuse`。 |
+
+操作的类别有 `read`、`safe-send`、`unsafe-send`、`protected-send`、`new-host`、`workspace-write` 和 `destructive`。更严格的规则始终有效。较宽松的规则只有在你信任之后才生效（App 会询问；命令行需要 `--trust-workspace-policy`）。`protected-send` 和 `new-host` 永远不能设为 `allow`。
+
+## environments/ [#environments]
+
+每个环境一个文件；文件名就是它的 slug，供 `--env` 使用。
+
+```toml
+echolot = 1
+name = "Production"
+protected = true
+
+[[variables]]
+name = "baseURL"
+value = "https://api.alpenglow.example/v1"
+
+[[variables]]
+name = "password"
+secret = true
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `name` | 环境的名称。 |
+| `protected` | `true` 使其成为[受保护的环境](/docs/workspaces/protected-environments)：每次发送都会先询问。 |
+| `[[variables]]` | 它的变量。 |
+
+### 变量 [#variables]
+
+在 `workspace.toml`、环境、文件夹和请求中都相同：
+
+| 键 | 含义 |
+| --- | --- |
+| `name` | 变量的名称，以 `{{name}}` 的形式使用。 |
+| `value` | 它的值。机密变量省略此项。 |
+| `secret` | `true` 表示机密：值在钥匙串中。 |
+| `enabled` | `false` 将其关闭。 |
+
+## requests/ [#requests]
+
+`requests` 文件夹保存你在边栏中看到的树。其中每个文件夹是树中的一个文件夹，每个请求文件是一个请求。请求的种类由文件的后缀决定：
+
+| 后缀 | 种类 |
+| --- | --- |
+| `.req.toml` | HTTP，包括 Server-Sent Events |
+| `.gql.toml` | GraphQL |
+| `.grpc.toml` | gRPC |
+| `.ws.toml` | WebSocket |
+| `.sio.toml` | Socket.IO |
+| `.mqtt.toml` | MQTT |
+| `.mcp.toml` | 对 MCP 服务器的调用 |
+
+与请求并列、使用相同 slug 的文件：
+
+| 文件 | 内容 |
+| --- | --- |
+| `<slug>.body.<ext>` | 请求正文，采用其自身的格式：`.json`、`.xml`、`.txt`、`.html`、`.graphql` 或 `.form.txt`。 |
+| `<slug>.graphql` | GraphQL 请求的查询。 |
+| `<slug>.pre.js` | 请求前脚本。 |
+| `<slug>.test.js` | 测试脚本。 |
+
+### _folder.toml [#foldertoml]
+
+每个文件夹都有一个，`requests/` 本身也有一个，用于顶层。
+
+```toml
+echolot = 1
+name = "Auth"
+order = ["sign-in", "who-am-i", "client-credentials"]
+docs = "Send \"Sign in\" first: it captures the access token into {{token}}."
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `name` | 文件夹的名称。`requests/_folder.toml` 中没有此项。 |
+| `order` | 文件夹中各项的 slug，按边栏和运行使用的顺序排列。未列出的内容排在后面，按 slug 排序。 |
+| `docs` | 文件夹的文档，使用 Markdown。 |
+| `spec` | 文件夹所遵循的规范，例如 `specs/alpenglow.yaml`。 |
+| `spec-url` | 该规范从哪里获取，用于它来自某个 URL 的情况。 |
+| `agent-tools` | `true` 会把文件夹中的请求作为工具提供给智能体。 |
+| `[[variables]]` | 文件夹的变量，对其中的一切生效。 |
+| `[auth]` | 文件夹的认证，对其中所有继承它的内容生效。默认：继承。 |
+
+与它并列的 `_folder.pre.js` 和 `_folder.test.js` 是文件夹的脚本；在 `requests/` 中则是工作区的脚本。它们会对其中的每个请求运行，从工作区的开始，直到请求自己的脚本。遵循某个规范的文件夹还有 `_spec-lock.json`，记录它上次从规范中取走的内容；请让 Echolot 来维护它。
+
+### 所有请求的键 [#keys-of-every-request]
+
+```toml
+echolot = 1
+name = "Sign in"
+method = "POST"
+url = "{{baseURL}}/auth/token"
+
+[body]
+syntax = "json"
+file = "sign-in.body.json"
+
+[[headers]]
+name = "Content-Type"
+value = "application/json"
+
+[[assertions]]
+target = "status"
+check = "equals"
+expected = "200"
+
+[[captures]]
+variable = "token"
+from = "json"
+path = "$.access_token"
+scope = "workspace"
+secret = true
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `name` | 请求的名称。 |
+| `url` | URL，含查询字符串。除 MCP 调用外，每种请求都有。 |
+| `docs` | 请求的文档，使用 Markdown。 |
+| `spec-operation` | 它所依据的规范操作，例如 `POST /auth/token`。 |
+| `[[headers]]` | `name`、`value`，以及对已关闭的标头设置 `enabled = false`。 |
+| `[[disabled-params]]` | 已关闭的查询参数：`name`、`value`。开启的参数在 URL 中。 |
+| `[[disabled-form-fields]]` | 已关闭的表单字段：`name`、`value`。 |
+| `[[variables]]` | 请求自己的变量。 |
+| `[[assertions]]` | 它的检查。 |
+| `[[captures]]` | 每次响应之后存入变量的值。 |
+| `[auth]` | 它的认证。默认：继承所在文件夹的认证。 |
+| `[settings]` | 与 App 不同的设置。 |
+
+### HTTP 请求（.req.toml） [#http-requests-reqtoml]
+
+| 键 | 含义 |
+| --- | --- |
+| `method` | 方法：`GET`、`POST` 或任意标记。默认为 `GET`。 |
+| `[body]` | 正文；省略则没有正文。 |
+
+`[body]` 表有三种形式之一：
+
+| 形式 | 键 |
+| --- | --- |
+| 文本 | `syntax`：`json`、`xml`、`text`、`html`、`graphql` 或 `form`（URL 编码的表单字段）。`file`：与请求并列的正文文件。 |
+| 从磁盘流式传输的文件 | `stream-from`：文件的路径。 |
+| Multipart | `syntax = "multipart"`，每个部分一个 `[[body.parts]]` 表：`name`，然后是 `value`（文本）或 `file`（路径）、`content-type`、`enabled`。 |
+
+### GraphQL 请求（.gql.toml） [#graphql-requests-gqltoml]
+
+```toml
+echolot = 1
+name = "Search products"
+url = "{{baseURL}}/graphql"
+operation = "SearchProducts"
+schema = "specs/shop.graphql"
+query-file = "search-products.graphql"
+graphql-variables = """
+{
+  "text": "ultralight"
+}"""
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `query-file` | 与请求并列、保存查询的文件，`<slug>.graphql`。 |
+| `operation` | 查询包含多个操作时，要运行的操作。 |
+| `graphql-variables` | GraphQL 变量，作为 JSON 文本。较旧的文件称之为 `variables`。 |
+| `schema` | 用来检查和补全的 Schema：`specs/` 中的一个文件。 |
+| `transport` | `post`（默认）、`get`，或用于订阅的 `websocket`。 |
+| `persisted-queries` | `true` 会先只发送查询的 SHA-256，服务器不认识时再发送查询（自动持久化查询）。 |
+| `batch` | `true` 会把包含多个操作的文档作为一个数组发送，每个操作一项。 |
+| `[[uploads]]` | 文件上传：`variable`（文件所对应的变量）和 `path`。 |
+
+### gRPC 请求（.grpc.toml） [#grpc-requests-grpctoml]
+
+| 键 | 含义 |
+| --- | --- |
+| `proto` | 描述服务的 `.proto` 文件，例如 `specs/inventory.proto`。 |
+| `reflection` | `true` 表示改为询问服务器的反射。 |
+| `service` | 服务，例如 `alpenglow.inventory.v1.Inventory`。 |
+| `rpc` | 方法，例如 `Reserve`。 |
+| `message` | 消息，作为 JSON 文本；客户端流式方法则为消息数组。 |
+| `deadline-ms` | 截止时间，以毫秒计。 |
+| `compression` | 所发送消息的压缩方式：`gzip` 或 `deflate`。 |
+
+### WebSocket 请求（.ws.toml） [#websocket-requests-wstoml]
+
+| 键 | 含义 |
+| --- | --- |
+| `subprotocols` | 要提供的子协议，是一个数组。 |
+| `[[messages]]` | 已存储的消息：`name`、`text`、`enabled`。 |
+
+### Socket.IO 请求（.sio.toml） [#socketio-requests-siotoml]
+
+| 键 | 含义 |
+| --- | --- |
+| `version` | 服务器的 Socket.IO 版本：`4`（默认）、`3` 或 `2`。 |
+| `path` | 服务器监听的位置。默认为 `/socket.io/`。 |
+| `namespace` | 要加入的命名空间，例如 `/support`。 |
+| `socket-auth` | 认证载荷，作为 JSON 文本。 |
+| `[[emits]]` | 已存储的事件：`name`、`event`、`arguments`（JSON 文本）、`ack = true` 表示要求确认，以及 `enabled`。 |
+
+### MQTT 请求（.mqtt.toml） [#mqtt-requests-mqtttoml]
+
+| 键 | 含义 |
+| --- | --- |
+| `version` | `5`（默认）或 `3.1.1`。 |
+| `client-id` | 客户端 ID；为空时随机生成。 |
+| `clean-start` | `false` 要求 Broker 保留会话。默认为 `true`。 |
+| `keep-alive` | 两次 ping 之间的秒数。默认为 60。 |
+| `[will]` | 遗嘱消息：`topic`、`payload`、`qos`、`retain`。 |
+| `[[subscriptions]]` | `filter`、`qos`（默认 0）、`no-local`、`enabled`。 |
+| `[[messages]]` | 要发布的已存储消息：`name`、`topic`、`payload`、`qos`、`retain`、`content-type`、`enabled`。 |
+
+用户名和密码是请求的 Basic 认证。
+
+### MCP 调用（.mcp.toml） [#mcp-calls-mcptoml]
+
+```toml
+echolot = 1
+name = "search_catalog"
+server = "alpenglow-mcp"
+tool = "search_catalog"
+arguments = """
+{
+  "query": "ultralight tent",
+  "limit": 3
+}"""
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `server` | 服务器在 `mcp-servers/` 中的 slug。 |
+| `tool`、`resource`、`prompt` 或 `method` | 要调用什么：按名称调用工具、按 URI 调用资源、按名称调用提示词，或原始的 JSON-RPC 方法。只能选其一。 |
+| `arguments` | 参数，作为 JSON 文本。 |
+
+### 断言 [#assertions]
+
+| 键 | 含义 |
+| --- | --- |
+| `target` | 检查的对象：`status`、`header`、`json`、`body`、`time`（毫秒）、`size`（字节）、`schema`（JSON Schema）、`graphql-errors`、`mcp-error`、`mcp-output-schema`、`openapi`、`grpc-status`。 |
+| `name` | 对 `header`：标头的名称。 |
+| `path` | 对 `json`：一个 JSONPath，例如 `$.items.length`。 |
+| `check` | `equals`、`not-equals`、`contains`、`not-contains`、`less-than`、`at-most`、`greater-than`、`at-least`、`exists`、`not-exists`、`matches`（正则表达式）、`is-type`、`is-one-of`、`matches-schema`。 |
+| `expected` | 用来比较的值；不需要值的检查不写入。 |
+| `enabled` | `false` 将其关闭。 |
+
+每个对象可用哪些检查，参见[脚本和测试](/docs/requests/scripts-and-tests)。
+
+### 捕获 [#captures]
+
+| 键 | 含义 |
+| --- | --- |
+| `variable` | 用来存放值的变量。 |
+| `from` | `json`、`form`、`msgpack`、`xml`、`header`、`cookie`、`status` 或 `body`。 |
+| `path` | 值所在的位置：JSONPath、XPath、标头或 Cookie 的名称。`status` 和 `body` 不需要。 |
+| `scope` | `environment`（默认：当前环境）或 `workspace`。 |
+| `secret` | `true` 会把值作为机密存放在钥匙串中。 |
+| `enabled` | `false` 将其关闭。 |
+
+状态码为 400 或更大的响应，或不存在的值，都会让变量保持原样。参见[捕获](/docs/requests/captures)。
+
+### 设置 [#settings]
+
+| 键 | 含义 |
+| --- | --- |
+| `timeout` | 整个交换的秒数。 |
+| `raw` | `true` 表示不发送自动添加的标头。 |
+| `verify-tls` | `false` 跳过证书验证。 |
+| `follow-redirects` | `false` 在重定向处停止。 |
+| `max-redirects` | 最多跟随多少次重定向。 |
+| `decompress` | `false` 让正文保持服务器编码后的样子。 |
+| `cookies` | `false` 表示既不发送也不存储 Cookie。 |
+| `http-version` | `automatic`、`http1`、`http2` 或 `http3`。 |
+| `stream-limit` | 监听事件流或会话的秒数。 |
+
+参见[请求设置](/docs/requests/settings)。
+
+### 认证 [#auth]
+
+`[auth]` 有一个 `type`，以及该类型的键。没有 `[auth]` 的请求或文件夹会继承；工作区的默认值是不认证。
+
+| `type` | 键 |
+| --- | --- |
+| `inherit` | 无：采用文件夹的认证。 |
+| `none` | 无：不认证，即使文件夹有认证。 |
+| `basic`、`digest` | `username`、`password` |
+| `bearer` | `token`；不是 `Bearer` 时用 `prefix` |
+| `api-key` | `name`、`value`、`in`（`header` 或 `query`） |
+| `oauth2` | `grant`（`authorization-code`、`client-credentials`、`device-code`）、`authorization-url`、`token-url`、`device-authorization-url`、`client-id`、`client-secret`、`scope`、`audience`、`redirect-uri`；`pkce = false` 关闭 PKCE；`client-authentication = "body"` 把客户端凭据放在正文中发送，而不是使用 Basic；不是 `Bearer` 时用 `header-prefix` |
+| `aws-signature` | `access-key-id`、`secret-access-key`、`session-token`、`region`、`service` |
+| `jwt` | `algorithm`（`HS256`、`HS384`、`HS512`、`RS256`、`RS384`、`RS512`、`PS256`、`PS384`、`PS512`、`ES256`、`ES384`）、`secret`、`secret-base64`、`payload`、`header`、`issued-at = false` 省略 `iat`、`expires-in`（秒，默认 300）、`in`（`header` 或 `query`）、`prefix`、`query-name`（默认 `token`） |
+| `hawk` | `id`、`key`、`algorithm`（`sha256` 或 `sha1`）、`ext`、`payload-hash` |
+| `edgegrid` | `client-token`、`client-secret`、`access-token`、`max-body`（默认 131072）、`headers-to-sign` |
+| `ntlm` | `username`、`password`、`domain`、`workstation` |
+
+请把每个密码、令牌和密钥都写成属于机密的 `{{variable}}`。参见[认证](/docs/requests/auth)。
+
+## mcp-servers/ [#mcp-servers]
+
+每个 MCP 服务器一个文件；文件名就是 MCP 调用所引用的 slug。
+
+```toml
+echolot = 1
+name = "Alpenglow MCP"
+transport = "http"
+url = "https://demo.echolot.dev/mcp"
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `name` | 服务器的名称。 |
+| `transport` | `http`（Streamable HTTP）或 `stdio`（由 Echolot 启动的程序）。 |
+| `url` | 对 `http`：端点。 |
+| `[[headers]]` | 对 `http`：`name`、`value`、`enabled`。 |
+| `command` | 对 `stdio`：要启动的程序。 |
+| `arguments` | 对 `stdio`：它的参数，是一个数组。 |
+| `working-directory` | 对 `stdio`：它启动时所在的文件夹。 |
+| `[[environment]]` | 对 `stdio`：环境变量，`name`、`value`、`enabled`。 |
+| `[oauth]` | 用 OAuth 登录的服务器的客户端设置：`client-id`、`client-secret`、`scope`、`redirect-uri`。 |
+
+参见[添加服务器](/docs/mcp-servers/adding-servers)。
+
+## specs/ [#specs]
+
+规范文件保持原样：OpenAPI 文档（`.yaml`、`.yml`、`.json`）、GraphQL Schema（`.graphql` SDL，或 JSON 格式的内省结果）和 protobuf 文件（`.proto`）。Echolot 就地编辑它们并保留你的格式。请求和模拟服务器通过路径引用它们，例如 `specs/alpenglow.yaml`。参见[规范](/docs/specs)。
+
+## mocks/ [#mocks]
+
+每个模拟服务器一个文件，其 JavaScript 路由与它并列。
+
+```toml
+echolot = 1
+name = "Shop"
+spec = "specs/alpenglow.yaml"
+port = 4010
+delay = 200
+
+[[scenarios]]
+operation = "GET /products/{sku}"
+status = "404"
+
+[[routes]]
+id = "e5f6a7b8"
+method = "GET"
+path = "/users/{id}"
+summary = "One user"
+
+[[routes.responses]]
+name = "OK"
+status = 200
+content-type = "application/json"
+headers = [{ name = "X-Request-Id", value = "{{$randomUUID}}" }]
+body = """
+{
+  "id": "{{request.params.id}}",
+  "name": "{{$randomFullName}}"
+}"""
+
+[[routes.responses]]
+name = "Not found"
+status = 404
+content-type = "application/json"
+rules = [{ source = "path", name = "id", value = "0" }]
+body = """{ "error": "no user {{request.params.id}}" }"""
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `name` | 模拟服务器的名称。 |
+| `spec` | 它提供服务的规范。没有它，则只有模拟服务器的路由会应答。 |
+| `port` | 端口。默认为 4010。 |
+| `share-on-network` | `true` 会在每个网络接口上应答，而不只是这台 Mac。 |
+| `delay` | 每次应答前的毫秒数。 |
+| `failure-rate` | 被注入 500 应答的请求所占的百分比，0 到 100。 |
+| `validate-requests` | `false` 会应答违反规范的请求。默认为 `true`。 |
+| `[[scenarios]]` | 为规范的某个操作选定的应答：`operation`（例如 `GET /pets`）、`status`、`example`（示例的名称）。 |
+| `[[routes]]` | 手动创建的路由：`id`（路由更改时保持不变）、`method`（或 `ANY`）、`path`（参数写作 `{id}`）、`summary`、对已关闭的路由设置 `enabled = false`、`response`（默认响应的名称；省略则为第一个）、`request-content-type` 和 `request-body`（根据它创建的请求所发送的内容）。 |
+| `[[routes.responses]]` | 上述路由的一个应答：`name`、`status`、`content-type`、`headers`（`name` 和 `value`）、`rules`（`source` 为 `path`、`query`、`header` 或 `body`；`name`；`value`，`*` 表示任意值，空表示没有）和 `body`。 |
+
+`mocks/<slug>.js` 保存模拟服务器的 JavaScript 路由，它们先于手动创建的路由和规范应答。对于规范的操作，响应从不存放在模拟服务器中：示例要放进规范。参见[模拟服务器](/docs/mocks)、[路由和示例数据](/docs/mocks/routes)和 [JavaScript 路由](/docs/mocks/scripted-routes)。
+
+## flows/ [#flows]
+
+每个流程一个文件，`<slug>.flow.toml`。Echolot 以固定的顺序写入块、连线和备注，因此移动一个块只会改动两行。
+
+```toml
+echolot = 1
+name = "Place a test order"
+description = "Places an order, then asks a person whether to keep it."
+
+[mcp]
+tool = "place_test_order"
+description = "Places a test order on the demo shop, asking a person before keeping it."
+
+[[blocks]]
+id = "signin"
+kind = "request"
+title = "Sign in"
+position = [330, 250]
+
+[blocks.settings]
+request = "auth/sign-in"
+
+[[wires]]
+from = "start.run"
+to = "signin.run"
+```
+
+| 键 | 含义 |
+| --- | --- |
+| `name`、`description` | 流程的名称和它的作用。 |
+| `[mcp]` | 把流程作为工具提供给智能体：`tool`（它的名称）和 `description`。 |
+| `[schedule]` | 按计划运行：`every-minutes`，或 `cron`（例如 `"0 6 * * *"`）。 |
+| `[webhook]` | 在请求到达时运行：`method`（默认 `POST`）和 `path`。 |
+| `[[inputs]]` | 它的输入：`name`、`type`（`any`、`text`、`number`、`bool`、`object`、`list`、`secret`）、`description`、`default`、`required`。 |
+| `[[blocks]]` | 它的块：`id`、`kind`、`title`、`position`（画布上的 `[x, y]`）、`paused`、`color`，以及带有该种类设置的 `[blocks.settings]`。 |
+| `[[wires]]` | 连线：`from` 和 `to`，各为 `block.port`。 |
+| `[[groups]]` | 块的分组：`title`、`blocks`（它们的 ID）、`color`。 |
+| `[[notes]]` | 画布上的备注：`text`、`frame`（`[x, y, width, height]`）。 |
+
+块的种类及其设置见[块](/docs/flows/blocks)。
+
+## assistant/ [#assistant]
+
+你在工作区中共享的与[助手](/docs/ai/assistant)的对话：`<slug>.md` 供在任何编辑器中阅读，`<slug>.json` 供 Echolot 再次打开。
+
+## 其他文件 [#other-files]
+
+Echolot 不认识的文件会被保持不动，因此 README、`.gitignore` 或数据文件可以放在工作区中。智能体或流程保存的数据（例如 `exports/products.csv`）会放在要求它放的位置，位于工作区之内。

@@ -1,0 +1,154 @@
+---
+title: "Carpetas"
+description: "Organiza las solicitudes en carpetas, muévelas y reordénalas, actúa sobre varias a la vez y define la autenticación, las variables y los scripts que heredan todas las solicitudes de dentro."
+---
+
+Las carpetas agrupan las solicitudes en el árbol de solicitudes de la barra lateral, y llevan ajustes: la
+autenticación, las variables y los scripts que defines en una carpeta se aplican a todas las solicitudes de dentro. En
+el disco, una carpeta es un directorio dentro de `requests/` con un `_folder.toml`.
+
+## Crea una carpeta [#create-a-folder]
+
+- **Archivo › Nueva carpeta** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>), mientras la barra lateral muestra
+  **Solicitudes**.
+- El **+** junto a **Solicitudes** en la barra lateral y luego **Nueva carpeta**.
+- Haz Control-clic en una carpeta y elige **Nueva carpeta** para crear una dentro de ella, o haz Control-clic en un
+  espacio vacío del árbol para crear una en el nivel superior.
+
+El nombre de la carpeta nueva queda listo para editarse. Escribe un nombre y pulsa <kbd>↩</kbd>.
+
+**Nueva solicitud** en el menú contextual de una carpeta pone la solicitud dentro de ella. **Archivo › Nueva solicitud**
+(<kbd>⌘</kbd><kbd>N</kbd>) y los demás comandos **Nueva solicitud …** la ponen donde estás en el árbol.
+
+## Renombra, duplica y reordena [#rename-duplicate-and-reorder]
+
+Haz Control-clic en una solicitud o carpeta para ver su menú:
+
+| Comando | Qué hace |
+| --- | --- |
+| **Ejecutar solicitud** / **Ejecutar carpeta** | La ejecuta en la página [Ejecución](/docs/requests/runner), con sus comprobaciones. |
+| **Renombrar** | Edita el nombre en el sitio. <kbd>↩</kbd> sobre una fila seleccionada hace lo mismo; <kbd>Esc</kbd> lo deja. |
+| **Duplicar** | Copia una solicitud (<kbd>⌘</kbd><kbd>D</kbd>). |
+| **Subir**, **Bajar** | Mueve el elemento un lugar dentro de su carpeta. |
+| **Mostrar en el Finder** | Muestra el archivo o la carpeta del elemento. |
+| **Trasladar a la papelera…** | Pregunta y luego lo traslada a la papelera. |
+
+Las carpetas también tienen **Nueva solicitud**, **Nueva carpeta**, **Ajustes de la carpeta…**,
+**Vincular a una especificación OpenAPI…** (o **Buscar cambios en la especificación OpenAPI…** una vez vinculada;
+consulta las [especificaciones](/docs/specs)), **Documentar en la especificación OpenAPI…** (consulta las
+[especificaciones a partir del tráfico](/docs/specs/specs-from-traffic)) y **Exportar carpeta…** (consulta
+[exportar](/docs/workspaces/exporting)).
+
+El orden que das a los elementos se guarda en el `_folder.toml` de la carpeta, así que es el mismo para todo el que abre
+el espacio de trabajo.
+
+## Mueve elementos con el teclado y el ratón [#move-items-with-the-keyboard-and-the-mouse]
+
+En el árbol de solicitudes, <kbd>↑</kbd> y <kbd>↓</kbd> mueven la selección, <kbd>→</kbd> abre una carpeta y
+<kbd>←</kbd> la cierra o va a la carpeta de arriba.
+
+Arrastra solicitudes y carpetas para moverlas:
+
+- Se abre un hueco donde caerá el elemento, y las filas de debajo le hacen sitio.
+- Debajo de una carpeta abierta, mueve el puntero a izquierda o derecha para elegir la profundidad: dentro de la carpeta
+  o después de ella.
+- Detente un momento sobre una carpeta cerrada y se abre, para que puedas soltar entre sus elementos. Las carpetas
+  abiertas así se vuelven a cerrar cuando el arrastre termina en otro sitio.
+- Al arrastrar uno de varios elementos seleccionados, se mueven todos.
+
+Suelta archivos del Finder sobre el árbol para [importarlos](/docs/get-started/importing) en esa carpeta: Postman,
+Insomnia, OpenAPI, HAR y los demás formatos que lee Echolot. Pega o suelta un comando cURL para crear una solicitud a
+partir de él.
+
+## Selecciona varios elementos [#select-several-items]
+
+<kbd>⌘</kbd>-clic añade o quita un elemento. <kbd>⇧</kbd>-clic selecciona todo lo que hay entre el último elemento y
+este. Haz Control-clic en cualquiera de los elementos seleccionados para ver lo que puedes hacer con todos ellos:
+
+| Comando | Qué hace |
+| --- | --- |
+| **Ejecutar N elementos** | Los ejecuta en la página Ejecución. |
+| **Editar N solicitudes…** | Cambia las cabeceras, los parámetros y la autenticación de todas las solicitudes seleccionadas a la vez. |
+| **Nueva carpeta con N elementos** | Crea una carpeta y mueve los elementos a ella. |
+| **Trasladar N elementos a** | Los traslada a **Espacio de trabajo (nivel superior)** o a cualquier carpeta. |
+| **Trasladar N elementos a la papelera…** | Pregunta y luego los traslada todos a la papelera. |
+
+Cuando se seleccionan una carpeta y elementos de dentro, los comandos actúan sobre la carpeta.
+
+<Shot id="workspaces-multi-select-menu" alt="Dos solicitudes seleccionadas en la carpeta Orders, con su menú contextual: Ejecutar 2 elementos, Editar 2 solicitudes, Nueva carpeta con 2 elementos, Trasladar 2 elementos a y Trasladar 2 elementos a la papelera" />
+
+## Edita varias solicitudes a la vez [#edit-several-requests-at-once]
+
+**Editar N solicitudes…** abre una hoja con tres pestañas: **Cabeceras**, **Parámetros** y **Autenticación**. Cada cambio
+que haces ahí va a cada solicitud seleccionada cuando haces clic en **Aplicar a N solicitudes**.
+
+- **Cabeceras** y **Parámetros** enumeran todas las cabeceras o parámetros que tiene alguna de las solicitudes. Un valor
+  en el que las solicitudes no coinciden se muestra como mixto y se queda como está en cada una, salvo que escribas uno
+  nuevo. Una fila que les falta a algunas solicitudes dice cuántas la tienen, con **Añadir a todas** para dársela a
+  todas las solicitudes. Quita una fila para eliminarla de todas las solicitudes.
+- **Autenticación** ofrece **Conservar la de cada solicitud**, **Heredar de la carpeta**, **Sin autenticación**, o la
+  misma autenticación que una de las solicitudes seleccionadas (**Igual que “List orders” (Bearer Token)**). Para darles
+  a todas credenciales nuevas, define las credenciales en su carpeta y elige **Heredar de la carpeta**.
+
+Todo el cambio es un solo paso: **Editar › Deshacer** lo revierte en todas las solicitudes.
+
+<Shot id="workspaces-bulk-edit" alt="La hoja Editar 3 solicitudes en su pestaña Cabeceras, con una cabecera presente en las tres y otra en algunas" />
+
+## Ajustes de la carpeta [#folder-settings]
+
+Haz Control-clic en una carpeta y elige **Ajustes de la carpeta…**. La hoja tiene estas pestañas:
+
+| Pestaña | Qué define |
+| --- | --- |
+| **Autenticación** | La autenticación de todas las solicitudes de dentro que no definen la suya. **Heredar** (el valor predeterminado) pasa hacia abajo la autenticación de la carpeta de arriba, o la del espacio de trabajo. |
+| **Variables** | Variables para todas las solicitudes de esta carpeta. Prevalecen sobre las del espacio de trabajo y las del entorno. |
+| **Scripts** | Un script previo a la solicitud y uno de pruebas que se ejecutan alrededor de cada solicitud de esta carpeta. |
+| **Documentación** | Notas sobre la carpeta, guardadas en su `_folder.toml`. También **Ofrecer estas solicitudes a los agentes como herramientas**: consulta los [agentes](/docs/ai/agents). |
+
+Haz clic en **OK** para guardar. Cerrar la hoja de otra manera, o cerrar la ventana, también conserva tus ediciones.
+
+<Shot id="workspaces-folder-settings" alt="Los ajustes de la carpeta Orders en la pestaña Autenticación: autenticación Bearer Token con el token {{token}}" />
+
+En Alpenglow, la carpeta **Orders** define autenticación Bearer con `{{token}}`, así que cada solicitud de dentro envía
+el token que captura **Auth › Sign in**. Una solicitud que define su propia autenticación usa esa en su lugar.
+
+## Ajustes del espacio de trabajo [#workspace-settings]
+
+Los ajustes del espacio de trabajo son lo más alto de la cadena: lo que hereda cada solicitud del espacio de trabajo.
+Ábrelos con **Ajustes del espacio de trabajo…** en el selector de espacio de trabajo, o con Control-clic en un espacio
+vacío del árbol de solicitudes.
+
+| Pestaña | Qué define |
+| --- | --- |
+| **Autenticación** | La autenticación predeterminada de todas las solicitudes. |
+| **Variables** | Variables del espacio de trabajo, los valores predeterminados que prevalecen sobre los entornos, las carpetas y las solicitudes. La misma lista que **Espacio de trabajo** en la página [Entornos](/docs/workspaces/environments). |
+| **Scripts** | Scripts que se ejecutan alrededor de todas las solicitudes. |
+| **Agentes** | Las reglas para los agentes de IA en este espacio de trabajo. Consulta los [agentes](/docs/ai/agents). |
+| **Proxy** | **Usar el ajuste de proxy de la app**, o un proxy para este espacio de trabajo que viaja con él hasta tus compañeros y la herramienta de línea de comandos. Consulta los [ajustes de la solicitud](/docs/requests/settings). |
+| **Certificados** | Certificados de CA en los que confiar y certificados de cliente que presentar, por host. Consulta los [ajustes de la solicitud](/docs/requests/settings). |
+
+## Cómo heredan las solicitudes [#how-requests-inherit]
+
+Para la autenticación, una solicitud usa la primera de estas que define algo: la propia solicitud, su carpeta, las
+carpetas que tiene encima desde la más cercana hacia fuera, y después el espacio de trabajo.
+
+Las variables, en cambio, se suman: la solicitud ve las variables de todos los niveles, y cuando dos niveles definen el
+mismo nombre, gana el más cercano. El orden está en [entornos](/docs/workspaces/environments#which-value-wins).
+
+Los scripts se ejecutan en orden alrededor de una solicitud: primero los del espacio de trabajo, luego los de cada
+carpeta de fuera hacia dentro y después los de la propia solicitud. Consulta [scripts y
+pruebas](/docs/requests/scripts-and-tests).
+
+Las cabeceras no se heredan de las carpetas; define las cabeceras compartidas con **Editar N solicitudes…** o en un
+script previo a la solicitud.
+
+## Mover una solicitud cambia lo que hereda [#moving-a-request-changes-what-it-inherits]
+
+Una solicitud toma la autenticación, las variables y los scripts de la carpeta en la que está. Si la mueves a otra
+carpeta, toma los de esa. Revisa su pestaña **Autenticación** después de moverla si dependía de la autenticación de su
+carpeta anterior.
+
+## Eliminar carpetas [#deleting-folders]
+
+**Trasladar a la papelera…** en una carpeta pregunta antes y dice cuántas solicitudes contiene. La carpeta, sus ajustes
+y todas las solicitudes de dentro van a la papelera del Finder. **Editar › Deshacer** las recupera.

@@ -1,0 +1,66 @@
+---
+title: "echolot validate"
+description: "Vérifiez un espace de travail avant une exécution : chaque fichier se lit, et chaque requête se résout avec l’environnement choisi."
+---
+
+`echolot validate` lit chaque fichier d’un espace de travail et résout chaque requête, sans rien envoyer. Lancez-le en
+premier en CI, ou avant de valider un commit, pour repérer un fichier cassé, une variable manquante dans un
+environnement, ou une requête GraphQL qui ne correspond plus à son schéma.
+
+```sh
+echolot validate [<workspace>] [--env <env>]
+```
+
+`<workspace>` est le dossier de l’espace de travail ; le dossier courant si vous l’omettez.
+
+## Vérifier un espace de travail [#check-a-workspace]
+
+```sh
+echolot validate Alpenglow.echolot
+```
+
+```text
+auth/who-am-i: note: {{token}} is captured from a response during the run
+auth/client-credentials: note: the OAuth 2.0 token comes from the token URL (client credentials) when the request is sent
+orders/list-orders: note: {{token}} is captured from a response during the run
+orders/create-order: note: {{token}} is captured from a response during the run
+orders/get-order: note: {{token}} is captured from a response during the run
+orders/cancel-order: note: {{token}} is captured from a response during the run
+29 requests, 3 environments: no problems
+```
+
+Chaque problème tient en une ligne sur la sortie d’erreur, qui commence par le chemin de la requête. Ce qu’une
+exécution produit au fil de l’eau (jetons des identifiants client OAuth, variables capturées, réponses d’autres
+requêtes) ne peut pas être connu à l’avance : cela est seulement signalé par une remarque, jamais compté comme un
+problème. La dernière ligne, sur la sortie standard, compte les requêtes, les environnements et les problèmes.
+
+Ce qui est vérifié :
+
+- Chaque fichier de l’espace de travail se lit : du TOML qui s’analyse, des valeurs qu’Echolot connaît (comme un type
+  d’authentification), aucun fichier enregistré par une version plus récente d’Echolot.
+- Chaque requête se résout avec l’environnement : chaque `{{variable}}` et chaque valeur dynamique obtient une valeur.
+- Les requêtes GraphQL qui nomment un schéma sont vérifiées par rapport à lui, avec la ligne et la colonne de chaque
+  problème. Les avertissements, comme les champs obsolètes, ne font pas échouer.
+
+## Options [#options]
+
+| Option | Signification |
+| --- | --- |
+| `-e`, `--env <env>` | L’environnement avec lequel résoudre : son nom de fichier sans `.toml`, ou son nom. |
+
+Validez une fois par environnement avec lequel vous exécutez :
+
+```sh
+echolot validate Alpenglow.echolot --env staging
+```
+
+Les variables secrètes se résolvent comme lors d’une exécution : depuis les variables `ECHOLOT_SECRET_<NAME>`, et le
+trousseau sur un Mac. Voir [secrets](/docs/cli#secrets).
+
+## Codes de sortie [#exit-codes]
+
+| Code | Quand |
+| --- | --- |
+| `0` | Aucun problème. Les remarques ne comptent pas. |
+| `1` | Au moins un problème, ou l’espace de travail n’a pas pu être lu. |
+| `64` | Un environnement qui n’existe pas. |

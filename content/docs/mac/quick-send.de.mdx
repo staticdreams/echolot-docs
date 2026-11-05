@@ -1,0 +1,74 @@
+---
+title: "Schnellversand"
+description: "Sende eine gesicherte Anfrage aus jeder App mit einem Tastaturkurzbefehl oder über die Menüleiste und sieh die Antwort, ohne zu Echolot zu wechseln."
+---
+
+Der Schnellversand sendet eine deiner gesicherten Anfragen von dort, wo du gerade bist. Drücke den Tastaturkurzbefehl in
+einer beliebigen App, tippe ein paar Buchstaben vom Namen der Anfrage, drücke <kbd>↩</kbd>, und Status, Zeit und Größe
+erscheinen in einem kleinen Panel. Die App, in der du warst, bleibt im Vordergrund.
+
+<Shot id="mac-quick-send-panel" alt="Das Panel des Schnellversands über einer anderen App, mit einer Suche nach „products“, den passenden Alpenglow-Anfragen und dem Antwortstatus der Anfrage, die gerade gesendet wurde" />
+
+## Einschalten [#turn-it-on]
+
+Der Schnellversand ist ausgeschaltet, bis du ihn einschaltest.
+
+1. Öffne **Einstellungen › Allgemein**.
+2. Schalte unter **Schnellversand** die Option **Schnellversand in der Menüleiste anzeigen** ein.
+
+In der Menüleiste erscheint ein Papierflieger, und der Tastaturkurzbefehl funktioniert in jeder App.
+
+### Tastaturkurzbefehl ändern [#change-the-shortcut]
+
+Der Tastaturkurzbefehl ist <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd>, solange du keinen anderen wählst. Zum Ändern klickst
+du neben **Tastaturkurzbefehl** auf den Kurzbefehl und drückst die neuen Tasten. Mit <kbd>Esc</kbd> bleibt der alte
+erhalten, und **Zurücksetzen** stellt <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> wieder her.
+
+Ein Kurzbefehl, der in jeder App funktioniert, braucht <kbd>⌘</kbd>, <kbd>⌃</kbd> oder <kbd>⌥</kbd> oder eine
+Funktionstaste, damit normales Tippen ihn nie auslöst. Solange er registriert ist, bekommt keine andere App diese
+Tasten. Belegt eine andere App sie bereits, meldet Echolot in den Einstellungen, dass der Kurzbefehl nicht registriert
+werden konnte; wähle dann einen anderen.
+
+<Callout title="Eingabequellen">
+  macOS kann <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> verwenden, um zur nächsten Eingabequelle zu wechseln, wenn das in
+  den Systemeinstellungen unter Tastatur › Tastaturkurzbefehle eingeschaltet ist. Wenn du ihn so nutzt, wähle für den
+  Schnellversand einen anderen Kurzbefehl.
+</Callout>
+
+## Anfrage senden [#send-a-request]
+
+1. Drücke den Tastaturkurzbefehl oder klicke in der Menüleiste auf den Papierflieger.
+2. Tippe in **Gespeicherte Anfrage senden …**, um die Liste einzugrenzen. Jede Zeile zeigt Methode und Namen der
+   Anfrage sowie ihren Arbeitsbereich und Ordner.
+3. Wähle mit <kbd>↑</kbd> und <kbd>↓</kbd> eine Anfrage aus und drücke <kbd>↩</kbd>, oder klicke sie an.
+
+Unten im Panel steht das Ergebnis: der Statuscode, der Grund (oder der Name der Anfrage), die Zeit und die Größe oder
+der Grund, warum das Senden fehlgeschlagen ist. **In Echolot öffnen** zeigt die Anfrage in ihrem Arbeitsbereichsfenster
+und öffnet den Arbeitsbereich, falls er nicht offen ist.
+
+Das Panel schließt sich mit <kbd>Esc</kbd> oder wenn du woanders klickst.
+
+## Welche Anfragen angeboten werden [#which-requests-it-offers]
+
+Das Panel listet zuerst alle gesicherten Anfragen der in Echolot geöffneten Arbeitsbereiche, dann die deiner letzten
+Arbeitsbereiche (die letzten zehn, die du geöffnet hast), jeweils in der Reihenfolge der Seitenleiste des
+Arbeitsbereichs. Ein Arbeitsbereich muss nicht geöffnet sein, damit du seine Anfragen senden kannst.
+
+Eine Anfrage, die du über den Schnellversand sendest, geht so hinaus wie aus ihrem Fenster:
+
+- Mit der Umgebung, die der Arbeitsbereich in seinem Fenster verwendet, oder mit der zuletzt verwendeten.
+- Mit ihren Skripten und Prüfungen.
+- In den [Verlauf](/docs/workspaces/history) der Anfrage, sodass die Antwort da ist, wenn du die Anfrage öffnest.
+
+<Edition only="appstore">
+  Der Schnellversand funktioniert in der App-Store-Edition genauso. Einen Arbeitsbereich, der nicht geöffnet ist,
+  erreicht Echolot über den Zugriff, den du Echolot beim Öffnen mit **Datei › Arbeitsbereich öffnen …** gegeben hast.
+</Edition>
+
+## Geschützte Umgebungen [#protected-environments]
+
+Ist die Umgebung der Anfrage [geschützt](/docs/workspaces/protected-environments), fragt das Panel zuerst nach:
+**An *Umgebung* senden?**, mit Methode und Adresse, an die gesendet würde; Secrets sind maskiert. **Abbrechen** ist der
+Standardknopf, <kbd>↩</kbd> sendet also nicht; klicke auf **Senden** (bei einer WebSocket-, Socket.IO- oder
+MQTT-Anfrage auf **Verbinden**), um fortzufahren. Hast du im geöffneten Fenster des Arbeitsbereichs festgelegt, dass für
+diese Umgebung nicht erneut nachgefragt wird, fragt auch der Schnellversand nicht nach.

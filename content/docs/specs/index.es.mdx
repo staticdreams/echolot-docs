@@ -1,0 +1,123 @@
+---
+title: "Especificaciones"
+description: "Guarda documentos OpenAPI y archivos .proto en el espacio de trabajo, lee su esquema y sus problemas, y conviértelos en solicitudes."
+---
+
+La página Especificaciones es donde diseñas y guardas el contrato de una API: documentos OpenAPI (OpenAPI 3.0 y 3.1, y
+Swagger 2.0) y los archivos `.proto` de los servicios gRPC. Echolot comprueba una especificación mientras la editas, la
+convierte en solicitudes que se mantienen al día con ella y la sirve como [mock](/docs/mocks) antes de que exista la API.
+
+Ábrela con **Especificaciones** en el selector de módulos de la barra lateral, o con <kbd>⌘</kbd><kbd>3</kbd>.
+
+<Shot id="specs-page" alt="La página Especificaciones con alpenglow.yaml abierto en el editor visual: la barra lateral lista la especificación con su esquema de endpoints y esquemas; la página muestra las tarjetas Visión general, Servidores y Endpoints" />
+
+## Especificaciones en el espacio de trabajo [#specs-in-the-workspace]
+
+Las especificaciones son archivos de la carpeta `specs` del espacio de trabajo, así que van a Git con todo lo demás. El
+ejemplo Alpenglow tiene tres: `alpenglow.yaml` (el documento OpenAPI de la tienda), `shop.graphql` e `inventory.proto`.
+La página Especificaciones lista los documentos OpenAPI en **Especificaciones** y los archivos `.proto` en
+**Archivos proto**. Los esquemas GraphQL de la carpeta los usan las [solicitudes GraphQL](/docs/requests/graphql) y no
+aparecen aquí.
+
+El **+** de la cabecera **Especificaciones** de la barra lateral añade una:
+
+| Elemento | Qué hace |
+| --- | --- |
+| **Nueva especificación** | Crea un documento OpenAPI 3.1 con el título `New API` y lo abre en el editor visual. |
+| **Nueva especificación a partir de respuestas…** | Escribe una especificación a partir de las solicitudes que has enviado y las respuestas que recibieron. Consulta [Especificación a partir de respuestas](/docs/specs/specs-from-traffic). |
+| **Añadir archivo de especificación…** | Copia un documento OpenAPI o Swagger (YAML o JSON) de tu Mac a la carpeta `specs`. |
+| **Nuevo archivo proto** | Crea un archivo `.proto` a partir de un pequeño servicio de ejemplo. Consulta [archivos .proto](/docs/specs/proto-files). |
+| **Añadir archivo proto…** | Copia un archivo `.proto` a la carpeta `specs`. |
+
+[Importar](/docs/get-started/importing) un documento OpenAPI con **Archivo › Importar…** es distinto: crea solicitudes
+a partir de él, no una especificación que editar.
+
+Haz clic con el botón derecho en una especificación para ver **Generar solicitudes**, **Mostrar en el Finder**,
+**Exportar** (**En YAML…** o **En JSON…**) y **Eliminar…**. Eliminar pregunta antes y traslada el archivo a la papelera;
+los archivos a los que hace referencia se quedan, y también sus mocks.
+
+## El esquema [#the-outline]
+
+Haz clic en una especificación para abrirla. Debajo de la lista, la barra lateral muestra su esquema:
+
+- **Visión general**, el título, la versión y la descripción.
+- **ENDPOINTS**, todas las operaciones con su método y su ruta. Las obsoletas aparecen tachadas. Sitúa el puntero sobre
+  una para ver su resumen.
+- **ESQUEMAS**, los esquemas reutilizables.
+- **Archivos**, cuando la especificación hace referencia a otros archivos (consulta
+  [Especificaciones divididas en varios archivos](#specs-split-across-files)).
+
+Haz clic en una entrada para abrirla: en el editor visual se abre su tarjeta y se desplaza hasta verla; en el código, el
+editor va a su línea.
+
+## Visual y código [#visual-and-code]
+
+El interruptor **Editor** de la cabecera de la página elige cómo ves la especificación abierta:
+
+- **Visual**: tarjetas para la visión general, los servidores, los endpoints y los esquemas, que se editan con campos y
+  menús.
+- **Código**: el documento como YAML o JSON, con números de línea.
+
+Los dos editan el mismo texto, y Echolot lo guarda poco después de cada cambio.
+[Editar una especificación](/docs/specs/editing) explica ambos.
+
+## Problemas [#problems]
+
+Echolot valida la especificación mientras la editas. La barra que hay sobre el editor muestra **Sin problemas**, o el
+número de errores y advertencias. Un recuento de errores en rojo aparece también junto a la especificación abierta en la
+barra lateral.
+
+<Shot id="specs-problems" alt="El menú emergente de Problemas sobre una especificación: errores y advertencias, cada uno con su mensaje y su número de línea" />
+
+Haz clic en él para ver la lista: primero los errores, luego las advertencias y las sugerencias, cada uno con su línea.
+Elige uno para ir a esa línea. Cuando la lista está vacía, dice que el documento sigue la especificación OpenAPI y que
+todas las referencias se resuelven.
+
+Qué busca la validación, entre otras cosas:
+
+- Una versión de `openapi` que Echolot lee, `info` con un título y una versión, y rutas que empiezan por `/`.
+- Parámetros de ruta que están en la ruta y marcados como `required: true`, y parámetros que no están definidos dos
+  veces.
+- Una descripción en cada respuesta, y operation IDs que se usan una sola vez.
+- Etiquetas declaradas arriba, esquemas de seguridad que están definidos, arrays con `items` y enumeraciones con
+  valores.
+- Referencias que apuntan a algo, en este archivo o en otro de `specs`.
+- Ningún `servers`: las solicitudes creadas a partir de la especificación empiezan entonces por `{{baseUrl}}`, que
+  defines tú.
+
+La herramienta de línea de comandos ejecuta la misma validación en CI: consulta [echolot spec](/docs/cli/spec).
+
+## Especificaciones divididas en varios archivos [#specs-split-across-files]
+
+Una especificación puede incorporar partes de otros archivos con `$ref`, como `$ref: schemas/pet.yaml#/Pet`. Los
+archivos deben estar dentro de la carpeta `specs` del espacio de trabajo. La barra lateral los lista en **Archivos**:
+haz clic en uno para abrirlo en **Código**. En el editor de código, sitúa el puntero sobre un `$ref` para ver a qué
+apunta, y haz clic en él con <kbd>⌘</kbd> pulsada para ir allí, en este archivo o en el otro.
+
+Echolot lee las partes juntas dondequiera que usa la especificación: validación, generación de solicitudes, mocks. Al
+exportar la especificación, los archivos a los que hace referencia se escriben en el único archivo que guardas.
+
+## Exportar [#exporting]
+
+**Exportar** en la barra que hay sobre el editor (**Exportar en YAML…** o **Exportar en JSON…**) guarda la
+especificación como un único archivo fuera del espacio de trabajo, con los archivos a los que hace referencia escritos
+dentro. Los cambios sin guardar se guardan antes, así que la exportación es lo que muestra el editor.
+
+## Solicitudes que siguen la especificación [#requests-that-follow-the-spec]
+
+**Generar solicitudes** en la barra que hay sobre el editor crea una carpeta con el nombre de la especificación, con una
+solicitud por cada endpoint, y abre la primera. La carpeta sigue la especificación: cuando esta cambia, puedes aplicar
+los cambios a sus solicitudes sin perder lo que editaste en ellas.
+
+Cuando una carpeta sigue la especificación, el botón pasa a ser **Solicitudes**, un menú con **Buscar cambios en
+“carpeta”…** para cada carpeta que la sigue, y **Generar otra carpeta**. Buscar cambios abre **Sincronización
+OpenAPI**, que lista lo que es **Nueva en la especificación**, **Cambiada en la especificación** y **Ya no está en la
+especificación**. Marca los cambios que quieras y haz clic en **Aplicar 1 cambio** (o **Aplicar 3 cambios**, y así
+sucesivamente). Tus ediciones se conservan siempre; cuando tú y la especificación cambiasteis lo mismo, se conserva lo
+tuyo. Cuando una operación ya no existe, su solicitud va a la papelera, salvo que la hayas editado: entonces se queda y
+deja de seguir la especificación. **Desvincular** hace que la carpeta deje de seguir la especificación y deja sus
+solicitudes como están.
+
+Una carpeta también puede seguir una especificación de fuera del espacio de trabajo, un archivo o una URL: haz clic con
+el botón derecho en la carpeta en la barra lateral Solicitudes y elige **Vincular a una especificación OpenAPI…**. La
+herramienta de línea de comandos comprueba y aplica cambios con `echolot spec check` y `echolot spec apply`.

@@ -1,0 +1,131 @@
+---
+title: "Enchaîner des requêtes"
+description: "Connectez-vous une fois, stockez le jeton et envoyez-le depuis chaque requête qui en a besoin, avec des valeurs dynamiques et une Idempotency-Key."
+---
+
+La plupart des API veulent un jeton que l’on obtient en se connectant. Dans ce tutoriel, vous stockez le jeton de la
+boutique de démo dans une variable à partir de la réponse de connexion, vous l’envoyez depuis tout un dossier grâce à son
+authentification, vous lisez une valeur d’une réponse pour la mettre dans la requête suivante, et vous passez une
+commande en toute sécurité avec une `Idempotency-Key`.
+
+- **Durée :** 15 minutes.
+- **Il vous faut :** l’espace de travail de [Votre premier espace de travail](/docs/tutorials/first-workspace), avec
+  l’environnement **Demo** choisi et la requête **Auth › Sign in**. Alpenglow a déjà tout cela ; ouvrez-le pour comparer.
+- **Vous apprenez :** les captures de réponse, l’authentification héritée, les valeurs dynamiques et les valeurs de
+  réponse.
+
+## 1. Stocker le jeton de la réponse de connexion [#1-store-the-token-from-the-sign-in-response]
+
+1. Ouvrez **Auth › Sign in** et envoyez-la (<kbd>⌘</kbd><kbd>R</kbd>).
+2. Dans l’onglet **Corps** de la réponse, passez l’affichage sur **Arbre JSON**.
+3. Laissez le pointeur sur la ligne `access_token`. De petits boutons apparaissent après la valeur. Choisissez celui dont
+   l’aide indique **Stocker dans une variable…**.
+4. Dans la fenêtre **Stocker dans une variable** :
+   - Changez le nom en `token`.
+   - Sous la portée, choisissez **Environnement « Demo »** : chaque serveur a ses propres jetons.
+   - Vérifiez que **Secret · conservé dans le trousseau, jamais dans les fichiers** est coché. Echolot le coche de lui-même pour des noms
+     comme `token`.
+   - Laissez **Mettre à jour à chaque envoi · enregistré avec cette requête** coché.
+5. Cliquez sur **Stocker**.
+
+Ouvrez l’onglet **Variables** de la requête. Sous **Depuis la réponse** se trouve une ligne : `token`, depuis **JSON**,
+chemin `$.access_token`, enregistré dans **Demo**, secret. Désormais, chaque envoi réussi de **Sign in** écrit le nouveau
+jeton dans `{{token}}`. Une réponse de 400 ou plus, ou sans la valeur, laisse la variable intacte. Détails dans les
+[captures de réponse](/docs/requests/captures).
+
+<Shot id="tutorials-chain-store-variable" alt="La fenêtre Stocker dans une variable au-dessus de la valeur access_token dans l’Arbre JSON, avec sa portée et la case secret cochée" />
+
+## 2. Envoyer le jeton depuis tout un dossier [#2-send-the-token-from-a-whole-folder]
+
+Au lieu de définir l’authentification Bearer sur chaque requête, définissez-la une fois sur un dossier.
+
+1. Créez un dossier `Orders` (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>).
+2. Faites un clic droit sur **Orders** et choisissez **Réglages du dossier…**.
+3. Dans l’onglet **Auth**, définissez **Type** sur **Jeton Bearer** et **Jeton** sur `{{token}}`. Cliquez sur **Terminé**.
+4. Faites un clic droit sur **Orders**, choisissez **Nouvelle requête** et nommez-la `List orders`. Définissez son URL sur
+   `{{baseURL}}/orders`.
+5. Ouvrez son onglet **Auth**. **Type** est **Hériter**, et la ligne **Utilise** indique qu’elle prend le jeton Bearer du
+   dossier.
+6. Envoyez-la.
+
+Vous obtenez les trois commandes de Heidi : `ord_7Hk2Lw` (expédiée), `ord_8Jm4Qx` (payée) et `ord_5Fd9Ra` (livrée).
+Chaque nouvelle requête dans **Orders** envoie le jeton de la même façon. Les requêtes démarrent sur **Hériter**, qui
+prend l’authentification du dossier le plus proche, puis celle de l’espace de travail. Voir [auth](/docs/requests/auth)
+pour les autres types.
+
+Si vous obtenez `401 Unauthorized` plus tard, le jeton a expiré : il dure une heure. Envoyez **Sign in** de nouveau et le
+jeton est mis à jour.
+
+## 3. Lire une valeur dans une autre réponse [#3-read-a-value-from-another-response]
+
+La requête suivante lit l’id de la première commande dans la réponse à **List orders**, pour que vous ne le copiiez
+jamais à la main.
+
+1. Dans **Orders**, créez une requête `Get order`.
+2. Dans son champ URL, saisissez `{{baseURL}}/orders/` puis `{{$response`. La liste affiche les valeurs dynamiques du
+   groupe **Réponses**. Choisissez **Réponse filtrée par JSONPath**.
+3. Dans le formulaire qui s’ouvre, définissez **Requête** sur la requête **List orders** (`orders/list-orders`) et
+   **JSONPath** sur `$.items[0].id`. Laissez **L’envoyer d’abord** sur **Quand elle n’a pas encore de réponse**. Cliquez
+   sur **Terminé**.
+
+L’URL contient maintenant un jeton qui représente `{{$responseJSONPath('orders/list-orders', '$.items[0].id')}}`. Laissez
+le pointeur dessus pour voir la valeur qu’il a actuellement : `ord_7Hk2Lw`. Envoyez **Get order** et vous obtenez cette
+commande avec ses lignes et son expédition. Si **List orders** n’avait jamais été envoyée, Echolot l’enverrait d’abord.
+
+## 4. Passer une commande avec des valeurs dynamiques [#4-place-an-order-with-dynamic-values]
+
+Les valeurs dynamiques sont recréées à chaque envoi. Utilisez-en deux dans une nouvelle commande.
+
+1. Dans **Orders**, créez une requête `Create order` avec la méthode **POST** et l’URL `{{baseURL}}/orders`.
+2. Dans l’onglet **Corps**, choisissez **JSON** et saisissez le corps. Utilisez la liste de `{{` pour insérer
+   **Horodatage ISO 8601** :
+
+   ```json
+   {
+     "lines": [
+       { "sku": "TNT-MH-2P", "quantity": 1 },
+       { "sku": "PCK-TIT-30", "quantity": 2 }
+     ],
+     "note": "Placed from Echolot at {{$isoTimestamp}}"
+   }
+   ```
+
+3. Dans l’onglet **En-têtes**, ajoutez un en-tête `Idempotency-Key`. Pour sa valeur, saisissez `{{` et choisissez
+   **UUID** (`{{$uuid}}`).
+4. Envoyez-la.
+
+La réponse est `201 Created` avec un en-tête `Location` comme `/v1/orders/ord_…`, et la boutique renvoie votre
+`Idempotency-Key`. La note porte l’heure de l’envoi. La démo ne stocke rien, la nouvelle commande ne peut donc pas être
+récupérée ensuite. Toutes les valeurs dynamiques sont dans la [référence](/docs/reference/dynamic-values).
+
+<Shot id="tutorials-chain-create-order" alt="Create order a reçu la réponse 201 Created, avec les en-têtes de réponse Location et Idempotency-Key" />
+
+## 5. Voir ce que fait l’Idempotency-Key [#5-see-what-the-idempotency-key-does]
+
+Une `Idempotency-Key` indique au serveur que les envois avec la même clé sont la même commande, de sorte qu’envoyer de
+nouveau ne la passe jamais deux fois.
+
+1. Envoyez **Create order** de nouveau. L’id dans `Location` change : `{{$uuid}}` a créé une nouvelle clé.
+2. Dans l’onglet **En-têtes**, remplacez `{{$uuid}}` par une valeur fixe comme `tutorial-order-1`.
+3. Envoyez deux fois. Les deux réponses portent le même id de commande.
+
+Les vraies API utilisent la clé pour écarter une requête répétée qui était déjà passée la première fois. Echolot s’en
+sert aussi : quand une connexion maintenue ouverte se ferme avant toute réponse, il renvoie une requête sur une nouvelle
+connexion uniquement si l’envoyer deux fois est sans danger. C’est le cas pour `GET`, `PUT`, `DELETE` et les autres
+méthodes sûres ou idempotentes, et pour toute requête avec un en-tête `Idempotency-Key`. Un `POST` sans clé échoue à la
+place, pour qu’une commande ne soit jamais passée deux fois dans votre dos. Remettez `{{$uuid}}` quand vous avez fini.
+
+Deux autres choses que la boutique vérifie :
+
+- Changez une quantité en `0` et envoyez : `422 Unprocessable Content` liste ce qui ne va pas pour chaque ligne.
+- **Orders with OAuth 2** dans Alpenglow obtient son jeton par identifiants client. Ce jeton peut lire les commandes
+  mais pas en passer : `POST /v1/orders` avec lui répond `403 Forbidden`.
+
+## Étapes suivantes [#next-steps]
+
+- [Tester une API et l’exécuter en CI](/docs/tutorials/test-in-ci) : ajoutez des vérifications et exécutez toute la
+  chaîne d’un coup.
+- [Scripts et tests](/docs/requests/scripts-and-tests) : `pm.environment.set()` et compagnie, quand une capture ne
+  suffit pas.
+- [OAuth 2.0 et les autres types d’authentification](/docs/requests/auth) : laissez Echolot obtenir et renouveler les
+  jetons pour vous.

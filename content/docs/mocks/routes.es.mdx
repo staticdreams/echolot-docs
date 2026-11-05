@@ -1,0 +1,225 @@
+---
+title: "Rutas y datos falsos"
+description: "Crea a mano las rutas de un mock, con respuestas JSON, XML o de texto, datos falsos que cambian en cada solicitud, reglas que eligen una respuesta y solicitudes creadas a partir de las rutas."
+---
+
+Una ruta es un método y una ruta de URL, y lo que responde el mock en ella. Crea rutas a mano cuando todavía no hay
+especificación, cuando necesitas unos pocos endpoints para desarrollar o probar contra ellos, o para responder a una
+ruta de forma distinta a la especificación. Los cuerpos se escriben tal como se envían, en JSON, XML o texto, y pueden
+contener datos falsos que se crean de nuevo en cada solicitud.
+
+Las rutas creadas a mano responden después de las [rutas en JavaScript](/docs/mocks/scripted-routes) del mock y antes de
+las operaciones de su especificación, si sirve una. Consulta
+[qué respuesta recibe una solicitud](/docs/mocks#which-response-a-request-gets).
+
+## Crear una ruta [#making-a-route]
+
+En la [página Mocks](/docs/mocks), crea un mock con **Nuevo mock** (empieza con una ruta `GET /users` de cinco usuarios
+falsos) o abre cualquier mock. La tarjeta **Rutas** lista sus rutas:
+
+- La casilla desactiva una ruta sin eliminarla; una ruta desactivada no responde a nada.
+- Haz clic en una ruta para editarla debajo de la lista.
+- **Añadir ruta** añade una nueva después de la ruta seleccionada.
+- Haz clic con el botón derecho en una ruta para ver **Duplicar**, **Crear solicitud**, **Copiar dirección** (mientras
+  el mock está en marcha), **Subir**, **Bajar** y **Eliminar ruta**.
+
+Cada cambio se guarda al instante, y un mock en marcha responde con él al instante. **Editar › Deshacer** revierte
+cualquier cambio, también el de eliminar una ruta. Cuando dos rutas activadas tienen el mismo método y la misma ruta, la
+tarjeta te avisa: solo responde la primera.
+
+<Shot id="mocks-route-editor" alt="El editor de la ruta GET /users/{id}: su método, su ruta y su resumen, las respuestas 200 OK (la predeterminada) y 404 Not found, y el tipo de contenido de la respuesta OK, una cabecera X-Request-Id con {{$randomUUID}} y un cuerpo JSON con request.params.id y valores falsos" />
+
+### Método, ruta y resumen [#method-path-and-summary]
+
+- **Ruta**: el método (**GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS**, o **ANY** para todos
+  los métodos) y la ruta. Una solicitud `HEAD` va a una ruta **GET**, sin el cuerpo.
+- Los **parámetros de ruta** se escriben `{id}` o `:id`, uno por cada parte de la ruta: `/users/{id}`,
+  `/files/{name}.json`. `:id` se guarda como `{id}`. Una ruta con una parte literal tiene preferencia sobre otra con un
+  parámetro, así que `/users/me` responde antes que `/users/{id}`.
+- El **Resumen** dice para qué sirve la ruta. Las solicitudes creadas a partir de la ruta lo toman como nombre.
+
+## Respuestas [#responses]
+
+Una ruta tiene una o varias respuestas. Los chips bajo **RESPUESTAS** cambian entre ellas; **+** añade una. Cada
+respuesta tiene:
+
+| Campo | Qué es |
+| --- | --- |
+| **Nombre** | Cómo la nombran las solicitudes y las reglas, como `OK` o `Not found`. Los nombres son únicos dentro de una ruta. |
+| **Estado** | El código de estado, de 100 a 999. |
+| **Content-Type** | El `Content-Type` que se envía, como `application/json` o `application/xml`; el menú que hay junto a él tiene los tipos habituales. Vacío no envía ninguno. También decide cómo se escapan los valores del cuerpo. |
+| **Cabeceras** | Cabeceras que se envían con ella. Los valores pueden contener datos falsos y partes de la solicitud, como el cuerpo. |
+| **Reglas** | Cuándo responde esta respuesta en lugar de la predeterminada. Consulta [elegir una respuesta](#choosing-a-response). |
+| **Cuerpo** | Lo que se envía, con números de línea y colores para JSON, XML y HTML. |
+
+La respuesta con una marca de verificación (**Predeterminado**) es la predeterminada de la ruta; **Hacer
+predeterminada** en otra la cambia. El botón de la papelera elimina una respuesta.
+
+### Elegir una respuesta [#choosing-a-response]
+
+Una solicitud a una ruta recibe, en este orden:
+
+1. La respuesta que pide: una cabecera `Prefer: example=Not found` o `Prefer: code=404`, o las cabeceras
+   `x-mock-response-name` y `x-mock-response-code` de Postman.
+2. La primera respuesta cuyas reglas se cumplen todas.
+3. La respuesta predeterminada de la ruta: la que has marcado como predeterminada con **Hacer predeterminada**, sean
+   cuales sean sus reglas. En una ruta donde no has elegido ninguna, una primera respuesta cuyas reglas no se cumplieron
+   cede el paso a la primera respuesta sin reglas, de modo que “409 para el pedido enviado”, si figura la primera en
+   la lista, no responde a todos los demás pedidos.
+
+Una **regla** mira una parte de la solicitud:
+
+| Regla | Nombre | Ejemplo |
+| --- | --- | --- |
+| **Parámetro de ruta** | El parámetro de la ruta | `id` es `0` |
+| **Parámetro de consulta** | El parámetro de consulta | `page` es `*` |
+| **Cabecera** | La cabecera, en mayúsculas o minúsculas | `X-Role` es `admin` |
+| **Campo del cuerpo** | Una ruta de claves dentro de un cuerpo JSON, con números para los elementos de una lista; vacía para todo el cuerpo | `user.plan` es `pro`, `items.0.sku` es `TNT-MH-2P` |
+
+El valor es el texto que debe tener esa parte. `*` significa cualquier valor, siempre que haya uno; un valor vacío
+significa que esa parte debe faltar. Una respuesta con varias reglas solo responde cuando se cumplen todas. Una regla
+sin nombre se omite hasta que le pongas uno.
+
+Por ejemplo, una ruta `GET /users/{id}` puede responder `200` con un usuario de forma predeterminada, y una respuesta
+`404` con la regla **Parámetro de ruta** `id` es `0`:
+
+```sh
+curl -i http://127.0.0.1:4010/users/42    # 200, the user
+curl -i http://127.0.0.1:4010/users/0     # 404
+```
+
+<Shot id="mocks-route-rule" alt="La respuesta 404 Not found de GET /users/{id} con Hacer predeterminada, y su regla: Parámetro de ruta id es 0" />
+
+## Cuerpos con datos falsos [#bodies-with-fake-data]
+
+Todo lo que haya entre `{{ }}` en un cuerpo o en el valor de una cabecera se rellena cuando llega la solicitud, así que
+cada solicitud puede recibir datos nuevos. El resto del cuerpo se envía tal como lo escribiste.
+
+```json
+{
+  "id": "{{request.params.id}}",
+  "name": "{{$randomFullName}}",
+  "email": "{{$randomEmail}}",
+  "company": "{{$randomCompanyName}}",
+  "joined": "{{$randomDatePast}}"
+}
+```
+
+### Valores falsos [#fake-values]
+
+`{{$randomFirstName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomUUID}}` y unos 120 más:
+nombres y profesiones, internet, direcciones, teléfonos, empresas, finanzas, productos, fechas, palabras, lorem ipsum,
+archivos, imágenes y bases de datos. Los nombres son las variables dinámicas de Postman, así que las plantillas escritas
+para Postman funcionan aquí. Algunos admiten argumentos: `{{$randomInt(1, 100)}}`, `{{$randomPrice(5, 50)}}`,
+`{{$randomLoremWords(5)}}`, `{{$randomElement(active, paused, closed)}}`.
+Los [valores dinámicos](/docs/reference/dynamic-values#fake-data) los listan todos.
+
+**Insertar valor**, encima del cuerpo, pone un valor falso donde está el cursor: **Datos falsos** los tiene por grupos.
+
+Los mismos valores funcionan en las solicitudes, donde se crean en cada envío. Consulta
+[valores dinámicos](/docs/requests/dynamic-values).
+
+### Partes de la solicitud [#parts-of-the-request]
+
+| Token | Qué es |
+| --- | --- |
+| `{{request.params.id}}` | Un parámetro de ruta. |
+| `{{request.query.page}}` | Un parámetro de consulta; vacío si no hay ninguno. |
+| `{{request.headers.X-Trace}}` | Una cabecera, en mayúsculas o minúsculas. |
+| `{{request.body.user.name}}` | Un campo de un cuerpo JSON, por su ruta de claves (`items.0.sku` para un elemento de una lista). El texto tal cual; los números, `true`, `false`, los objetos y las listas, como JSON. |
+| `{{request.body}}` | Todo el cuerpo, como texto. |
+| `{{request.method}}` | El método, como `POST`. |
+| `{{request.path}}` | La ruta, como `/users/42`. |
+
+**Insertar valor › Solicitud** los tiene, con los parámetros de ruta de la propia ruta.
+
+### Listas [#lists]
+
+`{{#repeat 10}}` … `{{/repeat}}` escribe lo que hay entre ambos tantas veces como se indica; `{{#repeat 2 8}}`, un número
+de veces entre los dos valores, elegido en cada solicitud. En un cuerpo JSON, las comas entre los elementos se ponen
+por ti. Dentro, `{{@number}}` es el número del elemento desde 1 y `{{@index}}` desde 0. Las repeticiones pueden ir
+dentro de otras repeticiones.
+
+```json
+[
+  {{#repeat 5}}
+  {
+    "id": {{@number}},
+    "name": "{{$randomProductName}}",
+    "price": {{$randomPrice}}
+  }
+  {{/repeat}}
+]
+```
+
+Un `{{#repeat}}` o un `{{/repeat}}` solo en su línea no deja ninguna línea vacía.
+
+### Escapado [#escaping]
+
+Los valores se escapan según dónde caen, así que un nombre con comillas nunca rompe tu JSON:
+
+- En un cuerpo JSON (un `Content-Type` con `json`), los valores dentro de una cadena se escapan como JSON. Un valor fuera
+  de comillas, como `{{$randomInt}}` o `{{@number}}`, entra tal cual.
+- En XML y HTML (un `Content-Type` con `xml` o `html`), `&`, `<`, `>` y las comillas se escapan en todas partes.
+- Las llaves triples nunca escapan: `{{{request.body}}}` pone el cuerpo JSON de la solicitud como JSON.
+
+```json
+{ "received": {{{request.body}}}, "at": "{{$isoTimestamp}}" }
+```
+
+Los tokens que Echolot no conoce se quedan como los escribiste. Un valor que no puede crear, como
+`{{$randomInt(9, 1)}}`, también se queda como está escrito, y el [registro](/docs/mocks#the-log) dice por qué. Un cuerpo
+se corta a los 16 MB y una repetición a los 10 000 elementos.
+
+Los cuerpos no leen nada más: ni variables, ni entornos, ni secretos, ni archivos del espacio de trabajo, así que un
+mock que responde en la red no puede revelar ninguno de ellos.
+
+### Datos fijos: Generar [#fixed-data-generate]
+
+Los valores entre `{{ }}` dan datos nuevos en cada solicitud. Para responder siempre con los mismos datos, haz clic en
+**Generar…**, encima del cuerpo:
+
+- Con **Crear una lista: el cuerpo es un elemento**, el cuerpo pasa a ser una lista JSON con tantos **Elementos**,
+  cada uno creado a partir del cuerpo.
+- Sin ella, los valores del cuerpo se rellenan una sola vez.
+
+**Generar** sustituye el cuerpo por el resultado; **Editar › Deshacer** recupera la plantilla. Desde Terminal,
+[`echolot fake`](/docs/cli/fake) hace lo mismo.
+
+## Solicitudes a partir de rutas [#requests-from-routes]
+
+**Crear solicitudes** en la tarjeta **Rutas** crea una carpeta con el nombre del mock y una solicitud por cada ruta
+activada; **Crear solicitud** en el menú contextual de una ruta crea una para esa ruta. Echolot abre la primera
+solicitud.
+
+- La carpeta tiene una variable `baseUrl` con la dirección del mock, y todas las URL empiezan con ella:
+  `{{baseUrl}}/users/{{id}}`. Apunta `baseUrl` a la API real más adelante y las mismas solicitudes irán allí.
+- Los parámetros de ruta se convierten en variables de la solicitud, con `1` salvo que una regla de ruta de la
+  respuesta predeterminada indique un valor.
+- La solicitud lleva el nombre del resumen de la ruta.
+- El cuerpo de solicitud de la ruta va con ella.
+
+### El cuerpo de solicitud de una ruta [#the-request-body-of-a-route]
+
+**Cuerpo de la solicitud**, al pie de una ruta, contiene un cuerpo y su **Content-Type** para las solicitudes creadas a
+partir de la ruta, como el JSON que admite un `POST /users`. No cambia lo que responde el mock; las reglas sobre campos
+del cuerpo leen lo que las solicitudes envían de verdad.
+
+## Con agentes [#with-agents]
+
+Con el conjunto de herramientas **Mocks** activado, los agentes y el [Asistente](/docs/ai/assistant) también crean
+rutas. Pide lo que necesites:
+
+- “Crea un mock con rutas para listar, leer y crear pedidos, con datos falsos, e inícialo.”
+- “Añade un 404 a `GET /users/{id}` cuando el id sea 0.”
+- “Crea solicitudes para las rutas del mock.”
+
+Usan `create_mock` (con un nombre y rutas, sin necesidad de especificación), `save_mock_route`, `delete_mock_route`,
+`generate_fake_data`, `list_fake_values` y `create_requests_from_mock`. `save_mock_route` también puede convertir una
+respuesta del [Historial](/docs/workspaces/history) en una ruta; lo que copia se enmascara como todo lo que leen los
+agentes. Cuando un agente elimina una ruta, te pregunta antes. Consulta [Agentes](/docs/ai/agents).
+
+## En el espacio de trabajo [#in-the-workspace]
+
+Las rutas viven en el archivo del mock, `mocks/<name>.toml`, como `[[routes]]` con sus `[[routes.responses]]`: legibles
+en un diff y compartidas mediante Git. Consulta [archivos del espacio de trabajo](/docs/reference/workspace-files#mocks).

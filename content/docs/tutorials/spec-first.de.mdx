@@ -1,0 +1,164 @@
+---
+title: "Spec zuerst entwerfen und mocken"
+description: "Importiere oder entwirf eine OpenAPI-Spec, lint sie, lass einen Mock davon laufen, sende Anfragen an den Mock und prüfe echte Antworten gegen die Spec."
+---
+
+„Spec zuerst“ heißt, dass das OpenAPI-Dokument vor dem Code kommt: Ihr einigt euch auf die API, probiert sie gegen einen
+Mock aus und prüft den echten Server gegen dasselbe Dokument, sobald es ihn gibt. In diesem Tutorial fügst du die Spec
+des Shops Alpenglow einem Arbeitsbereich hinzu, entwirfst einen Endpunkt, den der Shop noch nicht hat, lässt beide von
+einem Mock auf deinem Mac bedienen und prüfst die Antworten der echten API gegen die Spec.
+
+- **Dauer:** 20 Minuten.
+- **Du brauchst:** Echolot und einen Arbeitsbereich, etwa den aus [Dein erster Arbeitsbereich](/docs/tutorials/first-workspace)
+  oder einen neuen, leeren.
+- **Du lernst:** die Seite „Specs“, Lint, Anfragen, die einer Spec folgen, Mocks und die Prüfung **OpenAPI-Spec**.
+
+## 1. Die Spec hinzufügen [#1-add-the-spec]
+
+Der Demo-Shop veröffentlicht seine Spec unter `https://demo.echolot.dev/openapi.yaml`.
+
+1. Sichere sie auf deinem Mac. Im Terminal:
+
+   ```sh
+   curl -o ~/Downloads/openapi.yaml https://demo.echolot.dev/openapi.yaml
+   ```
+
+   Oder öffne die Adresse in Safari und wähle **Datei › Sichern unter …**.
+2. Wechsle im Arbeitsbereichsfenster zu **Specs** (<kbd>⌘</kbd><kbd>3</kbd>).
+3. Wähle **Spec-Datei hinzufügen …** (auf der leeren Seite oder im Menü **+** der Seitenleiste) und wähle `openapi.yaml`.
+   Eine Kopie landet im Ordner `specs` des Arbeitsbereichs.
+
+Die Spec öffnet sich im **visuellen** Editor: ihre Server, ihre nach Pfad oder Tag gruppierten Endpunkte und ihre
+Schemas. Der Umschalter der Symbolleiste wechselt zwischen **Visuell** und **Code**. Beide bearbeiten denselben Text,
+und der Text ist es, der gesichert wird.
+
+<Callout title="Bei null anfangen">
+  Wähle stattdessen **Neue Spec**. Du bekommst ein OpenAPI-3.1-Dokument mit dem Titel **Neue API** und einem Endpunkt,
+  `GET /items`, den du umbenennen und ausbauen kannst. Der Rest dieses Tutorials funktioniert genauso.
+</Callout>
+
+## 2. Einen Endpunkt entwerfen, den der Shop nicht hat [#2-design-an-endpoint-the-shop-doesnt-have]
+
+Der Shop möchte eine Liste seiner Läden. Entwirf sie, bevor jemand sie schreibt.
+
+1. Wähle im **visuellen** Editor **Endpunkt hinzufügen**.
+2. Lass in **Neuer Endpunkt** die **Methode** auf **GET**, tippe den Pfad `/stores`, die Zusammenfassung `List stores`
+   und den Tag `Catalog`. Wähle **Endpunkt hinzufügen**. Echolot legt die Operation mit einer Antwort `200` an, von der
+   du ausgehst.
+3. Setze im Editor des Endpunkts die **Operations-ID** auf `listStores`.
+4. Wähle **Im Code zeigen**. Ersetze die `responses` des Endpunkts durch einen Body und ein Beispiel:
+
+   ```yaml
+         responses:
+           '200':
+             description: The shop's stores.
+             content:
+               application/json:
+                 schema:
+                   type: array
+                   items:
+                     type: object
+                     required: [id, city]
+                     properties:
+                       id: { type: string }
+                       city: { type: string }
+                       address: { type: string }
+                 example:
+                   - { id: zrh, city: Zürich, address: Bahnhofstrasse 1 }
+                   - { id: brn, city: Bern, address: Spitalgasse 4 }
+   ```
+
+Änderungen werden beim Machen gesichert, und <kbd>⌘</kbd><kbd>Z</kbd> macht sie rückgängig. Visuelle Änderungen ändern nur
+die Zeilen des Eintrags, den du anfasst, sodass der Rest der Datei, Kommentare eingeschlossen, so bleibt, wie du ihn
+geschrieben hast. Mehr unter [Specs bearbeiten](/docs/specs/editing).
+
+<Shot id="tutorials-spec-visual-editor" alt="Die Seite „Specs“ im visuellen Editor, mit einem ausgewählten Endpunkt der Spec von Alpenglow" />
+
+## 3. Die Spec linten [#3-lint-the-spec]
+
+Der Probleme-Knopf der Symbolleiste zeigt ein grünes Häkchen und **Keine Probleme** oder eine Zahl von Fehlern und
+Warnungen.
+
+1. Wähle ihn. Das Popover **Probleme** sagt, dass das Dokument der OpenAPI-Spezifikation folgt und jeder Verweis
+   aufgelöst wird.
+2. Baue etwas kaputt, um ein Problem zu sehen: Ändere in **Code** in einer Zeile `$ref: '#/components/schemas/Product'`
+   in `'#/components/schemas/Produkt'`. Der Knopf wird rot. Wähle ihn und klicke das Problem an: Der Editor springt zu
+   seiner Zeile.
+3. Mache die Änderung rückgängig (<kbd>⌘</kbd><kbd>Z</kbd>).
+
+Dasselbe Lint läuft mit dem Befehlszeilentool in CI. `--strict` lässt auch bei Warnungen fehlschlagen, und `--hints`
+fügt Ratschläge hinzu, etwa zu fehlenden Operations-IDs:
+
+```sh
+echolot spec lint specs/openapi.yaml --strict
+```
+
+## 4. Anfragen erzeugen, die der Spec folgen [#4-make-requests-that-follow-the-spec]
+
+1. Wähle in der Symbolleiste von „Specs“ **Anfragen erzeugen**. Unter **Anfragen** erscheint ein Ordner
+   **Alpenglow demo shop**, mit einem Ordner pro Tag (**Catalog**, **Auth**, **Orders**) und einer Anfrage für jeden Endpunkt,
+   **List stores** eingeschlossen.
+2. Sieh dir **Catalog › List products** an. Ihre URL ist `{{baseUrl}}/products`. Ihr Tab **Tests** hat schon zwei
+   Prüfungen aus der Spec: **Status** ist gleich `200` und ein **JSON Schema** des dokumentierten Body.
+
+Der Ordner folgt der Spec. Ändert sich die Spec später, bietet das Menü **Anfragen** der Symbolleiste von „Specs“
+**„Alpenglow demo shop“ auf Änderungen prüfen …** an: Es listet auf, was in der Spec neu, geändert und weg ist, und
+wendet es an, ohne deine eigenen Änderungen an den Anfragen zu überschreiben. Siehe [OpenAPI-Abgleich](/docs/specs).
+
+Die erzeugten Anfragen beginnen mit `{{baseUrl}}` (klein geschrieben, `rl`). Du gibst ihr in den nächsten zwei Schritten
+einen Wert.
+
+## 5. Einen Mock der Spec laufen lassen [#5-serve-a-mock-of-the-spec]
+
+1. Wechsle zu **Mocks** (<kbd>⌘</kbd><kbd>4</kbd>). Öffne das Menü **+** und wähle **Mock von Alpenglow demo shop**.
+2. Wähle **Start** (<kbd>⌘</kbd><kbd>R</kbd>). Die Symbolleiste zeigt einen grünen Punkt und die Adresse
+   `http://127.0.0.1:4010/v1`: der erste freie Port ab 4010 und der Basispfad aus dem Server der Spec.
+3. Wähle **In Umgebung verwenden**. Echolot legt eine Umgebung **Mock: Alpenglow demo shop** an, deren `{{baseUrl}}` die
+   Adresse des Mocks ist, und wählt sie aus.
+
+Die Karte **Einstellungen** enthält den **Port** des Mocks, **Anderen Geräten im Netzwerk antworten**, ein
+**Verzögern** vor jeder Antwort, einen Anteil **Fehler** (eingespeiste 500er) und **Prüfungen**:
+**Anfragen ablehnen, die gegen die Spec verstoßen (400 mit den Gründen)**. Der Mock läuft, solange das Fenster geöffnet ist.
+
+<Shot id="tutorials-spec-mock-running" alt="Die Seite „Mocks“ mit dem laufenden Mock von Alpenglow demo shop auf 127.0.0.1:4010, seinen Einstellungen und einem Protokoll der Anfragen" />
+
+## 6. Anfragen an den Mock senden [#6-send-requests-to-the-mock]
+
+1. Wechsle zurück zu **Anfragen** und sende **Catalog › List stores**. Der Mock antwortet mit `200` und den beiden Läden aus deinem
+   Beispiel. Der Tab **Header** zeigt `Server: Echolot mock`.
+2. Sende **Catalog › List products**. Der Mock hat dafür kein Beispiel, also baut er einen Body aus dem Schema: die
+   richtige Form mit Platzhalterwerten. Beide Prüfungen der Anfrage bestehen.
+3. Füge in den **Parametern** von **List products** `sort` mit dem Wert `cheapest` hinzu und sende. Der Mock lehnt es ab:
+   `400` mit `query “sort”: not one of the allowed values`. Die Spec erlaubt `name`, `price`, `-price` und `rating`.
+   Entferne den Parameter.
+4. Füge bei **Get a product** den Header `Prefer: code=404` hinzu und sende. Der Mock antwortet stattdessen mit dem
+   dokumentierten Problem `404`. Entferne den Header.
+
+Das **PROTOKOLL** der Seite „Mocks“ listet jede Anfrage, die der Mock beantwortet hat, mit der Operation, die passte, und
+jedem Problem. In der Karte **Antworten** kannst du eine Operation für jede Anfrage mit einem anderen dokumentierten
+Status oder Beispiel antworten lassen. JavaScript-Routen für Antworten, die einen Zustand brauchen, stehen unter
+[Geskriptete Routen](/docs/mocks/scripted-routes).
+
+## 7. Die echte API gegen die Spec prüfen [#7-check-the-real-api-against-the-spec]
+
+1. Füge auf der Seite **Umgebungen** eine Umgebung `Demo` mit einer Variablen `baseUrl` auf
+   `https://demo.echolot.dev/v1` hinzu und wähle sie im Seitenkopf aus.
+2. Öffne **List products**, öffne im Tab **Tests** das Menü **Test hinzufügen** und wähle **OpenAPI-Spec**. Es gibt
+   nichts auszufüllen: Die Prüfung vergleicht den Body mit dem Schema, das die Spec für den zurückgekommenen Status
+   dokumentiert.
+3. Sende sie. Alle drei Prüfungen bestehen: Der echte Shop entspricht seiner Spec.
+4. Sende **List stores**. Der echte Shop antwortet mit `404`: Der Endpunkt existiert nur in der Spec. Das ist der Sinn von
+   „Spec zuerst“: Der Mock lässt dich schon jetzt dagegen bauen.
+
+Um dieselben Prüfungen in CI auszuführen, lass den Ordner mit [`echolot run`](/docs/cli/run) laufen und bediene den Mock
+dort mit `echolot mock`:
+
+```sh
+echolot mock specs/openapi.yaml --port 4010
+```
+
+## Nächste Schritte [#next-steps]
+
+- [Specs aus Datenverkehr](/docs/specs/specs-from-traffic): Schreibe eine Spec aus Anfragen, die du schon sendest.
+- [Mocks](/docs/mocks): aus dem Verlauf gesicherte Beispiele, Verzögerungen, Fehler und Freigabe im Netzwerk.
+- [`echolot spec`](/docs/cli/spec): `check` lässt CI fehlschlagen, wenn ein Ordner hinter seiner Spec zurückliegt.

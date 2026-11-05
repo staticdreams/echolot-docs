@@ -1,0 +1,52 @@
+---
+title: "Echolot"
+description: "Qué es Echolot, qué hace y por dónde empezar en esta documentación."
+---
+
+Echolot es una app nativa para Mac con la que enviar, probar y crear APIs. Habla HTTP/1.1, HTTP/2 y HTTP/3, GraphQL,
+gRPC, WebSocket, Server-Sent Events, Socket.IO, MQTT y MCP, y muestra exactamente lo que ha pasado por la red: los
+bytes sin procesar, cada redirección y el tiempo de cada paso.
+
+Qué hace:
+
+- **Guarda tu trabajo en archivos de texto plano.** Un espacio de trabajo es una carpeta de archivos TOML legibles, uno
+  por solicitud, que puedes mantener en Git. Los valores secretos se quedan en el llavero de macOS, nunca en los
+  archivos.
+- **Prueba y ejecuta.** Añade comprobaciones a cualquier solicitud, ejecuta una carpeta o todo el espacio de trabajo en
+  la página Ejecución y lanza el mismo espacio de trabajo en CI con la herramienta de línea de comandos `echolot`.
+- **Diseña y simula.** Escribe especificaciones OpenAPI de forma visual o como texto y ejecuta servidores mock locales:
+  de una especificación o de rutas que creas a mano con datos ficticios.
+- **Automatiza.** Encadena solicitudes, condiciones y bucles en flujos sobre un lienzo y ejecútalos a mano, con una
+  programación o desde un webhook.
+- **Funciona con IA.** El Asistente integrado envía, prueba y corrige solicitudes con el modelo que elijas. Los agentes
+  de IA externos pueden usar tu espacio de trabajo a través del servidor MCP de Echolot. Todo lo que cambia datos te
+  pregunta antes.
+- **Lee respuestas enormes.** Los cuerpos se escriben en el disco a medida que llegan, así que una respuesta JSON de
+  500 MB se abre al instante.
+
+Echolot requiere macOS 15 o posterior en un Mac con Apple silicon. No tiene cuentas ni inicio de sesión.
+
+## Por dónde empezar [#start-here]
+
+<Cards>
+  <Card title="Instalar Echolot" href="/docs/get-started/install" description="Descárgalo, ábrelo y mantenlo al día." />
+  <Card title="Tu primera solicitud" href="/docs/get-started/first-request" description="De cero a una solicitud enviada y una respuesta leída en pocos minutos." />
+  <Card title="La ventana" href="/docs/get-started/the-window" description="Un recorrido por la barra lateral, las páginas, las pestañas y los atajos." />
+  <Card title="Inicio y Sonar" href="/docs/get-started/home" description="La vista general del espacio de trabajo y todos los envíos de un periodo dibujados según su tiempo de respuesta." />
+  <Card title="Trae lo que ya tienes" href="/docs/get-started/importing" description="Importa desde Postman, Insomnia, OpenAPI, HAR, cURL, Paw y Bruno." />
+  <Card title="La API de demostración" href="/docs/tutorials/demo-api" description="Una tienda de mentira en demo.echolot.dev para practicar: REST, GraphQL, WebSocket, SSE y MCP." />
+  <Card title="Ediciones" href="/docs/get-started/editions" description="La descarga directa y la edición de la Mac App Store, una junto a otra." />
+</Cards>
+
+## Las partes principales [#the-main-parts]
+
+<Cards>
+  <Card title="Espacios de trabajo" href="/docs/workspaces" description="Carpetas, entornos, secretos, historial y Git." />
+  <Card title="Solicitudes" href="/docs/requests" description="Todos los protocolos, autenticación, respuestas, scripts, pruebas y la página Ejecución." />
+  <Card title="Servidores MCP" href="/docs/mcp-servers" description="Inspecciona, comprueba y llama a cualquier servidor MCP." />
+  <Card title="Especificaciones" href="/docs/specs" description="Diseña documentos OpenAPI y mantén las solicitudes en sintonía con ellos." />
+  <Card title="Mocks" href="/docs/mocks" description="Servidores locales de rutas con datos ficticios, o de una especificación." />
+  <Card title="Flujos" href="/docs/flows" description="Solicitudes, condiciones y bucles encadenados sobre un lienzo." />
+  <Card title="Asistente" href="/docs/ai/assistant" description="El agente de IA integrado en Echolot." />
+  <Card title="Herramienta de línea de comandos" href="/docs/cli" description="Envía, ejecuta, importa, simula y más desde Terminal y CI." />
+</Cards>

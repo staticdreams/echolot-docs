@@ -1,0 +1,100 @@
+---
+title: "Echo"
+description: "Echo, la pequeña pantalla de estado de la cabecera de la página que cuenta lo que pasa en la ventana, con un informe de la sesión al hacer clic."
+---
+
+Echo es una pantalla diminuta en el centro de la cabecera de la página. Cuenta lo que pasa en la ventana mientras
+ocurre: un envío y sus tiempos, un error, el progreso de la ejecución, un flujo que te espera, la llamada de un
+agente, un cambio a un entorno protegido. De vez en cuando añade un chiste, todos los que quieras. Haz clic en ella
+para ver un informe de la sesión, sin chistes. Echo está activada de forma predeterminada y puedes desactivarla.
+
+<Shot id="ai-echo-screen" alt="Echo en el centro de la cabecera de la página, mostrando el estado y el tiempo de la solicitud que se acaba de enviar" />
+
+## Activar o desactivar Echo [#turn-echo-on-or-off]
+
+Echo está activada de forma predeterminada. Abre **Ajustes › General** y, en **Echo**, usa **Mostrar la pantalla de
+estado de Echo en la cabecera de la página**. Todas las ventanas de espacio de trabajo siguen este ajuste. Cuando la
+cabecera es demasiado estrecha para la pantalla junto al título y los botones de la página, Echo se aparta hasta que
+vuelve a haber sitio.
+
+Para ocultarla de nuevo, desactiva el ajuste, o haz Control-clic en la pantalla y elige **Ocultar Echo**.
+
+## Qué cuenta Echo [#what-echo-tells]
+
+Echo vigila la ventana y pone una línea breve en su pantalla para:
+
+- **Envíos**: la solicitud que se está enviando y cuánto lleva, luego el estado y el tiempo de la respuesta, las
+  comprobaciones que fallaron o por qué no hubo respuesta (un tiempo de espera agotado, nada escuchando en la
+  dirección, un nombre de host que no se resolvió, un fallo en el protocolo de enlace TLS). También un envío
+  cancelado.
+- **Sesiones**: una sesión de WebSocket, Socket.IO o MQTT que se conecta y se cierra.
+- **La ejecución**: el progreso mientras se ejecuta y luego cuántas solicitudes se superaron o fallaron, o dónde la
+  detuviste.
+- **Flujos**: un flujo en ejecución, esperándote y cómo terminó.
+- **Mocks**: un servidor mock que arranca y se detiene, y las solicitudes que responde.
+- **Entornos**: un cambio del entorno activo y un aviso cuando es un [entorno protegido](/docs/workspaces/protected-environments).
+- **Agentes**: un agente que se conecta, sus llamadas y las aprobaciones que te esperan; el asistente respondiendo.
+- **Novedades**: tras una actualización, las versiones que aún no has leído.
+
+### Cuánto bromea [#how-much-it-jokes]
+
+Elige con **Humor** en **Ajustes › General › Echo**, o haz Control-clic en la pantalla:
+
+| Humor | Qué hace Echo |
+| --- | --- |
+| **Solo hechos** | Estado y detalles, sin chistes. |
+| **Un poco** | Un chiste de vez en cuando. El valor predeterminado. |
+| **Mucho** | Un chiste en cada línea, y más charla mientras no pasa nada. |
+
+## El informe [#the-report]
+
+Haz clic en Echo, o haz Control-clic y elige **Mostrar el informe de Echo**. El **INFORME DE SESIÓN** se despliega
+desde la pantalla con los datos de la sesión desde que empezó:
+
+<Shot id="ai-echo-report" alt="El informe de sesión de Echo: envíos, fallos, tiempos medio, más lento y más rápido, ejecuciones y un registro de los eventos de la sesión" />
+
+| Indicador | Qué cuenta |
+| --- | --- |
+| **ENVÍOS**, **FALLIDOS** | Solicitudes enviadas y cuántas fallaron |
+| **MEDIA**, **MÁS LENTO**, **MÁS RÁPIDO** | Tiempos de respuesta; pasa el puntero por el más lento o el más rápido para ver la solicitud |
+| **EJECUCIONES**, **FALLOS DE EJECUCIÓN** | Ejecuciones de la página Ejecución y solicitudes fallidas del total de las que ejecutaron |
+| **FLUJOS** | Ejecuciones de flujos y cuántas fallaron |
+| **SESIONES** | Sesiones de WebSocket, Socket.IO y MQTT |
+| **LLAMADAS A MOCKS** | Solicitudes que respondieron tus servidores mock |
+| **LLAMADAS DE AGENTES** | Llamadas de agentes |
+
+Los indicadores de cosas que no ocurrieron no aparecen. Debajo está el registro de los eventos de la sesión con sus
+horas. **Borrar** empieza el informe de nuevo. Ciérralo con el botón de cerrar o con <kbd>Esc</kbd>.
+
+## Comentarios de IA [#ai-comments]
+
+Echo escribe sus propias líneas. Si quieres, un modelo puede escribir algunos de sus comentarios: activa **Permitir que
+la IA escriba algunos comentarios de Echo** en **Ajustes › General › Echo**. Está desactivado de forma predeterminada y
+no está disponible con **Solo hechos**.
+
+- En un Mac con Apple Intelligence (macOS 26), los escribe el modelo integrado de Apple y nada sale del Mac.
+- En los demás casos los escribe el modelo marcado en **Ajustes › Asistente**. **Creado por** muestra cuál. La primera
+  vez, Echolot pide el [permiso único](/docs/ai/assistant#the-one-time-permission) para ese proveedor. Si no lo has
+  permitido, **Creado por** lo dice con un botón **Permitir…**, y mientras tanto Echo escribe sus propias líneas. Un
+  permiso que ya diste al asistente cubre también a Echo. Los agentes CLI nunca escriben los comentarios de Echo.
+
+Un modelo escribe como mucho un comentario cada 30 segundos, y solo sobre fallos y otros momentos destacados: un envío
+fallido o muy lento (3 segundos o más) o muy rápido (menos de 30 ms), una comprobación fallida, un envío a un entorno
+protegido o un cambio a uno, una ejecución o un flujo terminados, un agente esperando aprobación.
+
+### Lo que oye el modelo [#what-the-model-hears]
+
+Solo lo que ocurrió, en una frase: el tipo de evento, el tipo y el método de una solicitud, un código de estado, una
+duración, cuántas comprobaciones fallaron, por qué un envío no obtuvo respuesta (tiempo de espera, nada escuchando,
+nombre de host, TLS), que una ejecución de tantas solicitudes tuvo tantos fallos. Por ejemplo: *“Una solicitud HTTP
+POST obtuvo el estado 422 en 180 ms.”* o *“Una ejecución de pruebas de 12 solicitudes terminó con 2 fallos.”*
+
+Nunca nombres, direcciones, cabeceras, cuerpos, variables ni secretos.
+
+## Accesibilidad [#accessibility]
+
+- Con **Reducir movimiento** activado (Ajustes del Sistema › Accesibilidad › Pantalla), las líneas aparecen de golpe
+  en lugar de escribirse y desplazarse, la pantalla solo se redibuja cuando cambia su texto o avanza un reloj, y el
+  informe se abre con un breve fundido en lugar de desplegarse.
+- Con **Aumentar contraste** activado, la pantalla se dibuja con más contraste.
+- VoiceOver lee las líneas actuales de Echo; la etiqueta de la pantalla es “Echo”.

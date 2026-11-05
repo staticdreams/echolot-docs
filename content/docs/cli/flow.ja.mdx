@@ -1,0 +1,165 @@
+---
+title: "echolot flow"
+description: "ワークスペースのフローをターミナルから一覧表示、実行、作成し、そのスケジュールとWebhookを提供します。"
+---
+
+`echolot flow` は、アプリなしで[フロー](/docs/flows)を実行します：ターミナルやCIジョブから1回だけ実行することも、期限が来たスケジュール済みのフローを実行し、Webhookに応答するサービスとして動かすこともできます。
+
+| サブコマンド | 動作 |
+| --- | --- |
+| `echolot flow list` | ワークスペースのフローを、入力と問題とともに一覧表示します。 |
+| `echolot flow run` | フローを実行し、各ブロックが終了するたびに出力し、最後にフローの出力を表示します。 |
+| `echolot flow new` | 空のフロー、またはテンプレートからフローを作成します。名前を指定しない場合は、テンプレートを一覧表示します。 |
+| `echolot flow serve` | 停止されるまで、期限が来たスケジュール済みのフローを実行し、Webhookに応答します。 |
+
+どのサブコマンドも、`-w` または `--workspace` でワークスペースを指定します。
+
+## echolot flow list [#echolot-flow-list]
+
+```sh
+echolot flow list --workspace <workspace> [--json]
+```
+
+```sh
+echolot flow list -w Alpenglow.echolot
+```
+
+```text
+morning-stock-check  Morning stock check
+order-status-webhook  Order status on webhook
+place-test-order  Place a test order  MCP tool place_test_order
+```
+
+各行には、フローのスラッグ（`flows/` 内のファイル名から `.flow.toml` を除いたもの）と名前が表示され、あれば続けて、括弧内に入力（オプションのものは角括弧内）、
+フローが公開されているMCPツール、問題の数が表示されます。`--json` は、各フローを `slug`、`name`、`description`、`inputs`、`blockCount`、`errors`、`warnings`、
+`schedule` または `webhook` とともに出力します。
+
+## echolot flow run [#echolot-flow-run]
+
+```sh
+echolot flow run <flow> --workspace <workspace> [--env <env>] [--input <name=value> ...] [--json] [--no-input]
+```
+
+`<flow>` は、フローのスラッグまたは名前です。
+
+```sh
+echolot flow run morning-stock-check -w Alpenglow.echolot
+```
+
+```text
+✓ start  Start  0 ms
+✓ list  List products  148 ms
+✓ low  Running low?  4 ms
+notification: Restock Bern — A tent is under five in Bern.
+✓ notify  Restock  0 ms
+Morning stock check: passed in 152 ms
+```
+
+- 各ブロックは、終了すると1行を出力します：`✓` または `✗`、ID、タイトル、所要時間。失敗した場合はエラーも表示されます。ログブロックが書き出した内容と各テストの結果は、
+  続く別の行に表示されます。
+- 通知は標準エラーに出力されます。
+- フローの出力は最後にJSONとして出力され、続いて概要が標準エラーに出力されます。
+- `--input name=value` は入力を設定します。値はテキストとして渡され、入力の型に変換されます。入力ごとに1回指定します。
+- フローに人の操作が必要な場合（値のない入力や**承認**ブロック）、Echolotはターミナルで尋ねます。`--no-input` を指定すると尋ねず、フローはそこで失敗します。CIではこれが望ましい動作です。
+- `--json` は、進行状況の行の代わりに、実行記録の全体をJSONで出力します。
+
+```sh
+echolot flow run "Place a test order" -w Alpenglow.echolot --env staging --no-input
+```
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。必須です。 |
+| `--env <env>` | フローのリクエストが使う環境：ファイル名から `.toml` を除いたもの、または環境の名前。 |
+| `--input <name=value>` | 入力。テキストは入力の型に変換されます。複数回指定できます。 |
+| `--json` | 進行状況の代わりに、実行記録をJSONで出力します。 |
+| `--no-input` | 尋ねません：人の操作が必要なフローはそこで失敗します。 |
+
+フローが失敗した場合や、そのテストのいずれかが失敗した場合、実行は失敗し、終了コード1で終了します。
+
+## echolot flow new [#echolot-flow-new]
+
+```sh
+echolot flow new [<name>] [--workspace <workspace>] [--template <template>]
+```
+
+名前を指定しない場合は、テンプレートを一覧表示します。
+
+```text
+device-sign-in  OAuth device sign-in: shows the code and link (with a QR code), waits until the person approves, saves the tokens to the Keychain.
+refresh-token  Trades the refresh token for a new access token and saves both to the Keychain; says so when it fails.
+paginate-and-export  Fetches a number of pages, gathers their items into one list and writes it to a JSON file in the workspace.
+smoke-monitor  Every hour, checks that a request answers 200 quickly; a notification when it does not.
+seed-and-clean-up  Creates a few records, leaves room for what needs them, then deletes each one again.
+```
+
+名前を指定すると、新しいフローファイルを書き出します。
+
+```sh
+echolot flow new "Export tents" --template paginate-and-export -w Alpenglow.echolot
+```
+
+```text
+Created flows/export-tents.flow.toml.
+```
+
+テンプレートはリクエストを空欄のままにするので、アプリまたはフローのファイルで選んでください。どれを選ぶかは、キャンバス上のメモに書かれています。
+[テンプレート](/docs/flows/templates)を参照してください。
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。 |
+| `--template <template>` | 元にするテンプレート：`device-sign-in`、`refresh-token`、`paginate-and-export`、`smoke-monitor`、`seed-and-clean-up`。指定しない場合、フローは空です。 |
+
+## echolot flow serve [#echolot-flow-serve]
+
+```sh
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+```
+
+スケジュールのあるすべてのフローを期限が来たときに実行し、Webhookを持つフローのWebhookに、<kbd>⌃</kbd><kbd>C</kbd>で停止するまで応答します。
+サーバやコンテナで実行すると、アプリなしでワークスペースの自動化を動かし続けられます。
+
+```sh
+echolot flow serve -w Alpenglow.echolot --port 4100
+```
+
+```text
+Serving Alpenglow (Ctrl-C stops it)
+  schedule  Morning stock check: 0 6 * * *
+  webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
+  token     3f9a…
+```
+
+実行のたびに、時刻、フロー、終了の仕方、所要時間を示す1行が出力されます。
+
+**Webhook。** 呼び出し元は、フローのWebhookのメソッドとパスに、トークンを `Authorization: Bearer <token>`、`X-Echolot-Token` ヘッダー、またはURLの `?token=` として付けて送信します。
+フローの入力は、クエリとJSONボディから取得されます。`body` という名前の入力には、ボディ全体が渡されます。応答は、フローの出力（JSON）です。フローが失敗した場合はエラー付きの `500`、
+正しいトークンがない場合は `401`、どのフローにもないパスの場合は、存在するパスの一覧付きの `404` になります。
+
+```sh
+curl -X POST http://127.0.0.1:4100/order-status \
+  -H "Authorization: Bearer $ECHOLOT_WEBHOOK_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"orderId": "ord_7Hk2Lw"}'
+```
+
+トークンは `--token`、なければ `ECHOLOT_WEBHOOK_TOKEN`、それもなければEcholotが出力する新しいトークンです。Webhookの実行は最大2分かかることがあります。8 MBを超えるボディは、全体が拒否されます。
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。必須です。 |
+| `--env <env>` | フローのリクエストが使う環境。 |
+| `--port <port>` | Webhookのポート。`0` は空いているポートを選びます。デフォルトは4100。 |
+| `--share` | このマシンだけでなく、すべてのネットワークインターフェースでWebhookに応答します：コンテナ向けです。 |
+| `--token <token>` | Webhookのトークン。デフォルトは `ECHOLOT_WEBHOOK_TOKEN`、なければ新しく生成して出力します。 |
+
+アプリでのスケジュールとWebhookについては、[フローの実行とトリガー](/docs/flows/running-and-triggers)を参照してください。
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | `run`：フローがすべてのテストに合格しました。`list`、`new`：完了しました。 |
+| `1` | `run`：フローが失敗したか、テストが失敗しました。 |
+| `64` | オプションが正しくない、存在しないフローまたは環境、または `name=value` の形式でない `--input`。 |

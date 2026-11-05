@@ -1,0 +1,212 @@
+---
+title: "Réponses"
+description: "Lisez l’état, la durée, le corps, les en-têtes, les cookies et les octets sur le réseau d’une réponse, recherchez dans les gros corps, comparez des réponses et enregistrez-les."
+---
+
+Tout ce qu’un serveur renvoie s’affiche dans le volet de réponse : le corps dans la vue qui lui convient, les en-têtes,
+les cookies, le message tel qu’il est arrivé, ses octets en hexadécimal et sur le réseau. L’état et la durée se trouvent
+dans la ligne sous la barre d’URL. Les corps sont écrits sur le disque à mesure qu’ils arrivent : une réponse de
+plusieurs centaines de mégaoctets s’ouvre donc aussi vite qu’une petite.
+
+<Shot id="requests-http-response-tree" alt="La réponse de List products dans la vue Arbre JSON, avec une valeur survolée et ses boutons Copier la valeur et Stocker dans une variable" />
+
+## État, durée et taille [#status-time-and-size]
+
+Après un envoi, la ligne sous la barre d’URL affiche :
+
+- l’**état**, coloré selon sa classe (2xx, 3xx, 4xx, 5xx) ; une requête qui n’a pas obtenu de réponse affiche **Échec**
+  ou **Annulé** à la place,
+- une barre pour chaque **phase** de l’échange, qui grandit pendant l’exécution de la requête,
+- le **temps total**.
+
+Laissez le pointeur sur la ligne et une carte s’ouvre avec les détails :
+
+| Dans la carte | Ce qu’elle indique |
+| --- | --- |
+| État | Le code d’état et la phrase de raison. |
+| **Temps** | La durée totale de l’échange. |
+| **Taille** | La taille du corps ; pendant l’arrivée d’un corps, la quantité reçue sur le total. |
+| **Encodage** | La compression et les tailles avant et après décodage, comme `br, 12 KB → 48 KB`, ou le fait qu’il n’a pas pu être décodé. |
+| **3 redirections** | Les redirections suivies ; cliquez pour voir l’état, la méthode, l’adresse et la durée de chaque étape. |
+| Vérifications | Combien de vérifications de la requête ont réussi. |
+| **Connexion réutilisée** | La requête est passée par une connexion gardée ouverte depuis une précédente : pas de temps DNS, de connexion ni de TLS. |
+| TLS | La version et le protocole TLS, comme `TLS 1.3 · h2`. Cliquez dessus pour voir les certificats : sujet, **Émetteur**, dates de **Validité** et **Noms**. Un cadenas orange ouvert signifie que la vérification était désactivée. |
+| **HTTP/3 proposé** | Le serveur a proposé HTTP/3 avec `Alt-Svc` ; voir [version HTTP](/docs/requests/settings#http-version). |
+| Adresse | L’adresse IP et le port du serveur. |
+| Chronologie | **DNS**, **Connexion**, **TLS**, **Attente** (jusqu’au premier octet de la réponse) et **Transfert**, chacun avec sa durée. |
+
+Quand une requête a été renvoyée (sur une nouvelle connexion, ou en HTTP/1.1), la carte en donne la raison. Quand elle a
+échoué, la carte affiche l’erreur.
+
+## Les onglets de la réponse [#the-response-tabs]
+
+| Onglet | Ce qu’il montre |
+| --- | --- |
+| **Corps** | Le corps, dans la vue de votre choix. |
+| **Événements** | Les Server-Sent Events et d’autres flux d’événements, un événement par ligne. Voir [WebSocket et SSE](/docs/requests/websocket-and-sse). |
+| **Tests** | Les résultats des vérifications de la requête et des tests de script, avec un compteur comme `3/4`. |
+| **Console** | Ce que les scripts de la requête ont journalisé ; seulement quand des scripts se sont exécutés. Voir [Scripts et tests](/docs/requests/scripts-and-tests). |
+| **En-têtes** | Les en-têtes de la réponse, avec un compteur. |
+| **Cookies** | Les cookies envoyés et définis, et le jar de cookies de la fenêtre. |
+| **Brut** | La réponse sous forme d’un seul message HTTP : ligne d’état, en-têtes, une ligne vide et le corps. |
+| **Hex** | Les octets du corps. |
+| **Réseau** | Les octets envoyés et reçus, exactement comme ils ont transité sur la connexion. |
+
+## Vues du corps [#body-views]
+
+Choisissez une vue dans la rangée en haut de l’onglet **Corps** :
+
+| Vue | Ce qu’elle montre |
+| --- | --- |
+| **Texte** | Le corps tel qu’il est arrivé, coloré selon son type de contenu. |
+| **JSON** | Le JSON mis en forme. |
+| **Arbre JSON** | Le JSON sous forme d’arbre à déplier et à replier. |
+| **XML** | Du XML sous forme d’arbre d’éléments, d’attributs et de texte. |
+| **Formulaire** | Un corps encodé URL lu comme un arbre. |
+| **MessagePack** | Un corps MessagePack lu comme un arbre. |
+| **Aperçu** | Images, PDF, audio et vidéo, via Coup d’œil. |
+
+Toutes les vues sont proposées pour tous les corps : une réponse envoyée avec un mauvais type de contenu peut donc quand
+même être lue pour ce qu’elle est. Le type de contenu choisit la vue dans laquelle une réponse s’ouvre, et Echolot se
+souvient de la vue que vous choisissez pour chaque type de corps : après avoir choisi **Arbre JSON** pour une réponse
+JSON, les suivantes s’ouvrent dans l’arbre.
+
+Le HTML et les scripts ne sont jamais exécutés ni rendus. **Aperçu** et **Ouvrir dans l’app par défaut** les montrent
+sous forme de texte.
+
+Les longues lignes défilent latéralement dans les vues de texte. Cliquez sur le bouton de retour à la ligne, ou choisissez
+**Affichage › Retour à la ligne automatique**, pour les replier. **Affichage › Agrandir le code**
+(<kbd>⌘</kbd><kbd>+</kbd>), **Réduire le code** (<kbd>⌘</kbd><kbd>-</kbd>) et **Taille réelle du code**
+(<kbd>⌘</kbd><kbd>0</kbd>) changent la taille du code partout.
+
+## Arbres JSON et XML [#json-and-xml-trees]
+
+Les arbres montrent la clé ou l’indice de chaque valeur, son type et sa valeur ; un objet ou un tableau replié indique
+combien d’éléments il contient. Un tableau de plus de 1 000 éléments est découpé en plages comme `[0 … 999]`, si bien
+qu’un tableau gigantesque s’ouvre instantanément.
+
+Laissez le pointeur sur une valeur pour voir ses boutons :
+
+- **Ouvrir dans le navigateur**, pour une valeur qui est une adresse web,
+- **Copier la valeur**,
+- **Stocker dans une variable…**, qui garde la valeur dans une variable et, si vous le souhaitez, la met à jour après
+  chaque envoi. Voir [Captures de réponse](/docs/requests/captures#store-a-value-from-the-response).
+
+Faites un clic droit sur une ligne pour plus d’options :
+
+- Dans l’arbre JSON : **Copier le chemin** (le JSONPath de la valeur, comme `$.items[0].sku`), **Copier la valeur** et
+  **Ajouter une vérification**, qui ajoute à l’onglet **Tests** une vérification que la valeur est égale à ce qu’elle
+  est maintenant.
+- Dans l’arbre XML : **Copier le XPath** et **Copier la valeur**.
+
+Laissez le pointeur sur une valeur qui est une adresse d’image et une vignette s’ouvre à côté. L’image est récupérée
+comme un navigateur récupère une image : sans vos cookies ni vos identifiants, jusqu’à 10 Mo, et sans être enregistrée
+dans l’historique. Les valeurs `data:image/…` s’affichent sans aucune requête. Laissez le pointeur sur une valeur qui
+ressemble à une date (heure Unix en secondes, millisecondes, microsecondes ou nanosecondes, ou horodatage ISO 8601) et
+elle s’affiche sous forme de date lisible.
+
+L’arbre **XML** accepte les corps jusqu’à 50 Mo, et **Formulaire** et **MessagePack** jusqu’à 64 Mo. Pour les plus
+gros, utilisez **Texte** et la recherche.
+
+## Rechercher [#find]
+
+Appuyez sur <kbd>⌘</kbd><kbd>F</kbd> (**Requête › Rechercher dans le corps**) ou cliquez sur la loupe.
+
+- Dans **Texte** et **JSON**, saisissez ce que vous cherchez. **Aa** respecte la casse ; **.\*** en fait une expression
+  régulière. La barre indique où vous en êtes, comme `3 of 1,204`. Appuyez sur <kbd>↩</kbd> ou <kbd>⌘</kbd><kbd>G</kbd>
+  pour la correspondance suivante et sur <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> pour la précédente. Jusqu’à 10 000
+  correspondances sont marquées ; le compteur affiche `+` quand il y en a davantage.
+- Dans **Arbre JSON**, **Formulaire** et **MessagePack**, la barre accepte un JSONPath comme `$.items[0]` et va à cette
+  valeur. Elle indique **Introuvable** quand il n’y a rien.
+
+Appuyez sur <kbd>Esc</kbd> pour fermer la barre.
+
+## Réponses volumineuses [#large-responses]
+
+Echolot ne garde jamais un corps en mémoire. Il l’écrit en continu dans un fichier à mesure qu’il arrive, et les
+visionneuses ne lisent que la partie affichée à l’écran :
+
+- Les premières lignes s’affichent pendant que le reste arrive encore. Pendant le téléchargement d’un corps, la carte de
+  détails indique la quantité reçue.
+- **JSON** commence à mettre en forme dès que le corps commence, et suit sa croissance.
+- **Arbre JSON** ne construit que les lignes que vous dépliez.
+- La recherche parcourt tout le corps sur le disque.
+
+Essayez avec **Catalog › Export the catalog** dans Alpenglow : 40 000 produits, environ 14 Mo.
+
+Les corps sont conservés sur le disque jusqu’à la taille définie dans **Réglages › Stockage › Conserver les corps de
+réponse jusqu’à** ; au-delà, les moins récemment utilisés sont supprimés, sauf les corps ouverts dans un onglet. Une
+réponse plus ancienne dont le corps a été supprimé indique **Le corps de cette réponse n’est plus stocké.** Voir
+[Stockage et chiffrement](/docs/workspaces/storage-and-encryption).
+
+## En-têtes [#headers]
+
+L’onglet **En-têtes** liste les en-têtes de la réponse dans l’ordre où ils sont arrivés. Laissez le pointeur sur une
+ligne, ou sélectionnez-la et appuyez sur <kbd>Espace</kbd> (<kbd>↑</kbd> et <kbd>↓</kbd> pour vous déplacer), pour voir
+la valeur en entier, à quoi sert l’en-tête et ce que sa valeur signifie. Faites un clic droit sur un en-tête pour
+**Copier la valeur**, **Copier l’en-tête** et **Ajouter une vérification**, qui ajoute à l’onglet **Tests** une
+vérification sur cet en-tête.
+
+## Cookies [#cookies]
+
+L’onglet **Cookies** a trois parties :
+
+- **Envoyé avec la requête** : les cookies qui sont partis, et l’origine de chacun.
+- **Défini par la réponse** : chaque `Set-Cookie`, avec ses attributs, et un avertissement quand le jar l’a refusé.
+- **Enregistré dans cette fenêtre** : tout ce que contient le jar de cookies de la fenêtre. Supprimez-en un avec son
+  bouton, ou tous avec **Tout effacer**.
+
+Quand **Envoyer et enregistrer les cookies** est désactivé pour la requête, l’onglet l’indique. Voir
+[Cookies](/docs/requests/settings#cookies).
+
+## Brut, Hex et Réseau [#raw-hex-and-wire]
+
+- **Brut** montre la réponse sous forme d’un seul message : ligne d’état, en-têtes, une ligne vide, puis le corps décodé
+  (ses premiers 64 Mo ; l’onglet **Corps** contient tout).
+- **Hex** montre les octets du corps : positions, 16 octets par ligne en deux groupes, et leur ASCII. Sélectionnez des
+  octets à la souris ou avec les touches fléchées et <kbd>⇧</kbd> ; la copie donne des paires hexadécimales, ou du texte
+  si vous avez sélectionné dans la colonne ASCII.
+- **Réseau** montre les octets exactement comme ils ont traversé la connexion : choisissez **Envoyé** ou **Reçu**. Vous
+  voyez les en-têtes tels qu’ils sont encadrés et un corps compressé avant décodage. Jusqu’à 1 Mo dans chaque sens est
+  conservé ; l’onglet indique quand il n’en montre que le début.
+
+## Enregistrer et partager [#save-and-share]
+
+Cliquez sur le bouton d’enregistrement en haut à droite de l’onglet **Corps** :
+
+- **Enregistrer le corps…** écrit le corps dans un fichier (décodé).
+- **Ouvrir dans l’app par défaut** l’ouvre dans l’app que votre Mac utilise pour son type.
+- **Enregistrer le corps encodé…** écrit le corps tel qu’il est arrivé, toujours compressé ; seulement pour les réponses
+  compressées.
+- **Exporter l’échange en HAR…** écrit la requête et la réponse dans un fichier HAR.
+
+Pour partager la requête plutôt que la réponse, utilisez **Requête › Copier en tant que cURL**
+(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd>) ou **Requête › Générer du code…** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd>). Voir
+[Requêtes HTTP](/docs/requests#send-and-cancel).
+
+## Réponses précédentes et comparaison [#earlier-responses-and-comparing]
+
+Chaque envoi est conservé dans l’historique. Le bouton en forme d’horloge avec un nombre, au bout de la ligne sous la
+barre d’URL, ouvre les réponses de cette requête : chacune avec son état, son heure, qui l’a envoyée (vous, une
+exécution ou un agent), sa durée et sa taille.
+
+<Shot id="requests-http-response-history" alt="La fenêtre contextuelle de l’historique des réponses de List products, listant les réponses précédentes avec leur état, leur heure, leur origine, leur durée et leur taille" />
+
+- Cliquez sur une réponse pour l’afficher. Une barre au-dessus du volet de réponse indique **Réponse passée** ;
+  **Afficher la dernière** permet de revenir.
+- Pour comparer deux réponses, affichez-en une, puis survolez-en une autre dans la liste et cliquez sur son bouton de
+  comparaison, ou cliquez sur **Comparer à la dernière** dans la barre **Réponse passée**. La comparaison montre ce qui a
+  été ajouté et supprimé.
+- **Effacer l’historique de cette requête…** dans le menu de la liste supprime l’historique de cette requête.
+
+Voir [Historique](/docs/workspaces/history) pour l’historique de tout l’espace de travail.
+
+## Quand une requête échoue [#when-a-request-fails]
+
+Quand aucune réponse n’est arrivée, le volet affiche l’erreur, comme **Le délai d’attente de la requête est dépassé**, et
+**Réessayer**. Deux autres boutons peuvent apparaître :
+
+- **Examiner les scripts…**, quand les scripts de la requête viennent de l’extérieur d’Echolot et ont besoin de votre
+  confiance avant de s’exécuter. Voir [Scripts et tests](/docs/requests/scripts-and-tests).
+- **Autoriser l’accès…**, dans l’édition App Store, quand la requête désigne un fichier que l’app n’a pas encore le
+  droit de lire.

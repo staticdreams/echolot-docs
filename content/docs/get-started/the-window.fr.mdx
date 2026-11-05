@@ -1,0 +1,206 @@
+---
+title: "La fenêtre"
+description: "Une visite de la fenêtre d’Echolot, de sa barre latérale, de ses pages, onglets et panneaux, avec les raccourcis de chacun."
+---
+
+Chaque espace de travail s’ouvre dans sa propre fenêtre. La fenêtre comporte deux parties : la **barre latérale** à
+gauche et le **panneau de contenu** à droite, qui affiche une page à la fois sous son en-tête de page.
+
+<Shot id="get-started-window" alt="Une fenêtre d’Echolot : la barre latérale avec Accueil, Rechercher, le sélecteur de module et l’arborescence des requêtes, et à droite une requête avec sa réponse" />
+
+## La fenêtre de bienvenue [#the-welcome-window]
+
+Quand aucune fenêtre d’espace de travail n’est ouverte, Echolot affiche sa fenêtre de bienvenue :
+**Nouvel espace de travail…**, **Ouvrir un espace de travail…**, **Ouvrir les exemples** et vos espaces de travail récents. Sous le nom, elle
+indique la version, avec un lien **Nouveautés**. Les espaces de travail que vous ouvrez depuis le Finder (un double-clic
+sur un dossier `.echolot`) vont directement dans une fenêtre d’espace de travail.
+
+## La barre latérale [#the-sidebar]
+
+De haut en bas :
+
+- **Accueil** et **Rechercher**, à côté des boutons de la fenêtre. **Accueil** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd>)
+  est la vue d’ensemble de l’espace de travail : nombre de requêtes, de dossiers, d’environnements, de variables et de
+  vérifications, vos requêtes récentes, les dernières réponses, l’état des tests et les environnements, avec la carte
+  **Sonar** en haut, qui trace chaque envoi de la dernière heure, du dernier jour, de la dernière semaine ou du dernier
+  mois selon sa durée. Voir [Accueil et Sonar](/docs/get-started/home). **Rechercher** ouvre la
+  [palette de commandes](#the-command-palette) (<kbd>⌘</kbd><kbd>K</kbd>).
+- **Le sélecteur de module**, qui choisit ce que liste la barre latérale. Chaque module a sa propre page.
+- **Les listes du module.**
+- **Le sélecteur d’espace de travail** en bas.
+
+<kbd>⌘</kbd><kbd>B</kbd> (**Présentation › Masquer la barre latérale**) masque et affiche la barre latérale. Faites glisser
+son bord droit pour l’élargir ou la rétrécir.
+
+### Modules [#modules]
+
+| Module | Raccourci | La barre latérale liste | Pour en savoir plus |
+| --- | --- | --- | --- |
+| **Requêtes** | <kbd>⌘</kbd><kbd>1</kbd> | **Tests** et **Exécution**, avec leur état, puis vos dossiers et requêtes | [Requêtes](/docs/requests) |
+| **Serveurs MCP** | <kbd>⌘</kbd><kbd>2</kbd> | Les serveurs MCP de l’espace de travail | [Serveurs MCP](/docs/mcp-servers) |
+| **Specs** | <kbd>⌘</kbd><kbd>3</kbd> | Les documents OpenAPI et les fichiers `.proto` | [Specs](/docs/specs) |
+| **Mocks** | <kbd>⌘</kbd><kbd>4</kbd> | Les serveurs mock | [Mocks](/docs/mocks) |
+| **Flux** | <kbd>⌘</kbd><kbd>5</kbd> | Les flux | [Flux](/docs/flows) |
+
+Passer à un module revient à ce qu’il affichait en dernier. Cliquer sur une ligne d’une liste l’ouvre sur la page du
+module.
+
+### L’arborescence des requêtes [#the-requests-tree]
+
+Dans le module Requêtes, le bouton **+** à côté de **Requêtes** ajoute une requête de n’importe quel type (HTTP, GraphQL,
+WebSocket, Socket.IO, MQTT, gRPC ou un appel MCP), un dossier, ou lance des imports et des exports. Les lignes de
+dossiers et de requêtes ont leurs propres menus (clic droit), avec **Nouvelle requête**, **Nouveau dossier**,
+**Réglages du dossier…**, **Renommer**, **Dupliquer**, **Monter**, **Descendre**, **Afficher dans le Finder** et
+**Placer dans la corbeille…**.
+
+- Faites glisser des lignes pour les réordonner ou les déplacer dans des dossiers. Un espace s’ouvre là où elles vont
+  atterrir, et s’arrêter sur un dossier fermé l’ouvre.
+- Sélectionnez plusieurs lignes avec <kbd>⌘</kbd> ou <kbd>⇧</kbd> et faites un clic droit pour **Exécuter N éléments**,
+  **Modifier N requêtes…**, **Nouveau dossier avec N éléments**, **Déplacer vers** et
+  **Placer N éléments dans la corbeille…**.
+- Collez une commande cURL, une collection ou une spec dans la barre latérale pour l’[importer](/docs/get-started/importing),
+  ou déposez des fichiers sur la fenêtre.
+- **Édition › Dupliquer** (<kbd>⌘</kbd><kbd>D</kbd>) et **Édition › Renommer** agissent sur la ligne sélectionnée.
+- Un point à côté d’une requête signifie qu’elle a des modifications pas encore écrites.
+- Un panneau d’avertissement à côté d’une requête signifie que son dernier envoi a échoué : pas de réponse, un état de
+  400 ou plus, ou un état gRPC autre que OK. Laissez le pointeur dessus pour lire ce qui s’est mal passé. Un succès
+  ultérieur l’efface.
+
+Rien n’est supprimé sans demander, et les éléments supprimés vont dans la corbeille. Plus de détails dans
+[Dossiers](/docs/workspaces/folders).
+
+### Le sélecteur d’espace de travail [#the-workspace-switcher]
+
+Le nom de l’espace de travail, avec son état d’enregistrement en dessous : **Tout est enregistré**, **Enregistrement…**
+ou **Impossible d’enregistrer**. Cliquez dessus pour vos espaces de travail récents, **Nouvel espace de travail…**,
+**Ouvrir un espace de travail…**, **Réglages de l’espace de travail…** et **Afficher dans le Finder**.
+**Fichier › Changer d’espace de travail…** (<kbd>⌘</kbd><kbd>P</kbd>) liste plutôt les espaces de travail récents dans
+un panneau flottant ; saisissez pour filtrer, <kbd>Return</kbd> pour ouvrir.
+
+## L’en-tête de page [#the-page-header]
+
+La bande en haut du panneau de contenu nomme la page. Sur une requête, elle affiche les dossiers et le nom de la
+requête. À droite se trouvent les boutons de la fenêtre :
+
+| Bouton | Ce qu’il fait |
+| --- | --- |
+| **Nouveautés** (étincelles) | Apparaît après une mise à jour avec les nouvelles notes de version. |
+| **Historique** | Chaque réponse, avec l’émetteur : vous, une exécution ou un agent (<kbd>⌘</kbd><kbd>Y</kbd>). Voir [Historique](/docs/workspaces/history). |
+| **Agents** | Permet à des agents IA externes d’utiliser cet espace de travail via le serveur MCP d’Echolot. Voir [Agents](/docs/ai/agents). |
+| **Environnement** | Choisit l’environnement actif, ou **Aucun environnement** ; **Gérer les environnements…** ouvre la page Environnements. Un environnement protégé affiche un bouclier. Voir [Environnements](/docs/workspaces/environments). |
+| **Disposition** | Sur une requête : côte à côte ou empilé. Voir [Volets](#the-request-page). |
+| **Éditeur** | Sur une spec : l’éditeur visuel ou l’éditeur de texte. |
+| **Assistant** (baguette) | Ouvre l’Assistant (<kbd>⌘</kbd><kbd>J</kbd>). |
+
+L’en-tête tient lieu de barre de titre : faites-le glisser pour déplacer la fenêtre, et double-cliquez dessus pour faire
+ce que **Réglages Système › Bureau et Dock** définit pour une barre de titre (zoom, par défaut).
+
+## Pages [#pages]
+
+Outre les pages de modules, le menu **Présentation** ouvre celles-ci :
+
+| Page | Raccourci |
+| --- | --- |
+| **Accueil** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd> |
+| **Tests** : les vérifications de chaque requête | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+| **Exécution** : exécuter des dossiers ou l’espace de travail | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd> |
+| **Environnements** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd> |
+| **Historique** | <kbd>⌘</kbd><kbd>Y</kbd> |
+
+**Présentation › Afficher les variables** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>V</kbd>) ouvre le panneau des variables :
+chaque variable de l’espace de travail, de ses dossiers et de ses environnements, avec la valeur utilisée marquée et les
+secrets masqués. Épinglez-le comme colonne à côté du contenu, ou laissez-le flotter.
+
+**Aide › Aide pour cette page** ouvre la page de cette documentation qui traite de la page où vous êtes.
+
+## Onglets [#tabs]
+
+Les requêtes que vous ouvrez deviennent des onglets au-dessus de la page de requête.
+
+| Action | Raccourci |
+| --- | --- |
+| **Fermer l’onglet** | <kbd>⌘</kbd><kbd>W</kbd> |
+| **Fermer la fenêtre** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd> |
+| **Onglets › Afficher l’onglet suivant** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> |
+| **Onglets › Afficher l’onglet précédent** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> |
+| **Onglets › Rouvrir l’onglet fermé** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+
+<kbd>⌘</kbd><kbd>W</kbd> ferme l’onglet affiché, jamais la fenêtre, comme dans un navigateur.
+
+## La page de requête [#the-request-page]
+
+La page de requête comporte deux volets : l’éditeur de requête et la réponse.
+
+- **L’en-tête de requête** en haut : la méthode, l’adresse et **Envoyer** (<kbd>⌘</kbd><kbd>R</kbd> ou
+  <kbd>⌘</kbd><kbd>↩</kbd>). Quand un environnement protégé est actif, **Envoyer** devient
+  **Envoyer vers *environnement*…** et demande d’abord confirmation. Les sessions (WebSocket, Socket.IO, MQTT) ont à la place
+  **Connecter** et **Se déconnecter**.
+- **Les onglets de l’éditeur** dépendent du type de requête. Une requête HTTP a **Docs**, **En-têtes**, **Paramètres**,
+  **Corps**, **Auth**, **Var.**, **Tests**, **Scripts** et **Réglages**. Voir [Requêtes](/docs/requests).
+- **Les onglets de la réponse** : **Corps**, **Tests**, **En-têtes**, **Cookies**, **Brut**, **Hex** et **Réseau**, plus
+  **Console** quand des scripts se sont exécutés, **Événements** pour un flux, **Messages** pour une session et
+  **Schéma** pour GraphQL. Voir [Réponses](/docs/requests/responses).
+
+### Dispositions des volets [#pane-layouts]
+
+Les volets sont placés **Côte à côte** ou **Empilé** (la réponse en dessous). Choisissez avec le bouton **Disposition**
+de l’en-tête de page, ou **Présentation › Volets**. Chaque type de requête garde sa propre disposition et la position
+de son séparateur, sur ce Mac uniquement : une requête HTTP peut être côte à côte pendant que les requêtes WebSocket
+sont empilées. Faites glisser le séparateur pour redimensionner ;
+**Présentation › Volets › Réinitialiser la taille des volets** remet chaque type à zéro. Quand la fenêtre est trop étroite pour le côte à côte, les volets s’empilent jusqu’à
+ce qu’il y ait de la place.
+
+### Le menu Requête [#the-request-menu]
+
+| Élément | Raccourci |
+| --- | --- |
+| **Envoyer** | <kbd>⌘</kbd><kbd>R</kbd> |
+| **Annuler** | <kbd>⌘</kbd><kbd>.</kbd> |
+| **Copier en tant que cURL** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> |
+| **Générer du code…** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> |
+| **Exporter l’échange en HAR…** | |
+| **Rechercher dans le corps** | <kbd>⌘</kbd><kbd>F</kbd> |
+| **Palette de commandes…** | <kbd>⌘</kbd><kbd>K</kbd> |
+
+**Présentation › Agrandir le code** (<kbd>⌘</kbd><kbd>+</kbd>), **Réduire le code** (<kbd>⌘</kbd><kbd>-</kbd>) et
+**Taille réelle du code** (<kbd>⌘</kbd><kbd>0</kbd>) changent la taille des corps de réponse, des arbres et des éditeurs
+de code. **Présentation › Retour à la ligne automatique** y fait revenir les lignes longues à la ligne.
+
+## La palette de commandes [#the-command-palette]
+
+<kbd>⌘</kbd><kbd>K</kbd>, ou **Rechercher** dans la barre latérale, ouvre une recherche dans tout l’espace de travail.
+Saisissez quelques lettres et appuyez sur <kbd>Return</kbd> sur un résultat :
+
+- **Requêtes**, affichées avec leur dossier et leur adresse.
+- **Actions** : **Aller à** n’importe quelle page, **Nouvelle requête** et les autres types, **Nouveau dossier**,
+  **Nouvelle spec**, **Importer…**, **Exporter l’espace de travail…**, **Réglages de l’espace de travail…**,
+  **Afficher les variables**, **Exécuter l’espace de travail**, et sur une requête **Envoyer**,
+  **Copier en tant que cURL**, **Générer du code…**, **Changer de disposition** et **Réinitialiser la taille des volets**.
+- **Environnements** : **Utiliser *environnement*** bascule vers celui-ci.
+- **Réponses** : à partir de trois caractères, elle recherche aussi dans les réponses de l’historique.
+
+<Shot id="get-started-command-palette" alt="La palette de commandes sur un espace de travail, avec des requêtes, des actions et des environnements correspondant au texte saisi" />
+
+## Le panneau de l’Assistant [#the-assistant-panel]
+
+<kbd>⌘</kbd><kbd>J</kbd> (**Présentation › Afficher l’Assistant**), ou la baguette à l’extrémité de l’en-tête de page,
+ouvre l’Assistant à droite de n’importe quelle page. C’est l’agent IA intégré à Echolot : il peut envoyer des requêtes,
+écrire des vérifications et construire des flux, des specs et des mocks, et vous demande avant de modifier quoi que ce
+soit. Configurez un modèle dans **Réglages › Assistant**. Voir [Assistant](/docs/ai/assistant).
+
+## Echo [#echo]
+
+Echo est un petit écran d’état au milieu de l’en-tête de page. Il raconte ce qui se passe : les envois et leur durée, les
+erreurs, les exécutions, les flux, les mocks, les agents et l’environnement actif, avec une blague de temps en temps.
+Cliquez dessus pour un rapport de la session. Il est désactivé par défaut : activez-le dans **Réglages › Général › Echo**
+avec **Afficher l’écran d’état d’Echo dans l’en-tête de page**. Voir [Echo](/docs/ai/echo).
+
+## Réglages [#settings]
+
+**Echolot › Réglages…** (<kbd>⌘</kbd><kbd>,</kbd>) comporte les volets **Général**, **Réseau**, **Stockage**,
+**Assistant**, **Agents**, **Confidentialité** et **À propos**, et un champ de recherche qui trouve un réglage par son
+nom. Voir [Réglages](/docs/settings). Les réglages d’un espace de travail ou d’un dossier se trouvent dans
+**Réglages de l’espace de travail…** (**Auth**, **Variables**, **Scripts**, **Agents**, **Proxy**, **Certificats**) et
+**Réglages du dossier…** (**Auth**, **Variables**, **Scripts**, **Docs**).
+
+Tous les raccourcis clavier sont listés dans [Raccourcis clavier](/docs/reference/keyboard-shortcuts).

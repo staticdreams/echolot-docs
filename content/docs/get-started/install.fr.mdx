@@ -1,0 +1,169 @@
+---
+title: "Installation"
+description: "Téléchargez Echolot, ouvrez-le pour la première fois, gardez-le à jour, placez l’outil en ligne de commande dans votre PATH et supprimez-le quand vous n’en avez plus besoin."
+---
+
+Echolot est proposé en téléchargement direct sur [echolot.dev](https://echolot.dev). Cette page décrit cette édition. Une
+édition Mac App Store est construite à partir du même code ; [Éditions](/docs/get-started/editions) compare les deux.
+
+## Configuration requise [#requirements]
+
+- macOS 15 ou version ultérieure.
+- Un Mac avec puce Apple.
+- Certaines fonctions demandent un macOS plus récent : le modèle d’Apple sur l’appareil pour l’Assistant demande macOS 26
+  et HTTP/3 demande macOS 27. Tout le reste fonctionne sous macOS 15.
+
+## Télécharger et installer [#download-and-install]
+
+<Steps>
+<Step>
+
+Ouvrez [echolot.dev](https://echolot.dev) et choisissez le téléchargement. Il mène à la dernière version sur
+[GitHub](https://github.com/staticdreams/echolot-public/releases), où chaque version garde ses fichiers :
+
+| Fichier | De quoi il s’agit |
+| --- | --- |
+| `Echolot-<version>.dmg` | L’app, dans une image disque. Utilisez celui-ci. |
+| `Echolot-<version>.zip` | La même app, compressée. |
+| `echolot-<version>-macos.zip` | L’outil en ligne de commande seul, pour un Mac sans l’app. |
+| `Echolot-<version>.mcpb` | Une extension qui connecte Claude Desktop à un espace de travail. Voir [Agents](/docs/ai/agents). |
+
+</Step>
+<Step>
+
+Ouvrez l’image disque et faites glisser **Echolot** sur le dossier **Applications** à côté.
+
+</Step>
+<Step>
+
+Ouvrez Echolot depuis le dossier Applications. L’app est signée par son développeur et notariée par Apple, macOS ne vous
+demande donc qu’une fois de confirmer que vous voulez ouvrir une app téléchargée sur Internet.
+
+</Step>
+</Steps>
+
+## Premier lancement [#first-launch]
+
+Echolot s’ouvre sur sa fenêtre de bienvenue :
+
+<Shot id="get-started-welcome" alt="La fenêtre de bienvenue avec Nouvel espace de travail, Ouvrir un espace de travail et Ouvrir les exemples, et une liste d’espaces de travail récents" />
+
+| Choix | Ce qu’il fait |
+| --- | --- |
+| **Nouvel espace de travail…** | Crée un espace de travail : un dossier dont le nom se termine par `.echolot` (le nom commence par `My API.echolot`), où que vous l’enregistriez. |
+| **Ouvrir un espace de travail…** | Ouvre un dossier `.echolot` existant. |
+| **Ouvrir les exemples** | Ouvre un espace de travail prêt à l’emploi de requêtes d’exemple : API publiques, redirections et charges volumineuses. Echolot le crée la première fois, dans son propre dossier de données. |
+
+Les espaces de travail que vous ouvrez apparaissent sous **Espaces de travail récents** ; cliquez sur l’un d’eux pour le
+rouvrir. Chaque espace de travail s’ouvre dans sa propre fenêtre, et les fenêtres reviennent avec leur espace de travail
+quand vous relancez Echolot.
+
+La première fenêtre d’espace de travail que vous ouvrez propose une [visite guidée](/docs/get-started/tour) d’une
+minute ; **Aide › Afficher la visite** la relance. Echolot parle la langue de votre Mac quand il la propose, et vous
+pouvez la changer dans les [Réglages](/docs/settings#general).
+
+À partir de là, [envoyez votre première requête](/docs/get-started/first-request), ou [importez](/docs/get-started/importing)
+une collection que vous avez déjà.
+
+## Mises à jour [#updates]
+
+Le téléchargement direct se met à jour tout seul. Une fois par jour, il demande à GitHub s’il existe une version plus
+récente, et vous demande avant de l’installer. Les mises à jour sont signées : Echolot n’installe que celles signées par
+son développeur. L’installation d’une mise à jour remplace l’app, et avec elle l’outil en ligne de commande qu’elle
+contient.
+
+- **Echolot › Rechercher des mises à jour…** vérifie tout de suite.
+- **Réglages › Général › Mises à jour** propose ces choix :
+
+| Réglage | Signification |
+| --- | --- |
+| **Rechercher les mises à jour automatiquement** | Vérifie une fois par jour. Activé par défaut. |
+| **Télécharger et installer les mises à jour automatiquement** | Installe sans demander. Nécessite le réglage ci-dessus. |
+| **Dernière vérification** | Quand la dernière vérification a eu lieu, avec **Vérifier maintenant**. |
+
+Après une mise à jour, rien ne s’ouvre tout seul. Un bouton **Nouveautés** (des étincelles, avec un point) apparaît en
+premier parmi les boutons en haut à droite de la fenêtre ; cliquez dessus pour lire les notes de version, ou choisissez
+**Masquer jusqu’à la prochaine mise à jour**. **Aide › Nouveautés d’Echolot** affiche à tout moment les notes de chaque
+version, tout comme [Nouveautés](/docs/whats-new).
+
+<Shot id="get-started-whats-new" alt="Le bouton Nouveautés dans l’en-tête de page, ouvert, avec les notes de la version qui vient d’être installée" />
+
+<Edition only="appstore">
+  L’App Store maintient à jour l’édition App Store. Elle n’a pas d’élément **Rechercher des mises à jour…**, et
+  Réglages › Général › Mises à jour l’indique.
+</Edition>
+
+## Les builds bêta expirent [#beta-builds-expire]
+
+Echolot est en bêta publique, et chaque build bêta publié de l’app expire 30 jours après sa publication. Echolot se met à
+jour avant cela, donc avec les vérifications automatiques activées, vous ne le remarquerez pas. Le développeur peut aussi
+mettre fin à un build plus tôt (par exemple un build avec un bug sérieux) ou le prolonger, via un fichier d’état signé
+qu’Echolot lit au lancement et une fois par jour.
+
+Quand un build a expiré, Echolot affiche une seule alerte, **Cette bêta a expiré**, avant d’ouvrir une fenêtre. Elle
+nomme la version et le build, le jour de l’expiration, et indique qu’une bêta plus récente se trouve sur echolot.dev.
+**OK** quitte Echolot, après avoir écrit les modifications non enregistrées. Un build qui expire pendant qu’il s’exécute
+affiche la même alerte. Téléchargez la dernière version sur [echolot.dev](https://echolot.dev) et installez-la par-dessus
+l’ancienne.
+
+Ce qui reste intact :
+
+- **Vos espaces de travail.** Ce sont de simples fichiers, et le build suivant les ouvre tels quels.
+- **L’outil en ligne de commande** n’expire jamais, que ce soit dans l’app ou téléchargé seul, la CI continue donc de
+  tourner.
+- **Les aperçus Coup d’œil** des espaces de travail dans le Finder continuent de fonctionner.
+
+Les actions Raccourcis d’un build expiré échouent avec une erreur et n’envoient rien.
+
+Reculer l’horloge du Mac ne ramène pas un build expiré. Si l’horloge a plus d’un jour de retard sur une date qu’Echolot a
+déjà vue, l’alerte indique que la date de ce Mac semble incorrecte : réglez la date et l’heure, ou procurez-vous un build
+plus récent.
+
+<Edition only="direct">
+  Seuls les builds bêta du téléchargement direct expirent. L’édition App Store n’expire jamais : ses bêtas passent par
+  TestFlight.
+</Edition>
+
+## Installer l’outil en ligne de commande [#install-the-command-line-tool]
+
+Le téléchargement direct contient l’outil en ligne de commande `echolot` dans l’app. Pour l’utiliser dans Terminal,
+placez-le dans votre PATH :
+
+1. Choisissez **Echolot › Installer l’outil en ligne de commande…**, ou ouvrez **Réglages › Général** et, sous
+   **Outil en ligne de commande**, choisissez **Installer l’outil en ligne de commande…**.
+2. Echolot place un lien nommé `echolot` dans `/opt/homebrew/bin` ou `/usr/local/bin`. Si aucun des deux dossiers n’est
+   accessible en écriture, macOS demande le mot de passe d’un administrateur.
+3. Ouvrez une nouvelle fenêtre de Terminal et saisissez `echolot --help`.
+
+```sh
+echolot --version
+echolot send https://demo.echolot.dev/v1/products -i
+```
+
+**Réglages › Général › Outil en ligne de commande** montre où se trouve l’outil intégré et s’il est dans votre PATH, avec
+**Réinstaller** et **Retirer**. Si un fichier nommé `echolot` qu’Echolot n’a pas placé là gêne le passage, Echolot demande
+avant de le remplacer, et l’ancien fichier va dans la corbeille. Comme le lien pointe dans l’app, l’outil se met à jour
+avec l’app.
+
+L’outil et ses commandes sont décrits dans [Outil en ligne de commande](/docs/cli).
+
+<Edition only="appstore">
+  L’édition App Store ne contient pas d’outil en ligne de commande. Installez l’outil séparément depuis la page des
+  versions (`echolot-<version>-macos.zip`) ; voir [Outil en ligne de commande](/docs/cli).
+</Edition>
+
+## Désinstaller [#uninstall]
+
+1. Si vous avez installé l’outil en ligne de commande, ouvrez **Réglages › Général** et choisissez d’abord **Retirer**
+   sous **Outil en ligne de commande**.
+2. Quittez Echolot et faites-le glisser du dossier Applications vers la corbeille.
+3. Pour supprimer aussi les données propres à Echolot (réponses conservées, historique, rapports de plantage et espace de
+   travail Exemples), ouvrez **Réglages › À propos** et choisissez **Afficher dans le Finder** à côté de
+   **Réponses et historique** avant de supprimer l’app, puis supprimez ce dossier `Echolot`. C’est
+   `~/Library/Application Support/Echolot`.
+4. Les secrets, les clés de modèle et la clé de stockage se trouvent dans votre trousseau de session, dans des éléments
+   dont le nom commence par `Echolot` (`Echolot secret …`, `Echolot model API key`). Pour les supprimer, ouvrez Accès au
+   trousseau et recherchez `Echolot`. Ne supprimez les secrets que si aucune copie d’Echolot ni de son outil en ligne de
+   commande n’en a plus besoin.
+
+Vos espaces de travail ne sont pas touchés : ils se trouvent là où vous les avez enregistrés.

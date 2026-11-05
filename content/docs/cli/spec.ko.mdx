@@ -1,0 +1,103 @@
+---
+title: "echolot spec"
+description: "CI에서 OpenAPI 문서를 린트하고, 명세를 따르는 폴더를 명세에 맞춰 최신 상태로 유지합니다."
+---
+
+`echolot spec`은 [명세 페이지](/docs/specs)의 두 가지를 터미널로 가져옵니다. 린터, 그리고 명세와 그 명세로 만든 요청 폴더 사이의
+연결입니다.
+
+| 하위 명령 | 동작 |
+| --- | --- |
+| `echolot spec lint` | OpenAPI나 Swagger 문서를 린트합니다. 오류가 있으면(`--strict`에서는 경고도) 1로 종료합니다. |
+| `echolot spec check` | 폴더가 따르는 명세에서 바뀐 내용을 나열합니다. 폴더가 최신이 아니면 1로 종료합니다. |
+| `echolot spec apply` | 작업 공간에서 한 편집은 유지하면서 명세의 변경을 폴더에 적용합니다. |
+
+## echolot spec lint [#echolot-spec-lint]
+
+```sh
+echolot spec lint <file> [--strict] [--hints]
+```
+
+`<file>`은 YAML 또는 JSON 명세입니다. `$ref`로 참조하는 파일은 그 옆에서 읽습니다.
+
+```sh
+echolot spec lint Alpenglow.echolot/specs/alpenglow.yaml
+```
+
+```text
+0 errors, 0 warnings.
+```
+
+문제는 하나당 한 줄로 표준 출력에 나오며, 파일, 줄과 열, 심각도, 메시지, 괄호 안의 규칙이 포함되어 있어 편집기와 CI가 해당 위치를 가리킬
+수 있습니다. 개수는 표준 오류로 나갑니다.
+
+```text
+api.yaml:2:1: error: info needs a version (of the API, such as 1.0.0). [info]
+api.yaml:7:7: error: GET /x documents no responses. [responses]
+api.yaml:6:5: hint: GET /x has no operationId; code generators and agents name it from one. [operation-id]
+2 errors, 0 warnings.
+```
+
+| 옵션 | 의미 |
+| --- | --- |
+| `--strict` | 경고에도 실패합니다. |
+| `--hints` | 힌트도 나열합니다. operationId와 설명 같은 권장 사항입니다. 힌트로는 실패하지 않습니다. |
+
+규칙은 명세 페이지와 같습니다. [명세 편집](/docs/specs/editing)을 참조하십시오.
+
+## echolot spec check [#echolot-spec-check]
+
+```sh
+echolot spec check [--workspace <workspace>] <folder> [--refresh]
+```
+
+명세를 가져와서 만든 폴더나 앱에서 명세에 연결한 폴더는 그 명세를 따릅니다. `check`는 폴더를 현재의 명세와 비교하고 `added`(추가),
+`changed`(변경, 필드 포함), `removed`(제거)된 작업을 각각 나열합니다. 작업 공간에서 직접 편집한 부분에 대한 변경이면 그렇다고 표시하며,
+그 편집은 유지됩니다.
+
+```sh
+echolot spec check -w Shop.echolot pets
+```
+
+```text
+added    POST /pets
+changed  GET /pets/{id}  (parameters, responses)
+removed  DELETE /pets/{id}
+3 changes, 12 unchanged.
+```
+
+| 옵션 | 의미 |
+| --- | --- |
+| `-w`, `--workspace <folder>` | 작업 공간 폴더. 기본값은 현재 폴더입니다. |
+| `--refresh` | 먼저 명세를 URL에서 다시 가져옵니다. |
+
+`<folder>`는 연결된 폴더의 경로입니다. 예: `pets`. 요청이 명세보다 뒤처졌을 때 빌드를 실패시키려면 CI에서 `check`를 사용하십시오.
+
+## echolot spec apply [#echolot-spec-apply]
+
+```sh
+echolot spec apply [--workspace <workspace>] <folder> [--operation <operation> ...]
+```
+
+명세의 변경을 폴더에 씁니다. 새 작업은 요청이 되고, 변경된 작업은 업데이트되고, 제거된 작업은 제거됩니다. 요청에서 직접 편집한 부분은
+유지됩니다. 편집한 요청의 작업이 명세에서 사라졌다면 그 요청도 유지되며 더 이상 명세를 따르지 않습니다. 각 줄이 무슨 일이 있었는지
+알려 줍니다.
+
+```text
+added    pets/create-pet
+updated  pets/get-pet  kept edits to headers
+removed  pets/delete-pet
+```
+
+| 옵션 | 의미 |
+| --- | --- |
+| `-w`, `--workspace <folder>` | 작업 공간 폴더. 기본값은 현재 폴더입니다. |
+| `--operation <operation>` | 이 작업만. 예: `"GET /pets"`. 반복할 수 있으며, 생략하면 모든 변경을 적용합니다. |
+
+## 종료 코드 [#exit-codes]
+
+| 코드 | 조건 |
+| --- | --- |
+| `0` | `lint`: 오류 없음(`--strict`에서는 경고도 없음). `check`: 폴더가 최신입니다. `apply`: 적용했습니다. |
+| `1` | `lint`: 오류, 또는 `--strict`에서 경고. `check`: 적용할 변경이 있습니다. |
+| `64` | 잘못된 옵션, 또는 명세를 따르지 않는 폴더. |

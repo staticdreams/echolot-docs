@@ -1,0 +1,107 @@
+---
+title: "Echo"
+description: "Echo, der kleine Statusbildschirm im Seitenkopf, der zeigt, was im Fenster los ist, mit einem Bericht der Sitzung per Klick."
+---
+
+Echo ist ein kleiner Bildschirm in der Mitte des Seitenkopfs. Er zeigt, was im Fenster gerade passiert: eine
+gesendete Anfrage und ihre Dauer, einen Fehler, den Fortschritt der Ausführung, einen Flow, der auf dich wartet, den
+Aufruf eines Agenten, einen Wechsel zu einer geschützten Umgebung. Ab und zu fügt er einen Witz hinzu, so viel du
+willst. Klicke darauf für einen Bericht der Sitzung, ohne Witze. Echo ist standardmäßig an, und du kannst ihn
+ausschalten.
+
+<Shot id="ai-echo-screen" alt="Echo in der Mitte des Seitenkopfs, mit Status und Zeit der Anfrage, die gerade gesendet wurde" />
+
+## Echo ein- oder ausschalten [#turn-echo-on-or-off]
+
+Echo ist standardmäßig an. Öffne **Einstellungen › Allgemein** und nutze unter **Echo** die Option **Statusbildschirm
+von Echo im Seitenkopf anzeigen**. Jedes Arbeitsbereichsfenster folgt ihr. Ist der Seitenkopf zu schmal für den
+Bildschirm neben dem Titel und den Tasten der Seite, macht Echo Platz, bis wieder Raum da ist.
+
+Um ihn wieder auszublenden, schalte die Einstellung aus, oder klicke bei gedrückter Control-Taste auf den Bildschirm
+und wähle **Echo ausblenden**.
+
+## Was Echo zeigt [#what-echo-tells]
+
+Echo beobachtet das Fenster und zeigt auf seinem Bildschirm eine kurze Zeile zu:
+
+- **Gesendet**: die Anfrage, die gerade gesendet wird, und wie lange sie bisher gedauert hat, dann Status und Zeit der
+  Antwort, die fehlgeschlagenen Prüfungen oder warum es keine Antwort gab (eine Zeitüberschreitung, nichts lauscht an
+  der Adresse, ein Hostname, der sich nicht auflösen ließ, ein fehlgeschlagener TLS-Handshake). Auch eine abgebrochene
+  Anfrage.
+- **Sitzungen**: eine WebSocket-, Socket.IO- oder MQTT-Sitzung, die sich verbindet und schließt.
+- **Die Ausführung**: der Fortschritt, während sie läuft, dann wie viele Anfragen bestanden oder fehlschlugen oder wo
+  du sie angehalten hast.
+- **Flows**: ein Flow, der läuft, auf dich wartet und wie er endete.
+- **Mocks**: ein Mock-Server, der startet und stoppt, und die Anfragen, die er beantwortet.
+- **Umgebungen**: ein Wechsel der aktiven Umgebung und eine Warnung, wenn sie eine
+  [geschützte](/docs/workspaces/protected-environments) ist.
+- **Agenten**: ein Agent, der sich verbindet, seine Aufrufe und Genehmigungen, die auf dich warten; der Assistent, der
+  antwortet.
+- **Neuigkeiten**: nach einem Update die Versionen, die du noch nicht gelesen hast.
+
+### Wie viel er scherzt [#how-much-it-jokes]
+
+Wähle mit **Humor** unter **Einstellungen › Allgemein › Echo** oder klicke bei gedrückter Control-Taste auf den
+Bildschirm:
+
+| Humor | Was Echo macht |
+| --- | --- |
+| **Nur Fakten** | Status und Details, keine Witze. |
+| **Ein bisschen** | Ab und zu ein Witz. Der Standard. |
+| **Jede Menge** | Ein Witz in jeder Zeile und mehr Geplauder, während nichts passiert. |
+
+## Der Bericht [#the-report]
+
+Klicke auf Echo, oder klicke bei gedrückter Control-Taste darauf und wähle **Echos Bericht anzeigen**. Der
+**SITZUNGSBERICHT** rollt sich vom Bildschirm aus und zeigt die Fakten der Sitzung seit ihrem Beginn:
+
+<Shot id="ai-echo-report" alt="Der Sitzungsbericht von Echo: gesendete Anfragen, Fehler, Durchschnitt, langsamste und schnellste Zeiten, Läufe und ein Protokoll der Ereignisse der Sitzung" />
+
+| Anzeige | Was sie zählt |
+| --- | --- |
+| **GESENDET**, **FEHLER** | Gesendete Anfragen und wie viele fehlschlugen |
+| **SCHNITT**, **LANGSAMSTE**, **SCHNELLSTE** | Antwortzeiten; bewege den Zeiger über die langsamste oder schnellste, um die Anfrage zu sehen |
+| **LÄUFE**, **LAUF-FEHLER** | Durchläufe der Ausführung und fehlgeschlagene Anfragen von allen, die sie ausführten |
+| **FLOWS** | Flow-Durchläufe und wie viele fehlschlugen |
+| **SITZUNGEN** | WebSocket-, Socket.IO- und MQTT-Sitzungen |
+| **MOCK-AUFRUFE** | Anfragen, die deine Mock-Server beantwortet haben |
+| **AGENT-AUFRUFE** | Aufrufe von Agenten |
+
+Anzeigen für Dinge, die nicht passiert sind, fehlen. Darunter steht das Protokoll der Ereignisse der Sitzung mit ihren
+Zeiten. **Leeren** beginnt den Bericht von vorn. Schließe ihn mit der Schließen-Taste oder <kbd>Esc</kbd>.
+
+## KI-Kommentare [#ai-comments]
+
+Echo schreibt seine Zeilen selbst. Wenn du magst, kann ein Modell einige seiner Kommentare schreiben: Schalte **KI
+einige Kommentare von Echo schreiben lassen** unter **Einstellungen › Allgemein › Echo** ein. Die Option ist
+standardmäßig aus und mit **Nur Fakten** nicht verfügbar.
+
+- Auf einem Mac mit Apple Intelligence (macOS 26) schreibt sie das On-Device-Modell von Apple, und nichts verlässt den
+  Mac.
+- Sonst schreibt sie das Modell, das unter **Einstellungen › Assistent** angehakt ist. **Geschrieben von** zeigt, welches.
+  Beim ersten Mal fragt Echolot die [einmalige Erlaubnis](/docs/ai/assistant#the-one-time-permission) für diesen
+  Anbieter ab. Hast du sie nicht erteilt, sagt **Geschrieben von** das mit einer Taste **Erlauben …**, und Echo schreibt
+  seine Zeilen unterdessen selbst. Eine Erlaubnis, die du dem Assistenten schon gegeben hast, gilt auch für Echo.
+  CLI-Agenten schreiben nie die Kommentare von Echo.
+
+Ein Modell schreibt höchstens einen Kommentar alle 30 Sekunden und nur zu Fehlern und anderen bemerkenswerten
+Momenten: einer fehlgeschlagenen oder sehr langsamen (ab 3 Sekunden) oder sehr schnellen (unter 30 ms) Anfrage, einer
+fehlgeschlagenen Prüfung, einer Anfrage an eine geschützte Umgebung oder einem Wechsel dorthin, einem beendeten Lauf
+oder Flow, einem Agenten, der auf Genehmigung wartet.
+
+### Was das Modell erfährt [#what-the-model-hears]
+
+Nur, was passiert ist, in einem Satz: die Art des Ereignisses, die Art und Methode einer Anfrage, ein Statuscode, eine
+Dauer, wie viele Prüfungen fehlschlugen, warum eine Anfrage keine Antwort bekam (Zeitüberschreitung, nichts lauscht,
+Hostname, TLS), dass ein Lauf mit so vielen Anfragen so viele Fehler hatte. Zum Beispiel: *„Eine HTTP-POST-Anfrage bekam
+Status 422 in 180 ms.“* oder *„Ein Testlauf mit 12 Anfragen endete mit 2 Fehlern.“*
+
+Nie Namen, Adressen, Header, Bodys, Variablen oder Secrets.
+
+## Bedienungshilfen [#accessibility]
+
+- Ist **Bewegung reduzieren** an (Systemeinstellungen › Bedienungshilfen › Anzeige), erscheinen Zeilen sofort, statt
+  getippt zu werden und zu scrollen, der Bildschirm zeichnet sich nur neu, wenn sich sein Text ändert oder eine Uhr
+  tickt, und der Bericht öffnet sich mit einer kurzen Überblendung, statt sich aufzurollen.
+- Ist **Kontrast erhöhen** an, zeichnet der Bildschirm mit mehr Kontrast.
+- VoiceOver liest die aktuellen Zeilen von Echo vor; die Beschriftung des Bildschirms ist „Echo“.

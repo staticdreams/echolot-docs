@@ -1,0 +1,82 @@
+---
+title: "echolot grpc"
+description: "列出 gRPC 服务器的服务和方法，并用 JSON 消息调用它们。"
+---
+
+`echolot grpc` 描述 gRPC 服务并调用它们的方法，消息以 JSON 书写。它从服务器的反射或 `.proto` 文件了解这些服务。App 中的对应功能参见 [gRPC 请求](/docs/requests/grpc)。
+
+| 子命令 | 作用 |
+| --- | --- |
+| `echolot grpc describe` | 列出服务器或 `.proto` 文件的服务和方法，并给出每个方法的字段。 |
+| `echolot grpc call` | 调用一个方法，并将应答打印为 JSON。 |
+
+示例使用 Alpenglow 的库存服务，即 Alpenglow 工作区中的 `specs/inventory.proto`。它运行在你 Mac 上的 `localhost:50051`；演示 API 无法提供 gRPC。
+
+## echolot grpc describe [#echolot-grpc-describe]
+
+```sh
+echolot grpc describe [<url>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>] [--json]
+```
+
+```sh
+echolot grpc describe --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+```text
+Alpenglow.echolot/specs/inventory.proto: 1 service
+alpenglow.inventory.v1.Inventory
+  ListWarehouses (unary): alpenglow.inventory.v1.ListWarehousesRequest → alpenglow.inventory.v1.ListWarehousesResponse
+  WatchStock (server streaming): alpenglow.inventory.v1.WatchStockRequest → alpenglow.inventory.v1.StockLevel
+    skus: repeated string
+  Reserve (unary): alpenglow.inventory.v1.ReserveRequest → alpenglow.inventory.v1.Reservation
+    sku: string
+    quantity: int32
+    orderId: string
+```
+
+改为给出服务器（`echolot grpc describe http://localhost:50051`），就会询问它的反射服务。每个方法都会显示它是一元、服务器流、客户端流还是双向流，它的请求和响应类型，以及请求的字段。
+
+| 选项 | 含义 |
+| --- | --- |
+| `<url>` | 服务器，`http://host:port` 或 `https://host:port`。使用 `--proto` 时不需要。 |
+| `--proto <file>` | 描述该服务的 `.proto` 文件，其导入的文件放在它旁边。不带它时，会询问服务器的反射。 |
+| `-H`、`--header <header>` | 以 `'Name: value'` 形式给出的元数据。可重复。 |
+| `-k`、`--insecure` | 跳过 TLS 证书验证。 |
+| `--timeout <seconds>` | 等待整个调用的秒数。默认 30。 |
+| `--json` | 将描述打印为 JSON。 |
+
+## echolot grpc call [#echolot-grpc-call]
+
+```sh
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+```
+
+`<method>` 是 `package.Service/Method`。消息是 JSON，默认为 `{}`；`-d -` 从标准输入读取。对于客户端流方法，请给出一个数组：每个元素是一条消息。应答以 JSON 输出到标准输出。
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserve \
+  -d '{"sku": "TNT-MH-2P", "quantity": 1, "orderId": "ord_7Hk2Lw"}' \
+  --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+状态、收到的消息数和耗时输出到标准错误。状态不是 `OK` 时以 1 退出。
+
+| 选项 | 含义 |
+| --- | --- |
+| `-d`、`--data <json>` | JSON 消息；`-` 表示从标准输入读取。默认 `{}`。 |
+| `--deadline <ms>` | 截止时间，单位毫秒，以 `grpc-timeout` 发送。 |
+| `--compress <algorithm>` | 压缩发送的消息：`gzip` 或 `deflate`。无论如何都能读取压缩的应答。 |
+| `--proto <file>` | 描述该服务的 `.proto` 文件，其导入的文件放在它旁边。不带它时，会询问服务器的反射。 |
+| `-H`、`--header <header>` | 以 `'Name: value'` 形式给出的元数据。可重复。 |
+| `-k`、`--insecure` | 跳过 TLS 证书验证。 |
+| `--timeout <seconds>` | 等待整个调用的秒数。默认 30。 |
+
+`http://` 使用不带 TLS 的 HTTP/2；`https://` 使用 TLS。常见类型（`google.protobuf.Timestamp` 等）已内置，所以导入它们的 `.proto` 文件无需在旁边放置任何内容。
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | `describe` 找到了服务；`call` 以状态 `OK` 结束。 |
+| `1` | 无法连接或描述服务器，或调用的状态不是 `OK`。 |
+| `64` | 选项有误。 |

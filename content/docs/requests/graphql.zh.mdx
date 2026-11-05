@@ -1,0 +1,126 @@
+---
+title: "GraphQL"
+description: "借助 Schema 补全来编写 GraphQL 查询，通过勾选字段来构建查询，并读取错误、订阅和增量结果。"
+---
+
+GraphQL 请求包含一个查询、它的变量，以及查询所依据的 Schema。Echolot 利用 Schema 在你输入时补全字段，在发送之前标出错误，并在响应旁边显示类型。
+
+<Shot id="requests-graphql-query" alt="Catalog › Search products：查询标签页中有 SearchProducts 查询，Schema 菜单显示 shop.graphql 及其类型数量，以及带 totalCount 和 nodes 的 JSON 响应" />
+
+## 创建 GraphQL 请求 [#create-a-graphql-request]
+
+选取 **文件 › 新建 GraphQL 请求**，或在边栏中 **请求** 旁边的 **+** 菜单里选取 **新建 GraphQL 请求**。在地址字段中输入端点：对于演示商店，是 `{{baseURL}}/graphql`。
+Alpenglow 工作区里已经有一个：**Catalog › Search products**。
+
+编辑器有这些标签页：**文档**、**查询**、**变量**、**标头**、**参数**、**认证**、**变量**（请求自己的变量）、**测试**、**脚本** 和 **设置**。标头、认证、测试和脚本的用法与
+[HTTP 请求](/docs/requests)相同。
+
+## 查询和变量 [#query-and-variables]
+
+在 **查询** 标签页中编写查询：
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } rating stock { warehouse available } }
+  }
+}
+```
+
+并在 **变量** 标签页中以 JSON 编写它的变量。JSON 中可以使用 `{{variables}}`：
+
+```json
+{
+  "text": "{{searchTerm}}"
+}
+```
+
+文档包含多个操作时，在查询上方的 **操作** 中输入要发送的那一个。文档只有一个操作时留空即可。
+
+用 **发送** 或 <kbd>⌘</kbd><kbd>R</kbd> 发送。
+
+## 请求如何发送 [#how-the-request-is-sent]
+
+地址前面的 **GQL** 标记是一个菜单。在 **发送方式** 下：
+
+| 选项 | 发送的内容 |
+| --- | --- |
+| **POST（JSON 正文）** | 一个 POST，把 `query`、`variables` 和 `operationName` 作为 JSON。通常的方式 |
+| **GET（在 URL 中）** | 把 `query`、`variables` 和 `operationName` 作为查询参数，适用于会缓存 GET 请求的服务器 |
+| **WebSocket（graphql-transport-ws）** | 使用 `graphql-transport-ws` 协议的 WebSocket，用于订阅 |
+
+下面还有两个开关：
+
+- **持久化查询（APQ）** 先发送查询的 SHA-256 哈希，不带查询本身。当服务器回答它不认识这个哈希时，Echolot 会带着查询再发一次，这样服务器就可以把它保存下来。
+- **批量发送所有操作** 把文档中每个命名的操作一起作为一个 JSON 数组发送。
+
+## Schema [#the-schema]
+
+Schema 菜单位于 **查询** 标签页的右侧。它显示 Schema 文件及其类型数量，例如 `shop.graphql · … types`，或 **无 Schema**。
+
+- **从服务器获取** 对请求的地址运行内省查询，并把结果作为文件保存在工作区的 `specs/` 文件夹中。再次选取它即可刷新 Schema。
+- **使用 Schema** 列出工作区中已有的 Schema 文件（`.graphql`、`.graphqls` 和 `.json`），供你选取。
+- **添加 Schema 文件…** 从你的 Mac 上选取 SDL 文件（`.graphql`）或内省结果（`.json`）。
+- **显示 Schema 浏览器** 在响应旁边打开 Schema。
+- **停止使用此 Schema** 把 Schema 从请求上移除。
+
+`specs/` 中的 Schema 文件可以由针对该服务器的每个 GraphQL 请求共用，并随工作区一起提交。当一次获取替换了 Schema 文件而且 Schema 发生了变化时，**Schema 已更改** 会把变更列为
+**破坏性**、**危险** 和 **安全**，例如移除的字段或新增的必填参数。破坏性变更是指那些会让使用了被移除或被更改之内容的查询失败的变更。在命令行中，`echolot graphql diff`
+以同样的方式比较两个 Schema：见 [echolot graphql](/docs/cli/graphql)。
+
+无法读取 Schema 时，菜单会显示 **Schema 问题**，查询下方的栏会说明原因。
+
+## 补全、问题和悬停提示 [#completion-problems-and-hover]
+
+有了 Schema，查询编辑器会在你输入时提供帮助：
+
+- **补全** 提供适合光标所在位置的字段、参数、输入字段、类型、枚举值、变量、指令和片段，并附有它们的文档。已弃用的会被标出。
+- **问题** 在你输入时以下划线标出：未知字段、参数类型错误、缺少必填参数等等。查询下方的栏显示第一个问题，并统计错误和警告的数量；将指针指向它可读取全部问题。
+- **悬停** 在字段或类型上，可查看它的签名和文档，以及它是否已弃用。
+- 按住 <kbd>⌘</kbd> 点按字段或类型，可在 Schema 浏览器中打开它的类型。
+
+## Schema 浏览器和构建器 [#the-schema-explorer-and-the-builder]
+
+响应窗格的 **Schema** 标签页显示请求的 Schema，即使在第一次发送之前也是如此。如果请求还没有 Schema，请在那里选取 **从服务器获取**。
+
+**浏览** 从 **入口**（**Query**、**Mutation** 和 **Subscription**）开始。点按一个类型，可查看它的字段、输入字段、枚举值，或实现它或属于它的类型，已弃用的会被标出。“返回”回到上一个类型。
+**搜索类型和字段** 按名称查找 Schema 中的任何内容。
+
+**构建** 替你编写查询。在 **操作** 下选取 **query**、**mutation** 或 **subscription**，然后在树中勾选字段：每次勾选都会把该字段加入查询文本，取消勾选则把它再次移除。
+你在周围输入的内容保持不变。构建器作用于 **操作** 中指定的那个操作，或文档中该类型的第一个操作；没有时，它会添加一个。
+
+<Shot id="requests-graphql-builder" alt="Search products 的构建模式下的 Schema 标签页：search 已勾选且已展开，sku、name 和 price 已勾选，旁边的查询显示相同的字段" />
+
+## 响应 [#responses]
+
+响应以 JSON 显示在 **正文** 标签页中，和任何[响应](/docs/requests/responses)一样。Echolot 还会读取 GraphQL 在数据旁边所说的内容：
+
+- 响应摘要中的 **N 个 GraphQL 错误**：服务器发送了 `errors` 数组，即使是 HTTP 200 也是如此。点按它可读取每条消息及其所属的路径。
+- **部分数据**：数据与错误一起返回，所以有些字段因失败而为 `null`。
+- **扩展**：响应的 `extensions`，例如追踪或成本信息。
+
+在 **测试** 标签页中添加一项等于 `0` 的 **GraphQL 错误** 检查，可让运行因它们而失败。见[脚本和测试](/docs/requests/scripts-and-tests)。
+
+## 订阅和增量交付 [#subscriptions-and-incremental-delivery]
+
+订阅会不断发送结果，直到结束：
+
+- 通过 HTTP（**POST** 或 **GET**）时，当操作是订阅，Echolot 会请求服务器发送事件。
+- 通过 **WebSocket（graphql-transport-ws）** 时，Echolot 打开 WebSocket，连同请求的标头和认证一起发送订阅，并应答服务器的 ping。
+
+带有 `@defer` 或 `@stream` 的查询会分多个部分返回（`multipart/mixed`）。
+
+两种情况下，响应窗格都会多出一个 **事件** 标签页：按顺序列出每个事件或部分，带编号，附有它的类型（例如 `next` 或 `part`）、ID 和错误。对于 `@defer` 和 `@stream`，
+顶部的 **合并结果** 显示应用了之后每个部分的第一个结果。事件流运行期间，标签页会跟随新事件，并显示 **正在监听…点按“停止”以结束。** 选取 **取消**（<kbd>⌘</kbd><kbd>.</kbd>）可结束它。
+已经开始的事件流不会被请求的总超时切断。
+
+## 文件上传 [#file-uploads]
+
+对于带有 `Upload` 变量的 mutation，请在 **变量** 标签页的 **用于变量的文件** 下添加文件：
+
+1. 选取 **+**。
+2. 输入变量，例如 `file`，或列表第一项用 `files.0`。
+3. 输入文件的路径，相对于工作区。
+
+随后的 POST 遵循 GraphQL multipart request 规范：变量在 `operations` 中为 `null`，文件放在它自己的一个部分中。

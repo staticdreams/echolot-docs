@@ -1,0 +1,148 @@
+---
+title: "Exécution"
+description: "Exécutez un dossier, quelques requêtes ou tout l’espace de travail avec leurs vérifications, aussi souvent que vous voulez ou une fois par ligne d’un fichier de données."
+---
+
+L’Exécution envoie des requêtes les unes après les autres et vous dit lesquelles ont réussi. Une requête réussit quand
+elle obtient une réponse et que toutes les vérifications de son [onglet Tests et de ses scripts](/docs/requests/scripts-and-tests)
+sont satisfaites. Utilisez-la pour essayer toute une API après une modification, pour lancer les mêmes requêtes avec de
+nombreuses entrées, ou pour produire un rapport.
+
+<Shot id="requests-runner-results" alt="La page Exécution après l’exécution de tout l’espace de travail Alpenglow : la carte Exécuter à gauche, les compteurs de requêtes, réussies, en échec et vérifications en échec, et la liste des résultats avec leurs codes d’état et leurs durées" />
+
+## Lancer une exécution [#start-a-run]
+
+Il y a plusieurs façons d’y accéder :
+
+- Faites un clic droit sur un dossier dans la barre latérale et choisissez **Exécuter le dossier**, ou sur une requête
+  et choisissez **Exécuter la requête**. L’exécution démarre aussitôt et la page Exécution s’ouvre.
+- Sélectionnez plusieurs dossiers ou requêtes dans la barre latérale, faites un clic droit dessus et choisissez
+  **Exécuter N éléments**.
+- Choisissez **Exécuter l’espace de travail** dans la palette de commandes.
+- Ouvrez la page Exécution, configurez l’exécution et choisissez **Exécuter**. L’Exécution se trouve dans la barre
+  latérale sous **Tests**, ou choisissez **Affichage › Exécution** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd>).
+
+Sur la page Exécution, la carte **Exécuter** contient les réglages :
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Quoi** | **Tout l’espace de travail**, un dossier parmi **Dossiers**, ou une seule requête parmi **Une requête** |
+| **Environnement** | L’environnement par rapport auquel les requêtes sont résolues, comme dans le reste de la fenêtre |
+| **Données** | **Choisir un CSV ou un JSON…** pour un fichier de données : une itération par ligne |
+| **Itérations** | Combien de fois exécuter l’ensemble, de 1 à 1 000. Avec un fichier de données, il indique **Une par ligne de données** |
+| **Délai** | Une pause entre les requêtes, de 0 à 60 000 ms par pas de 100 |
+| **Nouvelles tentatives** | Des tentatives supplémentaires pour une requête en échec, de 0 à 5 |
+| **En parallèle** | Combien d’itérations s’exécutent côte à côte, de 1 à 32. Affiché quand il y a plus d’une itération |
+| **Arrêter au premier échec** | Met fin à l’exécution à la première requête en échec |
+
+Choisissez **Exécuter** (<kbd>⌘</kbd><kbd>R</kbd>) pour démarrer, et **Arrêter** (<kbd>⌘</kbd><kbd>.</kbd>) pour mettre
+fin à une exécution plus tôt. Tant qu’un environnement protégé est actif, le bouton affiche **Exécuter dans Production…**
+(avec le nom de cet environnement), et l’exécution demande confirmation avant d’envoyer quoi que ce soit. Voir
+[environnements protégés](/docs/workspaces/protected-environments).
+
+## Ce qui s’exécute, et dans quel ordre [#what-runs-and-in-which-order]
+
+Les requêtes s’exécutent dans leur ordre de la barre latérale : les requêtes d’un dossier de haut en bas, les dossiers
+qu’il contient à leur place. Chaque requête est envoyée exactement comme si vous l’envoyiez vous-même : mêmes variables,
+même authentification, mêmes scripts et mêmes vérifications. Les requêtes suivantes peuvent utiliser les réponses des
+précédentes dans la même exécution, grâce aux [valeurs de réponse](/docs/requests/dynamic-values) et aux variables que
+des scripts ou des [captures](/docs/requests/captures) définissent. Par exemple, une exécution de l’espace de travail
+Alpenglow envoie d’abord **Auth › Sign in**, qui capture le jeton que les requêtes d’**Orders** envoient.
+
+Tous les types de requête peuvent s’exécuter :
+
+- Les requêtes HTTP, GraphQL et gRPC et les appels MCP sont envoyés et vérifiés comme les autres.
+- Les requêtes WebSocket, Socket.IO et MQTT se connectent, envoient leurs messages, événements ou publications
+  enregistrés qui sont activés pour les exécutions (et MQTT s’abonne à ses filtres activés), écoutent pendant
+  10 secondes, puis ferment la connexion. Le journal des messages sert de réponse : les vérifications sur le **Corps**
+  fonctionnent donc dessus. Pour écouter plus ou moins longtemps, définissez `stream-limit` (en secondes) dans
+  `[settings]` du fichier de la requête.
+- Un flux de server-sent events est conservé pendant 10 secondes, puis terminé.
+
+Un script de pré-requête peut ignorer une requête avec `pm.execution.skipRequest()` ; le résultat indique **Ignorée par
+un script de pré-requête**. Un script peut aussi sauter avec `pm.execution.setNextRequest("Request name")`, et mettre fin
+à l’exécution avec `pm.execution.setNextRequest(null)`. Une exécution qui ne cesse de revenir en arrière est arrêtée
+après 10 000 envois dans une même itération.
+
+## Itérations et fichiers de données [#iterations-and-data-files]
+
+**Itérations** exécute l’ensemble ce nombre de fois. Les valeurs `{{$…}}` comme `{{$uuid}}` sont nouvelles à chaque
+fois, et `pm.info.iteration` indique de quelle itération il s’agit (à partir de 0).
+
+Un fichier de données pilote l’exécution par les données : une itération par ligne, chaque colonne étant une variable
+que les requêtes utilisent comme n’importe quelle autre, par exemple `{{sku}}`. Les scripts lisent la ligne avec
+`pm.iterationData.get("sku")`.
+
+- **CSV** : une ligne d’en-tête avec les noms des variables, puis une ligne par itération. Les guillemets, les
+  guillemets doublés et les sauts de ligne entre guillemets fonctionnent.
+- **JSON** : un tableau d’objets, un objet par itération.
+
+Par exemple, `skus.csv` pour une requête vers `{{baseURL}}/products/{{sku}}` avec une vérification que `$.sku` est égal
+à `{{sku}}` :
+
+```csv
+sku,quantity
+TNT-MH-2P,1
+PCK-TIT-30,2
+```
+
+ou la même chose en JSON :
+
+```json
+[
+  { "sku": "TNT-MH-2P", "quantity": 1 },
+  { "sku": "PCK-TIT-30", "quantity": 2 }
+]
+```
+
+Le champ **Données** affiche le nom du fichier et son nombre de lignes. La croix à côté retire le fichier.
+
+## Itérations en parallèle [#parallel-iterations]
+
+Avec plus d’une itération, **En parallèle** exécute plusieurs itérations côte à côte. Les requêtes d’une même itération
+restent dans l’ordre, et chaque itération garde les variables que ses propres scripts définissent : le jeton d’une
+itération ne fuit donc jamais dans une autre. Laissez-le sur **1 (l’une après l’autre)** quand les itérations dépendent
+les unes des autres ou que le serveur limite la vitesse à laquelle vous pouvez l’appeler.
+
+## Nouvelles tentatives, délais et arrêt [#retries-delays-and-stopping]
+
+- **Nouvelles tentatives** renvoie une requête en échec, jusqu’à ce nombre de fois. Une requête échoue quand elle
+  n’obtient aucune réponse ou qu’une vérification échoue. Le résultat indique combien de tentatives il a fallu, comme
+  **3 tentatives**, et garde la dernière.
+- **Délai** attend entre les requêtes, pour les serveurs qui limitent le débit, comme l’[API de démo](/docs/tutorials/demo-api).
+- **Arrêter au premier échec** met fin à l’exécution quand une requête échoue, après ses nouvelles tentatives. Le
+  résumé indique alors **Arrêtée sur un échec**.
+
+## Résultats [#results]
+
+Pendant l’exécution, la liste se remplit et montre la requête en cours d’envoi. Au-dessus se trouvent les compteurs :
+**Requêtes**, **Réussi**, **Échec**, **Vérifications en échec** et, à la fin, **Durée**, avec **Toutes réussies** ou
+**N en échec**.
+
+Chaque ligne affiche le type ou la méthode de la requête, son nom et son adresse, l’état et la durée. Avec plusieurs
+itérations, `#2` indique à quelle itération appartient une ligne. Sous une requête en échec figurent les vérifications
+qui ont échoué, chacune avec son message, ou la raison de l’absence de réponse. Cliquez sur une ligne pour ouvrir la
+requête.
+
+La page conserve la dernière exécution tant que la fenêtre est ouverte. Chaque échange d’une exécution se trouve aussi
+dans l’[Historique](/docs/workspaces/history), marqué comme provenant de l’Exécution.
+
+## Rapports [#reports]
+
+Après une exécution, **Enregistrer le rapport** dans la carte **Résultats** l’enregistre dans un fichier :
+
+| Format | Pour |
+| --- | --- |
+| **JUnit XML…** | Les systèmes d’intégration continue et les tableaux de bord de tests |
+| **JSON…** | Vos propres outils |
+| **HTML…** | Une page à lire ou à partager |
+| **HAR (tous les échanges)…** | Chaque requête et chaque réponse de l’exécution, pour les outils de développement d’un navigateur ou d’autres outils HTTP |
+
+Les rapports JUnit, JSON et HTML masquent les secrets dans les adresses, les valeurs de vérification et les messages,
+ainsi que dans les tests de script et les journaux qu’ils contiennent.
+
+## Exécuter depuis la ligne de commande [#run-from-the-command-line]
+
+`echolot run` exécute le même espace de travail avec les mêmes réglages, pour l’intégration continue et le terminal :
+itérations, fichiers de données, délais, nouvelles tentatives, itérations en parallèle et les mêmes formats de rapport.
+Voir [echolot run](/docs/cli/run) et [exécuter en CI](/docs/cli/ci).

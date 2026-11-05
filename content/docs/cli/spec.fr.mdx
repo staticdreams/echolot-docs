@@ -1,0 +1,107 @@
+---
+title: "echolot spec"
+description: "Analysez des documents OpenAPI en CI (lint), et gardez à jour un dossier qui suit une spec."
+---
+
+`echolot spec` amène dans le terminal deux choses de la [page Specs](/docs/specs) : le linter, et le lien entre une
+spec et le dossier de requêtes créé à partir d’elle.
+
+| Sous-commande | Effet |
+| --- | --- |
+| `echolot spec lint` | Analyse un document OpenAPI ou Swagger (lint) ; se termine avec le code 1 s’il contient des erreurs (ou des avertissements, avec `--strict`). |
+| `echolot spec check` | Liste ce qui a changé dans la spec qu’un dossier suit ; se termine avec le code 1 si le dossier n’est pas à jour. |
+| `echolot spec apply` | Applique au dossier les changements de la spec, en conservant les modifications faites dans l’espace de travail. |
+
+## echolot spec lint [#echolot-spec-lint]
+
+```sh
+echolot spec lint <file> [--strict] [--hints]
+```
+
+`<file>` est la spec, en YAML ou en JSON. Les fichiers qu’elle référence avec `$ref` sont lus à côté d’elle.
+
+```sh
+echolot spec lint Alpenglow.echolot/specs/alpenglow.yaml
+```
+
+```text
+0 errors, 0 warnings.
+```
+
+Chaque problème tient en une ligne sur la sortie standard, avec le fichier, la ligne et la colonne, la gravité, le
+message et la règle entre crochets, pour que les éditeurs et la CI puissent le pointer. Le total va sur la sortie
+d’erreur :
+
+```text
+api.yaml:2:1: error: info needs a version (of the API, such as 1.0.0). [info]
+api.yaml:7:7: error: GET /x documents no responses. [responses]
+api.yaml:6:5: hint: GET /x has no operationId; code generators and agents name it from one. [operation-id]
+2 errors, 0 warnings.
+```
+
+| Option | Signification |
+| --- | --- |
+| `--strict` | Échouer aussi sur les avertissements. |
+| `--hints` | Lister aussi les suggestions : bonnes pratiques, comme les operationId et les descriptions. Les suggestions ne font jamais échouer. |
+
+Les règles sont les mêmes que sur la page Specs ; voir [modifier des specs](/docs/specs/editing).
+
+## echolot spec check [#echolot-spec-check]
+
+```sh
+echolot spec check [--workspace <workspace>] <folder> [--refresh]
+```
+
+Un dossier créé en important une spec, ou lié à une spec dans l’app, suit cette spec. `check` compare le dossier à la
+spec telle qu’elle est maintenant et liste chaque opération qui a été `added` (ajoutée), `changed` (modifiée, avec les
+champs) ou `removed` (supprimée). Un changement qui touche quelque chose que vous avez modifié dans l’espace de travail
+l’indique : ces modifications sont conservées.
+
+```sh
+echolot spec check -w Shop.echolot pets
+```
+
+```text
+added    POST /pets
+changed  GET /pets/{id}  (parameters, responses)
+removed  DELETE /pets/{id}
+3 changes, 12 unchanged.
+```
+
+| Option | Signification |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Le dossier de l’espace de travail. Par défaut : le dossier courant. |
+| `--refresh` | Récupérer d’abord de nouveau la spec depuis son URL. |
+
+`<folder>` est le chemin du dossier lié, comme `pets`. Utilisez `check` en CI pour faire échouer un build quand les
+requêtes ont pris du retard sur la spec.
+
+## echolot spec apply [#echolot-spec-apply]
+
+```sh
+echolot spec apply [--workspace <workspace>] <folder> [--operation <operation> ...]
+```
+
+Écrit les changements de la spec dans le dossier : les nouvelles opérations deviennent des requêtes, celles qui ont
+changé sont mises à jour, celles qui ont disparu sont supprimées. Ce que vous avez modifié dans une requête est
+conservé. Une requête que vous avez modifiée et dont la spec n’a plus l’opération est conservée aussi, et cesse de
+suivre la spec. Chaque ligne indique ce qui s’est passé :
+
+```text
+added    pets/create-pet
+updated  pets/get-pet  kept edits to headers
+removed  pets/delete-pet
+```
+
+| Option | Signification |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Le dossier de l’espace de travail. Par défaut : le dossier courant. |
+| `--operation <operation>` | Seulement cette opération, comme `"GET /pets"`. Répétable ; tous les changements si omis. |
+
+## Codes de sortie [#exit-codes]
+
+| Code | Quand |
+| --- | --- |
+| `0` | `lint` : aucune erreur (et aucun avertissement, avec `--strict`). `check` : le dossier est à jour. `apply` : appliqué. |
+| `1` | `lint` : des erreurs, ou des avertissements avec `--strict`. `check` : il y a des changements à appliquer. |
+| `64` | Une option erronée, ou un dossier qui ne suit pas de spec. |

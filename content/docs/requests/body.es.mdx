@@ -1,0 +1,114 @@
+---
+title: "Cuerpo de la solicitud"
+description: "Envía JSON, formularios, subidas multipart, GraphQL, texto, XML, HTML o un archivo entero como cuerpo de una solicitud HTTP."
+---
+
+La pestaña **Cuerpo** define lo que envía una solicitud después de sus cabeceras. Elige el tipo en la fila de la parte
+superior de la pestaña; el editor de abajo cambia en consecuencia. La pestaña muestra un punto cuando la solicitud tiene
+cuerpo.
+
+<Shot id="requests-http-body-json" alt="La pestaña Cuerpo de Create order con JSON elegido, las líneas del pedido en el editor y Embellecer a la derecha" />
+
+## Tipos de cuerpo [#body-types]
+
+| Tipo | Qué envía | Content-Type que añade Echolot |
+| --- | --- | --- |
+| **Ninguno** | Ningún cuerpo. | Ninguno |
+| **JSON** | El texto del editor. | `application/json` |
+| **URL-encoded** | Pares de nombre y valor, como los envía un formulario web. | `application/x-www-form-urlencoded` |
+| **Multipart** | Campos de texto y archivos, como los envía un formulario web con subida de archivos. | `multipart/form-data` con su delimitador |
+| **GraphQL** | El texto de la consulta tal cual. | `application/graphql` |
+| **Sin formato** | Texto, XML o HTML, que se elige en una segunda fila de chips. | `text/plain`, `application/xml` o `text/html` |
+| **Binario** | Un archivo, byte a byte. | Ninguno |
+
+El Content-Type aparece bajo **GENERADAS AUTOMÁTICAMENTE** en la pestaña **Cabeceras**. Para enviar otro, añade tu propia
+cabecera `Content-Type`; sustituye a la de Echolot. Las cabeceras de longitud y de delimitación se calculan al enviar la
+solicitud.
+
+Todo cuerpo de texto puede contener `{{variables}}` y [valores dinámicos](/docs/requests/dynamic-values), que se rellenan
+al enviar:
+
+```json
+{
+  "lines": [{ "sku": "{{productId}}", "quantity": 1 }],
+  "note": "Sent at {{$isoTimestamp}}"
+}
+```
+
+## JSON [#json]
+
+Escribe o pega JSON en el editor. Tiene números de línea, colores de sintaxis y la lista de `{{` para las variables.
+
+Haz clic en **Embellecer** para indentar el JSON. Las variables se quedan como están escritas, así que `{{productId}}`
+dentro de una cadena o como valor suelto no se toca. En un panel estrecho, el botón muestra solo su varita.
+
+Para probarlo, abre **Orders › Create order** en el ejemplo Alpenglow y mira su cuerpo, o envía **Echo › Echo anything**,
+que devuelve el cuerpo que ha recibido.
+
+## URL-encoded [#url-encoded]
+
+Los campos están en una tabla de **CLAVE** y **VALOR**, como las cabeceras:
+
+- Haz clic en **Añadir campo** para añadir uno. Los campos marcados se envían; los desmarcados se conservan pero no se
+  envían.
+- Haz clic en **Editar en bloque** para editar todos los campos como texto, un `Name: value` por línea, con `//` delante
+  de un campo desactivado.
+
+Echolot codifica los nombres y los valores al enviarlos, y lo que inserta una variable también se codifica, de modo que un
+`+`, un `&` o un espacio en un valor llega como ese carácter.
+
+## Multipart [#multipart]
+
+Cada fila es una parte del formulario:
+
+1. Marca la casilla para enviar el campo.
+2. Escribe su **nombre**.
+3. Elige **Texto** o **Archivo**.
+   - Con **Texto**, escribe el **valor**. Puede contener `{{variables}}`.
+   - Con **Archivo**, haz clic en **Elegir…** y selecciona el archivo. Un campo sin nombre toma el nombre del archivo, sin
+     su extensión. La parte lleva el nombre del archivo como filename.
+4. Si quieres, escribe un **tipo** de contenido para la parte, como `image/png`. Si lo dejas vacío (`type (auto)`), un
+   archivo recibe uno según su extensión (`.json`, `.png`, `.pdf` y así sucesivamente; si no, `application/octet-stream`)
+   y un campo de texto no recibe ninguno.
+
+Haz clic en **Añadir campo** para otra fila, y en el botón **−** para eliminar una. Los archivos se leen del disco a
+medida que se envía la solicitud, así que una subida grande nunca tiene que caber en la memoria.
+
+## GraphQL [#graphql]
+
+**GraphQL** envía el texto de la consulta como cuerpo con `Content-Type: application/graphql`, para los servidores que
+aceptan una consulta así. Para un cliente GraphQL completo, con variables, autocompletado a partir del esquema, el
+explorador de esquemas y suscripciones, crea mejor una **Nueva solicitud GraphQL**. Consulta
+[GraphQL](/docs/requests/graphql).
+
+## Sin formato: texto, XML y HTML [#raw-text-xml-and-html]
+
+Elige **Sin formato** y después **Texto**, **XML** o **HTML** en la fila de al lado. El editor colorea XML y HTML, y el
+Content-Type sigue tu elección.
+
+## Binario: un archivo [#binary-a-file]
+
+Elige **Binario**, después **Elegir archivo…**, y selecciona el archivo que enviar. La pestaña muestra su nombre, tamaño y
+ruta; **Elegir otro archivo…** lo sustituye. El archivo se lee del disco cada vez que se envía la solicitud, sea cual sea
+su tamaño, así que la solicitud siempre envía el archivo tal como está ahora. Hasta que eliges un archivo, no se envía
+nada.
+
+<Edition only="appstore">
+  La edición de la App Store solo puede leer los archivos que has elegido. Un archivo que eliges en la pestaña **Cuerpo**
+  sigue siendo legible en los envíos posteriores. Cuando una solicitud nombra un archivo que la app nunca recibió (uno que
+  eligió un compañero en su Mac, por ejemplo), el envío se detiene y el panel de respuesta ofrece **Permitir acceso…**:
+  elige el archivo y la solicitud se envía de nuevo.
+</Edition>
+
+## Dónde se guardan los cuerpos [#where-bodies-are-saved]
+
+Un cuerpo escrito se guarda en su propio archivo junto a la solicitud, como `create-order.body.json` junto a
+`create-order.req.toml`, de modo que se lee bien en Git. Un cuerpo binario se guarda como la ruta del archivo. Consulta
+[Archivos del espacio de trabajo](/docs/reference/workspace-files).
+
+## Cuerpos grandes [#large-bodies]
+
+Los archivos binarios y multipart se leen del disco a medida que sale la solicitud, así que las subidas de cualquier
+tamaño se envían sin cargarse en la memoria. Las respuestas son otra cuestión: se escriben en el disco a medida que llegan
+y siguen yendo con fluidez en los visores incluso con cientos de megabytes. Consulta
+[Respuestas](/docs/requests/responses#large-responses).

@@ -1,0 +1,52 @@
+---
+title: "Echolot"
+description: "Ce qu’est Echolot, ce qu’il fait, et par où commencer dans cette documentation."
+---
+
+Echolot est une app Mac native pour envoyer, tester et concevoir des API. Il parle HTTP/1.1, HTTP/2 et HTTP/3, GraphQL,
+gRPC, WebSocket, Server-Sent Events, Socket.IO, MQTT et MCP, et montre exactement ce qui est passé sur le réseau : les
+octets bruts, chaque redirection et le temps de chaque étape.
+
+Ce qu’il fait :
+
+- **Garde votre travail dans des fichiers simples.** Un espace de travail est un dossier de fichiers TOML lisibles, un
+  par requête, que vous pouvez conserver dans Git. Les valeurs secrètes restent dans le trousseau de macOS, jamais dans
+  les fichiers.
+- **Teste et exécute.** Ajoutez des vérifications à n’importe quelle requête, exécutez un dossier ou tout l’espace de
+  travail dans l’Exécution, et lancez le même espace de travail en CI avec l’outil en ligne de commande `echolot`.
+- **Conçoit et simule.** Écrivez des specs OpenAPI visuellement ou en texte, et lancez des serveurs mock locaux : d’une
+  spec, ou de routes que vous créez à la main avec des données fictives.
+- **Automatise.** Enchaînez requêtes, conditions et boucles en flux sur un canevas, et lancez-les à la main, selon une
+  planification ou depuis un webhook.
+- **Travaille avec l’IA.** L’Assistant intégré envoie, teste et corrige des requêtes avec le modèle de votre choix. Des
+  agents IA externes peuvent utiliser votre espace de travail via le serveur MCP d’Echolot. Tout ce qui modifie des
+  données vous demande d’abord.
+- **Lit les réponses énormes.** Les corps sont écrits sur le disque au fil de l’eau : une réponse JSON de 500 Mo
+  s’ouvre aussitôt.
+
+Echolot nécessite macOS 15 ou ultérieur sur un Mac avec puce Apple. Il n’a ni compte ni connexion.
+
+## Pour commencer [#start-here]
+
+<Cards>
+  <Card title="Installer Echolot" href="/docs/get-started/install" description="Téléchargez-le, ouvrez-le, gardez-le à jour." />
+  <Card title="Votre première requête" href="/docs/get-started/first-request" description="De rien à une requête envoyée et une réponse lue, en quelques minutes." />
+  <Card title="La fenêtre" href="/docs/get-started/the-window" description="Un tour de la barre latérale, des pages, des onglets et des raccourcis." />
+  <Card title="Accueil et Sonar" href="/docs/get-started/home" description="La vue d’ensemble de l’espace de travail, et chaque envoi d’une période placé selon son temps de réponse." />
+  <Card title="Reprendre l’existant" href="/docs/get-started/importing" description="Importez depuis Postman, Insomnia, OpenAPI, HAR, cURL, Paw et Bruno." />
+  <Card title="L’API de démo" href="/docs/tutorials/demo-api" description="Une boutique fictive sur demo.echolot.dev pour s’exercer : REST, GraphQL, WebSocket, SSE et MCP." />
+  <Card title="Éditions" href="/docs/get-started/editions" description="Le téléchargement direct et l’édition du Mac App Store, côte à côte." />
+</Cards>
+
+## Les grandes parties [#the-main-parts]
+
+<Cards>
+  <Card title="Espaces de travail" href="/docs/workspaces" description="Dossiers, environnements, secrets, historique et Git." />
+  <Card title="Requêtes" href="/docs/requests" description="Tous les protocoles, l’authentification, les réponses, les scripts, les tests et l’Exécution." />
+  <Card title="Serveurs MCP" href="/docs/mcp-servers" description="Inspectez, vérifiez et appelez n’importe quel serveur MCP." />
+  <Card title="Specs" href="/docs/specs" description="Concevez des documents OpenAPI et gardez les requêtes en phase avec eux." />
+  <Card title="Mocks" href="/docs/mocks" description="Des serveurs locaux de routes avec des données fictives, ou d’une spec." />
+  <Card title="Flux" href="/docs/flows" description="Requêtes, conditions et boucles enchaînées sur un canevas." />
+  <Card title="Assistant" href="/docs/ai/assistant" description="L’agent IA intégré à Echolot." />
+  <Card title="Outil en ligne de commande" href="/docs/cli" description="Envoyez, exécutez, importez, simulez et plus encore depuis le Terminal et la CI." />
+</Cards>

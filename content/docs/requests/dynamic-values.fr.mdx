@@ -1,0 +1,146 @@
+---
+title: "Valeurs dynamiques"
+description: "Remplissez vos requêtes avec des valeurs calculées à l’envoi, comme des horodatages, des UUID, des hachages, des encodages, des fichiers et des valeurs issues d’autres requêtes et de leurs réponses."
+---
+
+Une valeur dynamique est un jeton qu’Echolot calcule à chaque envoi de la requête : l’heure actuelle, un nouvel UUID,
+une signature du corps, ou une valeur de la dernière réponse d’une autre requête. Vous l’écrivez comme une variable,
+avec un `$` devant : `{{$uuid}}`, `{{$sha256('{{password}}')}}`. Les valeurs dynamiques fonctionnent partout où les
+variables fonctionnent : l’URL, les paramètres, les en-têtes, le corps, les champs de formulaire et les champs
+d’authentification.
+
+Cette page montre comment les ajouter et les modifier. Chaque valeur dynamique, avec ses arguments, est listée dans la
+[référence des valeurs dynamiques](/docs/reference/dynamic-values).
+
+## En ajouter une depuis la liste [#add-one-from-the-list]
+
+1. Dans n’importe quel champ qui accepte des variables, tapez `{{`. Une liste s’ouvre avec d’abord les variables
+   disponibles, puis les valeurs dynamiques par catégorie.
+2. Continuez à taper pour la réduire : `uuid`, `time`, `hmac`. Chaque entrée indique ce qu’elle donne.
+3. Déplacez-vous avec <kbd>↑</kbd> et <kbd>↓</kbd> et appuyez sur <kbd>↩</kbd> ou <kbd>⇥</kbd> pour l’insérer ;
+   <kbd>Esc</kbd> ferme la liste.
+
+Une valeur qui prend des arguments ouvre son éditeur dès que vous l’insérez : vous les remplissez dans un formulaire au
+lieu de les taper. Pour ouvrir la liste sans taper `{{`, faites un clic droit sur le champ et choisissez
+**Insérer une variable ou une valeur…**.
+
+Dans le champ, une valeur dynamique s’affiche sous forme de pastille avec un libellé lisible : le titre de la valeur
+(`HMAC-SHA256`) ou, pour une valeur de réponse, la requête et ce qu’elle lit (`Sign in › $.access_token`). Le texte
+sous-jacent reste tel qu’il est écrit.
+
+<Shot id="requests-http-token-editor" alt="L’éditeur de jeton d’une valeur de réponse filtrée par JSONPath : la requête Sign in, le JSONPath $.access_token, L’envoyer d’abord réglé sur Quand elle n’a pas encore de réponse, et la valeur issue de la dernière réponse" />
+
+## Modifier un jeton [#edit-a-token]
+
+Double-cliquez sur une pastille, ou faites un clic droit dessus et choisissez **Modifier le jeton…**. L’éditeur de
+jeton s’ouvre :
+
+- Le bouton en haut indique ce qu’est le jeton et permet de le changer : une variable ou une valeur dynamique.
+- Les champs sont les arguments de la valeur. Un argument de requête est un menu des requêtes de l’espace de travail,
+  classées par dossier ; un argument de sélecteur (un JSONPath, un XPath, un nom d’en-tête) a un bouton qui liste ce que
+  contient la dernière réponse, de sorte que vous pouvez choisir une valeur au lieu de taper son chemin.
+- **Valeur** montre ce que le jeton donne actuellement, avec l’environnement actuel, ou **Non résolu avec
+  l’environnement actuel** et pourquoi.
+- Pour une variable, **Utiliser une autre variable** la remplace par une autre, et **Utiliser plutôt une valeur de
+  réponse** la transforme en valeur de réponse.
+- **Retirer** supprime le jeton ; **Terminé** garde vos modifications.
+
+## Coup d’œil [#quick-look]
+
+Laissez le pointeur sur une pastille pour voir ce qu’elle donne sans l’ouvrir : la valeur (masquée pour un secret,
+marquée **Secret**), son origine et la façon dont elle est écrite. Pour les valeurs dynamiques, le coup d’œil indique
+quand elles sont calculées : les valeurs de temps et les valeurs aléatoires sont **Recréée à chaque envoi ; ci-dessus,
+un exemple.** Ses boutons sont **Modifier…**, **Copier la valeur** et **Toutes les variables…**, qui ouvre le panneau
+des variables.
+
+## Les écrire à la main [#writing-them-by-hand]
+
+```text
+{{$name}}                       no arguments
+{{$name('text', 42)}}           text in single or double quotes, numbers as they are
+{{$base64(user)}}               a bare name is a variable
+{{$base64('{{user}}:{{pass}}')}} variables inside text
+{{$sha256("{{$requestBody('')}}")}} a dynamic value inside another one
+```
+
+Un jeton à l’intérieur d’un argument entre guillemets doit utiliser l’autre sorte de guillemets pour ses propres
+arguments : des guillemets doubles autour d’un jeton dont les arguments sont entre guillemets simples, comme dans la
+dernière ligne.
+
+## Ce que vous pouvez utiliser [#what-you-can-use]
+
+| Catégorie | Exemples | Donne |
+| --- | --- | --- |
+| **Réponses** | `{{$response('auth/sign-in', '$.access_token')}}`, `{{$responseHeader('orders/create-order', 'Location')}}`, `{{$responseStatus('auth/sign-in')}}` | Des valeurs de la dernière réponse d’une autre requête. |
+| **Requêtes** | `{{$requestHeader('', 'Content-Type')}}`, `{{$requestURL('auth/sign-in')}}`, `{{$requestJSONPath('', '$.lines[0].sku')}}` | Des parties de cette requête (premier argument vide) ou d’une autre, telles qu’elles seraient envoyées. |
+| **Encodage** | `{{$base64('heidi:alpenglow')}}`, `{{$urlEncode('a b&c')}}`, `{{$jsonEscape('say "hi"')}}`, `{{$basicAuth('heidi', '{{password}}')}}`, `{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`, `{{$newline}}` | Du texte encodé ou décodé, des échappements, une valeur d’auth Basic, un JWT signé. |
+| **Hachages et signatures** | `{{$sha256("{{$requestBody('')}}")}}`, `{{$hmacSha256('{{key}}', 'message', 'base64')}}`, `{{$md5('text')}}` | Des hachages et des HMAC, en hexadécimal sauf si vous demandez `base64` ou `base64url`. |
+| **Temps** | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | L’heure d’envoi, en secondes ou millisecondes Unix, en ISO 8601, en date HTTP ou dans votre propre format, décalée d’un nombre de secondes et dans un fuseau horaire. |
+| **Aléatoire** | `{{$uuid}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | De nouvelles valeurs aléatoires à chaque envoi. `$guid` et `$randomUUID` sont d’autres noms de `$uuid`. |
+| **Données fictives** | `{{$randomFullName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomLoremSentence}}`, `{{$randomDatePast}}` | Des noms, adresses, entreprises, prix, dates, lorem ipsum et plus encore, inventés et nouveaux à chaque envoi, sous les noms de Postman. La liste les regroupe en sous-menus. Voir [les données fictives](/docs/reference/dynamic-values#fake-data). |
+| **Texte** | `{{$lowercase('{{name}}')}}`, `{{$uppercase('chf')}}`, `{{$trim('{{code}}')}}` | Du texte transformé. |
+| **Fichiers et système** | `{{$file('data/order.json')}}`, `{{$env('HOME')}}` | Le contenu d’un fichier (chemin relatif à l’espace de travail, ou chemin absolu), ou une variable d’environnement du processus Echolot. |
+
+`$env` n’est pas disponible pour les agents : quand un agent IA envoie une requête, les variables d’environnement de
+votre Mac n’y sont pas accessibles.
+
+L’exemple Alpenglow en utilise une dans **Orders › Create order** : son en-tête `Idempotency-Key` vaut `{{$uuid}}`, si
+bien que chaque commande est nouvelle.
+
+## Valeurs issues des réponses d’autres requêtes [#values-from-other-requests-responses]
+
+Les valeurs **Réponses** lisent la dernière réponse d’une autre requête enregistrée. Le premier argument est le chemin
+de cette requête dans l’espace de travail, son dossier et son nom comme dans les fichiers : `auth/sign-in` pour
+**Auth › Sign in**.
+
+| Valeur | Lit |
+| --- | --- |
+| `$response(request, query)` | N’importe quoi, selon la forme du sélecteur : `$.token` (JSONPath), `/feed/entry[1]/id` (XPath), `header:Location`, `cookie:session`, `regex:token=(\w+)`, `jq:.data.token`, `keypath:data.items.0.id`. |
+| `$responseJSONPath`, `$responseKeyPath`, `$responseJq`, `$responseXPath`, `$responseRegex` | Le corps, avec ce type de sélecteur. Une regex donne son premier groupe, s’il y en a un. |
+| `$responseHeader`, `$responseCookie` | Un en-tête, ou un cookie défini par la réponse. |
+| `$responseStatus`, `$responseBody`, `$responseBodyLength` | Le code d’état, le corps sous forme de texte, sa taille en octets. |
+
+Quand la requête qu’une valeur lit n’a pas encore de réponse, Echolot l’envoie d’abord. La ligne sous la barre d’URL le
+signale avant l’envoi : **Envoie « Sign in » d’abord**. Le dernier argument, facultatif, décide quand cela se produit ;
+dans l’éditeur de jeton, il s’appelle **L’envoyer d’abord** :
+
+| Argument | Dans l’éditeur | Ce qui se passe |
+| --- | --- | --- |
+| (aucun) ou `'if-missing'` | **Quand elle n’a pas encore de réponse** | N’envoie l’autre requête que si elle n’a pas de réponse. |
+| `'fresh'` | **À chaque fois** | L’envoie avant chaque envoi de cette requête (une fois par exécution dans l’Exécution). |
+| `'latest'` | **Jamais : utiliser la dernière réponse** | Ne l’envoie jamais ; utilise sa dernière réponse. |
+
+```text
+{{$response('auth/sign-in', '$.access_token', 'fresh')}}
+```
+
+Les requêtes qui se lisent mutuellement en cercle sont refusées, avec le nom des requêtes concernées.
+
+Pour garder une valeur d’une réponse dans une variable que toutes les requêtes lisent, plutôt que de pointer vers une
+seule requête, utilisez une [capture de réponse](/docs/requests/captures).
+
+## Valeurs de cette requête [#values-from-this-request]
+
+Les valeurs **Requêtes** lisent une requête telle qu’elle serait envoyée, avec ses variables et son authentification
+remplies. Laissez le premier argument vide pour la requête en cours d’envoi : `{{$requestHeader('', 'X-Request-Id')}}`.
+Echolot ne calcule que la partie demandée, si bien qu’un en-tête peut signer le corps :
+
+```text
+X-Signature: {{$hmacSha256('{{signingKey}}', "{{$requestBody('')}}")}}
+```
+
+## jq [#jq]
+
+Les filtres jq fonctionnent dans `$responseJq`, `$requestJq` et `$response(…, 'jq:…')`, sans rien à installer. Un filtre
+qui produit plusieurs résultats les donne un par ligne :
+
+```text
+{{$responseJq('catalog/list-products', '.items[0].sku')}}
+{{$responseJq('catalog/list-products', '[.items[].price.amount] | add')}}
+```
+
+## Quand une valeur ne se résout pas [#when-a-value-doesnt-resolve]
+
+Un jeton qui ne peut pas être calculé (une variable manquante, une requête sans réponse qui ne peut pas être envoyée,
+un JSONPath qui ne trouve rien) est envoyé tel qu’il est écrit, et la ligne sous la barre d’URL affiche **1 problème**.
+Cliquez dessus pour voir lequel. L’éditeur de jeton et le coup d’œil disent la même chose.

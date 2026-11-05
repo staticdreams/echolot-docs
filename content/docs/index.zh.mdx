@@ -1,0 +1,42 @@
+---
+title: "Echolot"
+description: "Echolot 是什么、能做什么，以及从本文档的哪里开始。"
+---
+
+Echolot 是一款原生 Mac App，用于发送、测试和构建 API。它支持 HTTP/1.1、HTTP/2 和 HTTP/3、GraphQL、gRPC、WebSocket、Server-Sent Events、Socket.IO、MQTT 和 MCP，并准确显示线路上传输的内容：原始字节、每一次重定向，以及每一步的耗时。
+
+它能做什么：
+
+- **把你的工作保存在纯文件中**。工作区是一个由可读的 TOML 文件组成的文件夹，每个请求一个文件，可以放进 Git。机密值保存在 macOS 钥匙串中，绝不写入文件。
+- **测试和运行**。为任何请求添加检查，在运行器中运行一个文件夹或整个工作区，并用 `echolot` 命令行工具在 CI 中运行同一个工作区。
+- **设计和模拟**。以可视化方式或文本方式编写 OpenAPI 规范，并运行本地模拟服务器：基于规范，或基于你手动创建、带有示例数据的路由。
+- **自动化**。把请求、条件和循环在画布上串联成流程，可手动运行、按计划运行，或由 Webhook 触发。
+- **与 AI 协作**。内置的助手使用你选择的模型来发送、测试和修复请求。外部 AI 智能体可以通过 Echolot 自己的 MCP 服务器使用你的工作区。任何会更改数据的操作都会先询问你。
+- **读取超大响应**。正文以流的方式写入磁盘，因此 500 MB 的 JSON 响应也能立即打开。
+
+Echolot 需要搭载 Apple 芯片、运行 macOS 15 或更高版本的 Mac。它没有账户，也无需登录。
+
+## 从这里开始 [#start-here]
+
+<Cards>
+  <Card title="安装 Echolot" href="/docs/get-started/install" description="下载、打开，并保持更新。" />
+  <Card title="你的第一个请求" href="/docs/get-started/first-request" description="几分钟内从零开始，发出请求并读到响应。" />
+  <Card title="窗口" href="/docs/get-started/the-window" description="边栏、页面、标签页和快捷键导览。" />
+  <Card title="主页和 Sonar" href="/docs/get-started/home" description="工作区概览，以及某段时间内每次发送按响应时间绘制的图。" />
+  <Card title="带上你已有的内容" href="/docs/get-started/importing" description="从 Postman、Insomnia、OpenAPI、HAR、cURL、Paw 和 Bruno 导入。" />
+  <Card title="演示 API" href="/docs/tutorials/demo-api" description="demo.echolot.dev 上的一家虚构商店，用来练习：REST、GraphQL、WebSocket、SSE 和 MCP。" />
+  <Card title="版本" href="/docs/get-started/editions" description="直接下载版和 Mac App Store 版，并排对比。" />
+</Cards>
+
+## 主要部分 [#the-main-parts]
+
+<Cards>
+  <Card title="工作区" href="/docs/workspaces" description="文件夹、环境、机密、历史记录和 Git。" />
+  <Card title="请求" href="/docs/requests" description="所有协议、认证、响应、脚本、测试和运行器。" />
+  <Card title="MCP 服务器" href="/docs/mcp-servers" description="检查、检验并调用任何 MCP 服务器。" />
+  <Card title="规范" href="/docs/specs" description="设计 OpenAPI 文档，并让请求与之保持一致。" />
+  <Card title="模拟" href="/docs/mocks" description="基于带示例数据的路由或基于规范的本地服务器。" />
+  <Card title="流程" href="/docs/flows" description="在画布上串联的请求、条件和循环。" />
+  <Card title="助手" href="/docs/ai/assistant" description="内置在 Echolot 中的 AI 智能体。" />
+  <Card title="命令行工具" href="/docs/cli" description="在终端和 CI 中发送、运行、导入、模拟等。" />
+</Cards>

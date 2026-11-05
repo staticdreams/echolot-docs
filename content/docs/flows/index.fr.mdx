@@ -1,0 +1,222 @@
+---
+title: "Flux"
+description: "Enchaînez vos requêtes enregistrées, vos serveurs MCP et les outils d’Echolot en petits programmes sur un canevas, et lancez-les à la main, selon une planification, depuis un webhook ou comme outil pour des agents."
+---
+
+Un flux est un petit programme que vous dessinez : des blocs reliés par des liens. Chaque bloc fait une seule chose :
+envoyer une requête enregistrée, extraire une valeur d’une réponse, embrancher, boucler, vous poser une question,
+enregistrer une variable ou écrire un fichier. Utilisez les flux pour les tâches que vous faites sinon à la main en
+plusieurs étapes : se connecter avec un code d’appareil, parcourir des résultats page par page, créer puis nettoyer des
+données de test, vérifier une API chaque matin, ou donner à un agent IA un seul outil qui envoie cinq requêtes.
+
+Les flux vivent dans l’espace de travail, un fichier par flux dans le dossier `flows` : vous les relisez et les
+partagez dans Git comme vos requêtes. Chaque requête qu’un flux envoie suit le même chemin qu’un envoi depuis la page
+de la requête : variables, auth, scripts, vérifications, proxys et [historique](/docs/workspaces/history) s’appliquent
+tous.
+
+## La page Flux [#the-flows-page]
+
+Choisissez **Flux** dans le sélecteur de module en haut de la barre latérale, ou appuyez sur
+<kbd>⌘</kbd><kbd>5</kbd>. La barre latérale liste les flux de l’espace de travail. Sous chaque nom, vous voyez comment
+il démarre : `manual`, `agent tool`, `every hour`, `scheduled` ou `webhook`. Un signe d’avertissement à côté d’un flux
+signale des problèmes à corriger avant qu’il puisse s’exécuter.
+
+<Shot id="flows-canvas" alt="La page Flux avec le flux Place a test order ouvert : les flux dans la barre latérale, le canevas avec Démarrer, deux blocs Requête, un bloc Approuver, un bloc Journal et un bloc Cancel order, et les réglages du flux à droite" />
+
+La page comporte trois parties :
+
+- **La barre d’outils** au-dessus du canevas : le nom du flux (avec **Modifié** tant qu’une modification n’est pas
+  enregistrée), le compteur de problèmes, **Ranger**, **Ajuster**, le niveau de zoom, **Dupliquer**, **Exécutions**,
+  **Journal d’exécution**, **Bloc**, **Remarque** et **Exécuter**.
+- **Le canevas** au milieu, avec une petite carte de tout le flux dans son coin inférieur gauche. Cliquez sur la carte
+  pour y déplacer la vue.
+- **L’inspecteur** à droite. Sans sélection, il montre le flux lui-même : **Nom**, **Description** et **Entrées**. Avec
+  un bloc sélectionné, il montre les réglages de ce bloc.
+
+Quand un flux est ouvert, la barre latérale liste aussi les **Exécutions de** ce flux (celles de cette fenêtre, de la
+plus récente à la plus ancienne) et les **Requêtes** de l’espace de travail, prêtes à être glissées sur le canevas.
+
+### Créer un flux [#create-a-flow]
+
+1. Dans la barre latérale, cliquez sur **+** à côté de **Flux**.
+2. Choisissez **Flux vide** pour un bloc Démarrer relié à un bloc Sortie, ou choisissez-en un sous
+   **À partir d’un modèle** (voir [modèles](/docs/flows/templates)).
+3. Le nouveau flux s’ouvre sur le canevas. Renommez-le dans l’inspecteur sous **Nom**.
+
+Quand l’espace de travail n’a encore aucun flux, la page propose à la place un bouton **Nouveau flux**.
+
+Pour supprimer un flux, sélectionnez-le et cliquez sur **−** à côté de **Flux**, ou faites un clic droit dessus et
+choisissez **Supprimer…**. Echolot demande d’abord confirmation et place le fichier dans la corbeille. Les flux qui
+exécutent celui que vous avez supprimé cessent de fonctionner.
+
+## Construire sur le canevas [#build-on-the-canvas]
+
+### Ajouter des blocs [#add-blocks]
+
+- Cliquez sur **Bloc** dans la barre d’outils, ou appuyez sur <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd>. Le sélecteur de
+  blocs s’ouvre : saisissez pour chercher, puis cliquez sur un type de bloc. Appuyez sur <kbd>↩</kbd> pour ajouter la
+  première correspondance. Le nouveau bloc se place au milieu de la vue et est sélectionné.
+- Le sélecteur liste aussi les requêtes enregistrées de l’espace de travail sous **Requêtes**. En choisir une ajoute un
+  bloc Requête qui l’envoie déjà.
+- Faites glisser une requête depuis **Requêtes** dans la barre latérale jusqu’au canevas. Elle devient un bloc Requête
+  là où vous la lâchez. Faites un clic droit sur une requête et choisissez **Ajouter au flux** pour placer son bloc à
+  droite du flux.
+
+Chaque type de bloc, avec ses réglages et ses ports, est décrit sur [Blocs](/docs/flows/blocks).
+
+<Shot id="flows-block-picker" alt="Le sélecteur de blocs ouvert sur le canevas : un champ de recherche, les types de blocs groupés sous Déclencheurs, Actions, Personnes, Logique, Boucles, Données et Sortie, et les requêtes enregistrées à la fin" />
+
+### Relier des ports [#link-ports]
+
+Les entrées se trouvent sur le bord gauche d’un bloc, les sorties sur le bord droit. Une valeur quitte une sortie,
+voyage le long du lien et arrive à une entrée ; un bloc s’exécute quand chaque entrée reliée a une valeur.
+
+- Faites glisser d’une sortie vers une entrée pour les relier. Le port sous le pointeur s’allume quand le lien pourrait
+  s’y attacher. Vous pouvez aussi partir d’une entrée et glisser vers une sortie.
+- Une entrée accepte un seul lien. Y relier une autre sortie remplace l’ancien lien. Une sortie peut alimenter
+  plusieurs entrées.
+- Lâchez un nouveau lien sur le canevas vide et le sélecteur de blocs s’ouvre à cet endroit. Il ne liste que les blocs
+  qui peuvent accepter le lien, et le bloc que vous choisissez arrive déjà relié.
+- Pour déplacer un lien, faites-le glisser hors de l’entrée où il aboutit et déposez-le sur une autre entrée. Déposez-le
+  sur le canevas vide pour le rompre.
+- Pointez un lien pour afficher à son milieu un bouton qui le rompt.
+
+### Sélectionner, déplacer et organiser [#select-move-and-arrange]
+
+- Cliquez sur un bloc pour le sélectionner. <kbd>⇧</kbd>-clic ou <kbd>⌘</kbd>-clic ajoute des blocs à la sélection ou
+  les en retire.
+- Maintenez <kbd>⇧</kbd> ou <kbd>⌘</kbd> et faites glisser sur le canevas vide pour tracer un cadre de sélection. Les
+  blocs qu’il touche rejoignent la sélection.
+- Faites glisser un bloc pour le déplacer. Appuyez sur <kbd>Esc</kbd> pour effacer la sélection.
+- Les touches fléchées sélectionnent le bloc le plus proche dans cette direction, et la vue le suit. Sans sélection,
+  elles partent de Démarrer.
+- **Ranger** dispose les blocs en colonnes, dans l’ordre où ils s’exécutent.
+- **Dupliquer** (<kbd>⌘</kbd><kbd>D</kbd>) copie les blocs sélectionnés avec les liens entre eux.
+- <kbd>⌫</kbd> supprime les blocs sélectionnés avec leurs liens, ou le lien sélectionné.
+
+L’inspecteur d’un bloc sélectionné propose **Supprimer le bloc**. Avec plusieurs blocs sélectionnés, il indique combien
+et propose **Supprimer les blocs**. Un flux a exactement un bloc Démarrer : il n’est jamais copié ni dupliqué, ne peut
+pas être mis en pause, et son inspecteur n’a pas de **Supprimer le bloc**.
+
+### Déplacer la vue et zoomer [#pan-and-zoom]
+
+- Faites glisser sur le canevas vide, ou faites défiler à deux doigts ou à la molette, pour déplacer la vue.
+- Pincez, ou maintenez <kbd>⌘</kbd> et faites défiler, pour zoomer. La vue zoome de 20 % à 250 %, et la barre d’outils
+  affiche le niveau.
+- **Ajuster** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd>) affiche tout le flux. Il ne dézoome jamais sous 50 %, pour que le
+  texte reste lisible ; un flux plus grand commence à son bord gauche.
+
+### Copier et coller [#copy-and-paste]
+
+**Édition › Copier** (<kbd>⌘</kbd><kbd>C</kbd>), **Couper** (<kbd>⌘</kbd><kbd>X</kbd>) et **Coller**
+(<kbd>⌘</kbd><kbd>V</kbd>) agissent sur les blocs sélectionnés et les liens entre eux. Les blocs collés reçoivent de
+nouveaux ID et deviennent la sélection. Dans le même flux, ils se placent à côté des originaux ; dans un autre flux, au
+milieu de la vue. Vous pouvez aussi coller dans un flux d’un autre espace de travail. Les blocs copiés sont du texte
+JSON : vous pouvez donc aussi les coller dans un message ou un ticket.
+
+### Remarques [#notes]
+
+Cliquez sur **Remarque** dans la barre d’outils pour ajouter une note autocollante et y saisir du texte. Les remarques
+se placent derrière les blocs et ne s’exécutent pas.
+
+- Faites glisser une remarque pour la déplacer, et faites glisser la poignée dans son coin inférieur droit pour la
+  redimensionner.
+- Double-cliquez sur une remarque, ou faites un clic droit dessus et choisissez **Modifier la note…**, pour changer le
+  texte.
+- Faites un clic droit et choisissez **Supprimer la note** pour la retirer.
+
+Les modèles utilisent des remarques pour indiquer quelles requêtes choisir.
+
+### Annuler et enregistrement [#undo-and-saving]
+
+Chaque modification sur le canevas et dans l’inspecteur peut être annulée avec **Édition › Annuler**
+(<kbd>⌘</kbd><kbd>Z</kbd>) et **Rétablir** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>) : ajout, déplacement, liaison,
+suppression, réglages, remarques et Ranger.
+
+Vous n’enregistrez pas les flux vous-même. Echolot écrit le fichier un instant après votre dernière modification ;
+**Modifié** s’affiche à côté du nom jusque-là. Si un enregistrement échoue, Echolot en donne la raison et propose
+**Réessayer**, **Ignorer les modifications** (retour au fichier sur le disque) et **Continuer à modifier**. Vos
+modifications restent sur le canevas jusqu’à ce qu’elles soient enregistrées.
+
+### Problèmes [#problems]
+
+Echolot vérifie le flux pendant que vous le modifiez. La barre d’outils affiche le nombre de problèmes ; cliquez dessus
+pour la liste, et cliquez sur un problème pour sélectionner son bloc. Un bloc qui a un problème affiche un signe
+d’avertissement, et son inspecteur liste les problèmes.
+
+Les erreurs empêchent le flux de s’exécuter : pas de bloc Démarrer, un réglage obligatoire laissé vide (comme un bloc
+Requête sans requête), une requête ou un flux qui n’existe pas, ou des liens qui tournent en rond. Les avertissements
+n’empêchent rien, par exemple un bloc dans lequel rien n’est relié et qui ne s’exécute donc jamais. Pour refaire
+quelque chose, utilisez [Répéter, Pour chaque ou Interroger](/docs/flows/blocks#loops) plutôt qu’un cercle de liens.
+
+## Entrées et sorties [#inputs-and-outputs]
+
+Les **Entrées** sont les valeurs avec lesquelles une exécution démarre. Ajoutez-les dans l’inspecteur sans sélection :
+cliquez sur **+** à côté de **Entrées**, saisissez le nom et choisissez son type (`any`, `text`, `number`, `bool`,
+`object`, `list` ou `secret`). Le bloc Démarrer obtient une sortie par entrée, plus `run`, qui envoie toutes les entrées
+en un seul objet.
+
+Les entrées viennent de la feuille **Exécuter**, de l’option `--input` de `echolot flow run`, de l’appel d’outil d’un
+agent, ou de la chaîne de requête et du corps JSON d’un webhook. Le texte est converti vers le type de l’entrée : `3`
+en nombre, `true` ou `yes` en booléen, du texte JSON en objet ou en liste. Une entrée `secret` est masquée dans le
+journal d’exécution et dans ce que voient les agents.
+
+Une valeur par défaut, une description et le caractère obligatoire d’une entrée se définissent dans le fichier du flux
+(la table `[[inputs]]` : `default`, `description`, `required` ; voir
+[fichiers de l’espace de travail](/docs/reference/workspace-files)). La feuille Exécuter affiche la description comme
+texte indicatif du champ et remplit la valeur par défaut.
+
+Le bloc **Sortie** contient ce que l’exécution renvoie : à l’agent qui a appelé le flux, à `echolot flow run`, à
+l’appelant du webhook, ou au bloc Flux d’un flux parent. Un flux a au plus un bloc Sortie.
+
+## Exécuter un flux et le suivre [#run-a-flow-and-watch-it]
+
+Cliquez sur **Exécuter** ou appuyez sur <kbd>⌘</kbd><kbd>R</kbd>. Un flux avec des entrées ouvre d’abord une feuille pour
+les renseigner ; les champs vides utilisent la valeur par défaut de l’entrée. Le flux est enregistré, puis s’exécute
+avec l’environnement actif de la fenêtre. **Exécuter** est indisponible tant que le flux a des erreurs.
+
+Pendant l’exécution :
+
+- La bordure de chaque bloc indique son état : en cours ou en attente de vous, réussi (vert) ou en échec (rouge).
+- Le journal d’exécution s’ouvre sous le canevas. Il liste chaque bloc à mesure qu’il termine, avec sa durée, ses
+  lignes de journal, les résultats des tests (**Tests** 3/3 dans l’en-tête) et la façon dont l’exécution s’est
+  terminée. Cliquez sur une ligne pour sélectionner son bloc.
+- Les blocs qui vous posent une question (Demander, Afficher et attendre, Approuver) ouvrent une feuille. Voir
+  [blocs Personnes](/docs/flows/blocks#people).
+- **Arrêter** (<kbd>⌘</kbd><kbd>.</kbd>) remplace **Exécuter** et termine l’exécution. Une question affichée à l’écran
+  disparaît.
+
+Après l’exécution, sélectionnez un bloc pour voir sa **Dernière exécution** dans l’inspecteur : combien de temps il a
+pris et, sous **Afficher**, ses valeurs d’**Entrée** et de **Sortie** par port. Servez-vous-en pour trouver le chemin
+d’une valeur pour un bloc Extraire ou un modèle.
+
+<Shot id="flows-run-log" alt="Le canevas après une exécution de Place a test order : des blocs aux bordures vertes, le journal d’exécution sous le canevas, et l’inspecteur montrant la sortie de la dernière exécution de Create order" />
+
+Les exécutions précédentes restent dans la fenêtre : cliquez sur l’une d’elles sous **Exécutions de** dans la barre
+latérale, ou choisissez-la dans **Exécutions** dans la barre d’outils, pour l’afficher de nouveau sur le canevas.
+**Effacer le canevas** dans ce menu, ou **Effacer** dans le journal d’exécution, supprime les états d’exécution. Quand
+une exécution échoue et que le modèle intégré au Mac est disponible, un bouton dans l’en-tête du journal d’exécution
+explique l’échec.
+
+Avec un [environnement protégé](/docs/workspaces/protected-environments) actif, le bouton indique
+**Exécuter dans Production…** et Echolot demande confirmation une fois avant le début de l’exécution.
+
+Pour en savoir plus sur l’exécution, les planifications, les webhooks, les agents et la ligne de commande :
+[Exécution et déclencheurs](/docs/flows/running-and-triggers). Pour un exemple guidé, suivez
+[Automatiser avec des flux](/docs/tutorials/automate-with-flows).
+
+## Raccourcis clavier [#keyboard-shortcuts]
+
+| Raccourci | Action |
+| --- | --- |
+| <kbd>⌘</kbd><kbd>5</kbd> | Afficher le module Flux |
+| <kbd>⌘</kbd><kbd>R</kbd> | Exécuter le flux |
+| <kbd>⌘</kbd><kbd>.</kbd> | Arrêter l’exécution |
+| <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd> | Ajouter un bloc |
+| <kbd>⌘</kbd><kbd>D</kbd> | Dupliquer les blocs sélectionnés |
+| <kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd> | Ajuster à tout le flux |
+| <kbd>⌘</kbd><kbd>C</kbd>, <kbd>⌘</kbd><kbd>X</kbd>, <kbd>⌘</kbd><kbd>V</kbd> | Copier, couper, coller des blocs |
+| <kbd>⌫</kbd> | Supprimer la sélection |
+| <kbd>⌘</kbd><kbd>Z</kbd>, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd> | Annuler, rétablir |
+| Touches fléchées | Sélectionner le bloc le plus proche dans cette direction |
+| <kbd>Esc</kbd> | Effacer la sélection |

@@ -1,0 +1,20 @@
+{
+  "title": "Anfragen",
+  "pages": [
+    "index",
+    "body",
+    "auth",
+    "settings",
+    "responses",
+    "dynamic-values",
+    "captures",
+    "scripts-and-tests",
+    "runner",
+    "graphql",
+    "grpc",
+    "websocket-and-sse",
+    "socket-io",
+    "mqtt",
+    "mcp-requests"
+  ]
+}

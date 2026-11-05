@@ -1,0 +1,121 @@
+---
+title: "Stockage et chiffrement"
+description: "Où Echolot conserve les espaces de travail, les corps de réponse et l’historique, quelle quantité il garde, et comment chiffrer les corps de réponse sur le disque."
+---
+
+Echolot garde deux sortes de données séparées. Vos espaces de travail sont des dossiers que vous placez où vous voulez.
+Les données propres à Echolot (corps de réponse, historique, rapports de plantage) vivent dans son dossier de stockage
+sur votre Mac. Supprimer ce dossier fait perdre l’historique, jamais une requête.
+
+## Où se trouvent les choses [#where-things-are]
+
+| Quoi | Où |
+| --- | --- |
+| Espaces de travail | Là où vous les créez ou les gardez. |
+| Valeurs secrètes, jetons OAuth, clé de chiffrement | Votre trousseau de session. |
+| Corps de réponse et captures réseau | `Payloads` dans le dossier de stockage d’Echolot. |
+| Historique | `History` dans le dossier de stockage d’Echolot : un fichier par espace de travail. |
+| Conversations de l’Assistant que vous n’avez pas partagées | `Assistant` dans le dossier de stockage d’Echolot. |
+| Rapports de plantage, si vous les autorisez | `Crash Reports` dans le dossier de stockage d’Echolot. |
+| Vos propres modèles de code | `Code Templates` dans le dossier de stockage d’Echolot. Voir [export](/docs/workspaces/exporting#copy-a-request-as-code). |
+| L’espace de travail Exemples | `Examples.echolot` dans le dossier de stockage d’Echolot. |
+| Réglages, variables globales, environnement actif de chaque espace de travail | Les préférences d’Echolot. |
+
+Le dossier de stockage d’Echolot est `~/Library/Application Support/Echolot`. Pour l’ouvrir, allez dans
+**Réglages › À propos** et cliquez sur **Afficher dans le Finder** à côté de **Réponses et historique**.
+
+<Edition only="appstore">
+  L’édition App Store conserve les mêmes données dans son propre conteneur, au lieu de
+  `~/Library/Application Support/Echolot`. **Réglages › À propos › Afficher dans le Finder** ouvre le bon dossier dans
+  les deux éditions. Les espaces de travail restent où vous les gardez dans les deux, et s’ouvrent dans les deux.
+</Edition>
+
+## Corps de réponse [#response-bodies]
+
+Chaque corps de réponse est écrit directement dans un fichier à mesure qu’il arrive, jamais en mémoire : une réponse de
+plusieurs gigaoctets ne pose donc pas de problème. Un corps n’est stocké qu’une fois, quel que soit le nombre de fois
+où il arrive : envoyer dix fois la même requête avec la même réponse n’en garde qu’une copie.
+
+Définissez la place que les corps peuvent prendre dans **Réglages › Stockage › Corps de réponse** :
+**Conserver les corps de réponse jusqu’à** 1, 2, 5 (par défaut), 10, 20 ou 50 Go. Au-delà de cette taille, Echolot
+supprime les corps utilisés le moins récemment. Il garde toujours :
+
+- les corps affichés dans un onglet ouvert,
+- la réponse la plus récente de chaque requête enregistrée, pour qu’elle s’affiche de nouveau après un redémarrage,
+- les corps que d’autres requêtes lisent via des [valeurs dynamiques](/docs/requests/dynamic-values) comme
+  `$responseJSONPath`.
+
+La ligne sous la limite indique la place que les corps stockés occupent sur le disque. Pour libérer cet espace tout de
+suite, cliquez sur **Supprimer les corps stockés…** et confirmez. Echolot ne garde que ce dont les fenêtres ouvertes ont
+besoin : les corps affichés dans un onglet ouvert et la réponse la plus récente de chaque requête des espaces de travail
+ouverts. Tous les autres corps disparaissent, y compris ceux des espaces de travail qui ne sont pas ouverts, et ne
+peuvent pas être récupérés. Les requêtes et leur historique restent ; les anciennes réponses s’affichent sans leur
+corps.
+
+L’historique garde la requête que chaque échange a envoyée. Un corps de requête de plus de 256 Ko n’est pas conservé
+dans l’historique ; la capture réseau en garde quand même le début.
+
+## Historique [#history]
+
+**Réglages › Stockage › Historique** définit combien de réponses l’[historique](/docs/workspaces/history) conserve par
+requête : 10, 25, 50 (par défaut), 100 ou 200. Les entrées les plus anciennes partent d’abord. Chaque envoi est conservé
+avec son auteur : vous, une exécution ou un agent. Pour effacer l’historique d’un espace de travail, utilisez
+**Effacer l’historique…** dans le menu ⋯ de sa [page Historique](/docs/workspaces/history) ; l’historique propre à une
+requête s’efface depuis le même menu dans sa liste d’historique.
+
+<Shot id="workspaces-settings-storage" alt="Réglages, volet Stockage : Chiffrer les corps de réponse sur le disque, Conserver les corps de réponse jusqu’à 5 Go, et Historique par requête 50 réponses" />
+
+## Chiffrer les corps de réponse sur le disque [#encrypt-response-bodies-on-disk]
+
+Les réponses peuvent contenir des données personnelles, des jetons et tout ce qu’une API renvoie. Avec le chiffrement
+activé, rien d’une réponse n’est lisible dans le dossier de stockage d’Echolot sans une clé de votre trousseau.
+
+1. Ouvrez **Réglages › Stockage**.
+2. Activez **Chiffrer les corps de réponse sur le disque**.
+
+Echolot crée une clé la première fois et la garde dans votre trousseau de session, sous le nom
+**Echolot response storage key**. Les nouveaux corps sont aussitôt écrits chiffrés. Les corps déjà stockés sont chiffrés
+en arrière-plan ; le réglage indique l’avancement (« Chiffrement de 120 sur 860… »), puis l’état, par exemple « Les
+860 corps stockés sont tous chiffrés. »
+
+Les corps sont chiffrés en AES-256 en mode compteur, ce qui permet à Echolot de lire n’importe quelle partie d’un corps
+sans déchiffrer le reste : les visionneuses, la recherche dans une réponse et les gros corps fonctionnent comme avant.
+
+### Ce qu’il couvre [#what-it-covers]
+
+| Chiffré | Non chiffré |
+| --- | --- |
+| Les corps de réponse | Les fichiers de l’espace de travail (ils ne contiennent aucune valeur secrète de toute façon) |
+| Les captures réseau (les octets bruts envoyés et reçus) | Le fichier de l’historique : noms, adresses, en-têtes, état et durées |
+| Les copies mises en forme des corps | Les préférences d’Echolot |
+
+Le fichier de l’historique n’est pas chiffré : tant que le chiffrement est activé, il ne conserve donc aucun texte de
+corps. La recherche trouve alors les requêtes par nom, adresse et en-têtes, pas par ce que disent leurs corps. Activer
+le chiffrement supprime le texte de corps que l’historique avait déjà indexé. Les valeurs secrètes sont masquées dans
+l’historique, que le chiffrement soit activé ou non.
+
+### Le désactiver [#turning-it-off]
+
+Désactivez **Chiffrer les corps de réponse sur le disque**. Les nouveaux corps sont de nouveau écrits en clair, et
+Echolot déchiffre ceux déjà stockés en arrière-plan (« Déchiffrement de 120 sur 860… »). La clé reste dans le trousseau :
+les corps pas encore déchiffrés restent donc lisibles.
+
+Les réponses enregistrées pendant que le chiffrement était activé restent hors de la recherche dans les corps de
+l’historique. Les réponses suivantes sont de nouveau consultables par leur corps.
+
+<Callout type="warn">
+  Gardez l’élément **Echolot response storage key** dans votre trousseau. Echolot en a besoin pour lire les corps
+  chiffrés.
+</Callout>
+
+Si la clé ne peut pas être créée ou lue, le réglage l’indique (« La clé de chiffrement n’a pas pu être conservée dans le
+trousseau… ») et les corps restent tels quels.
+
+## Libérer de la place [#free-up-room]
+
+- Abaissez **Conserver les corps de réponse jusqu’à** dans **Réglages › Stockage**. Echolot supprime peu après les corps
+  utilisés le moins récemment.
+- Effacez l’historique sur la page [Historique](/docs/workspaces/history#clear-history), pour une requête ou pour tout
+  l’espace de travail.
+- Quittez Echolot et supprimez `Payloads` ou `History` dans son dossier de stockage. Vous perdez les réponses passées et
+  l’historique ; les requêtes, les environnements et tous les fichiers de l’espace de travail restent.

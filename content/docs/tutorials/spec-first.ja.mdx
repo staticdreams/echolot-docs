@@ -1,0 +1,127 @@
+---
+title: "仕様ファーストで設計してモックにする"
+description: "OpenAPI仕様を読み込むか設計し、リントし、モックを提供して、モックにリクエストを送り、実際のレスポンスを仕様と照合します。"
+---
+
+仕様ファーストとは、コードの前にOpenAPIドキュメントを作ることです。APIの内容を合意し、モックで試し、実際のサーバができたら同じドキュメントと照合します。
+このチュートリアルでは、Alpenglowショップの仕様をワークスペースに追加し、ショップにまだないエンドポイントを設計し、両方をMac上のモックで提供し、実際のAPIのレスポンスを仕様と照合します。
+
+- <strong>所要時間：</strong>20分。
+- <strong>必要なもの：</strong>Echolotと、[最初のワークスペース](/docs/tutorials/first-workspace)で作ったものや新しい空のワークスペースなどのワークスペース。
+- <strong>学べること：</strong>仕様ページ、リント、仕様に従うリクエスト、モック、<strong>OpenAPI仕様</strong>チェック。
+
+## 1. 仕様を追加する [#1-add-the-spec]
+
+デモショップは、仕様を`https://demo.echolot.dev/openapi.yaml`で公開しています。
+
+1. Macに保存します。ターミナルで：
+
+   ```sh
+   curl -o ~/Downloads/openapi.yaml https://demo.echolot.dev/openapi.yaml
+   ```
+
+   または、アドレスをSafariで開いて<strong>ファイル › 別名で保存…</strong>を選びます。
+2. ワークスペースのウインドウで、**仕様**に切り替えます（<kbd>⌘</kbd><kbd>3</kbd>）。
+3. <strong>仕様ファイルを追加…</strong>を選び（空のページ、またはサイドバーの<strong>+</strong>メニューにあります）、`openapi.yaml`を選びます。コピーがワークスペースの`specs`フォルダに入ります。
+
+仕様は**ビジュアル**エディタで開きます。サーバ、パスまたはタグでグループ化したエンドポイント、スキーマが表示されます。ツールバーのスイッチで**ビジュアル**と**コード**を切り替えられます。どちらも同じテキストを編集し、保存されるのはそのテキストです。
+
+<Callout title="何もないところから始める場合">
+  代わりに**新規仕様**を選びます。**新規API**というタイトルのOpenAPI 3.1ドキュメントができ、`GET /items`というエンドポイントが1つ入っています。名前を変更して、そこから作り込んでください。このチュートリアルの残りは同じように進められます。
+</Callout>
+
+## 2. ショップにないエンドポイントを設計する [#2-design-an-endpoint-the-shop-doesnt-have]
+
+ショップは、店舗の一覧がほしいとします。誰かが実装する前に設計します。
+
+1. **ビジュアル**エディタで、**エンドポイントを追加**を選びます。
+2. **新規エンドポイント**で、**メソッド**は**GET**のままにして、パスを`/stores`、概要を`List stores`、タグを`Catalog`と入力します。**エンドポイントを追加**を選びます。Echolotは、出発点として`200`レスポンスを持つオペレーションを追加します。
+3. エンドポイントのエディタで、**オペレーションID**を`listStores`にします。
+4. **コードで表示**を選びます。エンドポイントの`responses`を、ボディと例に置き換えます。
+
+   ```yaml
+         responses:
+           '200':
+             description: The shop's stores.
+             content:
+               application/json:
+                 schema:
+                   type: array
+                   items:
+                     type: object
+                     required: [id, city]
+                     properties:
+                       id: { type: string }
+                       city: { type: string }
+                       address: { type: string }
+                 example:
+                   - { id: zrh, city: Zürich, address: Bahnhofstrasse 1 }
+                   - { id: brn, city: Bern, address: Spitalgasse 4 }
+   ```
+
+編集は行うたびに保存され、<kbd>⌘</kbd><kbd>Z</kbd>で取り消せます。ビジュアルでの編集は、触れた項目の行だけを変更するため、コメントを含むファイルのそれ以外の部分は、書いたままです。
+詳しくは[仕様の編集](/docs/specs/editing)を参照してください。
+
+<Shot id="tutorials-spec-visual-editor" alt="ビジュアルエディタで開いた仕様ページ。Alpenglow仕様のエンドポイントが1つ選択されている" />
+
+## 3. 仕様をリントする [#3-lint-the-spec]
+
+ツールバーの問題ボタンには、緑のチェックと**問題なし**、またはエラーと警告の数が表示されます。
+
+1. ボタンを選びます。**問題**ポップオーバーに、ドキュメントがOpenAPI仕様に従っていて、すべての参照が解決できることが表示されます。
+2. 問題を確認するため、わざと壊してみます。**コード**で、ある行の`$ref: '#/components/schemas/Product'`を`'#/components/schemas/Produkt'`に変更します。ボタンが赤くなります。ボタンを選んで問題を選ぶと、エディタがその行にジャンプします。
+3. 変更を取り消します（<kbd>⌘</kbd><kbd>Z</kbd>）。
+
+同じリントは、コマンドラインツールでCIでも実行できます。`--strict`は警告でも失敗し、`--hints`はオペレーションIDがないなどのアドバイスを加えます。
+
+```sh
+echolot spec lint specs/openapi.yaml --strict
+```
+
+## 4. 仕様に従うリクエストを作る [#4-make-requests-that-follow-the-spec]
+
+1. 仕様ツールバーで、**リクエストを生成**を選びます。**リクエスト**の下に**Alpenglow demo shop**フォルダができ、タグごとのフォルダ（**Catalog**、**Auth**、**Orders**）と、**List stores**を含むすべてのエンドポイントのリクエストが入ります。
+2. **Catalog › List products**を見ます。URLは`{{baseUrl}}/products`です。**テスト**タブには、仕様から作られた2つのチェックがすでにあります。**ステータス**が`200`と等しい、そして、記述されたボディの**JSON Schema**です。
+
+フォルダは仕様に従います。後で仕様が変わると、仕様ツールバーの<strong>リクエスト</strong>メニューに<strong>「Alpenglow demo shop」の変更を確認…</strong>が表示されます。仕様で追加、変更、削除された内容を一覧し、リクエストへのあなた自身の編集を上書きせずに反映します。[OpenAPI同期](/docs/specs)を参照してください。
+
+生成されたリクエストは`{{baseUrl}}`（`rl`は小文字）で始まります。次の2つのステップで値を設定します。
+
+## 5. 仕様のモックを提供する [#5-serve-a-mock-of-the-spec]
+
+1. <strong>モック</strong>に切り替えます（<kbd>⌘</kbd><kbd>4</kbd>）。<strong>+</strong>メニューを開いて、<strong>Alpenglow demo shopのモック</strong>を選びます。
+2. **開始**を選びます（<kbd>⌘</kbd><kbd>R</kbd>）。ツールバーに緑のドットとアドレス`http://127.0.0.1:4010/v1`が表示されます。4010番以降で最初に空いているポートと、仕様のサーバのベースパスです。
+3. **環境で使用**を選びます。Echolotは、`{{baseUrl}}`がモックのアドレスになる環境**Mock: Alpenglow demo shop**を作成して選択します。
+
+<strong>設定</strong>カードには、モックの<strong>ポート</strong>、<strong>ネットワーク上の他のデバイスに応答</strong>、各レスポンスの前の<strong>遅延</strong>、<strong>失敗</strong>の割合（挿入される500）、<strong>チェック</strong>：<strong>仕様に違反するリクエストを拒否（理由付きで400）</strong>があります。モックはウインドウを開いている間、動作します。
+
+<Shot id="tutorials-spec-mock-running" alt="モックのページ。Alpenglow demo shopのモックが127.0.0.1:4010で動作し、設定とリクエストのログが表示されている" />
+
+## 6. モックにリクエストを送る [#6-send-requests-to-the-mock]
+
+1. **リクエスト**に戻って、**Catalog › List stores**を送信します。モックは、あなたの例にある2店舗を`200`で返します。**ヘッダー**タブに`Server: Echolot mock`が表示されます。
+2. **Catalog › List products**を送信します。モックには例がないため、スキーマからボディを作ります。正しい形で、値はプレースホルダです。リクエストの2つのチェックはどちらも成功します。
+3. **List products**の**パラメータ**に、値`cheapest`の`sort`を追加して送信します。モックは拒否し、`query “sort”: not one of the allowed values`という`400`を返します。仕様で許可されているのは`name`、`price`、`-price`、`rating`です。パラメータを削除します。
+4. **Get a product**に、ヘッダー`Prefer: code=404`を追加して送信します。モックは、代わりに記述されている`404`のproblem detailsで応答します。ヘッダーを削除します。
+
+モックのページの**ログ**には、モックが応答したすべてのリクエストが、一致したオペレーションと問題とともに一覧されます。**レスポンス**カードでは、オペレーションが、すべてのリクエストに対して、記述されている別のステータスや例で応答するようにできます。
+状態が必要な応答のためのJavaScriptルートは、[スクリプトルート](/docs/mocks/scripted-routes)にあります。
+
+## 7. 実際のAPIを仕様と照合する [#7-check-the-real-api-against-the-spec]
+
+1. **環境**ページで、変数`baseUrl`を`https://demo.echolot.dev/v1`にした環境`Demo`を追加し、ページヘッダーで選びます。
+2. **List products**を開き、**テスト**タブの**テストを追加**を開いて、**OpenAPI仕様**を選びます。入力する項目はありません。返ってきたステータスについて仕様が記述しているスキーマと、ボディを照合します。
+3. 送信します。3つのチェックがすべて成功します。実際のショップは仕様と一致しています。
+4. **List stores**を送信します。実際のショップは`404`で応答します。このエンドポイントは仕様にしかないためです。それが仕様ファーストの考え方です。モックがあれば、今すぐそれを前提に開発を進められます。
+
+同じチェックをCIで実行するには、フォルダを[`echolot run`](/docs/cli/run)で実行し、そこで`echolot mock`でモックを提供します。
+
+```sh
+echolot mock specs/openapi.yaml --port 4010
+```
+
+## 次のステップ [#next-steps]
+
+- [トラフィックから仕様を作る](/docs/specs/specs-from-traffic)：すでに送っているリクエストから仕様を書き出します。
+- [モック](/docs/mocks)：履歴から保存した例、遅延、失敗、ネットワークでの共有。
+- [`echolot spec`](/docs/cli/spec)：`check`は、フォルダが仕様より遅れているとCIを失敗させます。

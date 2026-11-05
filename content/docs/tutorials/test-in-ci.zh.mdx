@@ -1,0 +1,159 @@
+---
+title: "测试 API 并在 CI 中运行"
+description: "为请求添加检查，在运行器中运行它们，然后在 GitHub Actions 中用命令行工具运行同一个工作区并生成 JUnit 报告。"
+---
+
+检查能把请求变成测试：每次发送都会说明哪些通过、哪些没有。在本教程中，你会为 Alpenglow 的请求添加检查，在运行器中运行文件夹，然后在 GitHub Actions 中每次推送时用 `echolot run` 运行同一个工作区。
+
+- **用时：** 20 分钟。
+- **你需要：** [Alpenglow 工作区](/docs/tutorials#the-alpenglow-workspace)，以及最后一部分用到的、你可以推送的 GitHub 仓库。
+- **你将学到：** 检查、运行器及其报告、`echolot run`，以及 CI 中的机密。
+
+## 1. 查看请求已有的检查 [#1-look-at-the-checks-a-request-has]
+
+1. 打开 **Catalog › List products**，选取它的**测试**标签页。
+2. 它有四项检查：<strong>状态</strong>等于 `200`，<strong>JSON 值</strong> `$.items.length` 大于 `0`，<strong>标头</strong> `Content-Type` 包含 `json`，<strong>响应时间（毫秒）</strong>小于 `1000`。
+3. 发送。标签页显示 **4 项通过**，响应的**测试**标签页显示 `4/4`，每项检查都列在**检查**下。
+
+## 2. 添加你自己的检查 [#2-add-your-own-checks]
+
+1. 在**测试**标签页中，打开**添加测试**并选取 **JSON 值**。
+2. 把路径设为 `$.items[0].price.currency`，比较方式设为**等于**，期望值设为 `CHF`。
+3. 再次打开**添加测试**，选取**大小（字节）**、**小于**、`65536`。
+4. 发送。六项检查全部通过。
+
+还有两种更快的添加检查的方法：
+
+- 在响应的 **JSON 树**中，右键点按某个值并选取**添加断言**。检查会采用它的路径和值。
+- **从响应生成…** 会根据最新的响应提出检查建议，包括正文的 **JSON Schema**。
+
+现在来看看失败的情形：把响应时间检查改为**小于** `1` 并发送。标签页显示 **1 个失败，共 6 个**，响应的**测试**标签页会在失败的检查下显示返回的内容。再把它改回 `1000`。
+
+对于需要代码的检查，可以在**脚本**标签页中用 `pm.test()` 编写测试脚本；参见[脚本与测试](/docs/requests/scripts-and-tests)。
+
+<Shot id="tutorials-ci-tests-tab" alt="List products 的“测试”标签页，其中列出各项检查，发送后全部通过" />
+
+## 3. 在运行器中运行文件夹 [#3-run-folders-in-the-runner]
+
+1. 右键点按 **Catalog** 文件夹并选取**运行文件夹**。**运行器**页面会打开，并按顺序运行其中的每个请求。
+2. 统计数据显示**请求**、**通过**、**失败**、**失败的检查**和**时长**，**结果**卡片则列出每个请求的状态、耗时和失败的检查。
+3. 要自己设置一次运行，请选取**视图 › 运行器**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd>）。在**运行**卡片中：
+   - **运行对象**：**整个工作区**、某个**文件夹**，或**一个请求**。先选 **Auth** 并运行，再选 **Orders**：Orders 中的请求会发送 **Sign in** 存储的令牌。
+   - **环境**、**迭代**（试试 `3`）、请求之间的**延迟**（毫秒）、失败请求的**重试次数**，以及**首次失败时停止**。
+   - **数据**：**选取 CSV 或 JSON…** 会按每一行运行一次，并把行中的列作为变量。
+4. 选取**运行**（<kbd>⌘</kbd><kbd>R</kbd>）。
+5. 打开**存储报告**，选取 **JUnit XML…**、**JSON…**、**HTML…** 或 **HAR（所有交换）…**。
+
+运行整个工作区时也会运行 **Realtime** 和 **Inventory**。除非[本地服务器](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt)正在运行，否则其中的 Socket.IO、MQTT 和 gRPC 请求会失败。详见[运行器](/docs/requests/runner)。
+
+<Shot id="tutorials-ci-runner" alt="运行 Catalog 文件夹之后的运行器页面，全部通过" />
+
+## 4. 在“终端”中运行 [#4-run-it-from-terminal]
+
+1. 安装命令行工具：选取 **Echolot › 安装命令行工具…**，或者在**设置 › 通用**中开启它。它会把 `echolot` 放到你的 `PATH` 上。
+
+   <Edition only="appstore">
+     App Store 版本不包含命令行工具。请从[发行版页面](https://github.com/staticdreams/echolot-public/releases)下载 `echolot-<version>-macos.zip`，解压后把 `echolot` 放入 `PATH` 中的某个文件夹。参见[命令行工具](/docs/cli)。
+   </Edition>
+
+2. 检查每个文件是否可读、每个变量是否可解析：
+
+   ```sh
+   echolot validate Alpenglow.echolot
+   ```
+
+   它会输出 `29 requests, 3 environments: no problems`。
+3. 运行那三个只需要演示 API 的文件夹：
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders
+   ```
+
+   ```text
+   ✓ POST   auth/sign-in  200 142 ms
+       ✓ Status equals 200
+       ✓ JSON value $.access_token exists
+   ✓ GET    auth/who-am-i  200 87 ms
+       ✓ Status equals 200
+   …
+   All 13 requests passed  18/18 checks passed · 1.35 s
+   ```
+
+   `--folder` 接受文件夹或请求的文件名（`auth`、`catalog/list-products`）。当请求没有收到响应或检查失败时，退出码为 `1`，脚本和 CI 可据此停止。
+4. 除了控制台输出，再写出一份 JUnit 报告：
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders \
+     --reporter junit --out results.xml --reporter console
+   ```
+
+   每个请求成为一个 `testsuite`，每项检查成为一个 `testcase`。所有选项都在 [`echolot run`](/docs/cli/run) 中。
+
+## 5. 在 GitHub Actions 中运行 [#5-run-it-in-github-actions]
+
+1. 把 `Alpenglow.echolot` 提交到你的仓库。
+2. 添加 `.github/workflows/api.yml`：
+
+   ```yaml
+   name: API checks
+   on: [push, pull_request]
+
+   jobs:
+     api:
+       runs-on: macos-15
+       steps:
+         - uses: actions/checkout@v4
+
+         - name: Install the Echolot CLI
+           env:
+             GH_TOKEN: ${{ github.token }}
+           run: |
+             gh release download --repo staticdreams/echolot-public --pattern 'echolot-*-macos.zip' --dir "$RUNNER_TEMP"
+             unzip -q "$RUNNER_TEMP"/echolot-*-macos.zip -d "$RUNNER_TEMP/echolot"
+             echo "$RUNNER_TEMP/echolot" >> "$GITHUB_PATH"
+
+         - name: Validate
+           run: echolot validate Alpenglow.echolot
+
+         - name: Run
+           run: >
+             echolot run Alpenglow.echolot
+             --folder auth --folder catalog --folder orders
+             --reporter console --reporter junit --out results.xml
+
+         - name: Keep the report
+           if: always()
+           uses: actions/upload-artifact@v4
+           with:
+             name: echolot-results
+             path: results.xml
+   ```
+
+3. 推送。**Run** 步骤会打印与你的 Mac 上相同的行，检查失败时作业会失败。JUnit 文件会作为 `echolot-results` 附加到这次运行上；任何 JUnit 测试报告 action 都可以把它显示为表格。
+
+命令行工具运行在搭载 Apple 芯片的 macOS 上，所以作业使用 macOS runner。
+
+## 6. 为 CI 提供机密 [#6-give-ci-its-secrets]
+
+你 Mac 上的钥匙串不会随工作区一起转移。在 CI 中，命令行工具会从环境变量 `ECHOLOT_SECRET_NAME` 读取机密变量 `name`，或者从用 `--secrets` 指定的、由 `NAME=value` 行组成的文件读取。
+
+Alpenglow 的演示密码是公开的，所以它是普通变量。对于真实的密码：
+
+1. 在工作区中把它设为机密变量，比如 `password`，然后提交。
+2. 在 GitHub 中添加仓库机密 `API_PASSWORD`（**Settings › Secrets and variables › Actions**）。
+3. 把它传给该步骤：
+
+   ```yaml
+         - name: Run
+           env:
+             ECHOLOT_SECRET_PASSWORD: ${{ secrets.API_PASSWORD }}
+           run: echolot run Alpenglow.echolot --env staging --reporter console --reporter junit --out results.xml
+   ```
+
+`--env` 接受环境的文件名（不含 `.toml`）或名称。关于 CI 的更多内容见 [CI](/docs/cli/ci)。
+
+## 后续步骤 [#next-steps]
+
+- [规范优先的设计与模拟](/docs/tutorials/spec-first)：对照 OpenAPI 规范检查响应，在 App 中和 CI 中都可以。
+- [运行器](/docs/requests/runner)：数据文件、并排的迭代、重试。
+- [`echolot run`](/docs/cli/run)：所有选项，包括 `--bail`、`--delay` 和 HTML 报告。

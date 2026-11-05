@@ -1,0 +1,235 @@
+---
+title: "Ausführen und Auslöser"
+description: "Führe einen Flow von Hand, nach Zeitplan, über einen Webhook, als Tool für KI-Agenten oder in der Befehlszeile aus – und erlaube die Auslöser, die Flows ohne dich starten."
+---
+
+Ein Flow läuft, wenn etwas ihn startet: du mit der Taste **Ausführen**; ein KI-Agent, wenn du den Flow als Tool
+anbietest; ein Zeitplan; ein Webhook; oder `echolot flow run` in einem Terminal oder in CI. Egal, was ihn startet:
+Jede Anfrage geht denselben Weg wie ein Senden von der Anfrageseite.
+
+## Von Hand ausführen [#run-by-hand]
+
+1. Öffne den Flow auf der Seite „Flows“.
+2. Klicke in der Symbolleiste auf **Ausführen** oder drücke <kbd>⌘</kbd><kbd>R</kbd>.
+3. Hat der Flow [Eingaben](/docs/flows#inputs-and-outputs), fragt das Blatt mit dem Namen des Flows und **Ausführen**
+   sie ab. Jedes Feld zeigt Name und Typ der Eingabe und ob sie erforderlich ist, und beginnt mit ihrem Standardwert.
+   Lass ein Feld leer, um den Standardwert zu verwenden, und klicke dann auf **Ausführen**.
+
+Der Flow wird zuerst gesichert, damit der Durchlauf das nutzt, was auf der Arbeitsfläche steht. Er läuft mit der aktiven
+[Umgebung](/docs/workspaces/environments) des Fensters. **Ausführen** ist nicht verfügbar, solange der Flow Fehler hat;
+der Hilfetext sagt „Behebe zuerst die Probleme des Flows“.
+
+Ist eine [geschützte Umgebung](/docs/workspaces/protected-environments) aktiv, lautet die Taste
+**In Production ausführen …** (mit dem Namen dieser Umgebung), und Echolot fragt einmal, bevor der Durchlauf startet.
+Anfragen innerhalb des Durchlaufs fragen nicht erneut.
+
+### Die Durchlaufansicht [#the-run-view]
+
+Während der Flow läuft, zeigen seine Blöcke ihren Zustand auf der Arbeitsfläche, und das Durchlaufprotokoll öffnet sich
+darunter:
+
+| Auf der Arbeitsfläche | Bedeutet |
+| --- | --- |
+| Rand in der Akzentfarbe | Der Block läuft oder wartet auf dich. |
+| Grüner Rand | Der Block ist fertig. |
+| Roter Rand | Der Block ist fehlgeschlagen. |
+
+Das Durchlaufprotokoll listet der Reihe nach:
+
+- jeden Block, sobald er fertig ist, mit seiner Zeit;
+- Zeilen von Blöcken „Log“ und von `console.log` in Blöcken „Auswerten“;
+- Testergebnisse von Blöcken „Prüfen“ und von `pm.test`, mit **Tests** bestanden/gesamt in der Kopfzeile;
+- Fehler, in Rot;
+- wie der Durchlauf endete: `Fertig nach 1,2 s`, `Gestoppt nach …` oder `Fehlgeschlagen nach …` mit dem Grund.
+
+Klicke auf eine Zeile, um ihren Block auszuwählen. Wähle einen beliebigen Block aus, um im Inspektor seinen
+**Letzter Durchlauf** zu sehen, mit seinen Werten für **Eingabe** und **Ausgabe** nach Port. **Leeren** leert das
+Protokoll und die Zustände auf der Arbeitsfläche; die Taste zum Schließen blendet das Protokoll aus, und
+**Durchlaufprotokoll** in der Symbolleiste zeigt es wieder.
+
+**Stoppen** (<kbd>⌘</kbd><kbd>.</kbd>) tritt an die Stelle von **Ausführen**, solange ein Durchlauf läuft. Es beendet
+den Durchlauf, schließt die laufende Anfrage und nimmt jede Frage vom Bildschirm.
+
+Schlägt ein Durchlauf fehl und steht das Modell auf dem Mac bereit, erklärt eine Taste in der Kopfzeile des Protokolls
+den Fehler anhand des Protokolls.
+
+### Frühere Durchläufe [#earlier-runs]
+
+Das Fenster behält die letzten 20 Durchläufe des geöffneten Flows, auch Durchläufe, die ein Zeitplan oder ein Webhook
+gestartet hat. Sie stehen in der Seitenleiste unter **Durchläufe von** (mit dem Ausgang, dem Startzeitpunkt und der
+Dauer jedes Durchlaufs) und im Menü **Durchläufe** in der Symbolleiste. Klicke auf einen, um ihn wieder auf der
+Arbeitsfläche zu zeigen: die Zustände der Blöcke und den **Letzter Durchlauf** jedes Blocks. **Arbeitsfläche leeren** im
+Menü **Durchläufe** entfernt sie von der Arbeitsfläche.
+
+Die Aufzeichnungen der Durchläufe bleiben im Fenster. Die Anfragen, die ein Flow sendet, stehen wie jedes andere Senden
+im [Verlauf](/docs/workspaces/history) des Arbeitsbereichs.
+
+## Auslöser [#triggers]
+
+Wähle den Block **Start** aus, um im Inspektor die **Auslöser** des Flows zu sehen.
+**Taste „Ausführen“ und `echolot flow run`** ist immer an. Hake die anderen an, um sie hinzuzufügen:
+
+- **Agenten (ein MCP-Tool)**
+- **Zeitplan**
+- **Webhook**
+
+Der Block „Start“ zeigt für jeden aktiven Auslöser ein kleines Symbol, und die Seitenleiste zeigt sie unter dem Namen
+des Flows.
+
+<Shot id="flows-triggers-start" alt="Der Inspektor des Blocks „Start“ von Order status on webhook: der Abschnitt „Auslöser“ mit angehaktem Webhook, der Methode POST und dem Pfad /order-status, der lokalen Adresse mit „URL kopieren“ und „Token kopieren“ sowie „Erlaubt“ mit „Entziehen“" />
+
+### Einen Auslöser erlauben [#allow-a-trigger]
+
+Agenten, Zeitpläne und Webhooks starten Flows, wenn du nicht an der Arbeitsfläche sitzt, deshalb braucht jeder
+außerdem deine Erlaubnis für diesen Flow. Klicke unter jedem angehakten Auslöser auf **Erlauben**. Der Auslöser zeigt
+dann **Erlaubt** und eine Taste **Entziehen**.
+
+Die Erlaubnis gilt für den Flow, wie er jetzt ist: den Flow selbst, die Anfragen, die er sendet, mit den Ordnern
+darüber, die Variablen, die Auth, den Proxy und die Zertifikate des Arbeitsbereichs und die Flows, die er ausführt.
+Änderst du etwas davon, ob auf der Arbeitsfläche, in Git oder durch einen Agenten, hört der Auslöser auf zu arbeiten,
+bis du ihn erneut erlaubst. Er sagt dann „Der Flow hat sich geändert, seit du ihn erlaubt hast.“ und bietet
+**Wieder erlauben** an. Ein Flow kann sich nicht selbst erlauben: Die Erlaubnis wird in Echolot auf deinem Mac
+gespeichert, nicht im Arbeitsbereich. Ein Flow mit Fehlern startet nie von einem Auslöser.
+
+Änderungen an Werten einer Umgebung (etwa ein frisches Token) heben die Erlaubnis nicht auf.
+
+### Agenten: ein Flow als MCP-Tool [#agents-a-flow-as-an-mcp-tool]
+
+Biete einen Flow KI-Agenten an, und er wird ein Tool des MCP-Servers von Echolot: Der Agent ruft ein Tool auf, der Flow
+erledigt die Anfragen, und die Secrets bleiben in Echolot.
+
+1. Wähle den Block „Start“ und hake **Agenten (ein MCP-Tool)** an.
+2. **Tool-Name** ist `flow_` plus der Dateiname des Flows mit Unterstrichen (`flow_place_test_order`), außer du tippst
+   einen anderen: bis zu 64 Buchstaben, Ziffern, `_` und `-`.
+3. Schreibe **Was das Tool tut**, für das Modell. Es beginnt mit der Beschreibung des Flows.
+4. Klicke auf **Erlauben**.
+5. Schalte **Einstellungen › Agenten** ein und verbinde deinen Client. Siehe [Externe Agenten](/docs/ai/agents).
+
+Die Argumente des Tools sind die Eingaben des Flows, und sein Ergebnis ist, was beim Block „Ausgabe“ angekommen ist.
+**Place a test order** wird als `place_test_order` angeboten. Der Flow erscheint in der Tool-Liste, solange das Tool-Set
+**Flows** eingeschaltet ist (standardmäßig ist es das). Agenten können nur Flows starten, die angeboten und erlaubt
+sind.
+
+Startet ein Agent einen Flow, fragt Echolot dich einmal vor dem Durchlauf und sagt dir, was der Flow tun wird: welche
+Anfragen er an welche Adressen sendet, welche Variablen und Secrets er sichert, welche Dateien er schreibt, welche Tools
+und Flows er ausführt und wo er eine Person fragt. Innerhalb des Durchlaufs läuft, was du genehmigt hast, ohne erneute
+Nachfrage; geschützte Umgebungen, neue Hosts und Löschvorgänge fragen weiterhin, ebenso alles, was die eigenen Regeln
+des Agenten verweigern.
+
+Blöcke der Gruppe „Personen“ in einem Flow, den ein Agent gestartet hat, gehen an den Client des Agenten: Er zeigt die
+Nachricht, den Code und den Link oder fragt die Werte ab. Ein Block „Genehmigen“ gehört immer dir: Wenn der Agent einen
+beantwortet, fragt Echolot zuerst dich.
+
+[Der Assistent](/docs/ai/assistant) führt Flows auf dieselbe Weise aus.
+
+### Zeitplan [#schedule]
+
+Führe einen Flow von selbst aus, alle paar Minuten oder nach einem Kalender.
+
+1. Wähle den Block „Start“ und hake **Zeitplan** an. Er beginnt mit alle 60 Minuten.
+2. Fülle **Alle** (in Minuten) aus, oder **Feste Zeiten (cron)** (eine Cron-Zeile: Minute Stunde Tag Monat Wochentag),
+   oder beides (der frühere nächste Durchlauf gewinnt). Ein Zeitplan läuft höchstens einmal pro Minute.
+3. Klicke auf **Erlauben**.
+
+Sobald der Zeitplan erlaubt ist, zeigt der Inspektor **Nächster Durchlauf** mit Datum und Uhrzeit. Geplante Durchläufe
+finden statt, solange das Fenster des Arbeitsbereichs offen ist, mit der Umgebung, die zum Zeitpunkt des Durchlaufs im
+Fenster aktiv ist, und beginnen mit den Standardwerten der Eingaben. Ein Durchlauf, der verpasst wurde, weil der Mac
+schlief oder das Fenster geschlossen war, läuft einmal, wenn Echolot das nächste Mal nachsieht; ein Flow, der noch
+läuft, wird nicht erneut gestartet. Ein fehlgeschlagener geplanter Durchlauf zeigt eine Mitteilung. Um Zeitpläne ohne
+die App laufen zu lassen, nimm [`echolot flow serve`](#run-from-the-command-line).
+
+Cron-Zeilen haben fünf Felder in der Zeitzone deines Macs: Minute (0–59), Stunde (0–23), Tag des Monats (1–31), Monat
+(1–12 oder `jan`–`dec`) und Wochentag (0–7 oder `sun`–`sat`; 0 und 7 sind Sonntag). Jedes Feld nimmt `*`, Zahlen,
+Bereiche (`1-5`), Listen (`1,15`) und Schritte (`*/15`, `8-18/2`). Sind sowohl der Tag als auch der Wochentag
+eingeschränkt, genügt es, wenn einer passt.
+
+| Cron-Zeile | Läuft |
+| --- | --- |
+| `0 6 * * *` | Jeden Tag um 6:00 Uhr (**Morning stock check**). |
+| `0 7 * * 1-5` | Werktags um 7:00 Uhr. |
+| `*/15 8-18 * * *` | Alle 15 Minuten von 8:00 bis 18:45 Uhr. |
+| `0 9 1 * *` | Am Ersten jedes Monats um 9:00 Uhr. |
+
+Blöcke der Gruppe „Personen“ können bei einem geplanten Durchlauf niemanden fragen, deshalb schlagen sie dort fehl.
+
+### Webhook [#webhook]
+
+Starte einen Flow, wenn etwas eine Anfrage an eine lokale Adresse sendet.
+
+1. Wähle den Block „Start“ und hake **Webhook** an.
+2. Wähle die Methode (`GET`, `POST`, `PUT`, `PATCH` oder `DELETE`; standardmäßig `POST`) und den Pfad, der mit `/`
+   beginnt. Der Pfad beginnt als `/` plus der Dateiname des Flows.
+3. Klicke auf **Erlauben**.
+
+Sobald der Webhook erlaubt ist, zeigt der Inspektor die Adresse, etwa `POST http://127.0.0.1:52817/order-status`, mit
+**URL kopieren** und **Token kopieren**. Echolot lauscht nur auf diesem Mac (127.0.0.1), solange das Fenster offen ist.
+Der Port wird einmal pro Arbeitsbereich gewählt und beibehalten.
+
+Aufrufer müssen das Token des Arbeitsbereichs senden, das Echolot beim ersten Mal erzeugt und im Schlüsselbund
+aufbewahrt. Jedes davon funktioniert:
+
+- der Header `Authorization: Bearer <token>`;
+- der Header `X-Echolot-Token: <token>`;
+- der Query-Parameter `?token=<token>`.
+
+```sh
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "Authorization: Bearer <token>"
+```
+
+**Order status on webhook** meldet sich an, holt die Bestellung und antwortet mit ihr. Die Query und die Schlüssel eines
+JSON-Bodys füllen die gleichnamigen Eingaben des Flows; andere Schlüssel bleiben außen vor. Eine Eingabe namens `body`
+bekommt den ganzen Body. Ein Flow mit einer Eingabe `order` nimmt also `?order=ord_7Hk2Lw` oder
+`{"order": "ord_7Hk2Lw"}`. Der Durchlauf nutzt die aktive Umgebung des Fensters.
+
+| Antwort | Wann |
+| --- | --- |
+| `200` mit der Ausgabe als JSON | Der Durchlauf war erfolgreich. Der Body ist, was beim Block „Ausgabe“ angekommen ist, oder `null`. |
+| `401` | Das Token fehlt oder ist falsch. |
+| `404` | Kein erlaubter Flow antwortet auf diese Methode und diesen Pfad; der Fehler listet die auf, die es tun. |
+| `413` | Der Body ist größer als 8 MB. Der Flow wird nicht ausgeführt. |
+| `500` | Der Durchlauf ist fehlgeschlagen. Der Body enthält `error` und die ID des Durchlaufs. |
+| `503` | Der Durchlauf wurde gestoppt. |
+
+Ein Webhook-Durchlauf stoppt nach zwei Minuten. Blöcke der Gruppe „Personen“ können dort niemanden fragen, deshalb
+schlagen sie fehl.
+
+## Durchläufe im Hintergrund [#background-runs]
+
+Durchläufe, die Zeitpläne und Webhooks in der App starten, erscheinen unter **Durchläufe von** diesem Flow, solange er
+geöffnet ist, und ein fehlgeschlagener zeigt eine macOS-Mitteilung mit dem Namen des Flows und dem Fehler. Sie laufen
+mit deiner Berechtigung wie ein Durchlauf, den du startest, aber nur für Flows, die du erlaubt hast.
+
+## In der Befehlszeile ausführen [#run-from-the-command-line]
+
+Das Tool `echolot` führt dieselben Flows ohne die App aus. In CI wird ein Flow so zu einem Release-Gate.
+
+```sh
+# List the flows, their inputs and problems
+echolot flow list -w Alpenglow.echolot
+
+# Run one; exits with an error when the run or one of its tests fails
+echolot flow run morning-stock-check -w Alpenglow.echolot --env staging --no-input
+
+# Pass inputs as name=value (a flow made from the Paginate and export template)
+echolot flow run export-products -w Alpenglow.echolot --input pages=5
+
+# Run schedules and answer webhooks until Ctrl-C
+echolot flow serve -w Alpenglow.echolot --port 4100
+```
+
+- `flow run` gibt jeden Block aus, sobald er fertig ist, dann die Ausgabe. `--json` gibt stattdessen die Aufzeichnung
+  des Durchlaufs aus. Blöcke der Gruppe „Personen“ fragen im Terminal; mit `--no-input` lassen sie den Durchlauf
+  fehlschlagen, was CI braucht. Blöcke „Mitteilen“ geben ihren Text aus.
+- `flow serve` führt die geplanten Flows aus, wenn sie fällig sind, und beantwortet Webhooks auf Port 4100 (`--port 0`
+  wählt einen freien). `--share` lauscht auf jeder Netzwerkschnittstelle, für Container. Das Token kommt aus `--token`,
+  sonst aus `ECHOLOT_WEBHOOK_TOKEN`, sonst ist es ein neues, das ausgegeben wird.
+- In der Befehlszeile hast du den Durchlauf selbst gestartet, deshalb brauchen die Flows kein **Erlauben**: `flow serve`
+  führt jeden Flow mit Zeitplan oder Webhook und ohne Fehler aus.
+
+Alle Optionen stehen unter [echolot flow](/docs/cli/flow).
+
+<Edition only="direct">
+  Das Befehlszeilentool liegt im Direktdownload bei (**Echolot › Befehlszeilentool installieren …**). Bei der
+  App-Store-Edition installierst du es separat aus dem Zip auf der Releases-Seite.
+</Edition>

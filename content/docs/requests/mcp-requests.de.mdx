@@ -1,0 +1,104 @@
+---
+title: "MCP-Anfragen"
+description: "Tools eines MCP-Servers aufrufen, seine Ressourcen lesen, seine Prompts abrufen oder eine beliebige JSON-RPC-Methode senden, gesichert als Anfragen mit Prüfungen."
+---
+
+Eine MCP-Anfrage ist ein gesicherter Aufruf an einen der [MCP-Server](/docs/mcp-servers) des Arbeitsbereichs: ein
+Tool-Aufruf, das Lesen einer Ressource, ein Prompt oder eine beliebige JSON-RPC-Methode. Sichere die Aufrufe, die du
+oft machst, füge Prüfungen hinzu und führe sie in der [Ausführung](/docs/requests/runner) aus wie jede andere Anfrage.
+
+<Shot id="requests-mcp-call" alt="Agent tools › search_catalog: das Servermenü auf Alpenglow MCP, Tool gewählt, die Argumente als JSON mit den Feldern des Tools darunter und das Ergebnis mit einem grünen Badge „Ergebnis“" />
+
+## Aufruf auf der Seite „MCP-Server“ ausprobieren [#try-a-call-from-the-mcp-servers-page]
+
+Am schnellsten beginnst du direkt am Server:
+
+1. Öffne die Seite **MCP-Server** und wähle einen Server, etwa **Alpenglow MCP**, der auf
+   `https://demo.echolot.dev/mcp` zeigt.
+2. Wähle **Prüfung**, falls er noch nicht geprüft wurde. Die Seite listet die **Tools**, **Ressourcen** und **Prompts**
+   des Servers auf.
+3. Klicke auf ein Tool, eine Ressource oder einen Prompt. Ein Blatt mit den Argumenten öffnet sich.
+4. Fülle sie aus, als **Formular**, das aus dem Eingabeschema gebaut wird, oder als **JSON**, und wähle **Aufrufen**.
+5. Das Ergebnis erscheint darunter, mit **Ergebnis** oder **Fehler** und der Dauer.
+6. Wähle **Als Anfrage sichern**, um den Aufruf mit seinen Argumenten als MCP-Anfrage zu behalten.
+
+<Shot id="requests-mcp-call-panel" alt="Das Aufrufblatt für das Tool search_catalog auf der Seite „MCP-Server“, mit dem Formular aus query und limit und darunter dem JSON-Ergebnis" />
+
+## MCP-Anfrage erstellen [#create-an-mcp-request]
+
+Wähle **Neuer MCP-Aufruf** im Menü **+** neben **Anfragen** in der Seitenleiste. Die Leiste des Editors enthält den
+Aufruf:
+
+1. Wähle den Server im Menü an ihrem Anfang. **MCP-Server …** im selben Menü öffnet die Seite „MCP-Server“.
+2. Wähle, was aufgerufen wird: **Tool**, **Ressource**, **Prompt** oder **Methode**.
+3. Tippe das Ziel: den **Tool-Namen**, den **Ressourcen-URI**, den **Prompt-Namen** oder eine JSON-RPC-Methode wie
+   `ping`. Namen aus der letzten Prüfung des Servers werden beim Tippen unter **Vom Server** angeboten.
+4. Wähle **Aufrufen** (<kbd>⌘</kbd><kbd>R</kbd>). Während der Aufruf läuft, stoppt **Abbrechen**
+   (<kbd>⌘</kbd><kbd>.</kbd>) ihn.
+
+| Operation | Was gesendet wird | Was die Argumente sind |
+| --- | --- | --- |
+| **Tool** | `tools/call` mit dem Namen des Tools | Die Argumente des Tools |
+| **Ressource** | `resources/read` mit dem URI | Nicht verwendet |
+| **Prompt** | `prompts/get` mit dem Namen des Prompts | Die Argumente des Prompts |
+| **Methode** | Eine beliebige JSON-RPC-Methode | Die Params der Methode |
+
+Der Editor hat diese Tabs: **Doku**, **Argumente**, **Variablen**, **Tests** und **Einstellungen**. MCP-Anfragen haben
+keine eigenen Header, keine Auth und keine Skripte: Die Verbindungseinstellungen des Servers, seine Header und seine
+Anmeldung liegen auf der Seite „MCP-Server“. Siehe [Server hinzufügen](/docs/mcp-servers/adding-servers).
+
+## Argumente [#arguments]
+
+Der Tab **Argumente** enthält ein JSON-Objekt, mit `{{variables}}`:
+
+```json
+{
+  "query": "ultralight tent",
+  "limit": 3
+}
+```
+
+Kennt die letzte Prüfung des Servers das Tool, zeigt der Tab über dem Editor seine Beschreibung und darunter seine
+Felder, etwa `Fields: query*, limit`; ein Stern markiert ein Pflichtfeld. **Aus Schema füllen** ersetzt die Argumente
+durch jedes Feld des Eingabeschemas des Tools, als Ausgangspunkt.
+
+Der Alpenglow-Arbeitsbereich hat zwei Aufrufe in **Agent tools**: **search_catalog** mit den obigen Argumenten und
+**order_status**, das `{"order_id": "ord_7Hk2Lw"}` nachschlägt.
+
+## Ergebnisse [#results]
+
+Der Antwortbereich zeigt das Ergebnis als JSON im Tab **Body**, wie jede [Antwort](/docs/requests/responses). Das Badge
+in der Zusammenfassung der Antwort zeigt **Ergebnis** in Grün oder **Fehler** in Rot, mit der Protokollversion, die der
+Server spricht. Zeige darauf, um zu sehen, wer geantwortet hat oder was schiefging.
+
+Ein Aufruf kann auf zwei Arten scheitern, und Echolot hält sie auseinander:
+
+- Der Server antwortet mit einem Fehler: ein als Fehler markiertes Tool-Ergebnis oder ein JSON-RPC-Fehler. Das Badge
+  zeigt **Fehler**, und der Body enthält, was der Server gesagt hat.
+- Der Aufruf bekommt nie eine Antwort: Der Server ist nicht erreichbar, startet nicht oder verletzt das Protokoll. Der
+  Antwortbereich sagt warum. Prüfe den Server auf der Seite „MCP-Server“: Sein Nachrichtenlog zeigt jede Nachricht der
+  letzten Prüfung.
+
+Jeder Aufruf wird im [Verlauf](/docs/workspaces/history) behalten.
+
+## Prüfungen für MCP [#checks-for-mcp]
+
+Im Tab **Tests**:
+
+- **MCP-Fehler** gleich `false` besteht, wenn der Aufruf erfolgreich war. Ein Fehlschlag zeigt die Meldung des Servers.
+- **Ausgabeschema des Tools** prüft den `structuredContent` des Ergebnisses gegen das `outputSchema`, das das Tool
+  deklariert. Es schlägt fehl, wenn das Tool keines deklariert oder das Ergebnis keinen `structuredContent` hat.
+- **JSON-Wert** prüft einen beliebigen Wert des Ergebnisses, etwa `$.structuredContent.results.length` ist größer als
+  `0` oder `$.content[0].type` ist gleich `text`.
+
+Alle Prüfungen und Vergleiche stehen unter [Skripte und Tests](/docs/requests/scripts-and-tests).
+
+<Edition only="appstore">
+  Die App-Store-Version ruft MCP-Server über HTTP auf. Server, die als lokales Programm (stdio) laufen, bleiben im
+  Arbeitsbereich, aber Aufrufe an sie brauchen die direkt geladene Version oder das Befehlszeilenwerkzeug.
+</Edition>
+
+## In der Befehlszeile [#from-the-command-line]
+
+`echolot run` führt gesicherte MCP-Anfragen mit ihren Prüfungen aus, und `echolot mcp check` untersucht einen Server.
+Siehe [echolot mcp](/docs/cli/mcp).

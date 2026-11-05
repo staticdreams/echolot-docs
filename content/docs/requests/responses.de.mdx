@@ -1,0 +1,216 @@
+---
+title: "Antworten"
+description: "Status, Dauer, Body, Header, Cookies und Bytes einer Antwort lesen, große Bodys durchsuchen, Antworten vergleichen und sichern."
+---
+
+Alles, was ein Server zurücksendet, erscheint im Antwortbereich: der Body in der passenden Ansicht, die Header, die
+Cookies, die Nachricht, wie sie kam, ihre Bytes als Hex und auf der Leitung. Status und Dauer stehen in der Zeile unter
+der URL-Leiste. Bodys werden beim Eintreffen auf die Festplatte geschrieben, sodass sich eine Antwort mit Hunderten
+Megabyte so schnell öffnet wie eine kleine.
+
+<Shot id="requests-http-response-tree" alt="Die Antwort von List products in der Ansicht „JSON-Baum“, mit einem Wert unter dem Zeiger und seinen Knöpfen „Wert kopieren“ und „In Variable speichern“" />
+
+## Status, Dauer und Größe [#status-time-and-size]
+
+Nach dem Senden zeigt die Zeile unter der URL-Leiste:
+
+- den **Status**, nach Klasse eingefärbt (2xx, 3xx, 4xx, 5xx); eine Anfrage, die keine Antwort bekam, zeigt stattdessen
+  **Fehlgeschlagen** oder **Abgebrochen**,
+- einen Balken für jede **Phase** des Austauschs, der wächst, solange die Anfrage läuft,
+- die **Gesamtdauer**.
+
+Halte den Zeiger auf die Zeile, und eine Karte mit den Details öffnet sich:
+
+| In der Karte | Was sie sagt |
+| --- | --- |
+| Status | Der Statuscode und die Begründung. |
+| **Zeit** | Die Gesamtdauer des Austauschs. |
+| **Größe** | Die Größe des Body; während ein Body eintrifft, wie viel von wie viel schon da ist. |
+| **Codierung** | Die Komprimierung und die Größen vor und nach dem Decodieren, etwa `br, 12 KB → 48 KB`, oder dass sich nicht decodieren ließ. |
+| **3 Weiterleitungen** | Die verfolgten Weiterleitungen; klicke darauf für Status, Methode, Adresse und Dauer jedes Hops. |
+| Prüfungen | Wie viele der Prüfungen der Anfrage bestanden haben. |
+| **Wiederverwendete Verbindung** | Die Anfrage lief über eine Verbindung, die von einer früheren offen gehalten wurde: keine Zeit für DNS, Verbinden oder TLS. |
+| TLS | Die TLS-Version und das Protokoll, etwa `TLS 1.3 · h2`. Klicke darauf für die Zertifikate: Subjekt, **Aussteller**, **Gültig**-Daten und **Namen**. Ein oranges offenes Schloss bedeutet, dass die Überprüfung aus war. |
+| **HTTP/3 angeboten** | Der Server hat HTTP/3 mit `Alt-Svc` angeboten; siehe [HTTP-Version](/docs/requests/settings#http-version). |
+| Adresse | Die IP-Adresse und der Port des Servers. |
+| Zeitleiste | **DNS**, **Verbinden**, **TLS**, **Warten** (bis zum ersten Byte der Antwort) und **Empfang**, jeweils mit ihrer Dauer. |
+
+Wurde eine Anfrage erneut gesendet (auf einer neuen Verbindung oder über HTTP/1.1), nennt die Karte den Grund. Ist sie
+fehlgeschlagen, zeigt die Karte den Fehler.
+
+## Die Tabs der Antwort [#the-response-tabs]
+
+| Tab | Was er zeigt |
+| --- | --- |
+| **Body** | Den Body in der Ansicht, die du wählst. |
+| **Ereignisse** | Server-Sent Events und andere Ereignisstreams, ein Ereignis pro Zeile. Siehe [WebSocket und SSE](/docs/requests/websocket-and-sse). |
+| **Tests** | Die Ergebnisse der Prüfungen und Skript-Tests der Anfrage, mit einer Zahl wie `3/4`. |
+| **Konsole** | Was die Skripte der Anfrage protokolliert haben; nur wenn Skripte liefen. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests). |
+| **Header** | Die Antwort-Header, mit einer Zahl. |
+| **Cookies** | Die gesendeten und gesetzten Cookies und der Cookie-Speicher des Fensters. |
+| **Roh** | Die Antwort als eine HTTP-Nachricht: Statuszeile, Header, eine Leerzeile und der Body. |
+| **Hex** | Die Bytes des Body. |
+| **Übertragung** | Die gesendeten und empfangenen Bytes, genau so, wie sie über die Verbindung gingen. |
+
+## Body-Ansichten [#body-views]
+
+Wähle eine Ansicht in der Zeile oben im Tab **Body**:
+
+| Ansicht | Was sie zeigt |
+| --- | --- |
+| **Text** | Den Body, wie er ankam, nach Content-Type eingefärbt. |
+| **JSON** | Das JSON übersichtlich formatiert. |
+| **JSON-Baum** | Das JSON als Baum zum Auf- und Zuklappen. |
+| **XML** | XML als Baum aus Elementen, Attributen und Text. |
+| **Formular** | Einen URL-codierten Body als Baum gelesen. |
+| **MessagePack** | Einen MessagePack-Body als Baum gelesen. |
+| **Vorschau** | Bilder, PDFs, Audio und Video, über die Übersicht (Quick Look). |
+
+Jede Ansicht steht für jeden Body zur Verfügung, sodass sich auch eine Antwort mit falschem Content-Type als das lesen
+lässt, was sie ist. Der Content-Type bestimmt die Ansicht, in der sich eine Antwort öffnet, und Echolot merkt sich die
+Ansicht, die du für jede Art von Body wählst: Hast du für eine JSON-Antwort den **JSON-Baum** gewählt, öffnen sich die
+nächsten im Baum.
+
+HTML und Skripte werden nie ausgeführt oder gerendert. **Vorschau** und **In Standard-App öffnen** zeigen sie als Text.
+
+Lange Zeilen scrollen in den Textansichten seitwärts. Klicke auf den Umbruch-Knopf oder wähle
+**Ansicht › Lange Zeilen umbrechen**, um sie umzubrechen. **Ansicht › Code vergrößern** (<kbd>⌘</kbd><kbd>+</kbd>),
+**Code verkleinern** (<kbd>⌘</kbd><kbd>-</kbd>) und **Code in Originalgröße** (<kbd>⌘</kbd><kbd>0</kbd>) ändern die
+Größe von Code überall.
+
+## JSON- und XML-Bäume [#json-and-xml-trees]
+
+Die Bäume zeigen zu jedem Wert Schlüssel oder Index, Typ und Wert; ein eingeklapptes Objekt oder Array zeigt, wie viele
+Elemente es enthält. Ein Array mit mehr als 1.000 Elementen wird in Bereiche wie `[0 … 999]` aufgeteilt, sodass sich
+auch
+ein riesiges Array sofort öffnet.
+
+Halte den Zeiger auf einen Wert für seine Knöpfe:
+
+- **Im Browser öffnen**, bei einem Wert, der eine Webadresse ist,
+- **Wert kopieren**,
+- **In Variable speichern …**, was den Wert in einer Variablen behält und sie auf Wunsch nach jedem Senden aktualisiert.
+  Siehe [Erfassungen aus Antworten](/docs/requests/captures#store-a-value-from-the-response).
+
+Klicke eine Zeile mit der rechten Maustaste an für mehr:
+
+- Im JSON-Baum: **Pfad kopieren** (der JSONPath zum Wert, etwa `$.items[0].sku`), **Wert kopieren** und
+  **Prüfung hinzufügen**, was im Tab **Tests** eine Prüfung hinzufügt, dass der Wert dem entspricht, was er jetzt ist.
+- Im XML-Baum: **XPath kopieren** und **Wert kopieren**.
+
+Halte den Zeiger auf einen Wert, der eine Bildadresse ist, und daneben öffnet sich eine Vorschau. Das Bild wird so
+geholt, wie ein Browser ein Bild holt: ohne deine Cookies oder Zugangsdaten, bis 10 MB und ohne Aufzeichnung im Verlauf.
+`data:image/…`-Werte werden ohne Anfrage gezeigt. Halte den Zeiger auf einen Wert, der wie ein Datum aussieht (Unix-Zeit
+in Sekunden, Millisekunden, Mikrosekunden oder Nanosekunden oder ein ISO-8601-Zeitstempel), und er erscheint als
+lesbares
+Datum.
+
+Der **XML**-Baum nimmt Bodys bis 50 MB, **Formular** und **MessagePack** bis 64 MB. Nutze für größere **Text** und die
+Suche.
+
+## Suchen [#find]
+
+Drücke <kbd>⌘</kbd><kbd>F</kbd> (**Anfrage › Im Body suchen**) oder klicke auf die Lupe.
+
+- In **Text** und **JSON** tippst du, was du suchst. **Aa** beachtet die Groß- und Kleinschreibung; **.\*** macht daraus
+  einen regulären Ausdruck. Die Leiste sagt, wo du bist, etwa `3 of 1,204`. Drücke <kbd>↩</kbd> oder
+  <kbd>⌘</kbd><kbd>G</kbd> für den nächsten Treffer und <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> für den vorherigen. Bis zu
+  10.000 Treffer werden markiert; die Zahl zeigt ein `+`, wenn es mehr gibt.
+- Im **JSON-Baum**, bei **Formular** und **MessagePack** nimmt die Leiste einen JSONPath wie `$.items[0]` und springt zu
+  diesem Wert. Sie sagt **Nicht gefunden**, wenn dort nichts ist.
+
+Drücke <kbd>Esc</kbd>, um die Leiste zu schließen.
+
+## Große Antworten [#large-responses]
+
+Echolot hält nie einen Body im Speicher. Er wird beim Eintreffen in eine Datei gestreamt, und die Ansichten lesen nur
+den
+Teil auf dem Bildschirm:
+
+- Die ersten Zeilen erscheinen, während der Rest noch eintrifft. Während ein Body geladen wird, zeigt die Detailkarte,
+  wie viel schon da ist.
+- **JSON** beginnt mit der übersichtlichen Formatierung, sobald der Body beginnt, und folgt ihm beim Wachsen.
+- Der **JSON-Baum** baut nur die Zeilen auf, die du aufklappst.
+- Die Suche durchsucht den ganzen Body auf der Festplatte.
+
+Probiere es mit **Catalog › Export the catalog** in Alpenglow aus: 40.000 Produkte, etwa 14 MB.
+
+Bodys bleiben auf der Festplatte bis zu der Größe, die unter **Einstellungen › Speicher › Antwort-Bodys behalten bis**
+eingestellt ist; darüber werden die am längsten nicht benutzten entfernt, außer Bodys, die in einem Tab offen sind. Eine
+ältere Antwort, deren Body entfernt wurde, sagt **Der Body dieser Antwort ist nicht mehr gespeichert.** Siehe
+[Speicher und Verschlüsselung](/docs/workspaces/storage-and-encryption).
+
+## Header [#headers]
+
+Der Tab **Header** listet die Antwort-Header in der Reihenfolge auf, in der sie kamen. Halte den Zeiger auf eine Zeile
+oder wähle sie aus und drücke die <kbd>Leertaste</kbd> (<kbd>↑</kbd> und <kbd>↓</kbd> zum Bewegen), um den Wert
+vollständig
+zu sehen, wofür der Header da ist und was sein Wert aussagt. Klicke einen Header mit der rechten Maustaste an für
+**Wert kopieren**, **Header kopieren** und **Prüfung hinzufügen**, was im Tab **Tests** eine Prüfung für diesen Header
+hinzufügt.
+
+## Cookies [#cookies]
+
+Der Tab **Cookies** hat drei Teile:
+
+- **Mit der Anfrage gesendet**: die Cookies, die hinausgingen, und woher jedes kam.
+- **Von der Antwort gesetzt**: jedes `Set-Cookie` mit seinen Attributen und einer Warnung, wenn der Cookie-Speicher es
+  abgelehnt hat.
+-  **In diesem Fenster gespeichert**: alles im Cookie-Speicher des Fensters. Entferne eines mit seinem Knopf oder alle
+  mit
+  **Alle löschen**.
+
+Ist **Cookies senden und speichern** für die Anfrage aus, sagt der Tab das. Siehe
+[Cookies](/docs/requests/settings#cookies).
+
+## Roh, Hex und Übertragung [#raw-hex-and-wire]
+
+- **Roh** zeigt die Antwort als eine Nachricht: Statuszeile, Header, eine Leerzeile, dann den decodierten Body (die
+  ersten 64 MB; der Tab **Body** hat alles).
+- **Hex** zeigt die Bytes des Body: Offsets, 16 Bytes pro Zeile in zwei Gruppen und ihr ASCII. Wähle Bytes mit der Maus
+  oder mit den Pfeiltasten und <kbd>⇧</kbd> aus; Kopieren ergibt Hex-Paare oder Text, wenn du in der ASCII-Spalte
+  ausgewählt hast.
+- **Übertragung** zeigt die Bytes genau so, wie sie die Verbindung durchquert haben: Wähle **Gesendet** oder
+  **Empfangen**. Du siehst die Header, wie sie gerahmt sind, und einen komprimierten Body vor dem Decodieren. Bis zu 1
+  MB
+  je Richtung wird behalten; der Tab sagt, wenn er nur den ersten Teil zeigt.
+
+## Sichern und teilen [#save-and-share]
+
+Klicke auf den Sichern-Knopf oben rechts im Tab **Body**:
+
+- **Body sichern …** schreibt den Body in eine Datei (decodiert).
+- **In Standard-App öffnen** öffnet ihn in der App, die dein Mac für seinen Typ nutzt.
+- **Codierten Body sichern …** schreibt den Body, wie er kam, noch komprimiert; nur bei komprimierten Antworten.
+- **Austausch als HAR exportieren …** schreibt Anfrage und Antwort als HAR-Datei.
+
+Um die Anfrage statt der Antwort zu teilen, nutze **Anfrage › Als cURL kopieren** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd>)
+oder **Anfrage › Code erzeugen …** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd>). Siehe
+[HTTP-Anfragen](/docs/requests#send-and-cancel).
+
+## Frühere Antworten und Vergleichen [#earlier-responses-and-comparing]
+
+Jedes Senden wird im Verlauf behalten. Der Uhr-Knopf mit einer Zahl am Ende der Zeile unter der URL-Leiste öffnet die
+Antworten dieser Anfrage: jede mit Status, Zeit, Absender (du, ein Durchlauf oder ein Agent), Dauer und Größe.
+
+<Shot id="requests-http-response-history" alt="Das Popover mit dem Antwortverlauf von List products, das frühere Antworten mit Status, Zeit, Herkunft, Dauer und Größe auflistet" />
+
+-  Klicke auf eine Antwort, um sie anzuzeigen. Eine Leiste über dem Antwortbereich sagt **Frühere Antwort**;
+  **Neueste anzeigen** geht zurück.
+- Um zwei Antworten zu vergleichen, zeige eine an, fahre dann in der Liste über eine andere und klicke auf ihren
+  Vergleichen-Knopf, oder klicke in der Leiste **Frühere Antwort** auf **Mit neuester vergleichen**. Der Vergleich
+  zeigt,
+  was hinzugekommen und was entfernt ist.
+- **Verlauf dieser Anfrage löschen …** im Menü der Liste löscht den Verlauf dieser Anfrage.
+
+Den Verlauf des ganzen Arbeitsbereichs findest du unter [Verlauf](/docs/workspaces/history).
+
+## Wenn eine Anfrage fehlschlägt [#when-a-request-fails]
+
+Kam keine Antwort, zeigt der Bereich den Fehler, etwa **Zeitüberschreitung bei der Anfrage**, und **Erneut versuchen**.
+Zwei weitere Knöpfe können erscheinen:
+
+-  **Skripte prüfen …**, wenn die Skripte der Anfrage von außerhalb von Echolot stammen und dein Vertrauen brauchen,
+  bevor
+  sie laufen. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests).
+- **Zugriff erlauben …** in der App-Store-Version, wenn die Anfrage eine Datei nennt, die die App noch nicht lesen darf.

@@ -1,0 +1,76 @@
+---
+title: "版本对比"
+description: "直接下载版与 Mac App Store 版的对比、如何选择，以及如何在两者之间切换。"
+---
+
+Echolot 有两个版本，由同一份代码构建：从 [echolot.dev](https://echolot.dev) 获取的**直接下载版**，以及 **Mac App Store 版**。App Store 版运行在 Apple 的 App 沙盒中。沙盒允许 App 使用网络、读写你选择的文件并保存自己的数据，但不允许 App 启动 Mac 上的其他程序，也不允许读写其他 App 的文件。下面几乎所有差异都源于此。
+
+App Store 版尚未上架。本页的一切都是对其构建方式的说明。
+
+## 两个版本各有什么 [#what-each-edition-has]
+
+| | 直接下载版 | Mac App Store |
+| --- | --- | --- |
+| 所有协议：HTTP/1.1、HTTP/2、HTTP/3、GraphQL、gRPC、WebSocket、SSE、Socket.IO、MQTT | ✓ | ✓ |
+| 以文件形式存放的工作区、Git、环境、保存在钥匙串中的机密 | ✓ | ✓ |
+| 脚本、测试、运行器、数据驱动的运行 | ✓ | ✓ |
+| 历史记录、已存储的响应、静态加密 | ✓ | ✓ |
+| 规范、模拟服务器、带计划和 Webhook 的流程 | ✓ | ✓ |
+| 导入和导出 | ✓ | ✓ |
+| 快速发送及其全局快捷键、快捷指令动作、快速查看 | ✓ | ✓ |
+| 通过 HTTP 连接的 MCP 服务器 | ✓ | ✓ |
+| 作为本地程序运行的 MCP 服务器（stdio：`npx`、`uvx` …） | ✓ | 保留在工作区中，但不会启动。请使用命令行工具或直接下载版。 |
+| 使用 API 密钥、Ollama 及其他兼容服务器、Apple 设备端模型的助手 | ✓ | ✓ |
+| 使用命令行智能体（Claude Code、Codex、Gemini CLI）的助手 | ✓ | ✗ |
+| Echo 及其 AI 评论 | ✓ | ✓ |
+| 供外部智能体使用的 Echolot MCP 服务器 | ✓ | ✓，通过另行安装的命令行工具 |
+| 从其他 App 的配置导入 MCP 服务器 | 自动查找 | 由你选取配置文件；面板会在正确的文件夹中打开 |
+| 连接 Claude Code、Cursor、VS Code、Codex | ✓ | ✓，通过另行安装的命令行工具 |
+| Claude Desktop 扩展（`.mcpb`）、**添加到 Claude** | ✓ | ✗ |
+| 命令行工具 | 位于 App 内；**Echolot › 安装命令行工具…** | 单独安装（发行版页面上的 zip） |
+| 更新 | 在 App 内，**Echolot › 检查更新…** | 由 App Store 负责 |
+| Beta 版会过期 | 会，发行 30 天后 | 永不（Beta 版通过 TestFlight 分发） |
+
+工作区之外的文件，处理方式也不同。在 App Store 版中，只有在你通过打开面板选取文件之后，Echolot 才能读取它。Echolot 会记住你打开过的每个工作区，以及你为请求选取的每个文件（从文件流式传输的正文、表单部分、客户端证书），重新启动后以及文件被移动后也一样。如果某次发送需要 Echolot 从未获得权限的文件（例如手工写入请求文件的路径），发送会失败并提示 `Echolot is not allowed to read “…”`；请在失败的响应上选取**允许访问…**，然后选取该文件。参见[疑难解答](/docs/troubleshooting)。
+
+## 如何选择 [#which-to-choose]
+
+如果你符合以下情况，请选择**直接下载版**：
+
+- 使用作为本地程序运行的 MCP 服务器（大多数用 `npx`、`uvx`、`docker` 或二进制文件启动的服务器），
+- 想让助手驱动 Claude Code、Codex 或 Gemini CLI，
+- 想让命令行工具随 App 一起安装和更新，或者想要一键安装的 Claude Desktop 扩展。
+
+如果你更喜欢来自 App Store 的 App，看重它的更新机制和 App 周围的沙盒，而且你的 MCP 服务器可通过 HTTP 访问，请选择 **App Store 版**。
+
+两者打开的是同样的工作区，所以日后改变主意也没有问题。
+
+## 在两个版本之间切换 [#moving-between-editions]
+
+对 macOS 来说，两个版本是同一个 App，所以一次只安装其中一个：先退出并移除要离开的那个（[卸载](/docs/get-started/install#uninstall)），再安装另一个。
+
+- **工作区**是普通文件夹，在两个版本中都能打开。在 App Store 版中，请用**文件 › 打开工作区…**或在访达中把每个工作区打开一次，这样沙盒才会允许 Echolot 读取它；之后它会保留在**文件 › 打开最近使用的**中。
+- **机密**保留在登录钥匙串中，两个版本共用。另一个版本第一次读取并非由它创建的机密时，macOS 会针对每个条目询问一次；请选取**始终允许**。命令行工具的询问方式相同。
+- 助手的**模型密钥**在另一个版本中同样会询问一次，也可以在**设置 › 助手**中重新添加。
+- **历史记录和已存储的响应**留在记录它们的版本中：每个版本都有自己的储存文件夹。请求不会丢失，丢失的只是过去的响应。
+
+## 各版本的数据存放位置 [#where-each-edition-keeps-its-data]
+
+两个版本中，工作区都位于你存储它们的位置。Echolot 自己的数据（已存储的响应正文、历史记录、崩溃报告、助手对话和“示例”工作区）位于：
+
+| 版本 | 文件夹 |
+| --- | --- |
+| 直接下载版 | `~/Library/Application Support/Echolot` |
+| Mac App Store | `~/Library/Containers/com.staticdreams.Echolot/Data/Library/Application Support/Echolot` |
+
+**设置 › 关于 › 响应和历史记录 › 在访达中显示**会打开正确的那一个。删除它会丢失历史记录和已存储的响应，但不会丢失请求。
+
+## App Store 用户的命令行工具 [#the-command-line-tool-for-app-store-users]
+
+App Store 版不带命令行工具，因为 App Store 不允许在 App 之外安装代码。请单独安装该工具：从[发行版页面](https://github.com/staticdreams/echolot-public/releases)下载 `echolot-<version>-macos.zip`。该工具永不过期。参见[命令行工具](/docs/cli)。
+
+你需要它来：
+
+- 在“终端”和 CI 中运行工作区，
+- 运行以本地程序启动的 MCP 服务器（`echolot mcp check`、`echolot mcp serve`），
+- 连接 Claude Code、Cursor、VS Code 和 Codex 等外部智能体。它们的配置里写的是这个工具；工作区在 App 中打开期间，它们的调用会在 App 中运行，由你来批准。参见[智能体](/docs/ai/agents)。

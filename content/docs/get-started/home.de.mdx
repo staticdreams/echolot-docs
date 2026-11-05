@@ -1,0 +1,80 @@
+---
+title: "Start und Sonar"
+description: "Start ist die Übersicht eines Arbeitsbereichs; seine Sonar-Karte zeigt jedes Senden der letzten Stunde, des letzten Tages, der letzten Woche oder des letzten Monats danach, wie lange die Antwort dauerte."
+---
+
+**Start** ist die Seite, auf der ein Arbeitsbereichsfenster beginnt. Sie zeigt, was im Arbeitsbereich liegt, was einen
+Blick braucht und wie deine Anfragen zuletzt geantwortet haben. Öffne sie über den Knopf **Start** in der Seitenleiste
+oder mit <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd>.
+
+<Shot id="get-started-home" alt="Start: die Begrüßung, die Zahlen des Arbeitsbereichs, die Sonar-Karte mit ihren Pings und Kennzahlen sowie die Karten für letzte Anfragen, neueste Antworten, Tests und Umgebungen" />
+
+## Was Start zeigt [#what-home-shows]
+
+Von oben nach unten:
+
+- **Eine Begrüßung und ein Satz Neuigkeiten.** Er sagt, wie viele Prüfungen fehlschlagen oder wie viele Anfragen
+  ungesicherte Änderungen haben, und sonst **Nichts wartet auf dich.** Bei einem neuen Arbeitsbereich ohne Anfragen
+  steht dort die Aufforderung, eine Sammlung zu importieren oder die erste Anfrage anzulegen.
+- **Der Arbeitsbereich**: sein Name und Ordner, mit den Zahlen für **Anfragen**, **Ordner**, **Umgebungen**,
+  **Variablen** und **Prüfungen**.
+- **Sonar**, siehe unten.
+- **Letzte Anfragen**, mit **Neue Anfrage**; **Neueste Antworten**; **Tests**, mit der Zahl der Anfragen, die
+  Prüfungen haben, und den fehlschlagenden, sowie **Alle anzeigen**; und **Umgebungen**, mit **Verwalten** und einer
+  Markierung an den geschützten.
+
+Klicke in einer Karte auf eine Anfrage oder eine Antwort, um sie zu öffnen.
+
+## Sonar [#sonar]
+
+Sonar zeichnet jedes Senden eines Zeitraums als Ping, so wie ein Sonar Echos zeichnet. Die Zeit läuft nach rechts, vom
+Beginn des Zeitraums links bis **jetzt** rechts. Die Tiefe zeigt, wie lange die Antwort dauerte: Eine schnelle Antwort
+bleibt nahe der Oberfläche, eine langsame sinkt ab. Ein Blick genügt, um zu sehen, ob die API schnell war, wo sie
+langsamer wurde und ob etwas fehlschlug.
+
+<Shot id="get-started-home-sonar" alt="Die Sonar-Karte: nach Status gefärbte Pings, die Zonen Oberfläche, Mittelwasser und Tief, der Meeresboden unter den langsamsten Antworten und fünf Kennzahlen darunter" />
+
+### Das Diagramm lesen [#reading-the-chart]
+
+- **Die Zonen.** Die Tiefenskala ist logarithmisch, sodass das schnelle wie das langsame Ende lesbar bleiben. **OBEN**
+  ist alles unter 250 ms, **MITTE** reicht von 250 ms bis 1 s und **TIEF** ist alles über 1 s.
+- **Die Farbe eines Pings** ist die Klasse seines Status. Die Legende im Kopf der Karte nennt sie: **2xx**, **3xx**,
+  **4xx** und **5xx · fehlgeschlagen**, was auch für ein Senden steht, das gar keine Antwort bekam.
+- **Der Meeresboden** ist der schattierte Grund unter den langsamsten Antworten jedes Zeitabschnitts. Er hebt und senkt
+  sich mit ihnen.
+- **Die Linie rechts** markiert jetzt. Wenn ein Senden endet, während Start sichtbar ist, breitet sich von seinem Ping
+  eine Welle aus (nicht bei eingeschaltetem **Bewegung reduzieren**).
+- **Der Balken unter dem Diagramm** zeigt in Prozent, wie sich die Sendungen des Zeitraums auf die Zonen verteilen.
+
+Zeige auf einen Ping, um seine Anfrage zu sehen: wann sie gesendet wurde, Status und Zeit, Methode und Name. Klicke
+darauf, um die Anfrage mit dieser Antwort zu öffnen. Gibt es nichts zu öffnen (die Anfrage wurde gelöscht oder nie
+gesichert, oder das Senden bekam keine Antwort), steht im Hinweis **Klicken, um sie im Verlauf zu finden**, und der
+Klick öffnet den [Verlauf](/docs/workspaces/history) mit einer Suche nach dem Namen der Anfrage.
+
+### Den Zeitraum wählen [#choosing-the-period]
+
+Das Steuerelement im Kopf der Karte bietet **1 h**, **24 h**, **7 T** (Standard) oder **30 T**. Diagramm und Kennzahlen
+folgen ihm. Ein Zeitraum ohne Sendungen sagt, dass das Echo einer Anfrage hier erscheint, sobald du eine sendest.
+
+### Die Kennzahlen [#the-figures]
+
+Fünf Kennzahlen stehen über dem Diagramm, jeweils neben demselben Zeitraum davor („+12 % gegenüber der Vorwoche“):
+
+| Kennzahl | Was sie zählt |
+| --- | --- |
+| **Gesendet** | Die im Zeitraum gesendeten Anfragen. |
+| **Erfolgreich** | Der Anteil der Sendungen, die mit einem Status unter 400 beantwortet wurden, mit der Veränderung in Prozentpunkten. |
+| **Medianzeit** | Die mittlere Antwortzeit, mit dem **p95**: 95 von 100 Sendungen waren schneller. |
+| **Unter 250 ms** | Der Anteil der Sendungen an der Oberfläche. |
+| **Über 1 s** | Wie viele Sendungen tief lagen und wie viele davon fehlschlugen. |
+
+In einer schmalen Karte erscheinen nur die ersten drei.
+
+### Was Sonar zählt [#what-sonar-counts]
+
+- Die Kennzahlen zählen jedes Senden, das noch im [Verlauf](/docs/workspaces/history) des Arbeitsbereichs liegt.
+  Sendungen, die du gelöscht hast oder die die Grenzen des Verlaufs entfernt haben, zählen nicht mehr. Das Diagramm
+  zeichnet die neuesten.
+- Sonar zählt HTTP-, GraphQL-, gRPC- und MCP-Anfragen, egal wer sie gesendet hat: du, die Ausführung, ein Flow oder ein
+  Agent. WebSocket-, Socket.IO- und MQTT-Sitzungen bleiben so lange offen, wie du willst, daher haben sie keine
+  Antwortzeit und werden nicht gezeichnet.

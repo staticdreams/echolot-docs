@@ -1,0 +1,174 @@
+---
+title: "键盘快捷键"
+description: "Echolot 中的所有键盘快捷键，包括菜单中的和页面上的，按使用场景分组。"
+---
+
+菜单中的每个操作旁边都有它的快捷键。本页把它们汇总在一起，并补充了在页面或列表中可用的按键。<kbd>⌘</kbd> 是 Command，<kbd>⌥</kbd> 是 Option，<kbd>⇧</kbd> 是 Shift，<kbd>⌃</kbd> 是 Control。
+
+## 工作区和文件 [#workspaces-and-files]
+
+| 操作 | 按键 | 菜单 |
+| --- | --- | --- |
+| 新建请求 | <kbd>⌘</kbd><kbd>N</kbd> | 文件 |
+| 新建文件夹 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd> | 文件（边栏显示“请求”时） |
+| 新建工作区… | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd> | 文件 |
+| 打开工作区… | <kbd>⌘</kbd><kbd>O</kbd> | 文件 |
+| 切换工作区… | <kbd>⌘</kbd><kbd>P</kbd> | 文件 |
+| 关闭标签页 | <kbd>⌘</kbd><kbd>W</kbd> | 文件 |
+| 关闭窗口 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd> | 文件 |
+| 导入… | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd> | 文件 |
+| 导出工作区… | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd> | 文件 |
+| 复制 | <kbd>⌘</kbd><kbd>D</kbd> | 编辑 |
+| 撤销、重做 | <kbd>⌘</kbd><kbd>Z</kbd>、<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd> | 编辑 |
+| 设置 | <kbd>⌘</kbd><kbd>,</kbd> | Echolot |
+
+<kbd>⌘</kbd><kbd>W</kbd> 关闭屏幕上的标签页，而不会关闭工作区窗口；<kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd> 关闭窗口。在其他窗口（例如“设置”）中，<kbd>⌘</kbd><kbd>W</kbd> 关闭该窗口。
+
+“文件”菜单中的**新建 GraphQL 请求**、**新建 WebSocket 请求**、**新建 Socket.IO 请求**、**新建 MQTT 请求**和**新建 gRPC 请求**，以及**导出文件夹…**和**重新命名**没有快捷键。
+
+## 标签页 [#tabs]
+
+| 操作 | 按键 | 菜单 |
+| --- | --- | --- |
+| 显示下一个标签页 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> | 标签页 |
+| 显示上一个标签页 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> | 标签页 |
+| 重新打开已关闭的标签页 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> | 标签页 |
+
+## 页面和面板 [#pages-and-panels]
+
+| 操作 | 按键 | 菜单 |
+| --- | --- | --- |
+| 请求 | <kbd>⌘</kbd><kbd>1</kbd> | 视图 |
+| MCP 服务器 | <kbd>⌘</kbd><kbd>2</kbd> | 视图 |
+| 规范 | <kbd>⌘</kbd><kbd>3</kbd> | 视图 |
+| 模拟服务器 | <kbd>⌘</kbd><kbd>4</kbd> | 视图 |
+| 流程 | <kbd>⌘</kbd><kbd>5</kbd> | 视图 |
+| 主页 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd> | 视图 |
+| 测试 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> | 视图 |
+| 运行器 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd> | 视图 |
+| 环境 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd> | 视图 |
+| 历史记录 | <kbd>⌘</kbd><kbd>Y</kbd> | 视图 |
+| 显示边栏、隐藏边栏 | <kbd>⌘</kbd><kbd>B</kbd> | 视图 |
+| 显示助手、隐藏助手 | <kbd>⌘</kbd><kbd>J</kbd> | 视图 |
+| 显示变量、隐藏变量 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>V</kbd> | 视图 |
+| 命令面板… | <kbd>⌘</kbd><kbd>K</kbd> | 请求 |
+
+<kbd>⌘</kbd><kbd>1</kbd> 到 <kbd>⌘</kbd><kbd>5</kbd> 会切换边栏的模块，并回到它上次显示的内容。参见[窗口](/docs/get-started/the-window)。
+
+## 请求和响应 [#requests-and-responses]
+
+| 操作 | 按键 | 菜单 |
+| --- | --- | --- |
+| 发送 | <kbd>⌘</kbd><kbd>R</kbd> 或 <kbd>⌘</kbd><kbd>↩</kbd> | 请求 |
+| 取消 | <kbd>⌘</kbd><kbd>.</kbd> | 请求 |
+| 拷贝为 cURL | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> | 请求 |
+| 生成代码… | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> | 请求 |
+| 在正文中查找 | <kbd>⌘</kbd><kbd>F</kbd> | 请求 |
+| 下一个匹配项、上一个匹配项 | <kbd>⌘</kbd><kbd>G</kbd>、<kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> | （在查找栏中） |
+
+当[受保护的环境](/docs/workspaces/protected-environments)处于活动状态时，该菜单项显示为**发送到 &lt;环境&gt;…**，并会先询问。**取消**是那里的默认按钮，因此按 <kbd>↩</kbd> 绝不会误发送。
+
+“请求”菜单中的<strong>将交换记录导出为 HAR…</strong>没有快捷键。
+
+## 代码大小 [#code-size]
+
+| 操作 | 按键 | 菜单 |
+| --- | --- | --- |
+| 放大代码 | <kbd>⌘</kbd><kbd>+</kbd> | 视图 |
+| 缩小代码 | <kbd>⌘</kbd><kbd>-</kbd> | 视图 |
+| 实际代码大小 | <kbd>⌘</kbd><kbd>0</kbd> | 视图 |
+
+“视图”菜单中的**自动换行**和**窗格 › 重置窗格大小**没有快捷键。
+
+## 编辑文本 [#editing-text]
+
+| 操作 | 按键 | 位置 |
+| --- | --- | --- |
+| 建议 | <kbd>⌃</kbd><kbd>Space</kbd> | 代码编辑器：正文、脚本、查询 |
+| 插入变量或动态值 | 输入 `{{` | 接受变量的字段和编辑器 |
+| 粗体、斜体 | <kbd>⌘</kbd><kbd>B</kbd>、<kbd>⌘</kbd><kbd>I</kbd> | 请求或文件夹的文档编辑器 |
+
+## 会话 [#sessions]
+
+| 操作 | 按键 | 位置 |
+| --- | --- | --- |
+| 发送消息 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | WebSocket：消息框 |
+| 发送事件 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | Socket.IO：事件框 |
+| 发布消息 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | MQTT：负载框 |
+
+## 边栏 [#the-sidebar]
+
+| 操作 | 按键 |
+| --- | --- |
+| 移动选择 | <kbd>↑</kbd>、<kbd>↓</kbd> |
+| 展开文件夹 | <kbd>→</kbd> |
+| 收起文件夹，或回到上一级文件夹 | <kbd>←</kbd> |
+| 重新命名所选项 | <kbd>↩</kbd> |
+| 停止重新命名 | <kbd>Esc</kbd> |
+| 将请求移到废纸篓 | <kbd>⌫</kbd>（会先询问） |
+
+<kbd>⌫</kbd> 只对单个请求有效。没有任何按键可以删除文件夹或多个项目：请使用上下文菜单中的**移到废纸篓…**（或**将 N 个项目移到废纸篓…**），它会先询问。在“MCP 服务器”页面中，<kbd>⌫</kbd> 会提示删除所选的服务器。
+
+## 列表 [#lists]
+
+| 操作 | 按键 | 位置 |
+| --- | --- | --- |
+| 移动选择 | <kbd>↑</kbd>、<kbd>↓</kbd> | 历史记录、响应标头、命令面板、快速发送 |
+| 打开所选的交换 | <kbd>↩</kbd> | 历史记录 |
+| 快速查看及关闭 | <kbd>Space</kbd>、<kbd>Esc</kbd> | 历史记录、响应标头 |
+| 运行高亮的命令 | <kbd>↩</kbd> | 命令面板 |
+| 发送所选的请求 | <kbd>↩</kbd> | 快速发送 |
+| 关闭 | <kbd>Esc</kbd> | 命令面板、快速发送 |
+
+## 运行器和模拟服务器 [#runner-and-mocks]
+
+| 操作 | 按键 | 位置 |
+| --- | --- | --- |
+| 运行，或**在 &lt;环境&gt; 中运行…** | <kbd>⌘</kbd><kbd>R</kbd> | 运行器 |
+| 停止 | <kbd>⌘</kbd><kbd>.</kbd> | 运行器 |
+| 启动模拟服务器 | <kbd>⌘</kbd><kbd>R</kbd> | 模拟服务器 |
+
+## 流程 [#flows]
+
+| 操作 | 按键 |
+| --- | --- |
+| 运行，或**在 &lt;环境&gt; 中运行…** | <kbd>⌘</kbd><kbd>R</kbd> |
+| 停止运行 | <kbd>⌘</kbd><kbd>.</kbd> |
+| 添加块 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd> |
+| 复制所选的块 | <kbd>⌘</kbd><kbd>D</kbd> |
+| 适应窗口：显示整个流程 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd> |
+| 拷贝、剪切、粘贴块（连同它们之间的连线） | <kbd>⌘</kbd><kbd>C</kbd>、<kbd>⌘</kbd><kbd>X</kbd>、<kbd>⌘</kbd><kbd>V</kbd> |
+| 删除所选内容 | <kbd>⌫</kbd> |
+| 选择某个方向上最近的块 | <kbd>↑</kbd>、<kbd>↓</kbd>、<kbd>←</kbd>、<kbd>→</kbd> |
+| 取消选择 | <kbd>Esc</kbd> |
+| 绘制选择框 | <kbd>⇧</kbd> 或 <kbd>⌘</kbd> 并在画布上拖移 |
+
+在空白画布上直接拖移会平移画布。参见[流程](/docs/flows)。
+
+## 助手 [#assistant]
+
+| 操作 | 按键 |
+| --- | --- |
+| 显示或隐藏助手 | <kbd>⌘</kbd><kbd>J</kbd> |
+| 停止助手 | <kbd>⌘</kbd><kbd>.</kbd> |
+
+## 快速发送 [#quick-send]
+
+| 操作 | 按键 |
+| --- | --- |
+| 在任何 App 中打开快速发送 | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> |
+
+快速发送默认关闭，需要在**设置 › 通用**中打开，在那里也可以录制其他快捷键。参见[快速发送](/docs/mac/quick-send)。
+
+## 设置和帮助 [#settings-and-help]
+
+| 操作 | 按键 | 位置 |
+| --- | --- | --- |
+| 搜索设置 | <kbd>⌘</kbd><kbd>F</kbd> | 设置 |
+| Echolot 文档 | <kbd>⌘</kbd><kbd>?</kbd> | 帮助菜单 |
+
+**此页面的帮助**会打开与最前面窗口中的页面相关的文档页面。
+
+## 表单和对话框 [#sheets-and-dialogs]
+
+<kbd>↩</kbd> 选择默认按钮，<kbd>Esc</kbd> 取消。执行删除操作的对话框，其红色按钮没有对应的按键，因此你总是要点按它。

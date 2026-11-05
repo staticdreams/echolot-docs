@@ -1,0 +1,181 @@
+---
+title: "Deja que un agente use tu espacio de trabajo con seguridad"
+description: "Conecta Claude Code u otro cliente MCP a un espacio de trabajo, decide qué puede hacer, aprueba sus envíos, protege un entorno y mantén los secretos fuera de su alcance."
+---
+
+Echolot es un servidor MCP para tu espacio de trabajo: un agente de IA como Claude Code puede listar tus solicitudes,
+enviarlas y leer las respuestas. Tú decides qué puede hacer sin preguntar, qué tiene que pedir y qué no puede hacer
+nunca. Los valores secretos nunca le llegan. En este tutorial conectas Claude Code a Alpenglow, apruebas y rechazas sus
+envíos, proteges un entorno y después haces lo mismo con el Asistente integrado de Echolot.
+
+- **Tiempo:** 20 minutos.
+- **Necesitas:** el [espacio de trabajo Alpenglow](/docs/tutorials#the-alpenglow-workspace) y un cliente MCP: Claude Code
+  (`claude` en Terminal), Claude Desktop, Cursor, VS Code o Codex. Para la última parte, una clave de API de un
+  proveedor de modelos, o un modelo local en Ollama.
+- **Aprendes:** Ajustes › Agentes, las aprobaciones, las reglas de agentes del espacio de trabajo, los entornos
+  protegidos y lo que ven los agentes en lugar de los secretos.
+
+## 1. Activa los agentes [#1-turn-agents-on]
+
+1. Elige **Echolot › Ajustes…** (<kbd>⌘</kbd><kbd>,</kbd>) y abre **Agentes**.
+2. En **Acceso**, activa **Permitir que los agentes usen los espacios de trabajo abiertos**.
+3. En **Herramientas para agentes**, deja activados **Solicitudes** y **Flujos**. **Solicitudes** permite que un agente
+   liste, lea, cree y envíe solicitudes; **Flujos** ejecuta los flujos que ofreces a los agentes. Los demás
+   (**Espacio de trabajo**, **Entornos**, **Especificaciones**, **Mocks**, **Servidores MCP**, **Historial**,
+   **Edición de flujos**) están desactivados hasta que los actives.
+
+Algunas herramientas no se ofrecen nunca, actives lo que actives: las reglas mismas, los proxies, los certificados, los
+ajustes de autenticación, los scripts y el inicio de flujos que no has ofrecido.
+
+## 2. Conecta Claude Code [#2-connect-claude-code]
+
+1. En la ventana de Alpenglow, elige **Agentes** en la parte superior de la página.
+2. En **Conectar un cliente**, busca **Claude Code** y elige **Copiar comando**. El comando es así:
+
+   ```sh
+   claude mcp add --scope user echolot-alpenglow -- /Applications/Echolot.app/Contents/Helpers/echolot mcp serve /Users/you/Projects/Alpenglow.echolot
+   ```
+
+3. Pégalo en Terminal y ejecútalo.
+
+Los otros clientes tienen su propio botón: **Añadir a Cursor** y **Añadir a VS Code** abren un enlace de instalación,
+**Copiar entrada de config.toml** es para Codex, **Copiar JSON** da un bloque `mcpServers` para cualquier otro cliente,
+y **Añadir a Claude**, de Claude Desktop, instala una extensión. Todos los clientes ejecutan `echolot mcp serve`, que
+pasa sus llamadas a la ventana abierta, así que se aplican tus aprobaciones y el entorno de la ventana.
+
+<Edition only="appstore">
+  La edición de la App Store no incluye la herramienta de línea de comandos ni la extensión de Claude Desktop. Instala
+  primero por separado la [herramienta de línea de comandos](/docs/cli); los comandos y fragmentos que copies apuntan a
+  ella.
+</Edition>
+
+<Shot id="tutorials-agents-connect" alt="La ventana emergente Agentes de la ventana de Alpenglow con los botones de Conectar un cliente para Claude Desktop, Claude Code, Cursor, VS Code y Codex" />
+
+## 3. Déjale leer y enviar [#3-let-it-read-and-send]
+
+1. Inicia `claude` en Terminal y pregunta:
+
+   > Using echolot-alpenglow, list the requests in the Catalog folder, send List products, and tell me the most
+   > expensive tent in stock.
+
+2. Lista las solicitudes y envía **List products** sin preguntarte: por omisión, un agente puede leer el espacio de
+   trabajo y hacer envíos seguros (`GET`, consultas GraphQL, lecturas MCP).
+3. En Echolot, el botón **Agentes** ahora dice **Agentes · 1**. Su ventana emergente lista el cliente en
+   **Llamadas recientes**, con un interruptor **Permitido** para cortarle el acceso.
+
+Los envíos del agente se registran en el Historial con quién los envió (<kbd>⌘</kbd><kbd>Y</kbd>).
+
+## 4. Aprueba un envío que cambia datos [#4-approve-a-send-that-changes-data]
+
+1. Pregunta:
+
+   > Place an order for one TNT-MH-2P with Create order.
+
+2. Echolot muestra una hoja: **Claude Code quiere enviar una solicitud que puede cambiar datos**, con la solicitud y una
+   vista previa de lo que sale. La cabecera `Authorization` aparece como `Bearer ••••••`.
+3. Elige una opción:
+   - **Permitir una vez** (<kbd>↩</kbd>): solo este envío.
+   - **Permitir en esta sesión**: envíos como este hasta que se cierre la ventana.
+   - **Denegar** (<kbd>Esc</kbd>): al agente se le dice que lo has rechazado.
+4. Elige **Permitir una vez**. La tienda responde `201 Created` y el agente informa del pedido nuevo.
+
+<Shot id="tutorials-agents-approval" alt="La hoja de aprobación: Claude Code quiere enviar una solicitud que puede cambiar datos, con Denegar, Permitir en esta sesión y Permitir una vez" />
+
+## 5. Mantén los secretos fuera de su alcance [#5-keep-secrets-out-of-reach]
+
+Pregunta al agente:
+
+> What is the value of the token variable?
+
+No puede decírtelo. El valor de una variable secreta nunca llega a un agente: allí donde aparecería, en una solicitud,
+una respuesta o un error, el agente ve `••••••`. Eso cubre el valor tal como está escrito y en sus formas JSON,
+porcentaje y Base64. Las búsquedas en los cuerpos de las respuestas tampoco cuentan ni sitúan nunca una coincidencia
+sobre un secreto.
+
+## 6. Define las reglas del espacio de trabajo [#6-set-the-workspaces-rules]
+
+Los valores predeterminados son un punto de partida. Cada espacio de trabajo puede definir sus propias reglas, y van a
+`workspace.toml`, así que viajan con el espacio de trabajo a través de Git.
+
+1. Abre el menú del espacio de trabajo al pie de la barra lateral y elige **Ajustes del espacio de trabajo…**, y después
+   la pestaña **Agentes**.
+2. **Los agentes pueden usar este espacio de trabajo** desactiva los agentes solo para este espacio de trabajo.
+3. En **Lo que pueden hacer los agentes**, cada tipo de acción tiene **Permitir**, **Preguntar** o **Rechazar** (o
+   **Predeterminado**): **Leer solicitudes y entornos**, **Envíos seguros (GET, consultas GraphQL, lecturas MCP)**,
+   **Otros envíos**, **Envíos a entornos protegidos**, **Envíos a hosts nuevos**, **Cambios en el espacio de trabajo** y
+   **Eliminaciones**. Pon **Otros envíos** en **Rechazar**.
+4. En **Hosts y límites**, lista los **Hosts permitidos** y define los **Envíos por sesión** o los **Envíos por minuto**.
+5. Pulsa **OK** y pide al agente que haga otro pedido. Se rechaza sin ninguna hoja.
+
+Una regla más estricta que la predeterminada se aplica al instante. Una regla que permitiría algo sin preguntar, por
+ejemplo en un espacio de trabajo que has traído de Git, espera a que tú decidas: la ventana emergente **Agentes** dice
+lo que permitiría, los agentes siguen preguntando hasta que confías en las reglas, y **Confiar en estas reglas** las
+acepta en este Mac.
+
+**Envíos a entornos protegidos** y **Envíos a hosts nuevos** solo ofrecen **Preguntar** o **Rechazar**: ninguna regla deja
+que un agente envíe ahí sin preguntar. Una redirección en un envío de un agente nunca lleva una cabecera secreta a un
+host que el espacio de trabajo no conoce.
+
+## 7. Protege un entorno [#7-protect-an-environment]
+
+1. En el menú de entornos de la cabecera de la página, elige **Production**. Está protegido, así que aparece marcado en
+   rojo con un candado.
+2. Pide al agente que envíe **List products** otra vez. La hoja dice
+   **Claude Code quiere enviar a un entorno protegido**, y <kbd>↩</kbd> no hace nada en ella: tienes que elegir. Elige **Denegar**. (Production de Alpenglow es una
+   dirección ficticia, así que el envío fallaría de todos modos.)
+3. Envía tú mismo **List products**. El botón dice **Enviar a Production…**, y una alerta pregunta
+   **¿Enviar a Production?**. **Cancelar** es la opción predeterminada; **No volver a preguntar hasta que cambie de entorno** detiene
+   las preguntas hasta que elijas otro entorno. Elige **Cancelar**.
+4. Vuelve a **Sin entorno**.
+
+Marca un entorno como protegido con el interruptor **Protegido** de la página Entornos. Consulta
+[entornos protegidos](/docs/workspaces/protected-environments).
+
+## 8. Sin la app: las reglas [#8-without-the-app-policies]
+
+`echolot mcp serve` también se ejecuta por sí solo, para un agente en un servidor o en CI, donde nadie puede aprobar
+nada. Allí deciden las reglas, y todo lo que preguntaría se rechaza:
+
+```sh
+echolot mcp serve Alpenglow.echolot --policy readonly
+```
+
+| Regla | Qué se ejecuta | Qué pregunta (se rechaza si nadie puede responder) |
+| --- | --- | --- |
+| `standard` (predeterminada) | Lecturas y envíos seguros | Otros envíos y cambios |
+| `readonly` | Lecturas | Envíos; los cambios y las eliminaciones se rechazan |
+| `permissive` | Envíos y cambios | Eliminaciones, entornos protegidos, hosts nuevos |
+
+Sin interfaz, solo ejecuta los scripts que tenía el espacio de trabajo cuando arrancó. Más en [agentes](/docs/ai/agents) y
+[`echolot mcp`](/docs/cli/mcp).
+
+## 9. El Asistente integrado [#9-the-built-in-assistant]
+
+El propio Asistente de Echolot funciona con las mismas herramientas y las mismas aprobaciones, en un panel junto a cada
+página.
+
+1. Elige **Echolot › Ajustes…** › **Asistente**. En **Añadir un proveedor**, elige un **Proveedor** (Anthropic, OpenAI,
+   Google Gemini o un servidor compatible con OpenAI como Ollama), introduce la **Clave de API** o la **Dirección** y
+   elige **Añadir**. Las claves se guardan en el llavero.
+2. En la ventana de Alpenglow, pulsa <kbd>⌘</kbd><kbd>J</kbd> (o elige la varita al final de la cabecera de la página).
+3. Escribe en **Pregunta al asistente…**: `Send every request in Catalog and tell me which checks fail.`
+4. Antes de que algo del espacio de trabajo vaya a un proveedor por primera vez, Echolot pregunta
+   **¿Enviar a Anthropic?** (o al proveedor que hayas elegido). **Cancelar** es la opción predeterminada; elige **Permitir**.
+   Pregunta una vez por proveedor, y **Ajustes › Asistente** puede retirar el permiso. Los modelos de tu Mac o de un
+   servidor local nunca preguntan.
+5. Sus envíos pasan por la misma hoja, que dice **El agente quiere …**.
+
+**Lo que ve el modelo**, en la cabecera del panel, muestra exactamente lo que se envió al modelo. Consulta
+[el Asistente](/docs/ai/assistant).
+
+<Edition only="direct">
+  El Asistente también puede usar un agente de línea de comandos de tu Mac (**Agente CLI (ACP)**: Claude Code, Codex,
+  Gemini CLI) en la descarga directa.
+</Edition>
+
+## Siguientes pasos [#next-steps]
+
+- [Agentes](/docs/ai/agents): todos los ajustes, conjuntos de herramientas y otros clientes.
+- [Automatizar con un flujo](/docs/tutorials/automate-with-flows): ofrece un flujo a los agentes como una sola
+  herramienta, con un bloque Aprobar que pregunta a una persona.
+- [Privacidad y seguridad](/docs/privacy-and-security): qué sale de tu Mac y cuándo.

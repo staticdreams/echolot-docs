@@ -1,4 +1,5 @@
 import { createGetUrl } from 'fumadocs-core/source';
+import { i18n } from './i18n';
 
 export const appName = 'Echolot';
 export const siteUrl = 'https://docs.echolot.dev';
@@ -13,7 +14,7 @@ export const gitConfig = {
   branch: 'main',
 };
 
-const getDocsUrl = createGetUrl(docsRoute);
+const getDocsUrl = createGetUrl(docsRoute, i18n);
 
 export function getPageMarkdownUrl(page: { slugs: string[]; locale?: string }) {
   const segments = [...page.slugs];
@@ -36,7 +37,7 @@ export function decodeMarkdownUrl(segments: string[]) {
   return out;
 }
 
-const getImageUrl = createGetUrl(docsImageRoute);
+const getImageUrl = createGetUrl(docsImageRoute, i18n);
 
 export function getPageImageUrl(page: { slugs: string[]; locale?: string }) {
   const segments = [...page.slugs, 'image.webp'];

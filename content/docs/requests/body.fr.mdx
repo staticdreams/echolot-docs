@@ -1,0 +1,114 @@
+---
+title: "Corps de la requête"
+description: "Envoyez du JSON, des formulaires, des envois multipart, du GraphQL, du texte, du XML, du HTML ou un fichier entier comme corps d’une requête HTTP."
+---
+
+L’onglet **Corps** définit ce qu’une requête envoie après ses en-têtes. Choisissez le type dans la rangée en haut de
+l’onglet ; l’éditeur en dessous s’adapte. L’onglet affiche un point quand la requête a un corps.
+
+<Shot id="requests-http-body-json" alt="L’onglet Corps de Create order avec JSON choisi, les lignes de la commande dans l’éditeur et Mettre en forme à droite" />
+
+## Types de corps [#body-types]
+
+| Type | Ce qu’il envoie | Content-Type ajouté par Echolot |
+| --- | --- | --- |
+| **Aucun** | Aucun corps. | Aucun |
+| **JSON** | Le texte de l’éditeur. | `application/json` |
+| **Encodé URL** | Des paires nom-valeur, comme un formulaire web les envoie. | `application/x-www-form-urlencoded` |
+| **Multipart** | Des champs de texte et des fichiers, comme un formulaire web avec envoi de fichier les envoie. | `multipart/form-data` avec sa frontière |
+| **GraphQL** | Le texte de la requête tel quel. | `application/graphql` |
+| **Brut** | Du texte, du XML ou du HTML, à choisir dans une seconde rangée de pastilles. | `text/plain`, `application/xml` ou `text/html` |
+| **Binaire** | Un fichier, octet pour octet. | Aucun |
+
+Le Content-Type s’affiche sous **AUTOMATIQUES** dans l’onglet **En-têtes**. Pour en envoyer un autre, ajoutez votre
+propre en-tête `Content-Type` ; il remplace celui d’Echolot. Les en-têtes de longueur et de découpage sont calculés à
+l’envoi de la requête.
+
+Tout corps de texte peut contenir des `{{variables}}` et des [valeurs dynamiques](/docs/requests/dynamic-values),
+remplacées au moment de l’envoi :
+
+```json
+{
+  "lines": [{ "sku": "{{productId}}", "quantity": 1 }],
+  "note": "Sent at {{$isoTimestamp}}"
+}
+```
+
+## JSON [#json]
+
+Saisissez ou collez du JSON dans l’éditeur. Il offre des numéros de ligne, la coloration syntaxique et la liste `{{`
+pour les variables.
+
+Cliquez sur **Mettre en forme** pour indenter le JSON. Les variables restent telles qu’écrites : `{{productId}}` dans
+une chaîne ou comme valeur nue n’est pas touché. Dans un volet étroit, le bouton n’affiche que sa baguette.
+
+Pour essayer, ouvrez **Orders › Create order** dans l’exemple Alpenglow et regardez son corps, ou envoyez
+**Echo › Echo anything**, qui renvoie le corps qu’il a reçu.
+
+## Encodé URL [#url-encoded]
+
+Les champs se présentent dans un tableau de **CLÉ** et **VALEUR**, comme les en-têtes :
+
+- Cliquez sur **Ajouter un champ** pour en ajouter un. Les champs cochés sont envoyés ; les champs décochés sont
+  conservés mais pas envoyés.
+- Cliquez sur **Modifier en bloc** pour modifier tous les champs sous forme de texte, un `Name: value` par ligne, avec
+  `//` devant un champ désactivé.
+
+Echolot encode les noms et les valeurs à l’envoi, y compris ce qu’une variable insère : un `+`, un `&` ou une espace
+dans une valeur arrive donc tel quel.
+
+## Multipart [#multipart]
+
+Chaque ligne est une partie du formulaire :
+
+1. Cochez la case pour envoyer le champ.
+2. Saisissez son **nom**.
+3. Choisissez **Texte** ou **Fichier**.
+   - Pour **Texte**, saisissez la **valeur**. Elle peut contenir des `{{variables}}`.
+   - Pour **Fichier**, cliquez sur **Choisir…** et sélectionnez le fichier. Un champ sans nom prend le nom du fichier,
+     sans son extension. La partie porte le nom du fichier en tant que filename.
+4. Saisissez si vous le souhaitez un **type** de contenu pour la partie, comme `image/png`. Laissé vide
+   (`type (auto)`), un fichier en reçoit un selon son extension (`.json`, `.png`, `.pdf`, etc., sinon
+   `application/octet-stream`) et un champ de texte n’en reçoit aucun.
+
+Cliquez sur **Ajouter un champ** pour une autre ligne, et sur le bouton **−** pour en retirer une. Les fichiers sont lus
+en continu depuis le disque à l’envoi de la requête : un gros envoi n’a donc jamais besoin de tenir en mémoire.
+
+## GraphQL [#graphql]
+
+**GraphQL** envoie le texte de la requête comme corps avec `Content-Type: application/graphql`, pour les serveurs qui
+acceptent une requête de cette façon. Pour un vrai client GraphQL, avec des variables, la complétion depuis le schéma,
+l’explorateur de schéma et les abonnements, créez plutôt une **Nouvelle requête GraphQL**. Voir
+[GraphQL](/docs/requests/graphql).
+
+## Brut : texte, XML et HTML [#raw-text-xml-and-html]
+
+Choisissez **Brut**, puis **Texte**, **XML** ou **HTML** dans la rangée à côté. L’éditeur colore le XML et le HTML, et
+le Content-Type suit votre choix.
+
+## Binaire : un fichier [#binary-a-file]
+
+Choisissez **Binaire**, puis **Choisir un fichier…**, et sélectionnez le fichier à envoyer. L’onglet affiche son nom,
+sa taille et son chemin ; **Choisir un autre fichier…** le remplace. Le fichier est lu sur le disque à chaque envoi de
+la requête, quelle que soit sa taille : la requête envoie donc toujours le fichier tel qu’il est à ce moment. Tant que
+vous n’avez pas choisi de fichier, rien n’est envoyé.
+
+<Edition only="appstore">
+  L’édition App Store ne peut lire que les fichiers que vous avez choisis. Un fichier choisi dans l’onglet **Corps**
+  reste lisible pour les envois suivants. Quand une requête désigne un fichier que l’app n’a jamais reçu (un fichier
+  choisi par un collègue sur son Mac, par exemple), l’envoi s’arrête et le volet de réponse propose **Autoriser
+  l’accès…** : sélectionnez le fichier et la requête est renvoyée.
+</Edition>
+
+## Où les corps sont enregistrés [#where-bodies-are-saved]
+
+Un corps saisi est enregistré dans son propre fichier à côté de la requête, comme `create-order.body.json` à côté de
+`create-order.req.toml`, ce qui se lit bien dans Git. Un corps binaire est enregistré sous forme de chemin du fichier.
+Voir [Fichiers de l’espace de travail](/docs/reference/workspace-files).
+
+## Corps volumineux [#large-bodies]
+
+Les fichiers binaires et multipart sont lus en continu depuis le disque à l’envoi de la requête : les envois de toute
+taille partent donc sans être chargés en mémoire. Les réponses, c’est une autre affaire : elles sont écrites sur le
+disque à mesure qu’elles arrivent et restent fluides dans les visionneuses, même à plusieurs centaines de mégaoctets.
+Voir [Réponses](/docs/requests/responses#large-responses).

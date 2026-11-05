@@ -1,0 +1,48 @@
+---
+title: "Echolot"
+description: "Echolot이 무엇이고 무엇을 하는지, 그리고 이 문서를 어디서부터 읽으면 되는지 안내합니다."
+---
+
+Echolot은 API를 보내고, 테스트하고, 만들 수 있는 네이티브 Mac 앱입니다. HTTP/1.1, HTTP/2, HTTP/3, GraphQL, gRPC,
+WebSocket, Server-Sent Events, Socket.IO, MQTT, MCP를 지원하며, 원본 바이트와 모든 리디렉션, 각 단계에 걸린 시간까지
+네트워크로 오간 내용을 그대로 보여 줍니다.
+
+Echolot이 하는 일은 다음과 같습니다.
+
+- **작업 내용을 일반 파일로 보관합니다.** 작업 공간은 요청마다 하나씩 있는 읽기 쉬운 TOML 파일의 폴더이며, Git으로 관리할 수
+  있습니다. 비밀 값은 파일이 아니라 macOS 키체인에 보관됩니다.
+- **테스트하고 실행합니다.** 모든 요청에 검사를 추가하고, 실행 페이지에서 폴더나 작업 공간 전체를 실행하며, `echolot` 명령줄
+  도구로 같은 작업 공간을 CI에서도 실행합니다.
+- **설계하고 모의 서버를 만듭니다.** OpenAPI 명세를 시각적으로 또는 텍스트로 작성하고, 명세를 바탕으로 하거나 가짜 데이터로
+  직접 만든 경로를 바탕으로 한 로컬 모의 서버를 실행합니다.
+- **자동화합니다.** 요청, 조건, 반복을 캔버스에서 플로로 연결하고, 직접 실행하거나 일정에 따라, 또는 웹훅으로 실행합니다.
+- **AI와 함께 작업합니다.** 내장된 어시스턴트가 선택한 모델로 요청을 보내고, 테스트하고, 고칩니다. 외부 AI 에이전트는 Echolot의
+  자체 MCP 서버를 통해 작업 공간을 사용할 수 있습니다. 데이터를 변경하는 작업은 먼저 사용자에게 확인을 요청합니다.
+- **아주 큰 응답도 읽습니다.** 본문이 디스크로 스트리밍되므로 500 MB짜리 JSON 응답도 바로 열립니다.
+
+Echolot에는 Apple 실리콘 Mac에서 실행되는 macOS 15 이상이 필요합니다. 계정도 로그인도 없습니다.
+
+## 시작하기 [#start-here]
+
+<Cards>
+  <Card title="Echolot 설치" href="/docs/get-started/install" description="내려받고, 열고, 최신 상태로 유지합니다." />
+  <Card title="첫 번째 요청" href="/docs/get-started/first-request" description="아무것도 없는 상태에서 몇 분 만에 요청을 보내고 응답을 읽어 봅니다." />
+  <Card title="윈도우" href="/docs/get-started/the-window" description="사이드바, 페이지, 탭, 단축키를 둘러봅니다." />
+  <Card title="홈과 Sonar" href="/docs/get-started/home" description="작업 공간 개요와, 한 기간의 모든 전송을 응답 시간별로 그린 그래프입니다." />
+  <Card title="가지고 있는 자료 가져오기" href="/docs/get-started/importing" description="Postman, Insomnia, OpenAPI, HAR, cURL, Paw, Bruno에서 가져옵니다." />
+  <Card title="데모 API" href="/docs/tutorials/demo-api" description="연습용으로 demo.echolot.dev에 만들어 둔 가상의 상점입니다. REST, GraphQL, WebSocket, SSE, MCP를 지원합니다." />
+  <Card title="에디션" href="/docs/get-started/editions" description="직접 다운로드 버전과 Mac App Store 에디션을 나란히 비교합니다." />
+</Cards>
+
+## 주요 구성 요소 [#the-main-parts]
+
+<Cards>
+  <Card title="작업 공간" href="/docs/workspaces" description="폴더, 환경, 비밀 값, 기록, Git." />
+  <Card title="요청" href="/docs/requests" description="모든 프로토콜, 인증, 응답, 스크립트, 테스트, 실행 페이지." />
+  <Card title="MCP 서버" href="/docs/mcp-servers" description="모든 MCP 서버를 살펴보고, 검사하고, 호출합니다." />
+  <Card title="명세" href="/docs/specs" description="OpenAPI 문서를 설계하고 요청을 명세와 맞춰 유지합니다." />
+  <Card title="모의 서버" href="/docs/mocks" description="가짜 데이터를 돌려주는 경로 또는 명세를 바탕으로 한 로컬 서버입니다." />
+  <Card title="플로" href="/docs/flows" description="캔버스에서 요청, 조건, 반복을 연결합니다." />
+  <Card title="어시스턴트" href="/docs/ai/assistant" description="Echolot에 내장된 AI 에이전트입니다." />
+  <Card title="명령줄 도구" href="/docs/cli" description="터미널과 CI에서 전송, 실행, 가져오기, 모의 서버 실행 등을 수행합니다." />
+</Cards>

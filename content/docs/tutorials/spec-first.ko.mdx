@@ -1,0 +1,142 @@
+---
+title: "명세 우선으로 설계하고 모의 서버 만들기"
+description: "OpenAPI 명세를 가져오거나 설계하고, 린트하고, 모의 서버로 제공하고, 모의 서버로 요청을 보내고, 실제 응답을 명세와 대조하여 검사합니다."
+---
+
+명세 우선이란 OpenAPI 문서가 코드보다 먼저 나온다는 뜻입니다. API를 먼저 합의하고, 모의 서버로 시험해 보고, 실제 서버가 생기면 같은 문서로 검사합니다. 이
+튜토리얼에서는 Alpenglow 숍의 명세를 작업 공간에 추가하고, 숍에 아직 없는 엔드포인트를 설계하고, 둘 다 Mac의 모의 서버로 제공한 다음, 실제 API의 응답을
+명세와 대조하여 검사합니다.
+
+- <strong>소요 시간:</strong> 20분.
+- <strong>필요한 것:</strong> Echolot과 작업 공간. [첫 번째 작업 공간](/docs/tutorials/first-workspace)에서 만든 것이나 새 빈 작업 공간이면 됩니다.
+- <strong>배우는 내용:</strong> 명세 페이지, 린트, 명세를 따르는 요청, 모의 서버, <strong>OpenAPI 명세</strong> 검사.
+
+## 1. 명세 추가하기 [#1-add-the-spec]
+
+데모 숍은 명세를 `https://demo.echolot.dev/openapi.yaml`에 공개합니다.
+
+1. Mac에 저장합니다. 터미널에서 다음을 실행합니다.
+
+   ```sh
+   curl -o ~/Downloads/openapi.yaml https://demo.echolot.dev/openapi.yaml
+   ```
+
+   또는 Safari에서 주소를 열고 <strong>파일 › 다른 이름으로 저장…</strong>을 선택합니다.
+2. 작업 공간 윈도우에서 <strong>명세</strong>(<kbd>⌘</kbd><kbd>3</kbd>)로 전환합니다.
+3. <strong>명세 파일 추가…</strong>(빈 페이지나 사이드바의 <strong>+</strong> 메뉴에 있음)를 선택하고 `openapi.yaml`을 고릅니다. 사본이 작업 공간의 `specs` 폴더에 들어갑니다.
+
+명세가 <strong>시각적</strong> 편집기에서 열립니다. 서버, 경로나 태그별로 묶인 엔드포인트, 스키마가 보입니다. 도구 막대의 스위치로 <strong>시각적</strong>과 <strong>코드</strong> 사이를 오갑니다. 둘 다
+같은 텍스트를 편집하며, 저장되는 것은 텍스트입니다.
+
+<Callout title="처음부터 시작하기">
+  대신 <strong>새로운 명세</strong>를 선택합니다. 이름을 바꾸고 발전시킬 엔드포인트 `GET /items` 하나가 있는, 제목이 <strong>새로운 API</strong>인 OpenAPI 3.1 문서가 만들어집니다. 이
+  튜토리얼의 나머지는 똑같이 진행됩니다.
+</Callout>
+
+## 2. 숍에 없는 엔드포인트 설계하기 [#2-design-an-endpoint-the-shop-doesnt-have]
+
+숍에서 매장 목록을 원합니다. 누가 구현하기 전에 먼저 설계합니다.
+
+1. <strong>시각적</strong> 편집기에서 <strong>엔드포인트 추가</strong>를 선택합니다.
+2. <strong>새로운 엔드포인트</strong>에서 <strong>메서드</strong>는 <strong>GET</strong>으로 두고, 경로 `/stores`, 요약 `List stores`, 태그 `Catalog`를 입력합니다. <strong>엔드포인트 추가</strong>를 선택합니다.
+   Echolot이 시작점이 될 `200` 응답이 있는 작업을 추가합니다.
+3. 엔드포인트 편집기에서 <strong>작업 ID</strong>를 `listStores`로 설정합니다.
+4. <strong>코드에서 보기</strong>를 선택합니다. 엔드포인트의 `responses`를 본문과 예시로 바꿉니다.
+
+   ```yaml
+         responses:
+           '200':
+             description: The shop's stores.
+             content:
+               application/json:
+                 schema:
+                   type: array
+                   items:
+                     type: object
+                     required: [id, city]
+                     properties:
+                       id: { type: string }
+                       city: { type: string }
+                       address: { type: string }
+                 example:
+                   - { id: zrh, city: Zürich, address: Bahnhofstrasse 1 }
+                   - { id: brn, city: Bern, address: Spitalgasse 4 }
+   ```
+
+편집 내용은 하는 대로 저장되며 <kbd>⌘</kbd><kbd>Z</kbd>로 되돌릴 수 있습니다. 시각적 편집은 건드린 항목의 줄만 바꾸므로, 주석을 포함한 파일의 나머지는 작성한
+그대로 남습니다. 자세한 내용은 [명세 편집](/docs/specs/editing)에 있습니다.
+
+<Shot id="tutorials-spec-visual-editor" alt="Alpenglow 명세의 엔드포인트가 선택된 시각적 편집기의 명세 페이지" />
+
+## 3. 명세 린트하기 [#3-lint-the-spec]
+
+도구 막대의 문제 버튼에는 녹색 체크와 <strong>문제 없음</strong>, 또는 오류와 경고의 개수가 표시됩니다.
+
+1. 버튼을 선택합니다. <strong>문제</strong> 팝오버에 문서가 OpenAPI 사양을 따르고 모든 참조가 해석된다고 표시됩니다.
+2. 문제를 확인하려면 뭔가를 망가뜨려 봅니다. <strong>코드</strong>에서 한 줄의 `$ref: '#/components/schemas/Product'`를 `'#/components/schemas/Produkt'`로 바꿉니다.
+   버튼이 빨갛게 바뀝니다. 버튼을 선택하고 문제를 고르면 편집기가 해당 줄로 이동합니다.
+3. 변경을 되돌립니다(<kbd>⌘</kbd><kbd>Z</kbd>).
+
+같은 린트가 명령줄 도구로 CI에서도 실행됩니다. `--strict`는 경고에도 실패하고, `--hints`는 누락된 작업 ID 같은 조언을 추가합니다.
+
+```sh
+echolot spec lint specs/openapi.yaml --strict
+```
+
+## 4. 명세를 따르는 요청 만들기 [#4-make-requests-that-follow-the-spec]
+
+1. 명세 도구 막대에서 <strong>요청 생성</strong>을 선택합니다. <strong>요청</strong> 아래에 <strong>Alpenglow demo shop</strong> 폴더가 나타나고, 태그마다 폴더(<strong>Catalog</strong>, <strong>Auth</strong>, <strong>Orders</strong>)가 하나씩,
+   엔드포인트마다 요청이 하나씩 생깁니다. <strong>List stores</strong>도 포함됩니다.
+2. <strong>Catalog › List products</strong>를 봅니다. URL은 `{{baseUrl}}/products`입니다. <strong>테스트</strong> 탭에는 이미 명세에서 가져온 검사가 두 개 있습니다. <strong>상태</strong>가 `200`과 같음, 그리고
+   문서화된 본문의 <strong>JSON Schema</strong>입니다.
+
+폴더는 명세를 따릅니다. 나중에 명세가 바뀌면 명세 도구 막대의 <strong>요청</strong> 메뉴가 <strong>“Alpenglow demo shop” 폴더의 변경 사항 확인…</strong>을 제안합니다. 명세에서 새로 생기고, 바뀌고,
+사라진 것을 나열하고, 요청에 직접 한 편집을 덮어쓰지 않고 적용합니다. [OpenAPI 동기화](/docs/specs)를 참고하십시오.
+
+생성된 요청은 `{{baseUrl}}`(소문자 `rl`)로 시작합니다. 다음 두 단계에서 값을 지정합니다.
+
+## 5. 명세의 모의 서버 제공하기 [#5-serve-a-mock-of-the-spec]
+
+1. <strong>모의 서버</strong>(<kbd>⌘</kbd><kbd>4</kbd>)로 전환합니다. <strong>+</strong> 메뉴를 열고 <strong>Alpenglow demo shop의 모의 서버</strong>를 선택합니다.
+2. <strong>시작</strong>(<kbd>⌘</kbd><kbd>R</kbd>)을 선택합니다. 도구 막대에 녹색 점과 주소 `http://127.0.0.1:4010/v1`이 표시됩니다. 4010부터 처음 비어 있는 포트이며, 기본 경로는
+   명세의 서버에서 가져온 것입니다.
+3. <strong>환경에서 사용</strong>을 선택합니다. Echolot이 `{{baseUrl}}`이 모의 서버의 주소인 환경 <strong>Mock: Alpenglow demo shop</strong>을 만들고 선택합니다.
+
+<strong>설정</strong> 카드에는 모의 서버의 <strong>포트</strong>, <strong>네트워크의 다른 기기에 응답</strong>, 응답 전의 <strong>지연</strong>, <strong>실패</strong>의 비율(주입된 500), <strong>검사</strong>가 있습니다. <strong>명세를 위반하는
+요청 거부(이유와 함께 400 응답)</strong>가 그것입니다. 모의 서버는 윈도우가 열려 있는 동안 실행됩니다.
+
+<Shot id="tutorials-spec-mock-running" alt="Alpenglow demo shop의 모의 서버가 127.0.0.1:4010에서 실행 중인 모의 서버 페이지. 설정과 요청 로그가 있음" />
+
+## 6. 모의 서버로 요청 보내기 [#6-send-requests-to-the-mock]
+
+1. <strong>요청</strong>으로 돌아가 <strong>Catalog › List stores</strong>를 보냅니다. 모의 서버가 예시에 넣은 매장 두 곳과 함께 `200`으로 응답합니다. <strong>헤더</strong> 탭에 `Server: Echolot mock`이
+   표시됩니다.
+2. <strong>Catalog › List products</strong>를 보냅니다. 모의 서버에는 이 요청의 예시가 없으므로 스키마에서 본문을 만들어 냅니다. 올바른 구조에 자리 표시자 값이 들어 있습니다. 요청의
+   검사 두 개가 모두 통과합니다.
+3. <strong>List products</strong>의 <strong>매개변수</strong>에 `sort`를 값 `cheapest`로 추가하고 보냅니다. 모의 서버가 거부합니다. `query “sort”: not one of the allowed values`와 함께
+   `400`입니다. 명세는 `name`, `price`, `-price`, `rating`을 허용합니다. 매개변수를 제거합니다.
+4. <strong>Get a product</strong>에 헤더 `Prefer: code=404`를 추가하고 보냅니다. 모의 서버가 문서화된 `404` 문제로 대신 응답합니다. 헤더를 제거합니다.
+
+모의 서버 페이지의 <strong>로그</strong>에는 모의 서버가 응답한 모든 요청이 일치한 작업 및 문제와 함께 나열됩니다. <strong>응답</strong> 카드에서는 작업이 모든 요청에 대해 문서화된 다른 상태나
+예시로 응답하도록 설정할 수 있습니다. 상태가 필요한 응답을 위한 JavaScript 경로는 [스크립트 경로](/docs/mocks/scripted-routes)에 있습니다.
+
+## 7. 실제 API를 명세와 대조하여 검사하기 [#7-check-the-real-api-against-the-spec]
+
+1. <strong>환경</strong> 페이지에서 `Demo` 환경을 추가하고 변수 `baseUrl`을 `https://demo.echolot.dev/v1`로 설정한 뒤, 페이지 헤더에서 선택합니다.
+2. <strong>List products</strong>를 열고 <strong>테스트</strong> 탭에서 <strong>테스트 추가</strong>를 열어 <strong>OpenAPI 명세</strong>를 선택합니다. 채울 것이 없습니다. 돌아온 상태에 대해 명세가 문서화한
+   스키마와 본문을 대조하여 검사합니다.
+3. 보냅니다. 검사 세 개가 모두 통과합니다. 실제 숍은 명세와 일치합니다.
+4. <strong>List stores</strong>를 보냅니다. 실제 숍은 `404`로 응답합니다. 이 엔드포인트는 명세에만 있습니다. 명세 우선의 핵심이 이것입니다. 모의 서버가 있으면 지금 바로 이것을 기준으로
+   개발할 수 있습니다.
+
+같은 검사를 CI에서 실행하려면 [`echolot run`](/docs/cli/run)으로 폴더를 실행하고, 그곳에서 `echolot mock`으로 모의 서버를 제공합니다.
+
+```sh
+echolot mock specs/openapi.yaml --port 4010
+```
+
+## 다음 단계 [#next-steps]
+
+- [트래픽에서 명세 만들기](/docs/specs/specs-from-traffic): 이미 보내고 있는 요청으로 명세를 작성합니다.
+- [모의 서버](/docs/mocks): 기록에서 저장한 예시, 지연, 실패, 네트워크 공유.
+- [`echolot spec`](/docs/cli/spec): `check`는 폴더가 명세보다 뒤처져 있으면 CI를 실패시킵니다.

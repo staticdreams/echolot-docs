@@ -1,0 +1,122 @@
+---
+title: "echolot import et export"
+description: "Importez des commandes cURL, des collections, des specs et des fichiers HAR dans un espace de travail, et exportez un espace de travail pour d’autres outils."
+---
+
+`echolot import` transforme ce que vous avez en fichiers d’espace de travail : une commande cURL, une collection
+Postman, Insomnia, Paw ou Bruno, une spec OpenAPI ou Swagger, un fichier HAR. `echolot export` écrit un espace de
+travail, ou l’un de ses dossiers, sous forme de collection Postman, Insomnia ou Bruno, ou de copie de l’espace de
+travail Echolot. Ils font ce que font **Fichier › Importer…** et **Fichier › Exporter l’espace de travail…** dans
+l’app ; voir [importer](/docs/get-started/importing) et [exporter](/docs/workspaces/exporting).
+
+## echolot import [#echolot-import]
+
+```sh
+echolot import <file> [--workspace <workspace>] [--folder <folder>] [--format <format>]
+```
+
+`<file>` est le fichier à importer, un dossier de collection Bruno, ou `-` pour lire l’entrée standard.
+
+Le format est déterminé d’après le contenu. Une collection ou une spec arrive dans un dossier à part ; une commande
+cURL devient une requête. Les chemins de ce qui a été écrit vont sur la sortie standard, un par ligne, et un résumé sur
+la sortie d’erreur :
+
+```sh
+pbpaste | echolot import - -w Alpenglow.echolot --folder auth
+```
+
+```text
+Imported 1 request from cURL.
+note: 1 credential kept out of the workspace files but not saved, as there is no Keychain here: auth_token_token. Set ECHOLOT_SECRET_AUTH_TOKEN_TOKEN where Echolot sends.
+auth/auth-token
+```
+
+| Ce que vous importez | Nom du format |
+| --- | --- |
+| Une commande cURL | `curl` |
+| Une collection Postman | `postman-collection` |
+| Un environnement Postman | `postman-environment` |
+| Un document OpenAPI 3 (YAML ou JSON) | `openapi` |
+| Un document Swagger 2 | `swagger` |
+| Un export Insomnia | `insomnia` |
+| Un fichier HAR | `har` |
+| Un fichier Paw | `paw` |
+| La configuration d’un client MCP (ses serveurs) | `mcp-config` |
+| Une collection Bruno | le dossier lui-même, aucun format nécessaire |
+
+**Les identifiants n’entrent jamais dans les fichiers.** Les mots de passe, jetons, clés d’API et autres valeurs
+secrètes trouvés dans les réglages d’authentification et les en-têtes d’identifiants deviennent des variables secrètes,
+nommées d’après la requête et le champ (`me_password`), et le fichier conserve `{{me_password}}`. Sur un Mac, elles
+vont dans le trousseau. Sans trousseau (Linux, CI, `ECHOLOT_KEYCHAIN=0`), la valeur est écartée et Echolot nomme la
+variable `ECHOLOT_SECRET_<NAME>` à définir. Le rapport nomme les secrets, jamais leurs valeurs.
+
+L’import d’une spec crée un dossier qui suit la spec. Echolot l’indique (`note: the folder follows …`) ; gardez-le à
+jour avec [`echolot spec check` et `apply`](/docs/cli/spec).
+
+### Options [#options]
+
+| Option | Signification |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Le dossier de l’espace de travail (celui qui contient `workspace.toml`). Par défaut : le dossier courant. |
+| `--folder <path>` | Importer dans ce dossier de l’espace de travail, comme `users/admin`. |
+| `--format <format>` | Ignorer la détection : `curl`, `postman-collection`, `postman-environment`, `openapi`, `swagger`, `insomnia`, `har`, `paw` ou `mcp-config`. |
+
+## echolot export [#echolot-export]
+
+```sh
+echolot export <output> [--workspace <workspace>] [--folder <folder>] --format <format> [--no-environments] [--force]
+```
+
+`<output>` est l’endroit où écrire : un fichier pour Postman et Insomnia, un dossier pour Bruno, pour un espace de
+travail Echolot, et pour Postman avec les environnements.
+
+```sh
+echolot export /tmp/alpenglow.postman_collection.json -w Alpenglow.echolot --format postman
+```
+
+```text
+Exported 21 requests, 7 folders, 3 environments as Postman Collection v2.1.
+warning: 8 requests left out: Postman Collection v2.1 has no MCP requests. …
+  left out: realtime/order-updates
+  left out: inventory/reserve-stock
+  …
+warning: Response captures (Store in a Variable) are not exported; other tools set variables from scripts.
+warning: 1 password, token or key is written in clear: it is typed into an auth or header field rather than kept in a secret variable. Move it to the Keychain before sharing the file.
+/tmp/alpenglow.postman_collection.json
+```
+
+| Format | Accepte | Écrit |
+| --- | --- | --- |
+| `echolot` | Tous les types de requêtes | Un nouveau dossier d’espace de travail avec son propre ID. L’export d’un dossier conserve les dossiers qui le contiennent. |
+| `postman` | HTTP et GraphQL | Un fichier Postman Collection v2.1, ou un dossier avec la collection et ses environnements. |
+| `insomnia` | HTTP, GraphQL, WebSocket, Socket.IO et gRPC | Un fichier Insomnia v5. |
+| `bruno` | HTTP et GraphQL | Un dossier de collection Bruno. |
+
+Ce pour quoi un format n’a pas de place est nommé sur la sortie d’erreur : les requêtes qu’il ne peut pas contenir
+(`left out:`), et les éléments qui changent en route, comme les captures de réponse ou les valeurs dynamiques que
+l’autre outil n’a pas.
+
+**Les valeurs secrètes ne sont jamais écrites.** Les variables secrètes sortent par leur nom seulement. Echolot
+signale tout identifiant saisi dans un champ d’authentification ou d’en-tête au lieu d’être conservé dans une variable
+secrète, puisque celui-là est écrit tel quel.
+
+Echolot n’écrit jamais par-dessus l’espace de travail que vous exportez, ni dedans, ni autour, et il ne remplace jamais
+rien au chemin de sortie sans `--force` ; ce qu’il remplace va dans la corbeille.
+
+### Options [#options]
+
+| Option | Signification |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Le dossier de l’espace de travail. Par défaut : le dossier courant. |
+| `--folder <path>` | Exporter seulement ce dossier de l’espace de travail, comme `users/admin`. |
+| `--format <format>` | `echolot`, `postman`, `insomnia` ou `bruno`. Obligatoire. |
+| `--no-environments` | Ne pas exporter les environnements. |
+| `--force` | Remplacer ce qui se trouve au chemin de sortie. |
+
+## Codes de sortie [#exit-codes]
+
+| Code | Quand |
+| --- | --- |
+| `0` | Importé ou exporté. Les avertissements n’y changent rien. |
+| `1` | Le fichier n’a pas pu être lu ou écrit. |
+| `64` | Un format inconnu, ou un chemin de sortie qui existe sans `--force`. |

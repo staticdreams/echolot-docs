@@ -1,0 +1,82 @@
+---
+title: "演示 API"
+description: "位于 demo.echolot.dev 的虚构户外装备商店 Alpenglow，用于体验 Echolot 的每个部分。"
+---
+
+**https://demo.echolot.dev** 是专为学习 Echolot 而做的 API：Alpenglow，一家位于苏黎世和伯尔尼的户外装备商店。其中没有任何隐私内容，发送给它的任何内容也不会被存储。`GET https://demo.echolot.dev/` 会列出所有端点。
+
+## 登录 [#sign-in]
+
+演示账号是 `heidi@alpenglow.ch`，密码为 `alpenglow`：
+
+```http
+POST https://demo.echolot.dev/v1/auth/token
+Content-Type: application/json
+
+{ "email": "heidi@alpenglow.ch", "password": "alpenglow" }
+```
+
+响应中带有 `access_token`（一个 JWT，有效期一小时）。把它以 `Authorization: Bearer <token>` 的形式发送到 `/v1/me` 和 `/v1/orders`。同一个端点也接受 OAuth 2 客户端凭据：客户端 ID 为 `alpenglow-demo`，客户端密钥为 `demo-secret`。
+
+## 商店 [#the-shop]
+
+| 端点 | 作用 |
+| --- | --- |
+| `GET /v1/products` | 商品，支持 `q`、`category`、`tag`、`in_stock=true`、`sort`（`name`、`price`、`-price`、`rating`）、`page` 和 `per_page`。分页信息位于 `Link` 和 `X-Total-Count` 标头中。 |
+| `GET /v1/products/{sku}` | 单个商品，例如 `TNT-MH-2P`，带有 `ETag`（发送 `If-None-Match` 可得到 304）。 |
+| `GET /v1/products/export` | 40,000 个商品，约 14 MB：可用来试用大型响应的查看器。 |
+| `GET /v1/categories` | 分类及其商品数量。 |
+| `GET /v1/me` | 已登录的用户。 |
+| `GET /v1/orders` | Heidi 的订单；`?status=shipped`。 |
+| `POST /v1/orders` | `{"lines": [{"sku": "TNT-MH-2P", "quantity": 1}]}`。成功时返回 201 和 `Location`，出错时返回 422 并说明问题所在；使用相同的 `Idempotency-Key` 会再次返回同一个订单。 |
+| `GET /v1/orders/{id}` | 单个订单，例如 `ord_7Hk2Lw`。 |
+| `DELETE /v1/orders/{id}` | 取消：204，订单已发货时为 409。实际上不会有任何改变。 |
+
+错误以问题详情（`application/problem+json`）的形式返回，说明出了什么问题。商店的 OpenAPI 规范位于 `https://demo.echolot.dev/openapi.yaml`。
+
+## GraphQL [#graphql]
+
+`POST https://demo.echolot.dev/v1/graphql`，支持内省，因此 Echolot 会在你输入时补全字段。Schema 位于 `/shop.graphql`。
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } stock { warehouse available } }
+  }
+}
+```
+
+## 实时事件 [#live-events]
+
+- **WebSocket** `wss://demo.echolot.dev/v1/orders`：每 1.5 秒一个订单事件。发送 `{"op": "subscribe", "channel": "orders"}`、`{"op": "ping"}`，或任何带有 `id` 的 JSON，即可得到确认。会话持续三分钟；消息最大 8 KB，十秒内最多 20 条。
+- **服务器发送事件**（Server-Sent Events）`GET https://demo.echolot.dev/v1/orders/events`：间隔一秒的 20 个事件，然后是 `end`。发送 `Last-Event-ID` 可继续接收。
+
+## MCP [#mcp]
+
+`https://demo.echolot.dev/mcp` 是一个基于 Streamable HTTP 的 MCP 服务器。在“MCP 服务器”页面添加它，即可试用它的工具（`search_catalog`、`get_product`、`order_status`）、一个资源和一个提示词。
+
+## Echo [#echo]
+
+用于试用请求编辑器的端点：
+
+| 端点 | 作用 |
+| --- | --- |
+| `/echo/anything` | 返回你发送的方法、查询、标头和正文。 |
+| `/echo/headers` | 返回你发送的标头。 |
+| `/echo/status/{code}` | 以该状态应答。 |
+| `/echo/delay/{seconds}` | 最多等待 5 秒，然后回显。 |
+| `/echo/redirect/{n}` | `n` 次重定向，然后是 `/echo/anything`。 |
+| `/echo/cookies`、`/echo/cookies/set?name=value`、`/echo/cookies/delete?name` | 显示、设置和删除 Cookie。 |
+| `/echo/basic-auth/{user}/{password}` | Basic 认证匹配时返回 200，否则返回 401。 |
+| `/echo/bearer` | 带有任意 Bearer 令牌时返回 200，否则返回 401。 |
+| `/echo/bytes/{n}` | `n` 个随机字节，最多 1 MB。 |
+| `/echo/xml`、`/echo/html` | 一个 XML 文档和一个 HTML 页面。 |
+
+## 限制 [#limits]
+
+演示服务是共用的，所以每个地址都有限制：每分钟 120 个请求，导出、`bytes`、`delay`、WebSocket 和 SSE 为每分钟 10 个。超出限制时会收到带有 `Retry-After` 的 `429 Too Many Requests`。正文最大 64 KB。
+
+gRPC、Socket.IO 和 MQTT 无法在那里运行；它们的教程使用你在 Mac 上运行的小型服务器。
+
+演示 API 的源代码位于[文档仓库](https://github.com/staticdreams/echolot-docs/tree/main/demo-api)。

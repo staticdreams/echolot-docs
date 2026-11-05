@@ -1,0 +1,98 @@
+---
+title: "Capturas de respuesta"
+description: "Guarda valores de una respuesta, como un token o un ID, en variables tras cada envío, para que el resto de solicitudes lean siempre el último."
+---
+
+Una captura guarda un valor de la respuesta de una solicitud en una variable, tras cada envío. Captura el token de acceso
+de una respuesta de inicio de sesión en `{{token}}` y todas las solicitudes que usan `{{token}}` envían el más reciente,
+sin copiar nada. Cuando el token se renueva, todas reciben el nuevo.
+
+Las capturas se guardan con la solicitud, así que funcionan para todas las personas que tienen el espacio de trabajo, en
+la Ejecución y en los flujos, además de cuando haces clic en **Enviar**.
+
+## Guarda un valor de la respuesta [#store-a-value-from-the-response]
+
+La forma más rápida de crear una captura es desde la propia respuesta:
+
+1. Envía la solicitud. En el ejemplo Alpenglow, envía **Auth › Sign in**.
+2. En la pestaña **Cuerpo**, elige **Árbol JSON** (o **Formulario**, **MessagePack** o **XML** para esos cuerpos).
+3. Pasa el puntero por el valor, como `access_token`, y haz clic en **Guardar en una variable…**.
+4. Escribe un **Nombre de la variable**, o conserva el que se sugiere a partir de la ruta. Los nombres que ya están en
+   uso se ofrecen mientras escribes; elegir uno sustituye esa variable (el panel dice **Reemplaza token**).
+5. En **Guardar en**, elige el entorno de la ventana (**Entorno “Staging”**) o **Espacio de trabajo**.
+6. Marca **Secreto** para guardar el valor solo en el llavero, nunca en archivos. Viene marcado para los nombres que
+   parecen credenciales (`token`, `secret`, `password`, `apiKey` y similares).
+7. Deja marcado **Actualizar en cada envío** para convertirlo en una captura de la solicitud, guardada con ella. Desmárcalo
+   para guardar el valor una sola vez.
+8. Haz clic en **Guardar**.
+
+<Shot id="requests-http-store-variable" alt="El panel Guardar en una variable sobre el árbol JSON de Sign in: la ruta $.access_token, el nombre de variable token, Guardar en Espacio de trabajo, y Secreto y Actualizar en cada envío marcados" />
+
+## Edita las capturas [#edit-captures]
+
+Las capturas de una solicitud están en su pestaña **Variables**, bajo **De la respuesta**, debajo de las variables propias
+de la solicitud. Cada fila es una captura:
+
+| Columna | Qué contiene |
+| --- | --- |
+| Casilla | Si la captura se ejecuta. |
+| **Variable** | El nombre de la variable, sin llaves. |
+| **Origen** | De dónde de la respuesta se lee el valor. |
+| **Ruta o nombre** | Un JSONPath, un XPath, o el nombre de una cabecera o de una cookie. |
+| **Guardado en** | **Entorno** (el elegido para la ventana cuando se envía la solicitud) o **Espacio de trabajo**. |
+| **Secreto** | Se guarda en el llavero de este Mac, nunca en los archivos del espacio de trabajo. Una variable que ya es secreta lo sigue siendo. |
+
+Haz clic en **Añadir valor** para una fila nueva, y en el botón **−** para eliminar una. Tras un envío, cada fila muestra
+una marca verde cuando guardó su valor, o un aviso naranja con el motivo cuando no lo hizo.
+
+### De dónde vienen los valores [#where-values-come-from]
+
+| Origen | Ruta o nombre | Ejemplo |
+| --- | --- | --- |
+| **JSON** | Un JSONPath en un cuerpo JSON. | `$.access_token` |
+| **Formulario** | Un JSONPath en un cuerpo URL-encoded, leído como objeto. | `$.access_token` |
+| **MessagePack** | Un JSONPath en un cuerpo MessagePack, leído como JSON. | `$.access_token` |
+| **XML** | Un XPath en un cuerpo XML. | `/auth/token` |
+| **Cabecera** | Una cabecera de la respuesta, por su nombre. | `Location` |
+| **Cookie** | Una cookie que establece la respuesta, por su nombre. | `session` |
+| **Estado** | El código de estado. | |
+| **Cuerpo** | El cuerpo entero, como texto. | |
+
+## Entorno o espacio de trabajo [#environment-or-workspace]
+
+- **Entorno** escribe la variable en el entorno elegido para la ventana en el momento del envío. Úsalo para valores que
+  difieren según el servidor, como un token de staging y uno de producción. Si no hay ningún entorno elegido, no se guarda
+  nada y la fila indica que elijas uno o que guardes en el espacio de trabajo.
+- **Espacio de trabajo** escribe una variable del espacio de trabajo, la misma sea cual sea el entorno elegido.
+
+El valor de un entorno prevalece sobre el del espacio de trabajo para el mismo nombre, así que una captura en el espacio
+de trabajo queda oculta cuando el entorno elegido tiene una variable con ese nombre. Consulta
+[Entornos](/docs/workspaces/environments).
+
+## Secretos [#secrets]
+
+Un secreto capturado se escribe solo en el llavero. El archivo del espacio de trabajo nombra la variable, pero nunca
+contiene su valor, así que puedes subir el espacio de trabajo al repositorio. Activa **Secreto** para todo token, ID de
+sesión o clave que captures. Consulta [Secretos](/docs/workspaces/secrets).
+
+En Alpenglow, **Auth › Sign in** captura `$.access_token` en el secreto del espacio de trabajo `token`, y la carpeta
+**Orders** lo envía como token Bearer.
+
+## Cuando no se captura nada [#when-nothing-is-captured]
+
+Una captura deja su variable como estaba, e indica el motivo tras el envío, cuando:
+
+- el estado de la respuesta es 400 o superior: solo se conservan valores de respuestas por debajo de 400, así que un
+  inicio de sesión fallido nunca sobrescribe un buen token,
+- la ruta no encuentra nada en la respuesta,
+- el cuerpo supera los 32 MB,
+- guarda en el entorno y no hay ningún entorno elegido,
+- no se permite la escritura: cuando un agente de IA envía la solicitud, sus reglas deciden si puede cambiar variables.
+  Consulta [Agentes](/docs/ai/agents).
+
+## Capturas o valores de respuesta [#captures-or-response-values]
+
+Los [valores dinámicos](/docs/requests/dynamic-values#values-from-other-requests-responses) como
+`{{$response('auth/sign-in', '$.access_token')}}` leen directamente la última respuesta de una solicitud y, si no tiene
+ninguna, la envían antes. En cambio, una captura copia el valor en una variable, lo que conviene a un valor que usan
+muchas solicitudes o que varias solicitudes pueden renovar. Ambos leen los mismos JSONPath y XPath.

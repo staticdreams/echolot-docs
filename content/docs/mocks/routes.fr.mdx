@@ -1,0 +1,228 @@
+---
+title: "Routes et données fictives"
+description: "Créez les routes d’un mock à la main, avec des réponses JSON, XML ou texte, des données fictives qui changent à chaque requête, des règles qui choisissent une réponse, et des requêtes créées à partir des routes."
+---
+
+Une route est une méthode et un chemin, et ce que le mock répond à cet endroit. Créez des routes à la main quand il n’y a
+pas encore de spec, quand il vous faut quelques endpoints pour développer ou tester, ou pour répondre autrement que la spec
+sur un chemin. Les corps s’écrivent tels qu’ils sont envoyés, en JSON, en XML ou en texte, et peuvent contenir des données
+fictives régénérées à chaque requête.
+
+Les routes créées à la main répondent après les [routes en JavaScript](/docs/mocks/scripted-routes) du mock et avant les
+opérations de sa spec, s’il en sert une. Voir
+[quelle réponse reçoit une requête](/docs/mocks#which-response-a-request-gets).
+
+## Créer une route [#making-a-route]
+
+Sur la [page Mocks](/docs/mocks), créez un mock avec **Nouveau mock** (il démarre avec une route `GET /users` de cinq
+utilisateurs fictifs), ou ouvrez un mock existant. La carte **Routes** liste ses routes :
+
+- La case à cocher désactive une route sans la supprimer ; une route désactivée ne répond à rien.
+- Cliquez sur une route pour la modifier sous la liste.
+- **Ajouter une route** en ajoute une nouvelle après la route sélectionnée.
+- Faites un clic droit sur une route pour **Dupliquer**, **Créer une requête**, **Copier l’adresse** (pendant que le mock
+  tourne), **Monter**, **Descendre** et **Supprimer la route**.
+
+Chaque modification est enregistrée immédiatement, et un mock en cours d’exécution répond aussitôt avec. **Édition ›
+Annuler** annule n’importe quelle modification, y compris la suppression d’une route. Quand deux routes activées ont la
+même méthode et le même chemin, la carte vous prévient : seule la première répond.
+
+<Shot id="mocks-route-editor" alt="L’éditeur de la route GET /users/{id} : sa méthode, son chemin et son résumé, les réponses 200 OK (par défaut) et 404 Not found, et pour la réponse OK son type de contenu, un en-tête X-Request-Id valant {{$randomUUID}}, et un corps JSON avec request.params.id et des valeurs fictives" />
+
+### Méthode, chemin et résumé [#method-path-and-summary]
+
+- **Route** : la méthode (**GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS**, ou **ANY** pour
+  toutes les méthodes) et le chemin. Une requête `HEAD` va à une route **GET**, sans le corps.
+- Les **paramètres de chemin** s’écrivent `{id}` ou `:id`, un par partie du chemin : `/users/{id}`, `/files/{name}.json`.
+  `:id` est enregistré sous la forme `{id}`. Une route avec une partie littérale l’emporte sur une route avec un
+  paramètre : `/users/me` répond avant `/users/{id}`.
+- Le **Résumé** dit à quoi sert la route. Les requêtes créées à partir de la route le prennent comme nom.
+
+## Réponses [#responses]
+
+Une route a une ou plusieurs réponses. Les pastilles sous **RÉPONSES** permettent de passer de l’une à l’autre ; **+** en
+ajoute une. Chaque réponse a :
+
+| Champ | Ce que c’est |
+| --- | --- |
+| **Nom** | Comment les requêtes et les règles la désignent, par exemple `OK` ou `Not found`. Les noms sont uniques au sein d’une route. |
+| **État** | Le code d’état, de 100 à 999. |
+| **Content-Type** | Le `Content-Type` envoyé, par exemple `application/json` ou `application/xml` ; le menu à côté propose les types courants. Vide, il n’en envoie aucun. Il détermine aussi comment les valeurs du corps sont échappées. |
+| **En-têtes** | Les en-têtes envoyés avec elle. Les valeurs peuvent contenir des données fictives et des éléments de la requête, comme le corps. |
+| **Règles** | Quand cette réponse répond à la place de celle par défaut. Voir [choisir une réponse](#choosing-a-response). |
+| **Corps** | Ce qui est envoyé, avec numéros de ligne et couleurs pour JSON, XML et HTML. |
+
+La réponse marquée d’une coche est la réponse **Par défaut** de la route ; **Définir par défaut** sur une autre la
+change. Le bouton corbeille supprime une réponse.
+
+### Choisir une réponse [#choosing-a-response]
+
+Une requête vers une route reçoit, dans cet ordre :
+
+1. La réponse qu’elle demande : un en-tête `Prefer: example=Not found` ou `Prefer: code=404`, ou les en-têtes
+   `x-mock-response-name` et `x-mock-response-code` de Postman.
+2. La première réponse dont toutes les règles sont vérifiées.
+3. La réponse par défaut de la route : celle que vous avez définie par défaut avec **Définir par défaut**, quelles que
+   soient ses règles. Sur une route où vous n’en avez pas choisi, une première réponse dont les règles n’étaient pas
+   vérifiées cède la place à la première réponse sans règles : « 409 pour la commande expédiée » en tête de liste ne
+   répond donc pas à toutes les autres commandes.
+
+Une **règle** examine une partie de la requête :
+
+| Règle | Nom | Exemple |
+| --- | --- | --- |
+| **Paramètre de chemin** | Le paramètre du chemin | `id` vaut `0` |
+| **Paramètre de requête** | Le paramètre de requête | `page` vaut `*` |
+| **En-tête** | L’en-tête, quelle que soit la casse | `X-Role` vaut `admin` |
+| **Champ du corps** | Un chemin de clés dans un corps JSON, avec des nombres pour les éléments d’une liste ; vide pour tout le corps | `user.plan` vaut `pro`, `items.0.sku` vaut `TNT-MH-2P` |
+
+La valeur est le texte que la partie doit avoir. `*` signifie n’importe quelle valeur, tant qu’il y en a une ; une valeur
+vide signifie que la partie doit être absente. Une réponse qui a plusieurs règles ne répond que si toutes sont vérifiées.
+Une règle sans nom est ignorée tant que vous ne lui en donnez pas un.
+
+Par exemple, une route `GET /users/{id}` peut répondre `200` avec un utilisateur par défaut, et une réponse `404` avec la
+règle **Paramètre de chemin** `id` vaut `0` :
+
+```sh
+curl -i http://127.0.0.1:4010/users/42    # 200, the user
+curl -i http://127.0.0.1:4010/users/0     # 404
+```
+
+<Shot id="mocks-route-rule" alt="La réponse 404 Not found de GET /users/{id} avec Définir par défaut, et sa règle : Paramètre de chemin id vaut 0" />
+
+## Corps avec des données fictives [#bodies-with-fake-data]
+
+Tout ce qui est entre `{{ }}` dans un corps ou dans la valeur d’un en-tête est rempli à l’arrivée de la requête : chaque
+requête peut donc recevoir de nouvelles données. Le reste du corps est envoyé tel que vous l’avez écrit.
+
+```json
+{
+  "id": "{{request.params.id}}",
+  "name": "{{$randomFullName}}",
+  "email": "{{$randomEmail}}",
+  "company": "{{$randomCompanyName}}",
+  "joined": "{{$randomDatePast}}"
+}
+```
+
+### Valeurs fictives [#fake-values]
+
+`{{$randomFirstName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomUUID}}` et environ 120
+autres : noms et métiers, internet, adresses, numéros de téléphone, entreprises, finance, produits, dates, mots, lorem
+ipsum, fichiers, images et bases de données. Les noms sont les variables dynamiques de Postman : les modèles écrits pour
+Postman fonctionnent donc ici. Certaines prennent des arguments : `{{$randomInt(1, 100)}}`, `{{$randomPrice(5, 50)}}`,
+`{{$randomLoremWords(5)}}`, `{{$randomElement(active, paused, closed)}}`.
+[Valeurs dynamiques](/docs/reference/dynamic-values#fake-data) les liste toutes.
+
+**Insérer une valeur** au-dessus du corps place une valeur fictive à l’endroit du curseur : **Données fictives** les
+regroupe par catégorie.
+
+Les mêmes valeurs fonctionnent dans les requêtes, où elles sont générées à chaque envoi. Voir
+[valeurs dynamiques](/docs/requests/dynamic-values).
+
+### Éléments de la requête [#parts-of-the-request]
+
+| Jeton | Ce que c’est |
+| --- | --- |
+| `{{request.params.id}}` | Un paramètre de chemin. |
+| `{{request.query.page}}` | Un paramètre de requête ; vide s’il n’y en a pas. |
+| `{{request.headers.X-Trace}}` | Un en-tête, quelle que soit la casse. |
+| `{{request.body.user.name}}` | Un champ d’un corps JSON, par chemin de clés (`items.0.sku` pour un élément de liste). Le texte tel quel ; les nombres, `true`, `false`, les objets et les listes en JSON. |
+| `{{request.body}}` | Tout le corps, en texte. |
+| `{{request.method}}` | La méthode, par exemple `POST`. |
+| `{{request.path}}` | Le chemin, par exemple `/users/42`. |
+
+**Insérer une valeur › Requête** les propose, avec les paramètres de chemin de la route.
+
+### Listes [#lists]
+
+`{{#repeat 10}}` … `{{/repeat}}` écrit ce qui se trouve entre les deux autant de fois ; `{{#repeat 2 8}}` un nombre de
+fois compris entre les deux, choisi à chaque requête. Dans un corps JSON, les éléments sont séparés par des virgules à
+votre place. À l’intérieur, `{{@number}}` est le numéro de l’élément à partir de 1 et `{{@index}}` à partir de 0. Les
+répétitions peuvent être imbriquées.
+
+```json
+[
+  {{#repeat 5}}
+  {
+    "id": {{@number}},
+    "name": "{{$randomProductName}}",
+    "price": {{$randomPrice}}
+  }
+  {{/repeat}}
+]
+```
+
+Un `{{#repeat}}` ou un `{{/repeat}}` seul sur sa ligne ne laisse pas de ligne vide derrière lui.
+
+### Échappement [#escaping]
+
+Les valeurs sont échappées selon l’endroit où elles arrivent : un nom contenant un guillemet ne casse donc jamais votre
+JSON :
+
+- Dans un corps JSON (un `Content-Type` contenant `json`), les valeurs à l’intérieur d’une chaîne sont échappées comme du
+  JSON. Une valeur hors des guillemets, comme `{{$randomInt}}` ou `{{@number}}`, est insérée telle quelle.
+- En XML et en HTML (un `Content-Type` contenant `xml` ou `html`), `&`, `<`, `>` et les guillemets sont échappés partout.
+- Les triples accolades n’échappent jamais : `{{{request.body}}}` insère le corps JSON de la requête en JSON.
+
+```json
+{ "received": {{{request.body}}}, "at": "{{$isoTimestamp}}" }
+```
+
+Les jetons qu’Echolot ne connaît pas restent tels que vous les avez écrits. Une valeur qu’il ne peut pas produire, comme
+`{{$randomInt(9, 1)}}`, reste aussi telle quelle, et le [journal](/docs/mocks#the-log) en donne la raison. Un corps
+s’arrête à 16 Mo et une répétition à 10 000 éléments.
+
+Les corps ne lisent rien d’autre : ni variables, ni environnements, ni secrets, ni fichiers de l’espace de travail ;
+un mock qui répond sur le réseau ne peut donc en divulguer aucun.
+
+### Données fixes : Générer [#fixed-data-generate]
+
+Les valeurs entre `{{ }}` donnent de nouvelles données à chaque requête. Pour répondre avec les mêmes données à chaque
+fois, cliquez sur **Générer…** au-dessus du corps :
+
+- Avec **Créer une liste : le corps est un élément**, le corps devient une liste JSON de ce nombre d’**Éléments**, chacun
+  créé à partir du corps.
+- Sans cette option, les valeurs du corps sont remplies une seule fois.
+
+**Générer** remplace le corps par le résultat ; **Édition › Annuler** rétablit le modèle. Depuis Terminal,
+[`echolot fake`](/docs/cli/fake) fait de même.
+
+## Requêtes à partir de routes [#requests-from-routes]
+
+**Créer des requêtes** dans la carte **Routes** crée un dossier portant le nom du mock avec une requête pour chaque route
+activée ; **Créer une requête** dans le menu contextuel d’une route en crée une pour cette route. Echolot ouvre la
+première requête.
+
+- Le dossier a une variable `baseUrl` réglée sur l’adresse du mock, et chaque URL commence par elle :
+  `{{baseUrl}}/users/{{id}}`. Faites pointer `baseUrl` vers la vraie API plus tard et les mêmes requêtes y vont.
+- Les paramètres de chemin deviennent des variables de requête, valant `1` sauf si une règle de chemin de la réponse par
+  défaut nomme une valeur.
+- La requête porte le nom du résumé de la route.
+- Le corps de requête de la route l’accompagne.
+
+### Le corps de requête d’une route [#the-request-body-of-a-route]
+
+**Corps de la requête**, au bas d’une route, contient un corps et son **Content-Type** pour les requêtes créées à partir de
+la route, par exemple le JSON qu’accepte un `POST /users`. Il ne change pas ce que le mock répond ; les règles sur les
+champs du corps lisent ce que les requêtes envoient réellement.
+
+## Avec des agents [#with-agents]
+
+Quand l’ensemble d’outils **Mocks** est activé, les agents et l’[Assistant](/docs/ai/assistant) créent aussi des routes.
+Demandez ce qu’il vous faut :
+
+- « Créez un mock avec des routes pour lister, lire et créer des commandes, avec des données fictives, et démarrez-le. »
+- « Ajoutez un 404 à `GET /users/{id}` quand l’id vaut 0. »
+- « Créez des requêtes pour les routes du mock. »
+
+Ils utilisent `create_mock` (avec un nom et des routes, sans spec), `save_mock_route`, `delete_mock_route`,
+`generate_fake_data`, `list_fake_values` et `create_requests_from_mock`. `save_mock_route` peut aussi transformer une
+réponse de l’[historique](/docs/workspaces/history) en route ; ce qu’il copie est masqué comme tout ce que les agents
+lisent. Un agent qui supprime une route vous demande d’abord. Voir [Agents](/docs/ai/agents).
+
+## Dans l’espace de travail [#in-the-workspace]
+
+Les routes vivent dans le fichier du mock, `mocks/<name>.toml`, sous la forme `[[routes]]` avec leurs
+`[[routes.responses]]` : lisibles dans un diff et partagées par Git. Voir
+[fichiers de l’espace de travail](/docs/reference/workspace-files#mocks).

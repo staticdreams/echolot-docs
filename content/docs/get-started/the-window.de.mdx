@@ -1,0 +1,204 @@
+---
+title: "Das Fenster"
+description: "Ein Rundgang durch das Echolot-Fenster, seine Seitenleiste, Seiten, Tabs und Panels, mit den Tastenkürzeln für jedes."
+---
+
+Jeder Arbeitsbereich öffnet sich in einem eigenen Fenster. Das Fenster hat zwei Teile: die **Seitenleiste** links und
+das **Inhaltspanel** rechts, das unter seinem Seitenkopf jeweils eine Seite zeigt.
+
+<Shot id="get-started-window" alt="Ein Echolot-Fenster: die Seitenleiste mit Start, Suchen, der Modulauswahl und dem Anfragenbaum sowie rechts eine Anfrage mit ihrer Antwort" />
+
+## Das Willkommensfenster [#the-welcome-window]
+
+Ist kein Arbeitsbereichsfenster geöffnet, zeigt Echolot sein Willkommensfenster: **Neuer Arbeitsbereich …**,
+**Arbeitsbereich öffnen …**, **Beispiele öffnen** und deine letzten Arbeitsbereiche. Unter dem Namen steht die Version
+mit einem Link **Neuigkeiten**. Arbeitsbereiche, die du aus dem Finder öffnest (ein Doppelklick auf einen
+`.echolot`-Ordner), gehen direkt in ein Arbeitsbereichsfenster.
+
+## Die Seitenleiste [#the-sidebar]
+
+Von oben nach unten:
+
+- **Start** und **Suchen**, neben den Knöpfen des Fensters. **Start** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd>) ist die
+  Übersicht des Arbeitsbereichs: Zahlen zu Anfragen, Ordnern, Umgebungen, Variablen und Prüfungen, deine letzten
+  Anfragen, die neuesten Antworten, der Stand der Tests und die Umgebungen, darüber die Karte **Sonar**, die jedes
+  Senden der letzten Stunde, des letzten Tages, der letzten Woche oder des letzten Monats danach zeichnet, wie lange es
+  dauerte. Siehe [Start und Sonar](/docs/get-started/home). **Suchen** öffnet die
+  [Befehlspalette](#the-command-palette) (<kbd>⌘</kbd><kbd>K</kbd>).
+- **Die Modulauswahl**, die bestimmt, was die Seitenleiste auflistet. Jedes Modul hat eine eigene Seite.
+- **Die Listen des Moduls.**
+- **Die Arbeitsbereichsauswahl** am Fuß.
+
+<kbd>⌘</kbd><kbd>B</kbd> (**Ansicht › Seitenleiste ausblenden**) blendet die Seitenleiste aus und ein. Ziehe ihren
+rechten Rand, um sie breiter oder schmaler zu machen.
+
+### Module [#modules]
+
+| Modul | Tastenkürzel | Die Seitenleiste listet | Mehr dazu |
+| --- | --- | --- | --- |
+| **Anfragen** | <kbd>⌘</kbd><kbd>1</kbd> | **Tests** und **Ausführung** mit ihrem Stand, dann deine Ordner und Anfragen | [Anfragen](/docs/requests) |
+| **MCP-Server** | <kbd>⌘</kbd><kbd>2</kbd> | Die MCP-Server des Arbeitsbereichs | [MCP-Server](/docs/mcp-servers) |
+| **Specs** | <kbd>⌘</kbd><kbd>3</kbd> | OpenAPI-Dokumente und `.proto`-Dateien | [Specs](/docs/specs) |
+| **Mocks** | <kbd>⌘</kbd><kbd>4</kbd> | Mock-Server | [Mocks](/docs/mocks) |
+| **Flows** | <kbd>⌘</kbd><kbd>5</kbd> | Flows | [Flows](/docs/flows) |
+
+Wechselst du zu einem Modul, kehrst du zu dem zurück, was es zuletzt zeigte. Ein Klick auf eine Zeile in einer Liste
+öffnet sie auf der Seite des Moduls.
+
+### Der Anfragenbaum [#the-requests-tree]
+
+Im Modul „Anfragen“ fügt der Knopf **+** neben **Anfragen** eine Anfrage beliebiger Art hinzu (HTTP, GraphQL, WebSocket,
+Socket.IO, MQTT, gRPC oder einen MCP-Aufruf), einen Ordner oder Importe und Exporte. Ordner- und Anfragezeilen haben
+eigene Menüs (Rechtsklick) mit **Neue Anfrage**, **Neuer Ordner**, **Ordnereinstellungen …**, **Umbenennen**,
+**Duplizieren**, **Nach oben**, **Nach unten**, **Im Finder anzeigen** und **In den Papierkorb legen …**.
+
+- Ziehe Zeilen, um sie neu zu ordnen oder in Ordner zu verschieben. Dort, wo sie landen, öffnet sich eine Lücke, und
+  wenn du über einem geschlossenen Ordner verweilst, öffnet er sich.
+- Wähle mehrere Zeilen mit <kbd>⌘</kbd> oder <kbd>⇧</kbd> und klicke mit der rechten Maustaste für
+  **N Objekte ausführen**, **N Anfragen bearbeiten …**, **Neuer Ordner mit N Objekten**, **Bewegen nach** und
+  **N Objekte in den Papierkorb legen …**.
+- Setze einen cURL-Befehl, eine Collection oder eine Spec in die Seitenleiste ein, um sie zu
+  [importieren](/docs/get-started/importing), oder ziehe Dateien auf das Fenster.
+- **Bearbeiten › Duplizieren** (<kbd>⌘</kbd><kbd>D</kbd>) und **Bearbeiten › Umbenennen** wirken auf die ausgewählte
+  Zeile.
+- Ein Punkt neben einer Anfrage heißt, dass sie Änderungen hat, die noch nicht geschrieben sind.
+- Ein Warnzeichen neben einer Anfrage heißt, dass ihr letztes Senden fehlschlug: keine Antwort, ein Status ab 400 oder
+  ein gRPC-Status außer OK. Halte den Zeiger darauf, um zu lesen, was schiefging. Ein späterer Erfolg löscht es.
+
+Nichts wird ohne Nachfrage gelöscht, und gelöschte Objekte kommen in den Papierkorb. Mehr unter
+[Ordner](/docs/workspaces/folders).
+
+### Die Arbeitsbereichsauswahl [#the-workspace-switcher]
+
+Der Name des Arbeitsbereichs, darunter sein Sicherungsstatus: **Alles gesichert**, **Wird gesichert …** oder
+**Sichern fehlgeschlagen**. Klicke darauf für deine letzten Arbeitsbereiche, **Neuer Arbeitsbereich …**,
+**Arbeitsbereich öffnen …**, **Arbeitsbereichseinstellungen …** und **Im Finder anzeigen**.
+**Datei › Arbeitsbereich wechseln …** (<kbd>⌘</kbd><kbd>P</kbd>) listet stattdessen die letzten Arbeitsbereiche in
+einem schwebenden Panel auf; tippe zum Filtern, <kbd>Return</kbd> öffnet.
+
+## Der Seitenkopf [#the-page-header]
+
+Der Streifen oben im Inhaltspanel benennt die Seite. Bei einer Anfrage zeigt er die Ordner und den Namen der Anfrage.
+Rechts liegen die Knöpfe des Fensters:
+
+| Knopf | Was er tut |
+| --- | --- |
+| **Neuigkeiten** (Funkeln) | Erscheint nach einem Update mit den neuen Versionshinweisen. |
+| **Verlauf** | Jede Antwort, mit dem Absender: du, ein Durchlauf oder ein Agent (<kbd>⌘</kbd><kbd>Y</kbd>). Siehe [Verlauf](/docs/workspaces/history). |
+| **Agenten** | Lässt externe KI-Agenten diesen Arbeitsbereich über Echolots MCP-Server nutzen. Siehe [Agenten](/docs/ai/agents). |
+| **Umgebung** | Wählt die aktive Umgebung oder **Keine Umgebung**; **Umgebungen verwalten …** öffnet die Seite „Umgebungen“. Eine geschützte Umgebung zeigt ein Schild. Siehe [Umgebungen](/docs/workspaces/environments). |
+| **Layout** | Bei einer Anfrage: nebeneinander oder untereinander. Siehe [Bereiche](#the-request-page). |
+| **Editor** | Bei einer Spec: der visuelle oder der Texteditor. |
+| **Assistent** (Zauberstab) | Öffnet den Assistenten (<kbd>⌘</kbd><kbd>J</kbd>). |
+
+Der Seitenkopf ersetzt eine Titelleiste: Ziehe ihn, um das Fenster zu bewegen, und doppelklicke darauf, um das zu tun,
+was du unter **Systemeinstellungen › Schreibtisch & Dock** für eine Titelleiste festgelegt hast (standardmäßig
+Zoomen).
+
+## Seiten [#pages]
+
+Außer den Modulseiten öffnet das Menü **Ansicht** diese:
+
+| Seite | Tastenkürzel |
+| --- | --- |
+| **Start** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd> |
+| **Tests**: die Prüfungen jeder Anfrage | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+| **Ausführung**: Ordner oder den Arbeitsbereich ausführen | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd> |
+| **Umgebungen** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd> |
+| **Verlauf** | <kbd>⌘</kbd><kbd>Y</kbd> |
+
+**Ansicht › Variablen einblenden** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>V</kbd>) öffnet das Variablen-Panel: jede Variable im
+ganzen Arbeitsbereich, in seinen Ordnern und Umgebungen, mit markiertem verwendetem Wert und maskierten Secrets. Hefte
+es als Spalte neben den Inhalt oder lass es schweben.
+
+**Hilfe › Hilfe zu dieser Seite** öffnet die Seite dieser Doku über die Seite, auf der du bist.
+
+## Tabs [#tabs]
+
+Anfragen, die du öffnest, werden zu Tabs über der Anfrageseite.
+
+| Aktion | Tastenkürzel |
+| --- | --- |
+| **Tab schließen** | <kbd>⌘</kbd><kbd>W</kbd> |
+| **Fenster schließen** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd> |
+| **Tabs › Nächsten Tab anzeigen** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> |
+| **Tabs › Vorherigen Tab anzeigen** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> |
+| **Tabs › Geschlossenen Tab wieder öffnen** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+
+<kbd>⌘</kbd><kbd>W</kbd> schließt den Tab auf dem Bildschirm, nie das Fenster, wie in einem Browser.
+
+## Die Anfrageseite [#the-request-page]
+
+Die Anfrageseite hat zwei Bereiche: den Anfrage-Editor und die Antwort.
+
+- **Der Anfragekopf** ganz oben: die Methode, die Adresse und **Senden** (<kbd>⌘</kbd><kbd>R</kbd> oder
+  <kbd>⌘</kbd><kbd>↩</kbd>). Ist eine geschützte Umgebung aktiv, steht auf **Senden** der Text
+  **An *Umgebung* senden …** und fragt zuerst nach. Sitzungen (WebSocket, Socket.IO, MQTT) haben stattdessen **Verbinden** und **Trennen**.
+- **Die Tabs des Editors** hängen von der Art der Anfrage ab. Eine HTTP-Anfrage hat **Doku**, **Header**, **Parameter**,
+  **Body**, **Auth**, **Vars**, **Tests**, **Skripte** und **Einstellungen**. Siehe [Anfragen](/docs/requests).
+- **Die Tabs der Antwort**: **Body**, **Tests**, **Header**, **Cookies**, **Roh**, **Hex** und **Übertragung**, dazu
+  **Konsole**, wenn Skripte liefen, **Ereignisse** bei einem Stream, **Nachrichten** bei einer Sitzung und **Schema**
+  bei GraphQL. Siehe [Antworten](/docs/requests/responses).
+
+### Bereichslayouts [#pane-layouts]
+
+Die Bereiche liegen **Nebeneinander** oder **Untereinander** (die Antwort unten). Wähle mit dem Knopf **Layout** im
+Seitenkopf oder mit **Ansicht › Bereiche**. Jede Art von Anfrage behält ihr eigenes Layout und ihre eigene Position
+des Trenners, nur auf diesem Mac: Eine HTTP-Anfrage kann nebeneinander liegen, während WebSocket-Anfragen untereinander
+liegen. Ziehe den Trenner, um die Größe zu ändern; **Ansicht › Bereiche › Bereichsgrößen zurücksetzen** stellt jede Art
+wieder her. Ist das Fenster für „Nebeneinander“ zu schmal, liegen die Bereiche untereinander, bis wieder Platz ist.
+
+### Das Menü „Anfrage“ [#the-request-menu]
+
+| Eintrag | Tastenkürzel |
+| --- | --- |
+| **Senden** | <kbd>⌘</kbd><kbd>R</kbd> |
+| **Abbrechen** | <kbd>⌘</kbd><kbd>.</kbd> |
+| **Als cURL kopieren** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> |
+| **Code erzeugen …** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> |
+| **Austausch als HAR exportieren …** | |
+| **Im Body suchen** | <kbd>⌘</kbd><kbd>F</kbd> |
+| **Befehlspalette …** | <kbd>⌘</kbd><kbd>K</kbd> |
+
+**Ansicht › Code vergrößern** (<kbd>⌘</kbd><kbd>+</kbd>), **Code verkleinern** (<kbd>⌘</kbd><kbd>-</kbd>) und
+**Code in Originalgröße** (<kbd>⌘</kbd><kbd>0</kbd>) ändern die Größe von Antwort-Bodys, Bäumen und Code-Editoren.
+**Ansicht › Lange Zeilen umbrechen** bricht sie um.
+
+## Die Befehlspalette [#the-command-palette]
+
+<kbd>⌘</kbd><kbd>K</kbd> oder **Suchen** in der Seitenleiste öffnet eine Suche über den ganzen Arbeitsbereich. Tippe
+ein paar Buchstaben und drücke <kbd>Return</kbd> auf einem Ergebnis:
+
+- **Anfragen**, mit ihrem Ordner und ihrer Adresse.
+- **Aktionen**: **Gehe zu** einer beliebigen Seite, **Neue Anfrage** und die anderen Arten, **Neuer Ordner**,
+  **Neue Spec**, **Importieren …**, **Arbeitsbereich exportieren …**, **Arbeitsbereichseinstellungen …**,
+  **Variablen einblenden**, **Arbeitsbereich ausführen** und bei einer Anfrage **Senden**, **Als cURL kopieren**,
+  **Code erzeugen …**, **Layout umschalten** und **Bereichsgrößen zurücksetzen**.
+- **Umgebungen**: ***Umgebung* verwenden** wechselt zu ihr.
+- **Antworten**: Ab drei Zeichen durchsucht sie auch die Antworten im Verlauf.
+
+<Shot id="get-started-command-palette" alt="Die Befehlspalette über einem Arbeitsbereich, mit Anfragen, Aktionen und Umgebungen, die zum getippten Text passen" />
+
+## Das Assistent-Panel [#the-assistant-panel]
+
+<kbd>⌘</kbd><kbd>J</kbd> (**Ansicht › Assistent einblenden**) oder der Zauberstab am Ende des Seitenkopfs öffnet den
+Assistenten rechts auf jeder Seite. Er ist der in Echolot eingebaute KI-Agent: Er kann Anfragen senden, Prüfungen
+schreiben und Flows, Specs und Mocks bauen und fragt dich, bevor er etwas ändert. Richte ein Modell unter
+**Einstellungen › Assistent** ein. Siehe [Assistent](/docs/ai/assistant).
+
+## Echo [#echo]
+
+Echo ist ein kleiner Statusbildschirm in der Mitte des Seitenkopfs. Er zeigt, was gerade los ist: Sendungen und ihre
+Zeiten, Fehler, Durchläufe, Flows, Mocks, Agenten und die aktive Umgebung, ab und zu mit einem Witz. Klicke darauf für
+einen Bericht der Sitzung. Standardmäßig ist er aus: Schalte ihn unter **Einstellungen › Allgemein › Echo** mit
+**Statusbildschirm von Echo im Seitenkopf anzeigen** ein. Siehe [Echo](/docs/ai/echo).
+
+## Einstellungen [#settings]
+
+**Echolot › Einstellungen …** (<kbd>⌘</kbd><kbd>,</kbd>) hat die Bereiche **Allgemein**, **Netzwerk**, **Speicher**,
+**Assistent**, **Agenten**, **Datenschutz** und **Über** sowie ein Suchfeld, das eine Einstellung nach ihrem Namen
+findet. Siehe [Einstellungen](/docs/settings). Einstellungen für einen Arbeitsbereich oder Ordner liegen unter
+**Arbeitsbereichseinstellungen …** (**Auth**, **Variablen**, **Skripte**, **Agenten**, **Proxy**, **Zertifikate**) und
+**Ordnereinstellungen …** (**Auth**, **Variablen**, **Skripte**, **Doku**).
+
+Alle Tastenkürzel stehen unter [Tastenkürzel](/docs/reference/keyboard-shortcuts).

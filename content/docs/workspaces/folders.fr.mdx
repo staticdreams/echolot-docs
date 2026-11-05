@@ -1,0 +1,157 @@
+---
+title: "Dossiers"
+description: "Organisez les requêtes en dossiers, déplacez-les et réordonnez-les, agissez sur plusieurs à la fois, et définissez l’auth, les variables et les scripts dont héritent toutes les requêtes à l’intérieur."
+---
+
+Les dossiers regroupent les requêtes dans l’arborescence des requêtes de la barre latérale, et ils portent des
+réglages : l’auth, les variables et les scripts définis sur un dossier s’appliquent à chaque requête à l’intérieur. Sur
+le disque, un dossier est un répertoire sous `requests/` avec un `_folder.toml`.
+
+## Créer un dossier [#create-a-folder]
+
+- **Fichier › Nouveau dossier** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>), quand la barre latérale affiche **Requêtes**.
+- Le **+** à côté de **Requêtes** dans la barre latérale, puis **Nouveau dossier**.
+- Faites un clic droit sur un dossier et choisissez **Nouveau dossier** pour en créer un à l’intérieur, ou un clic droit
+  sur un espace vide de l’arborescence pour en créer un au niveau supérieur.
+
+Le nom du nouveau dossier est prêt à être modifié. Saisissez un nom et appuyez sur <kbd>↩</kbd>.
+
+**Nouvelle requête** dans le menu contextuel d’un dossier place la requête à l’intérieur. **Fichier › Nouvelle
+requête** (<kbd>⌘</kbd><kbd>N</kbd>) et les autres commandes **Nouvelle requête …** la placent là où vous vous trouvez
+dans l’arborescence.
+
+## Renommer, dupliquer et réordonner [#rename-duplicate-and-reorder]
+
+Faites un clic droit sur une requête ou un dossier pour afficher son menu :
+
+| Commande | Ce qu’elle fait |
+| --- | --- |
+| **Exécuter la requête** / **Exécuter le dossier** | L’exécute dans l’[Exécution](/docs/requests/runner), avec ses vérifications. |
+| **Renommer** | Modifie le nom sur place. <kbd>↩</kbd> sur une ligne sélectionnée fait la même chose ; <kbd>Esc</kbd> annule. |
+| **Dupliquer** | Copie une requête (<kbd>⌘</kbd><kbd>D</kbd>). |
+| **Monter**, **Descendre** | Déplace l’élément d’un cran dans son dossier. |
+| **Afficher dans le Finder** | Affiche le fichier ou le dossier de l’élément. |
+| **Placer dans la corbeille…** | Demande confirmation, puis le place dans la corbeille. |
+
+Les dossiers proposent aussi **Nouvelle requête**, **Nouveau dossier**, **Réglages du dossier…**,
+**Lier à une spec OpenAPI…** (ou **Vérifier les changements de la spec OpenAPI…** une fois le lien établi ; voir [specs](/docs/specs)),
+**Documenter dans une spec OpenAPI…** (voir [specs à partir du trafic](/docs/specs/specs-from-traffic)) et
+**Exporter le dossier…** (voir [export](/docs/workspaces/exporting)).
+
+L’ordre que vous donnez aux éléments est enregistré dans le `_folder.toml` du dossier : il est donc le même pour tous
+ceux qui ouvrent l’espace de travail.
+
+## Déplacer des éléments au clavier et à la souris [#move-items-with-the-keyboard-and-the-mouse]
+
+Dans l’arborescence des requêtes, <kbd>↑</kbd> et <kbd>↓</kbd> déplacent la sélection, <kbd>→</kbd> ouvre un dossier et
+<kbd>←</kbd> le ferme ou remonte au dossier du dessus.
+
+Faites glisser des requêtes et des dossiers pour les déplacer :
+
+- Un espace s’ouvre là où l’élément va atterrir, et les lignes du dessous lui font de la place.
+- Sous un dossier ouvert, déplacez le pointeur vers la gauche ou la droite pour choisir la profondeur : dans le dossier
+  ou après lui.
+- Attendez un instant sur un dossier fermé et il s’ouvre, ce qui permet de déposer entre ses éléments. Les dossiers
+  ouverts ainsi se referment si le glissement se termine ailleurs.
+- Faire glisser l’un de plusieurs éléments sélectionnés les déplace tous.
+
+Déposez des fichiers du Finder sur l’arborescence pour les [importer](/docs/get-started/importing) dans ce dossier :
+Postman, Insomnia, OpenAPI, HAR et les autres formats qu’Echolot lit. Collez ou déposez une commande cURL pour en faire
+une requête.
+
+## Sélectionner plusieurs éléments [#select-several-items]
+
+<kbd>⌘</kbd>-clic ajoute ou retire un élément. <kbd>⇧</kbd>-clic sélectionne tout ce qui se trouve entre le dernier
+élément et celui-ci. Faites un clic droit sur l’un des éléments sélectionnés pour voir ce que vous pouvez faire avec
+tous :
+
+| Commande | Ce qu’elle fait |
+| --- | --- |
+| **Exécuter N éléments** | Les exécute dans l’Exécution. |
+| **Modifier N requêtes…** | Modifie en une fois les en-têtes, les paramètres et l’auth de chaque requête sélectionnée. |
+| **Nouveau dossier avec N éléments** | Crée un dossier et y déplace les éléments. |
+| **Déplacer N éléments vers** | Les déplace dans **Espace de travail (niveau supérieur)** ou dans n’importe quel dossier. |
+| **Placer N éléments dans la corbeille…** | Demande confirmation, puis les place tous dans la corbeille. |
+
+Quand un dossier et des éléments qu’il contient sont tous sélectionnés, les commandes s’appliquent au dossier.
+
+<Shot id="workspaces-multi-select-menu" alt="Deux requêtes sélectionnées dans le dossier Orders, avec leur menu contextuel : Exécuter 2 éléments, Modifier 2 requêtes, Nouveau dossier avec 2 éléments, Déplacer 2 éléments vers et Placer 2 éléments dans la corbeille" />
+
+## Modifier plusieurs requêtes à la fois [#edit-several-requests-at-once]
+
+**Modifier N requêtes…** ouvre une feuille avec trois onglets : **En-têtes**, **Paramètres** et **Auth**. Chaque
+modification faite là s’applique à toutes les requêtes sélectionnées quand vous cliquez sur **Appliquer à N requêtes**.
+
+- **En-têtes** et **Paramètres** listent chaque en-tête ou paramètre que possède l’une des requêtes. Une valeur sur
+  laquelle les requêtes diffèrent s’affiche comme mixte et reste telle quelle dans chacune, sauf si vous en saisissez
+  une nouvelle. Une ligne que certaines requêtes n’ont pas indique combien la possèdent, avec **Ajouter à toutes** pour
+  la donner à chaque requête. Supprimez une ligne pour la retirer de chaque requête.
+- **Auth** propose **Conserver celle de chaque requête**, **Hériter du dossier**, **Aucune authentification**, ou la
+  même auth que l’une des requêtes sélectionnées (**Identique à « List orders » (Bearer Token)**). Pour leur donner à
+  toutes de nouveaux identifiants, définissez les identifiants sur leur dossier et choisissez **Hériter du dossier**.
+
+Toute la modification forme une seule étape : **Édition › Annuler** l’annule pour chaque requête.
+
+<Shot id="workspaces-bulk-edit" alt="La feuille Modifier 3 requêtes sur son onglet En-têtes, avec un en-tête présent dans les trois requêtes et un autre dans certaines seulement" />
+
+## Réglages du dossier [#folder-settings]
+
+Faites un clic droit sur un dossier et choisissez **Réglages du dossier…**. La feuille comporte ces onglets :
+
+| Onglet | Ce qu’il définit |
+| --- | --- |
+| **Auth** | L’auth de chaque requête à l’intérieur qui ne définit pas la sienne. **Hériter** (par défaut) transmet vers le bas l’auth du dossier du dessus, ou celle de l’espace de travail. |
+| **Variables** | Les variables de chaque requête de ce dossier. Elles remplacent celles de l’espace de travail et de l’environnement. |
+| **Scripts** | Un script de pré-requête et un script de test qui s’exécutent autour de chaque requête de ce dossier. |
+| **Docs** | Des notes sur le dossier, conservées dans son `_folder.toml`. Aussi **Proposer ces requêtes aux agents comme outils** : voir [agents](/docs/ai/agents). |
+
+Cliquez sur **Terminé** pour enregistrer. Fermer la feuille d’une autre façon, ou fermer la fenêtre, conserve aussi vos
+modifications.
+
+<Shot id="workspaces-folder-settings" alt="Les réglages du dossier Orders sur l’onglet Auth : authentification par jeton Bearer avec le jeton {{token}}" />
+
+Dans Alpenglow, le dossier **Orders** définit une authentification Bearer avec `{{token}}` : chaque requête qu’il
+contient envoie donc le jeton que **Auth › Sign in** a capturé. Une requête qui définit sa propre auth utilise celle-ci
+à la place.
+
+## Réglages de l’espace de travail [#workspace-settings]
+
+Les réglages de l’espace de travail sont le sommet de la chaîne : ce dont hérite chaque requête de l’espace de travail.
+Ouvrez-les avec **Réglages de l’espace de travail…** dans le sélecteur d’espace de travail, ou par un clic droit sur
+un espace vide de l’arborescence des requêtes.
+
+| Onglet | Ce qu’il définit |
+| --- | --- |
+| **Auth** | L’auth par défaut de chaque requête. |
+| **Variables** | Les variables de l’espace de travail : les valeurs par défaut que les environnements, les dossiers et les requêtes remplacent. La même liste que **Espace de travail** sur la page [Environnements](/docs/workspaces/environments). |
+| **Scripts** | Des scripts qui s’exécutent autour de chaque requête. |
+| **Agents** | Les règles pour les agents IA dans cet espace de travail. Voir [agents](/docs/ai/agents). |
+| **Proxy** | **Utiliser le réglage proxy de l’app**, ou un proxy propre à cet espace de travail, qui suit l’espace de travail chez vos collègues et dans l’outil en ligne de commande. Voir [réglages de requête](/docs/requests/settings). |
+| **Certificats** | Les certificats d’autorité à approuver et les certificats client à présenter, par hôte. Voir [réglages de requête](/docs/requests/settings). |
+
+## Comment les requêtes héritent [#how-requests-inherit]
+
+Pour l’auth, une requête utilise la première de ces sources qui définit quelque chose : la requête elle-même, son
+dossier, les dossiers au-dessus d’elle du plus proche vers l’extérieur, puis l’espace de travail.
+
+Les variables, elles, s’additionnent : la requête voit les variables de chaque niveau, et quand deux niveaux définissent
+le même nom, le plus proche l’emporte. L’ordre est décrit dans [environnements](/docs/workspaces/environments#which-value-wins).
+
+Les scripts s’exécutent dans l’ordre autour d’une requête : ceux de l’espace de travail d’abord, puis ceux de chaque
+dossier de l’extérieur vers l’intérieur, puis ceux de la requête elle-même. Voir
+[scripts et tests](/docs/requests/scripts-and-tests).
+
+Les en-têtes ne sont pas hérités des dossiers ; définissez les en-têtes communs avec **Modifier N requêtes…**, ou dans
+un script de pré-requête.
+
+## Déplacer une requête change ce dont elle hérite [#moving-a-request-changes-what-it-inherits]
+
+Une requête reprend l’auth, les variables et les scripts du dossier où elle se trouve. Déplacez-la dans un autre dossier
+et elle reprend ceux de ce dossier. Vérifiez son onglet **Auth** après un déplacement si elle dépendait de l’auth de son
+ancien dossier.
+
+## Supprimer des dossiers [#deleting-folders]
+
+**Placer dans la corbeille…** sur un dossier demande d’abord confirmation et indique combien de requêtes il contient. Le
+dossier, ses réglages et chaque requête à l’intérieur vont dans la corbeille du Finder. **Édition › Annuler** les
+récupère.

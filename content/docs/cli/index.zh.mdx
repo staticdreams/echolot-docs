@@ -1,0 +1,133 @@
+---
+title: "命令行工具"
+description: "安装 echolot 命令，并了解所有命令共有的内容：机密、环境变量和退出码。"
+---
+
+`echolot` 让你在终端或 CI 任务中运行在 App 里构建的内容：发送请求，运行带检查的工作区并写出报告，导入和导出集合，对规范做 Lint，提供模拟服务器，运行流程，
+并通过 MCP 向 AI 智能体提供工作区。它读取与 App 相同的工作区文件，所以无需转换任何内容。
+
+## 获取命令行工具 [#get-the-command-line-tool]
+
+<Tabs items={["在 App 中", "来自发行版的 Zip"]}>
+  <Tab value="在 App 中">
+    直接下载版将该工具内置在 App 中。要把它放到你的 `PATH` 上：
+
+    1. 选取 **Echolot › 安装命令行工具…**，或打开**设置 › 通用**，在**命令行工具**下点按**安装命令行工具…**。
+    2. Echolot 会在 `/opt/homebrew/bin` 或 `/usr/local/bin` 中放置一个指向 App 内工具的 `echolot` 链接。如果这两个文件夹都不可写，macOS 会请你输入管理员密码。
+    3. 打开一个新的“终端”窗口，输入 `echolot --help`。
+
+    **设置 › 通用 › 命令行工具**会显示内置工具的位置以及你 `PATH` 上的链接。移动 App 之后请使用**重新安装**，要去掉链接则使用**移除**。
+    如果有一个名为 `echolot` 但并非由 Echolot 放置的文件挡住了位置，Echolot 会在替换它之前询问，该文件会被移到废纸篓。
+
+    由于链接指向 App 内部，该工具会随 App 一起更新。
+
+    <Shot id="cli-settings-command-line-tool" alt="设置的“通用”面板，“命令行工具”部分显示内置工具的路径以及你 PATH 上的链接" />
+  </Tab>
+  <Tab value="来自发行版的 Zip">
+    每个发行版都附有单独的工具 `echolot-<version>-macos.zip`，位于[发行版页面](https://github.com/staticdreams/echolot-public/releases)。
+    它只包含一个文件 `echolot`，与 App 一样经过签名和公证。解压后将它移到你 `PATH` 上的某个文件夹：
+
+    ```sh
+    unzip echolot-0.5.0-macos.zip
+    sudo mv echolot /usr/local/bin/
+    echolot --version
+    ```
+
+    在没有 App 的 Mac 上、CI 运行器上，或配合 App Store 版时，请使用这个 zip。
+  </Tab>
+</Tabs>
+
+<Edition only="appstore">
+  App Store 版内没有该工具，也没有**安装命令行工具…** 项。请改用发行版页面上 zip 中的工具安装。它适用于同样的工作区。
+</Edition>
+
+命令行工具永不过期，在 App 的 Beta 版中也是如此。它需要 macOS 15 或更高版本的 Mac。
+
+## 命令 [#commands]
+
+| 命令 | 作用 |
+| --- | --- |
+| [`echolot send`](/docs/cli/send) | 发送一个请求（URL 或存储的请求文件），并将正文写入标准输出。 |
+| [`echolot run`](/docs/cli/run) | 运行工作区、其中的部分文件夹或请求，或一个 Postman 集合，带检查和报告。 |
+| [`echolot validate`](/docs/cli/validate) | 检查工作区的每个文件都能读取、每个请求都能解析。 |
+| [`echolot import`、`echolot export`](/docs/cli/import-export) | 将集合导入工作区，并将工作区写出为 Postman、Insomnia、Bruno 或 Echolot 格式。 |
+| [`echolot mcp`](/docs/cli/mcp) | 检查 MCP 服务器、登录它们、向智能体提供工作区并打印客户端设置。 |
+| [`echolot spec`](/docs/cli/spec) | 对 OpenAPI 文档做 Lint，并检查规范更改、将其应用到跟随规范的文件夹。 |
+| [`echolot graphql diff`](/docs/cli/graphql) | 比较两个 GraphQL Schema，并为每处更改评级。 |
+| [`echolot grpc`](/docs/cli/grpc) | 描述 gRPC 服务并调用它们的方法。 |
+| [`echolot mqtt`](/docs/cli/mqtt) | 订阅 MQTT Broker 并向其发布。 |
+| [`echolot mock`](/docs/cli/mock) | 提供模拟服务器：工作区模拟服务器的路由，或一个 OpenAPI 文档。 |
+| [`echolot fake`](/docs/cli/fake) | 根据模板生成示例数据，用于测试固件和种子数据。 |
+| [`echolot flow`](/docs/cli/flow) | 列出、运行、创建和提供工作区的流程。 |
+| [`echolot agent`](/docs/cli/agent) | 让内置智能体执行一项任务，用策略代替批准。 |
+
+`echolot help <command>` 和 `echolot <command> --help` 会打印命令的所有选项。带有子命令的命令也用同样的方式：`echolot mcp serve --help`。
+
+## 每个命令都有的选项 [#options-every-command-has]
+
+| 选项 | 含义 |
+| --- | --- |
+| `--version` | 打印版本和构建号，例如 `0.5.0 (8)`。 |
+| `-h`、`--help` | 打印该命令的选项。 |
+
+## 工作区和环境 [#workspaces-and-environments]
+
+操作工作区的命令接受它的文件夹，即其中有 `workspace.toml` 的那个文件夹。有的命令将它作为参数（`echolot run Alpenglow.echolot`），
+有的则用 `-w` 或 `--workspace`（`echolot flow list -w Alpenglow.echolot`）；每个命令的页面都会说明。可选时，使用当前文件夹。
+
+`--env` 用不带 `.toml` 的文件名（`staging`）选取环境。`run`、`validate` 和 `flow` 也接受环境的名称（`Staging`）。没有 `--env` 时，
+请求使用工作区自己的变量解析。参见[环境](/docs/workspaces/environments)。
+
+## 机密 [#secrets]
+
+机密值从不存放在工作区文件中：文件只写出机密变量的名称，别无其他。命令行工具按以下顺序查找每个值：
+
+1. 环境变量 `ECHOLOT_SECRET_<NAME>`。名称是变量名的大写形式，其中每个不是字母或数字的字符都变为 `_`：`token` 对应 `ECHOLOT_SECRET_TOKEN`，
+   `me_password` 对应 `ECHOLOT_SECRET_ME_PASSWORD`。
+2. 对于 `echolot run`，用 `--secrets` 给出的文件：每行一个 `NAME=value`，用 `#` 写注释，值两边的引号会被去掉。`NAME` 是变量的名称（`token=…`）
+   或完整的环境变量名称（`ECHOLOT_SECRET_TOKEN=…`）。文件中的值优先于环境变量。
+3. 在 Mac 上，是 App 保存的钥匙串项目。你在 App 中设置的机密，或你登录过的 MCP 服务器，在“终端”中同样可用。
+
+```sh
+export ECHOLOT_SECRET_PASSWORD="$(op read 'op://Shop/Alpenglow staging/password')"
+echolot run Alpenglow.echolot --env staging
+```
+
+设置了 `CI`（值不是空、`0` 或 `false`）或 `ECHOLOT_KEYCHAIN=0` 时，从不使用钥匙串。这样可以避免 CI 任务卡在钥匙串的提示上。参见[机密](/docs/workspaces/secrets)。
+
+## 环境变量 [#environment-variables]
+
+| 变量 | 使用它的命令 | 含义 |
+| --- | --- | --- |
+| `ECHOLOT_SECRET_<NAME>` | 每个解析请求的命令 | 机密变量 `<NAME>` 的值。 |
+| `ECHOLOT_KEYCHAIN=0` | 每个命令 | 不读取或写入钥匙串。 |
+| `CI` | 每个命令 | 设置后，钥匙串关闭，效果与 `ECHOLOT_KEYCHAIN=0` 相同。 |
+| `HTTPS_PROXY`、`HTTP_PROXY`、`ALL_PROXY`、`NO_PROXY` | `send`、`run`、`mqtt` 等 | 代理，读取方式与 curl 相同。`--proxy` 和 `--no-proxy` 会覆盖它们；工作区自己的代理设置优先。 |
+| `ECHOLOT_CERT_PASSPHRASE` | `send`、`run`、`mqtt` | 用 `--cert` 或 `--key` 给出的密钥或 PKCS#12 文件的口令。 |
+| `ECHOLOT_MQTT_PASSWORD` | `mqtt` | Broker 的密码。 |
+| `ECHOLOT_MCP_TOKEN` | `mcp serve --http` | 客户端发送的 Bearer 令牌；否则使用随机令牌。 |
+| `ECHOLOT_WEBHOOK_TOKEN` | `flow serve` | Webhook 调用方发送的令牌；否则使用随机令牌。 |
+| `ECHOLOT_BROWSER` | `mcp sign-in` | 用来打开登录页面的命令，代替默认浏览器。 |
+| `ANTHROPIC_API_KEY`、`OPENAI_API_KEY`、`GEMINI_API_KEY` | `agent` | 模型提供商的 API 密钥。 |
+| `NO_COLOR` | `run` | 纯文本的控制台输出。 |
+
+## 输出和退出码 [#output-and-exit-codes]
+
+结果输出到标准输出：响应正文、报告、订阅打印的行。进度、警告、测试结果和耗时输出到标准错误，所以你可以把输出通过管道传给其他命令：
+
+```sh
+echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
+```
+
+| 退出码 | 含义 |
+| --- | --- |
+| `0` | 一切正常，每项检查都通过。 |
+| `1` | 出了问题：没有响应、检查或测试失败、发现了问题（`validate`、`spec lint`）、有破坏性更改（`graphql diff`）、gRPC 状态不是 OK、MQTT 连接被拒绝、智能体没有完成。 |
+| `22` | 仅限 `echolot send`：响应状态为 400 或更高，与 `curl --fail` 相同。 |
+| `64` | 命令行本身有误：未知选项、缺少文件、环境不存在。会打印原因。 |
+
+## 下一步 [#next]
+
+- [运行工作区](/docs/cli/run)以及[在 CI 中运行](/docs/cli/ci)。
+- [向智能体提供工作区](/docs/cli/mcp)。
+- [在 CI 中测试 API](/docs/tutorials/test-in-ci)，一篇教程。

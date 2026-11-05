@@ -1,0 +1,14 @@
+{
+  "title": "Espacios de trabajo",
+  "pages": [
+    "index",
+    "folders",
+    "environments",
+    "secrets",
+    "protected-environments",
+    "git-and-teams",
+    "history",
+    "storage-and-encryption",
+    "exporting"
+  ]
+}

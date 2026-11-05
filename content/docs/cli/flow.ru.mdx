@@ -1,0 +1,173 @@
+---
+title: "echolot flow"
+description: "Перечисляйте, запускайте и создавайте сценарии рабочего пространства из терминала и обслуживайте их расписания и вебхуки."
+---
+
+`echolot flow` запускает [сценарии](/docs/flows) без приложения: один раз из терминала или задания CI либо как
+службу, которая запускает сценарии по расписанию, когда подходит время, и отвечает на вебхуки.
+
+| Подкоманда | Что делает |
+| --- | --- |
+| `echolot flow list` | Перечисляет сценарии рабочего пространства с их входными данными и проблемами. |
+| `echolot flow run` | Запускает сценарий, печатает каждый блок по мере его завершения, затем результат сценария. |
+| `echolot flow new` | Создаёт сценарий — пустой или из шаблона; без имени перечисляет шаблоны. |
+| `echolot flow serve` | Запускает сценарии по расписанию, когда подходит время, и отвечает на вебхуки, пока его не остановят. |
+
+Каждая подкоманда принимает рабочее пространство через `-w` или `--workspace`.
+
+## echolot flow list [#echolot-flow-list]
+
+```sh
+echolot flow list --workspace <workspace> [--json]
+```
+
+```sh
+echolot flow list -w Alpenglow.echolot
+```
+
+```text
+morning-stock-check  Morning stock check
+order-status-webhook  Order status on webhook
+place-test-order  Place a test order  MCP tool place_test_order
+```
+
+В каждой строке — slug сценария (имя его файла в `flows/` без `.flow.toml`) и его имя, затем, если они есть, входные
+данные в круглых скобках (необязательные — в квадратных), инструмент MCP, которым сценарий предлагается, и число
+проблем. `--json` печатает каждый сценарий с его `slug`, `name`, `description`, `inputs`, `blockCount`, `errors`,
+`warnings` и его `schedule` или `webhook`.
+
+## echolot flow run [#echolot-flow-run]
+
+```sh
+echolot flow run <flow> --workspace <workspace> [--env <env>] [--input <name=value> ...] [--json] [--no-input]
+```
+
+`<flow>` — это slug или имя сценария.
+
+```sh
+echolot flow run morning-stock-check -w Alpenglow.echolot
+```
+
+```text
+✓ start  Start  0 ms
+✓ list  List products  148 ms
+✓ low  Running low?  4 ms
+notification: Restock Bern — A tent is under five in Bern.
+✓ notify  Restock  0 ms
+Morning stock check: passed in 152 ms
+```
+
+- Каждый блок печатает строку, когда завершается: `✓` или `✗`, его ID, его заголовок и его время, а при ошибке — и
+  саму ошибку. То, что пишут блоки Log, и результат каждого теста идут следом отдельными строками.
+- Уведомления идут в стандартный поток ошибок.
+- Результат сценария печатается в конце как JSON, а за ним в стандартном потоке ошибок — сводка.
+- `--input name=value` задаёт входное значение как текст, преобразованный в тип входа. Указывайте по разу для каждого
+  входа.
+- Когда сценарию нужен человек (вход без значения, блок **Одобрить**), Echolot спрашивает в терминале. `--no-input`
+  не спрашивает никогда: сценарий в этом месте завершается ошибкой — это именно то, что нужно в CI.
+- `--json` печатает всю запись о прогоне как JSON вместо строк хода выполнения.
+
+```sh
+echolot flow run "Place a test order" -w Alpenglow.echolot --env staging --no-input
+```
+
+| Параметр | Значение |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Папка рабочего пространства. Обязательно. |
+| `--env <env>` | Окружение, которое используют запросы сценария: имя его файла без `.toml` или его имя. |
+| `--input <name=value>` | Входное значение; текст преобразуется в тип входа. Можно повторять. |
+| `--json` | Напечатать запись о прогоне как JSON вместо хода выполнения. |
+| `--no-input` | Никогда не спрашивать: сценарий, которому нужен человек, на этом месте завершается ошибкой. |
+
+Прогон завершается ошибкой, с кодом 1, когда сценарий или один из его тестов не проходит.
+
+## echolot flow new [#echolot-flow-new]
+
+```sh
+echolot flow new [<name>] [--workspace <workspace>] [--template <template>]
+```
+
+Без имени команда перечисляет шаблоны:
+
+```text
+device-sign-in  OAuth device sign-in: shows the code and link (with a QR code), waits until the person approves, saves the tokens to the Keychain.
+refresh-token  Trades the refresh token for a new access token and saves both to the Keychain; says so when it fails.
+paginate-and-export  Fetches a number of pages, gathers their items into one list and writes it to a JSON file in the workspace.
+smoke-monitor  Every hour, checks that a request answers 200 quickly; a notification when it does not.
+seed-and-clean-up  Creates a few records, leaves room for what needs them, then deletes each one again.
+```
+
+С именем она записывает новый файл сценария:
+
+```sh
+echolot flow new "Export tents" --template paginate-and-export -w Alpenglow.echolot
+```
+
+```text
+Created flows/export-tents.flow.toml.
+```
+
+Шаблоны оставляют выбор запросов вам — в приложении или в файле сценария; какие именно, сказано в заметке на холсте.
+См. [шаблоны](/docs/flows/templates).
+
+| Параметр | Значение |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Папка рабочего пространства. |
+| `--template <template>` | Шаблон, с которого начать: `device-sign-in`, `refresh-token`, `paginate-and-export`, `smoke-monitor` или `seed-and-clean-up`. Без него сценарий пустой. |
+
+## echolot flow serve [#echolot-flow-serve]
+
+```sh
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+```
+
+Запускает каждый сценарий с расписанием, когда подходит его время, и отвечает на вебхуки сценариев, у которых они
+есть, пока вы не остановите его клавишами <kbd>⌃</kbd><kbd>C</kbd>. Запустите его на сервере или в контейнере, чтобы
+автоматизации рабочего пространства продолжали работать без приложения.
+
+```sh
+echolot flow serve -w Alpenglow.echolot --port 4100
+```
+
+```text
+Serving Alpenglow (Ctrl-C stops it)
+  schedule  Morning stock check: 0 6 * * *
+  webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
+  token     3f9a…
+```
+
+Каждый запуск печатает строку со временем, сценарием, тем, чем он закончился, и сколько длился.
+
+**Вебхуки.** Вызывающий отправляет метод и путь вебхука сценария, а токен — как `Authorization: Bearer <token>`,
+заголовок `X-Echolot-Token` или `?token=` в URL. Входные данные сценария берутся из запроса и из тела JSON; вход с
+именем `body` получает всё тело. Ответ — результат сценария в виде JSON, `500` с ошибкой, если сценарий завершился
+ошибкой, `401` без правильного токена и `404` со списком существующих путей для пути, которого нет ни у одного
+сценария.
+
+```sh
+curl -X POST http://127.0.0.1:4100/order-status \
+  -H "Authorization: Bearer $ECHOLOT_WEBHOOK_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"orderId": "ord_7Hk2Lw"}'
+```
+
+Токен — это `--token`, иначе `ECHOLOT_WEBHOOK_TOKEN`, иначе новый, который печатает Echolot. Запуск по вебхуку может
+длиться до двух минут; тело больше 8 МБ отклоняется целиком.
+
+| Параметр | Значение |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Папка рабочего пространства. Обязательно. |
+| `--env <env>` | Окружение, которое используют запросы сценариев. |
+| `--port <port>` | Порт вебхуков; `0` выбирает свободный. По умолчанию 4100. |
+| `--share` | Отвечать на вебхуки на всех сетевых интерфейсах, а не только на этой машине: для контейнеров. |
+| `--token <token>` | Токен вебхуков. По умолчанию — `ECHOLOT_WEBHOOK_TOKEN`, иначе новый, он печатается. |
+
+О расписаниях и вебхуках в приложении см. [запуск сценариев и триггеры](/docs/flows/running-and-triggers).
+
+## Коды выхода [#exit-codes]
+
+| Код | Когда |
+| --- | --- |
+| `0` | `run`: сценарий прошёл со всеми тестами. `list`, `new`: готово. |
+| `1` | `run`: сценарий завершился ошибкой или тест не прошёл. |
+| `64` | Неверный параметр, сценарий или окружение, которых нет, или `--input`, не имеющий вид `name=value`. |

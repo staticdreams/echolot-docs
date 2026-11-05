@@ -1,0 +1,163 @@
+---
+title: "echolot send"
+description: "터미널에서 URL이나 저장된 요청 하나를 보내고 본문, 헤더, 소요 시간, 통신 바이트를 확인합니다."
+---
+
+`echolot send`는 요청 하나를 보내고 응답 본문을 표준 출력에 씁니다. curl에 주듯이 URL을 주거나, 작업 공간에 저장된 요청의 경로를 주면
+앱과 같은 방식으로 보냅니다. 변수, 인증, 스크립트, 검사가 모두 적용됩니다. WebSocket과 Socket.IO 세션을 열고 이벤트 스트림을
+수신할 수도 있습니다.
+
+```sh
+echolot send [<options>] <url>
+```
+
+`<url>`은 URL이거나, 작업 공간의 `requests` 폴더 안에 있는 저장된 요청 파일(`.req.toml`, `.gql.toml`, `.mcp.toml`)의 경로입니다.
+
+## URL 보내기 [#send-a-url]
+
+```sh
+echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P
+```
+
+본문은 표준 출력으로 나가므로 파이프로 넘기거나(`| jq .`) `-o`로 파일에 쓸 수 있습니다. 요청하지 않으면 그 밖의 것은 출력되지 않습니다.
+
+- `-i`는 본문 앞에 상태 줄과 헤더를 출력합니다.
+- `-v`는 소요 시간을 표준 오류에 출력합니다. DNS, 연결, TLS, 대기, 전송, 본문 크기와 해시, 원격 주소, TLS 버전, 선택된 프로토콜,
+  서버의 인증서가 포함됩니다. 디코딩된 본문(gzip, Brotli, zstd)은 디코딩 전후의 크기를 표시합니다.
+- `--wire`는 통신에서 캡처한 그대로 주고받은 바이트를 표준 오류에 출력합니다.
+
+본문과 헤더가 있는 요청:
+
+```sh
+echolot send https://demo.echolot.dev/echo/anything -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"sku": "TNT-MH-2P"}' -v
+```
+
+```text
+── body ── decoded zstd 257 → 418 bytes
+── timing ──
+DNS          79.61 ms
+Connect      15.65 ms
+TLS          28.70 ms
+Waiting      19.75 ms
+Transfer      0.53 ms
+Total       146.36 ms
+Body      418 bytes, sha256 01facf0b2388ca67…
+Remote    [2606:4700:3031::6815:3cf1]:443
+── tls ── TLS 1.3, ALPN h2
+CN=echolot.dev
+  issuer CN=WE1,O=Google Trust Services,C=US, valid until 30 Jan 2027
+Alt-Svc   the server offers HTTP/3 (h3 on port 443); --http3 uses it, and so do later requests on Automatic in the same run
+```
+
+`-H`는 헤더의 순서와 대소문자를 유지합니다. `--data-file`은 본문을 메모리에 읽지 않고 파일에서 스트리밍하므로 큰 업로드에도 쓸 수
+있습니다. `--raw`는 직접 쓰지 않은 헤더를 보내지 않습니다. `Host`, `Content-Length`, `Accept-Encoding`도 없습니다.
+
+## 저장된 요청 보내기 [#send-a-saved-request]
+
+요청 파일의 경로를 지정합니다. Echolot이 그 주변의 작업 공간을 찾고, 선택한 환경으로 `{{variables}}`를 해석하고, 요청의 스크립트와
+검사를 실행하고, 결과를 출력합니다.
+
+```sh
+echolot send Alpenglow.echolot/requests/catalog/get-product.req.toml -i
+```
+
+```text
+HTTP/2 200 OK
+content-type: application/json; charset=utf-8
+etag: W/"TNT-MH-2P-1"
+…
+
+{
+  "sku": "TNT-MH-2P",
+  "name": "Matterhorn 2P Tent",
+  …
+}
+── tests ──
+✓ Status equals 200
+✓ JSON value $.sku equals {{productId}}
+2 passed
+```
+
+- `-e staging` 또는 `--env staging`은 `environments/staging.toml`의 환경으로 해석합니다.
+- 비밀 변수는 `ECHOLOT_SECRET_<NAME>` 변수에서, Mac에서는 키체인에서 가져옵니다. [비밀 값](/docs/cli#secrets)을 참조하십시오.
+- 스크립트가 기록한 내용은 `── console ──` 아래에, 검사와 `pm.test` 결과는 `── tests ──` 아래에 표준 오류로 나옵니다.
+  검사가 실패하면 종료 코드가 1이 됩니다.
+- 해석되지 않는 변수는 요청을 보내기 전에 경고로 출력됩니다.
+- `-X`, `-H`, `-d`, `--data-file`은 URL용입니다. 저장된 요청은 파일에 적힌 대로 보냅니다. `--timeout`, `--http1.1`, `--http2`,
+  `--http3`, `--raw`, `-k`, `--listen`, 프록시와 인증서 옵션은 둘 다에 적용됩니다.
+
+## 이벤트 스트림, WebSocket, Socket.IO [#event-streams-websocket-and-socketio]
+
+**Server-Sent Events.** `text/event-stream` 응답은 도착하는 대로 표준 출력으로 스트리밍됩니다. `--listen`은 수신할 시간을
+정합니다. 기본값은 10초이고, `0`이면 서버가 스트림을 끝낼 때까지 수신합니다.
+
+```sh
+echolot send https://demo.echolot.dev/v1/orders/events --listen 0
+```
+
+**WebSocket.** `ws://` 또는 `wss://` URL은 세션을 엽니다. 입력한(또는 파이프로 넘긴) 각 줄과 `-d`는 텍스트 메시지로 전송됩니다.
+도착한 메시지는 한 줄에 하나씩 출력되고, 바이너리 메시지는 Base64로 출력됩니다. 입력이 끝나면 Echolot은 `--listen` 초 동안 수신한 뒤
+닫습니다. `--subprotocol`은 하위 프로토콜을 제안하며 여러 번 지정할 수 있습니다. `-i`나 `-v`는 업그레이드 응답을 표준 오류에
+출력합니다.
+
+```sh
+echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolot.dev/v1/orders --listen 5
+```
+
+**Socket.IO.** `--socketio`는 `http(s)://` 또는 `ws(s)://` URL에서 Socket.IO를 사용합니다. 입력의 각 줄은 이벤트이며, 이름 다음에 JSON
+인수가 옵니다(`chat {"text": "hi"}`. 배열은 인수 여러 개입니다). 이벤트는 `name [arguments]`로, 확인 응답은
+`ack id [arguments]`로 출력됩니다.
+
+```sh
+echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+```
+
+시험해 볼 수 있는 서버는 [Socket.IO 요청](/docs/requests/socket-io)을 참조하십시오.
+
+## 옵션 [#options]
+
+| 옵션 | 의미 |
+| --- | --- |
+| `-e`, `--env <env>` | 저장된 요청을 해석할 환경. `.toml`을 뺀 파일 이름입니다. |
+| `-X`, `--request <method>` | HTTP 메서드. 어떤 토큰이든 허용됩니다. 기본값은 `GET`입니다. |
+| `-H`, `--header <header>` | `'Name: value'` 형식의 헤더. 반복할 수 있으며 순서와 대소문자가 유지됩니다. |
+| `-d`, `--data <data>` | 인라인으로 지정하는 요청 본문. |
+| `--data-file <file>` | 이 파일에서 요청 본문을 스트리밍합니다. |
+| `-o`, `--output <file>` | 본문을 표준 출력 대신 이 파일에 씁니다. |
+| `--raw` | 원본 모드: 자동 헤더를 전혀 보내지 않습니다. |
+| `-k`, `--insecure` | TLS 인증서 검증을 건너뜁니다. |
+| `-i`, `--include` | 본문 앞에 상태 줄과 헤더를 출력합니다. |
+| `-v`, `--verbose` | 소요 시간 내역을 표준 오류에 출력합니다. |
+| `--wire` | 주고받은 정확한 바이트를 표준 오류에 출력합니다. |
+| `--listen <seconds>` | 이벤트 스트림을 끝내기 전에 수신할 시간(초). `0`이면 서버가 끝낼 때까지 수신합니다. 기본값은 10입니다. |
+| `--timeout <seconds>` | 전체 교환의 시간 초과. 기본값은 60입니다. |
+| `--http1.1` | HTTP/1.1로만 보냅니다. |
+| `--http2` | HTTP/2로만 보냅니다. TLS에서는 ALPN, 평문 HTTP에서는 사전 지식(prior knowledge)을 사용합니다. |
+| `--http3` | QUIC 위의 HTTP/3으로만 보냅니다. `https://`만 가능하고 프록시는 사용할 수 없습니다. macOS 27 이상과 Linux에서 사용할 수 있습니다. |
+| `--subprotocol <name>` | `ws://`, `wss://` URL에서 제안할 하위 프로토콜. 반복할 수 있습니다. |
+| `--socketio` | Socket.IO를 사용합니다. 입력의 각 줄은 `event [JSON arguments]`입니다. |
+| `--namespace <namespace>` | `--socketio`용: 참여할 네임스페이스. 기본값은 URL의 경로, 없으면 `/`입니다. |
+| `--auth <json>` | `--socketio`용: 인증 페이로드, JSON 객체. |
+| `--socketio-version <version>` | `--socketio`용: 서버의 Socket.IO 버전, `4`(3 포함) 또는 `2`. 기본값은 4입니다. |
+| `--socketio-path <path>` | `--socketio`용: 서버가 수신하는 경로. 기본값은 `/socket.io/`입니다. |
+| `--proxy <url>` | 이 프록시를 통해 보냅니다: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
+| `--no-proxy` | `HTTP_PROXY` 등을 무시하고 직접 연결합니다. |
+| `--cacert <file>` | 이 PEM 파일의 CA 인증서도 신뢰합니다. 반복할 수 있습니다. |
+| `--cert <file>` | 이 클라이언트 인증서를 보냅니다. PEM 파일(`--key`와 함께) 또는 `.p12`/`.pfx` 파일. |
+| `--key <file>` | 인증서 파일에 개인 키가 없을 때, 클라이언트 인증서의 PEM 개인 키. |
+| `--pass <passphrase>` | 키나 PKCS#12 파일의 암호. `ECHOLOT_CERT_PASSPHRASE` 환경 변수를 쓰는 편이 좋습니다. |
+
+`--http1.1`, `--http2`, `--http3`이 없으면 Echolot은 앱의 **자동** 설정과 같은 방식으로 버전을 고릅니다. 이 중 하나만 선택하십시오.
+
+## 종료 코드 [#exit-codes]
+
+| 코드 | 조건 |
+| --- | --- |
+| `0` | 400 미만의 응답을 받았고 모든 검사를 통과했습니다. |
+| `1` | 응답이 없거나(이유가 출력됩니다) 검사나 테스트가 실패했습니다. |
+| `22` | 응답 상태가 400 이상이었습니다. 본문은 그대로 출력됩니다. |
+| `64` | 잘못된 옵션, URL이 아닌 값, 작업 공간 밖의 파일. |
+
+`pm.execution.skipRequest()`를 호출하는 요청 전 스크립트는 아무것도 보내지 않고 종료 코드 0으로 끝납니다.

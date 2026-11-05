@@ -1,0 +1,62 @@
+---
+title: "教程"
+description: "以 Alpenglow 演示商店为例的分步课程，从第一个请求到智能体和 CI。"
+---
+
+每篇教程都完整地讲解一项任务。它们都使用 **Alpenglow**，一个虚构的户外装备商店：位于 `https://demo.echolot.dev` 的[演示 API](/docs/tutorials/demo-api)，以及一个已包含各类请求的示例工作区。你需要一台运行 macOS 15 或更高版本、搭载 Apple 芯片的 Mac，并安装 Echolot。发送到演示服务的任何内容都不会被存储。
+
+## Alpenglow 工作区 [#the-alpenglow-workspace]
+
+大多数教程要么自己新建工作区，要么从 Alpenglow 开始。获取方式：
+
+1. 下载 [Alpenglow.echolot.zip](/examples/Alpenglow.echolot.zip)。
+2. 在访达中双击 zip 文件解压，得到 `Alpenglow.echolot`。
+3. 双击 `Alpenglow.echolot`，Echolot 会在工作区窗口中打开它。你也可以选取**文件 › 打开工作区…**（<kbd>⌘</kbd><kbd>O</kbd>）并选择它。
+
+Alpenglow 在选择**无环境**时即可使用：它的工作区变量指向演示 API。其中包含：
+
+| 文件夹 | 内容 |
+| --- | --- |
+| Auth | **Sign in**，它把访问令牌存入机密变量 `{{token}}`；**Who am I**；**Orders with OAuth 2** |
+| Catalog | **List products**、**Search**、**Get product**、**Categories**、GraphQL 请求 **Search products**、**Export the catalog**（14 MB） |
+| Orders | **List orders**、**Create order**、**Get order**、**Cancel order**，都通过文件夹的 Bearer 认证发送令牌 |
+| Realtime | **Order updates**（WebSocket）、**Order events**（Server-Sent Events）、**Support chat**（Socket.IO）、**Warehouse sensors**（MQTT） |
+| Inventory | 三个 gRPC 调用：**List warehouses**、**Watch stock**、**Reserve stock** |
+| Agent tools | 两个 MCP 请求，**search_catalog** 和 **order_status**，发往服务器 **Alpenglow MCP** |
+| Echo | 发往 `/echo` 端点的请求：你发送的内容、状态、重定向、Basic 认证、Cookie、XML 和 HTML |
+
+它还有三个环境（**Local**、**Staging** 和受保护的 **Production**；Staging 和 Production 是虚构的地址）、三个流程（**Place a test order**、**Morning stock check**、**Order status on webhook**）、MCP 服务器 **Alpenglow MCP**，以及规范 `alpenglow.yaml`、`shop.graphql` 和 `inventory.proto`。
+
+<Shot id="tutorials-alpenglow-window" alt="Alpenglow 工作区，边栏中是它的文件夹，并打开了 Catalog › List products" />
+
+## 在 Mac 上运行 gRPC、Socket.IO 和 MQTT 服务器 [#servers-on-your-mac-for-grpc-socketio-and-mqtt]
+
+演示 API 无法提供 gRPC、Socket.IO 或 MQTT。文档仓库的 `examples/servers` 中有适用于它们的小型服务器。它们需要 [Bun](https://bun.sh)，并且只在你的 Mac 上监听：
+
+```sh
+git clone https://github.com/staticdreams/echolot-docs.git
+cd echolot-docs/examples/servers
+bun install
+bun run realtime   # Socket.IO on http://localhost:3001 (namespace /support), MQTT on mqtt://localhost:1883
+bun run grpc       # the Inventory service on localhost:50051 (in a second Terminal window)
+```
+
+Alpenglow 的 **Support chat**、**Warehouse sensors** 和 **Inventory** 请求已经指向这些地址。要停止服务器，按 <kbd>Control</kbd>-<kbd>C</kbd>。
+
+## 教程列表 [#the-tutorials]
+
+| 教程 | 你将学到 | 用时 |
+| --- | --- | --- |
+| [你的第一个工作区](/docs/tutorials/first-workspace) | 从零开始创建工作区：请求、文件夹、环境、机密和 Git | 15 分钟 |
+| [串联请求](/docs/tutorials/chain-requests) | 登录、存储令牌，通过文件夹认证把它发送到各处；动态值；`Idempotency-Key` | 15 分钟 |
+| [测试 API 并在 CI 中运行](/docs/tutorials/test-in-ci) | 添加检查，在运行器中运行工作区，然后在 GitHub Actions 中用 `echolot run` 生成 JUnit 报告 | 20 分钟 |
+| [规范优先的设计与模拟](/docs/tutorials/spec-first) | 导入或设计 OpenAPI 规范，对其进行 lint，模拟它，向模拟服务器发送请求并对照规范检查 | 20 分钟 |
+| [用流程实现自动化](/docs/tutorials/automate-with-flows) | 在画布上构建流程：登录、列出订单、判断、通知；运行它、设置计划、由 Webhook 启动 | 20 分钟 |
+| [检查 MCP 服务器](/docs/tutorials/inspect-an-mcp-server) | 添加演示 MCP 服务器，查看它的工具，调用它们，阅读质量卡片，把调用存储为带检查的请求 | 15 分钟 |
+| [让智能体安全地使用你的工作区](/docs/tutorials/agents-safely) | 连接 Claude Code 或其他客户端，设定它可以做什么，批准它的发送，保护环境；或者使用内置助手 | 20 分钟 |
+| [实时通信](/docs/tutorials/realtime) | 对演示 API 使用 WebSocket 和 Server-Sent Events；对本地服务器使用 Socket.IO 和 MQTT | 20 分钟 |
+| [从 Postman 迁移](/docs/tutorials/coming-from-postman) | 导入集合及其环境，了解各项如何对应，运行它，再导出 | 15 分钟 |
+
+<Callout title="演示 API 有限制">
+  它对同一地址每分钟接受 120 个请求，导出、WebSocket 和 Server-Sent Events 为每分钟 10 个。超出限制时，它会返回 `429 Too Many Requests`；等待一分钟后再次发送即可。
+</Callout>

@@ -1,0 +1,81 @@
+---
+title: "リアルタイム"
+description: "デモAPIのライブ注文イベントをWebSocketとServer-Sent Eventsで見て、Mac上のサーバでSocket.IOのチャットとMQTTのセンサー読み取りを行います。"
+---
+
+リアルタイムAPIは、接続を開いたままにして、双方向にメッセージを送ります。このチュートリアルでは、デモショップの注文フィードをWebSocketとServer-Sent Eventsで見て、続いてショップのサポートデスクとSocket.IOで会話し、倉庫の温度をMQTTで読み取ります。それらを並べて動かします。
+
+- <strong>所要時間：</strong>20分。
+- **必要なもの：**[Alpenglowワークスペース](/docs/tutorials#the-alpenglow-workspace)で**環境なし**を選んだ状態。Socket.IOとMQTTには、[ローカルのサーバ](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt)が必要です。`examples/servers`で`bun run realtime`を実行します。
+- <strong>学べること：</strong>接続、保存したメッセージ、ライブログ、イベントストリーム、名前空間と確認応答、サブスクリプション、QoSとリテインメッセージ。
+
+## 1. WebSocket：注文フィード [#1-websocket-the-order-feed]
+
+1. **Realtime › Order updates**を開きます。URLは`{{wsURL}}/orders`で、`wss://demo.echolot.dev/v1/orders`です。
+2. **接続**を選びます（<kbd>⌘</kbd><kbd>R</kbd>）。ボタンが**接続解除**に変わります。
+3. レスポンスの**メッセージ**タブに表示が増えていきます。開いている接続を示すリンクのアイコン、サーバの`hello`、そして1.5秒ごとの注文イベント（`{"event": "order.created", "order": "ord_9Tq3Vb", …}`など）です。
+   送信したメッセージには上向きの矢印、受信したものには緑の下向きの矢印が付きます。**その他**を選ぶと、長いJSONメッセージが展開されます。
+4. リクエストの**メッセージ**タブにある、保存済みメッセージ**Subscribe**には、`{"op":"subscribe","channel":"orders"}`が入っています。その**送信**を選びます。サーバは`{"op": "subscribed", "channel": "orders"}`と応答します。
+5. 下部の入力欄に`{"id": 42, "text": "hello"}`と入力して、<strong>送信</strong>を選びます（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>）。サーバは`{"op": "ack", "id": 42}`で確認応答します。<strong>+</strong>を選ぶと、そのメッセージを後のために保存できます。
+6. ログは**すべて**、**送信**、**受信**で絞り込めます。**メッセージをフィルタ**に`shipped`と入力しても絞り込めます。
+7. **接続解除**を選びます。ログの末尾には**Echolotによって閉じられました**と表示されます。
+
+デモは3分でセッションを閉じます（`1000 Demo sessions last 3 minutes`）。また、10秒間に20件を超えるメッセージを送ると、`1008`で閉じます。**実行時に送信**をオンにした保存済みメッセージは、ランナーやコマンドラインツールでリクエストを実行すると、接続後に順番に送信されます。
+詳しくは[WebSocketとSSE](/docs/requests/websocket-and-sse)を参照してください。
+
+<Shot id="tutorials-realtime-websocket" alt="接続したOrder updates：左に保存済みのSubscribeとPingメッセージ、右に送受信メッセージのライブログ" />
+
+## 2. Server-Sent Events：同じフィードをストリームで [#2-server-sent-events-the-same-feed-as-a-stream]
+
+1. **Realtime › Order events**を開きます。通常のHTTPリクエスト、`GET {{baseURL}}/orders/events`で、ヘッダー`Accept: text/event-stream`が付いています。
+2. <strong>送信</strong>を選びます。レスポンスは<strong>イベント</strong>タブで開き、<strong>受信待機中…「停止」で終了します。</strong>と表示されます。
+3. 1秒おきにイベントが届きます。それぞれが、番号と名前のタイトルが付いた専用のカードに表示され（**1. order.created**など）、その下に**id 1**が表示されます。20件のイベントの後、サーバは`end`を送ってストリームを閉じます。
+4. 途中で止めるには、**キャンセル**を選びます（<kbd>⌘</kbd><kbd>.</kbd>）。
+
+イベントの途中から再開するには、最後に見たidを`Last-Event-ID`ヘッダーに追加して（たとえば`15`）、もう一度送信します。サーバは16から20を送ります。
+**ヘッダー**タブで`Last-Event-ID`と入力すると、その値の候補として`{{lastEventId}}`が表示されます。その変数に値を設定するか、番号を直接入力してください。
+
+## 3. Socket.IO：サポートデスク [#3-socketio-the-support-desk]
+
+先にローカルのサーバを起動します（`bun run realtime`）。`Alpenglow realtime: Socket.IO on http://localhost:3001/support, MQTT on mqtt://localhost:1883`と出力されます。
+
+1. **Realtime › Support chat**を開きます。URLは`{{realtimeURL}}`、つまり`http://localhost:3001`です。**イベント**タブの**名前空間**は`/support`です。URLバーのメソッドメニューで、**サーバ**のバージョン（Socket.IO 4）を設定します。
+2. **接続**を選びます。3つのイベントが届きます。担当者の名前と待ち順を含む`welcome`、`typing`、そして`message`：「Grüezi! How can I help with your order?」
+3. 保存済みイベント**Say hello**は、`message`を`{"text":"Grüezi!"}`で送出します。**確認応答**のチェックボックスをオンにしてサーバに確認応答を要求し、**送出**を選びます。
+4. ログには確認応答`{"id": "msg_31", "delivered": true}`が表示され、少し後にHeidiの返事が届きます。「Your Matterhorn 2P ships tomorrow from Bern.」
+5. 保存していないイベントを送出するには、入力欄の**イベント**フィールドにその名前を、引数をJSONで入力して、**送出**を選びます（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>）。
+
+ログの各行には、名前空間、イベント、そして確認応答がある場合はその番号が表示されます。**イベントをフィルタ**でログを絞り込めます。サーバが自分のイベントの確認応答を求めてきた場合は、その行に**確認応答**ボタンが表示されます。
+`{"token": "{{token}}"}`のような認証ペイロードは、**イベント**タブの**認証**フィールドに入力します。[Socket.IO](/docs/requests/socket-io)を参照してください。
+
+## 4. MQTT：倉庫のセンサー [#4-mqtt-warehouse-sensors]
+
+同じローカルのサーバが、`localhost:1883`でMQTTブローカーを動かし、3つの倉庫の温度を1.5秒ごとにパブリッシュします。
+
+1. **Realtime › Warehouse sensors**を開きます。URLは`mqtt://{{mqttHost}}`で、メソッドメニューの**プロトコル**は**MQTT 3.1.1**です。
+2. **サブスクライブ**タブには、**QoS 1**のサブスクリプション`warehouses/+/temperature`があり、**接続時にサブスクライブ**がオンになっています。`+`はトピックの1つの階層に一致します。
+3. **接続**を選びます。`warehouses/zurich/temperature`、`warehouses/bern/temperature`、`warehouses/chur/temperature`のメッセージが届きます。`{"celsius": 6.1, "humidity": 44, …}`のような内容です。
+4. **すべてのトピック**メニューで、1つの倉庫だけを表示できます。
+5. **サブスクライブ**の入力欄に`warehouses/status`と入力し、**QoS 0**のまま、**サブスクライブ**を選びます。すぐに1件のメッセージ`{"online": 3}`が届き、リテインと表示されます。ブローカーが、後からサブスクライブする人のために保持していたメッセージです。
+6. **パブリッシュ**タブで、トピックを`warehouses/bern/door`、ペイロードを`{"open": true}`にして、**パブリッシュ**を選びます（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>）。`warehouses/#`をサブスクライブすると、それが戻ってくるのを確認できます。`#`は、その下のすべての階層に一致します。
+
+**接続**タブには、**クライアントID**、クリーンセッションの設定、**キープアライブ**、ウィルが入っています。ブローカーのユーザ名とパスワードは、**認証**タブにBasic認証として入力します。パスワードはシークレット変数に保管してください。コマンドラインツールもMQTTを扱えます。
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 5
+```
+
+[MQTT](/docs/requests/mqtt)と[`echolot mqtt`](/docs/cli/mqtt)を参照してください。
+
+## 5. 並べて動かす [#5-side-by-side]
+
+リクエストごとに専用のタブがあります。**Order updates**、**Support chat**、**Warehouse sensors**を3つのタブで開いて、それぞれを接続してください。タブを切り替えている間も、すべての接続が開いたままです。
+セッションが閉じると、Echolotはメッセージログ全体とともに履歴に保存するので、後から読み返せます（<kbd>⌘</kbd><kbd>Y</kbd>）。
+
+ローカルのサーバはgRPCも提供します。`bun run grpc`を実行して、**Inventory**のリクエストを送信してください。**Watch stock**は12回分の在庫レベルをストリーミングして終了します。[gRPC](/docs/requests/grpc)を参照してください。
+
+## 次のステップ [#next-steps]
+
+- [WebSocketとSSE](/docs/requests/websocket-and-sse)：サブプロトコル、バイナリメッセージ、セッションのチェック。
+- [Socket.IO](/docs/requests/socket-io)と[MQTT](/docs/requests/mqtt)：すべての設定。
+- [APIをテストしてCIで実行する](/docs/tutorials/test-in-ci)：セッションもランナーで実行され、保存したメッセージを送信します。

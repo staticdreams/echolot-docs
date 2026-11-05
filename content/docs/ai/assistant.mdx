@@ -20,6 +20,9 @@ The Assistant is a panel docked on the right of every page. Open or close it wit
 
 Each window has its own Assistant, working on that window's workspace.
 
+To make the panel wider, drag its left edge to the left; it takes room from the page, down to the page's minimum
+width. Drag it right to make it narrower, and double-click the edge to go back to the usual width.
+
 ## Choose a model provider
 
 The first time you open the panel it says **Choose a model**. Choose **Open Assistant Settings…**, or open
@@ -129,10 +132,14 @@ to *send a request that may change data*** with the call and the request as it w
 <Shot id="ai-assistant-approval" alt="The approval sheet: the agent wants to send a request that may change data, with the POST request it would send and the Deny, Allow for This Session and Allow Once buttons" />
 
 - **Allow Once** runs this call.
-- **Allow for This Session** runs this call, and calls like it, without asking until the window closes: the same
-  tool for changes to the workspace (every `create_request`), the same method to the same host for sends (every GET to
-  `demo.echolot.dev`). For deletes and protected environments it covers only the same call. The sheet says what it
-  covers.
+- **Allow for This Session** runs this call, and calls like it, without asking until the window closes: every change
+  to the workspace at once, whichever tool makes it (creating a request, then saving a folder's auth, then an
+  environment), and the same method to the same host for sends (every GET to `demo.echolot.dev`). Deleting still asks,
+  and so do protected environments, new hosts and anything that is narrower than a plain change, such as a flow's
+  version; for those it covers only the same call. The sheet says what it covers.
+- **Stop asking before changes and sends** is a checkbox on the sheet for changes and for sends that change data.
+  Allowing with it ticked turns on **Settings › Assistant › Ask before**, below. It isn't offered for deletes, new
+  hosts or protected environments.
 - **Deny** refuses it, and the Assistant is told so.
 
 For a send to a new host, a send to a protected environment and a delete, **Allow Once** is not the default button,

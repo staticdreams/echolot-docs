@@ -1,0 +1,122 @@
+---
+title: "動的な値"
+description: "タイムスタンプ、UUID、ハッシュ、エンコード、ファイル、ほかのリクエストやそのレスポンスの値など、送信時に求められる値をリクエストに埋め込みます。"
+---
+
+動的な値は、リクエストを送信するたびにEcholotが求めるトークンです。現在の時刻、新しいUUID、ボディの署名、ほかのリクエストの最新のレスポンスの値などがあります。
+変数と同じように書きますが、先頭に`$`が付きます：`{{$uuid}}`、`{{$sha256('{{password}}')}}`。動的な値は、変数が使える場所ならどこでも使えます。
+URL、パラメータ、ヘッダー、ボディ、フォームのフィールド、認証のフィールドです。
+
+このページでは、動的な値の追加と編集の方法を説明します。すべての動的な値と引数は、[動的な値のリファレンス](/docs/reference/dynamic-values)にあります。
+
+## リストから追加する [#add-one-from-the-list]
+
+1. 変数を受け付けるフィールドで`{{`と入力します。リストが開き、スコープ内の変数が先に、続いて動的な値がカテゴリごとに表示されます。
+2. 続けて入力すると絞り込めます：`uuid`、`time`、`hmac`。各項目には、何が得られるかが書かれています。
+3. <kbd>↑</kbd>と<kbd>↓</kbd>で移動し、<kbd>↩</kbd>または<kbd>⇥</kbd>で挿入します。<kbd>Esc</kbd>でリストを閉じます。
+
+引数を取る値は、挿入するとすぐにエディタが開くので、引数を入力する代わりにフォームで入力できます。`{{`を入力せずにリストを開くには、フィールドを右クリックして<strong>変数または値を挿入…</strong>を選びます。
+
+フィールド内では、動的な値は読みやすいラベル付きのピルとして表示されます。値のタイトル（`HMAC-SHA256`）、レスポンスの値なら、リクエストと読み取る内容（`Sign in › $.access_token`）です。
+その下のテキストは、書いたままです。
+
+<Shot id="requests-http-token-editor" alt="JSONPath Filtered Responseの値のトークンエディタ。リクエストはSign in、JSONPathは$.access_token、「先に送信」は「まだレスポンスがないとき」、最新のレスポンスからの値が表示されている" />
+
+## トークンを編集する [#edit-a-token]
+
+ピルをダブルクリックするか、右クリックして<strong>トークンを編集…</strong>を選びます。トークンエディタが開きます：
+
+- 上部のボタンは、トークンが何であるかを示し、切り替えもできます。変数か動的な値かです。
+- フィールドは値の引数です。リクエストの引数は、ワークスペースのリクエストをフォルダごとにまとめたメニューです。クエリの引数（JSONPath、XPath、ヘッダー名）には、
+  最新のレスポンスにあるものを一覧するボタンが付いているので、パスを入力する代わりに値を選べます。
+- **値**は、現在の環境でトークンが何を返すかを表示します。解決できないときは**現在の環境では解決できません**と、その理由が表示されます。
+- 変数では、**別の変数を使用**で別の変数に差し替えられ、**代わりにレスポンスの値を使用**でレスポンスの値に変えられます。
+- **削除**でトークンを削除し、**完了**で変更を確定します。
+
+## クイックルック [#quick-look]
+
+ピルにポインタを合わせると、開かなくてもその値が分かります。値（シークレットはマスクされ、**シークレット**と表示）、取得元、書き方です。
+動的な値では、いつ求められるかも表示されます。時間やランダムの値は、**送信のたびに作り直されます。上は例です。**
+ボタンは<strong>編集…</strong>、<strong>値をコピー</strong>、<strong>すべての変数…</strong>で、最後のものは変数パネルを開きます。
+
+## 手で書く [#writing-them-by-hand]
+
+```text
+{{$name}}                       no arguments
+{{$name('text', 42)}}           text in single or double quotes, numbers as they are
+{{$base64(user)}}               a bare name is a variable
+{{$base64('{{user}}:{{pass}}')}} variables inside text
+{{$sha256("{{$requestBody('')}}")}} a dynamic value inside another one
+```
+
+引用符で囲んだ引数の中のトークンは、自分の引数に別の種類の引用符を使う必要があります。最後の行のように、引数を単一引用符で書いたトークンは、二重引用符で囲みます。
+
+## 使えるもの [#what-you-can-use]
+
+| カテゴリ | 例 | 得られるもの |
+| --- | --- | --- |
+| **レスポンス** | `{{$response('auth/sign-in', '$.access_token')}}`、`{{$responseHeader('orders/create-order', 'Location')}}`、`{{$responseStatus('auth/sign-in')}}` | ほかのリクエストの最新のレスポンスの値。 |
+| **リクエスト** | `{{$requestHeader('', 'Content-Type')}}`、`{{$requestURL('auth/sign-in')}}`、`{{$requestJSONPath('', '$.lines[0].sku')}}` | このリクエスト（最初の引数が空）またはほかのリクエストの、送信されるとおりの一部分。 |
+| **エンコーディング** | `{{$base64('heidi:alpenglow')}}`、`{{$urlEncode('a b&c')}}`、`{{$jsonEscape('say "hi"')}}`、`{{$basicAuth('heidi', '{{password}}')}}`、`{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`、`{{$newline}}` | エンコードまたはデコードしたテキスト、エスケープ、Basic認証の値、署名したJWT。 |
+| **ハッシュと署名** | `{{$sha256("{{$requestBody('')}}")}}`、`{{$hmacSha256('{{key}}', 'message', 'base64')}}`、`{{$md5('text')}}` | ハッシュとHMAC。`base64`または`base64url`を指定しなければ16進数です。 |
+| **時間** | `{{$timestamp}}`、`{{$timestampMs}}`、`{{$isoTimestamp}}`、`{{$httpDate}}`、`{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | 送信時刻。Unix秒またはミリ秒、ISO 8601、HTTP日付、独自の形式で、秒単位のオフセットとタイムゾーンを指定できます。 |
+| **ランダム** | `{{$uuid}}`、`{{$randomInt(1, 6)}}`、`{{$randomString(16)}}`、`{{$randomHex(8)}}` | 送信のたびに新しいランダムな値。`$guid`と`$randomUUID`は`$uuid`の別名です。 |
+| **ダミーデータ** | `{{$randomFullName}}`、`{{$randomEmail}}`、`{{$randomCity}}`、`{{$randomPrice}}`、`{{$randomLoremSentence}}`、`{{$randomDatePast}}` | 架空の名前、住所、会社、価格、日付、ダミーテキストなど。送信のたびに新しくなり、名前はPostmanと同じです。リストではサブメニューにまとまっています。[ダミーデータ](/docs/reference/dynamic-values#fake-data)を参照してください。 |
+| **テキスト** | `{{$lowercase('{{name}}')}}`、`{{$uppercase('chf')}}`、`{{$trim('{{code}}')}}` | 変換したテキスト。 |
+| **ファイルとシステム** | `{{$file('data/order.json')}}`、`{{$env('HOME')}}` | ファイルの内容（ワークスペースからの相対パス、または絶対パス）、またはEcholotプロセスの環境変数。 |
+
+`$env`はエージェントでは使えません。AIエージェントがリクエストを送信するとき、Macの環境変数はそこに入りません。
+
+Alpenglowの例では、**Orders › Create order**で使っています。`Idempotency-Key`ヘッダーが`{{$uuid}}`なので、注文のたびに新しい値になります。
+
+## ほかのリクエストのレスポンスの値 [#values-from-other-requests-responses]
+
+**レスポンス**の値は、保存されているほかのリクエストの最新のレスポンスを読み取ります。最初の引数は、そのリクエストのワークスペース内のパスで、ファイルと同じフォルダ名とリクエスト名です。
+**Auth › Sign in**なら`auth/sign-in`です。
+
+| 値 | 読み取るもの |
+| --- | --- |
+| `$response(request, query)` | クエリの形式で決まる任意のもの：`$.token`（JSONPath）、`/feed/entry[1]/id`（XPath）、`header:Location`、`cookie:session`、`regex:token=(\w+)`、`jq:.data.token`、`keypath:data.items.0.id`。 |
+| `$responseJSONPath`、`$responseKeyPath`、`$responseJq`、`$responseXPath`、`$responseRegex` | その種類のクエリでボディを読み取ります。正規表現は、グループがあれば最初のグループを返します。 |
+| `$responseHeader`、`$responseCookie` | ヘッダー、またはレスポンスが設定したCookie。 |
+| `$responseStatus`、`$responseBody`、`$responseBodyLength` | ステータスコード、テキストとしてのボディ、そのバイト数。 |
+
+値が読み取るリクエストにまだレスポンスがないとき、Echolotはそのリクエストを先に送信します。URLバーの下の行に、送信前にそう表示されます：**先に「Sign in」を送信**。
+省略可能な最後の引数が、いつ送信するかを決めます。トークンエディタでは**先に送信**です：
+
+| 引数 | エディタでの表示 | 動作 |
+| --- | --- | --- |
+| （なし）または`'if-missing'` | **まだレスポンスがないとき** | 相手のリクエストにレスポンスがないときだけ、そのリクエストを送信します。 |
+| `'fresh'` | **毎回** | このリクエストを送信するたびに、先に相手を送信します（ランナーでは実行ごとに1回）。 |
+| `'latest'` | **しない：最新のレスポンスを使用** | 送信せず、最新のレスポンスを使います。 |
+
+```text
+{{$response('auth/sign-in', '$.access_token', 'fresh')}}
+```
+
+リクエスト同士が循環して読み合っていると、該当するリクエスト名を示して拒否されます。
+
+レスポンスの値を、1つのリクエストを指す代わりに、すべてのリクエストが読む変数に保存するには、[レスポンスのキャプチャ](/docs/requests/captures)を使います。
+
+## このリクエストの値 [#values-from-this-request]
+
+**リクエスト**の値は、変数と認証が埋められた、送信されるとおりのリクエストを読み取ります。送信中のリクエストなら、最初の引数を空にします：`{{$requestHeader('', 'X-Request-Id')}}`。
+Echolotは求められた部分だけを計算するので、ヘッダーでボディに署名できます：
+
+```text
+X-Signature: {{$hmacSha256('{{signingKey}}', "{{$requestBody('')}}")}}
+```
+
+## jq [#jq]
+
+jqフィルタは`$responseJq`、`$requestJq`、`$response(…, 'jq:…')`で使えます。インストールするものはありません。複数の結果を返すフィルタは、1行に1つずつ返します：
+
+```text
+{{$responseJq('catalog/list-products', '.items[0].sku')}}
+{{$responseJq('catalog/list-products', '[.items[].price.amount] | add')}}
+```
+
+## 値が解決されないとき [#when-a-value-doesnt-resolve]
+
+求められないトークン（変数がない、レスポンスがなく送信もできないリクエスト、何も見つからないJSONPathなど）は、書いたままで送信され、URLバーの下の行に**1件の問題**と表示されます。
+クリックすると内容が分かります。トークンエディタとクイックルックにも同じことが表示されます。

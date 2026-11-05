@@ -1,0 +1,537 @@
+---
+title: "Blöcke"
+description: "Jede Blockart, die ein Flow enthalten kann, mit Einstellungen und Ports – und wie Werte, Vorlagen und Bedingungen zwischen den Blöcken funktionieren."
+---
+
+Jeder Block tut genau eine Sache. Seine Einstellungen findest du im Inspektor, sobald du ihn auswählst; seine Ports
+sitzen auf der Arbeitsfläche, die Eingänge links und die Ausgänge rechts. Diese Seite listet jede Blockart in den
+Gruppen der Blockauswahl und erklärt dann die Werte, die zwischen Blöcken wandern, Vorlagen wie `{{body.id}}` und
+Bedingungen.
+
+## Wie ein Durchlauf abläuft [#how-a-run-moves]
+
+- Ein Block läuft, sobald jeder Eingang mit einer Verbindung einen Wert hat. Er sendet dann Werte aus einigen seiner
+  Ausgänge, und nur die Blöcke, die daran hängen, laufen als Nächstes.
+- Start läuft zuerst. Die Blöcke „Wert“ und „Variable lesen“, in die nichts verbunden ist, laufen ebenfalls am Anfang.
+- Blöcke laufen nebeneinander, wenn es geht. Ein Block „Zeigen und warten“ kann auf dich warten, während ein Block
+  „Abfragen“ weiterläuft.
+- Mehrere Blöcke können fehlschlagen: „Anfrage“, „Abfragen“, „Tool“, „Flow“, „Auswerten“ und „Datei schreiben“ haben
+  einen Ausgang `fail`. Ist er verbunden, kommt der Fehler dort heraus und der Durchlauf geht weiter. Ist er es nicht,
+  schlägt der ganze Durchlauf an diesem Block fehl.
+- Der Durchlauf endet, wenn nichts mehr läuft.
+
+Der Inspektor jedes Blocks hat außerdem **Titel** (auf dem Block angezeigt; leer zeigt er den Namen der Blockart) und
+**Pausiert (Werte gehen direkt durch)**. Ein pausierter Block ist abgeblendet und wird übersprungen: Was hineinkommt,
+geht direkt aus seinem ersten Ausgang wieder heraus.
+
+## Auslöser [#triggers]
+
+### Start [#start]
+
+Hier beginnt ein Durchlauf: mit der Taste **Ausführen**, über einen Agenten (wenn der Flow ein Tool ist), einen
+Zeitplan, einen Webhook oder `echolot flow run`. Sein Inspektor enthält die **Auslöser** des Flows; siehe [Ausführen und
+Auslöser](/docs/flows/running-and-triggers).
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `run` | aus | Alle Eingaben des Flows als ein Objekt. |
+| einer pro Eingabe | aus | Der Wert dieser Eingabe. |
+
+Ein Flow hat genau einen Block „Start“. Er steht nicht in der Blockauswahl.
+
+### Ausgabe [#output]
+
+Was der Durchlauf zurückgibt: an den Agenten, der den Flow aufgerufen hat, an die Befehlszeile, an den Aufrufer des
+Webhooks oder an einen übergeordneten Flow. Ein Flow hat höchstens einen.
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `value` | ein | Das Ergebnis. |
+
+## Aktionen [#actions]
+
+### Anfrage [#request]
+
+Sendet eine gesicherte Anfrage des Arbeitsbereichs (HTTP, GraphQL oder eine MCP-Anfrage) mit ihrer Auth, ihren
+Skripten, Prüfungen und der Umgebung des Durchlaufs.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Anfrage** | Die gesicherte Anfrage, aus einer Liste gewählt (erforderlich). |
+| **Variablen** | Namen, durch Kommas getrennt. Jeder wird zu einem Eingang, der diese `{{variable}}` der Anfrage füllt. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `send` | ein | Sendet die Anfrage. Kommt ein Objekt an, wird jeder seiner Schlüssel zu einer Variablen dieses Sendevorgangs. |
+| einer pro Name in **Variablen** | ein | Der Wert für diese Variable. |
+| `success` | aus | Die [Antwort](#the-response-object), wenn die Anfrage erfolgreich war. |
+| `fail` | aus | Die Antwort, wenn sie außerhalb von 2xx lag oder eine Prüfung fehlschlug, oder der Fehler, wenn nichts zurückkam. |
+
+Eine Anfrage ist erfolgreich, wenn sie mit 2xx antwortet und ihre Prüfungen, Skript-Tests und Skripte alle bestehen,
+wie in der [Ausführung](/docs/requests/runner). Variablen, die ein Flow übergibt, gelten nur für dieses Senden und haben
+Vorrang vor denen der Umgebung.
+
+Im Flow **Place a test order** ist der Ausgang `success` von **Sign in** mit `send` von **Create order** verbunden: Die
+Bestellung wird erst aufgegeben, nachdem die Anmeldung geklappt hat, und das Token, das Sign in erfasst, steht schon in
+`{{token}}`.
+
+### Tool [#tool]
+
+Führt eines der eigenen Tools von Echolot aus, etwa einen Mock starten, einen Ordner ausführen, eine Spec prüfen oder
+ein Tool eines MCP-Servers aufrufen – mit denselben Regeln wie für Agenten.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Tool** | Das Tool, aus einer Liste gewählt (erforderlich). |
+| **Argumente** | Die Argumente des Tools als JSON, etwa `{ "name": "{{value}}" }`. Textwerte dürfen Vorlagen enthalten. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `run` | ein | Führt das Tool aus. Kommt ein Objekt an, werden seine Schlüssel zu den Argumenten hinzugefügt. |
+| `result` | aus | Was das Tool zurückgegeben hat. |
+| `fail` | aus | Warum es fehlgeschlagen ist. |
+
+Ein Block „Tool“ kann keinen anderen Flow ausführen; dafür gibt es den Block „Flow“.
+
+<Edition only="direct">
+  Ein Block „Tool“, der einen MCP-Server aufruft, der als lokales Programm (stdio) läuft, funktioniert im
+  Direktdownload. In der App-Store-Edition kann Echolot dieses Programm nicht starten: Der Block zeigt eine Warnung und
+  schlägt beim Ausführen fehl.
+</Edition>
+
+### Flow [#flow]
+
+Führt einen anderen Flow des Arbeitsbereichs aus und sendet, was bei dessen Block „Ausgabe“ angekommen ist.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Flow** | Der andere Flow (erforderlich). Ein Flow kann sich nicht selbst ausführen, und Flows können sich nicht im Kreis gegenseitig ausführen. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `input` | ein | Ein Objekt mit den Eingaben des anderen Flows. |
+| `output` | aus | Was der andere Flow zurückgegeben hat. |
+| `fail` | aus | Warum der andere Flow fehlgeschlagen ist. |
+
+Flows führen sich höchstens 8 Ebenen tief gegenseitig aus. Secrets wandern nicht als Werte zwischen Flows: Sichere sie
+stattdessen als Variablen.
+
+## Personen [#people]
+
+Blöcke dieser Gruppe halten den Durchlauf an und fragen dich etwas. In der App öffnet sich ein Blatt; wenn ein Agent den
+Flow gestartet hat, geht die Frage an den Client des Agenten; in der Befehlszeile wird sie im Terminal gestellt. Bei
+Durchläufen, die Zeitpläne und Webhooks starten, ist niemand da, den man fragen könnte – ein Block dieser Gruppe schlägt
+dort fehl, ebenso `echolot flow run --no-input`.
+
+### Fragen [#ask]
+
+Fragt Werte mit einem kleinen Formular ab.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Nachricht** | Was gefragt wird. Vorlagen sind erlaubt. |
+| **Felder** | Die Felder des Formulars (erforderlich). Jedes hat einen `name` (sein Port und sein Schlüssel), ein `label`, das daneben steht, einen `type` (`text`, `number`, `bool`, `secret` oder `choice`), bei einer Auswahl die `choices`, durch Kommas getrennt, und einen `default`. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `run` | ein | Fragt. Ein Objekt füllt die Vorlagen der Nachricht. |
+| `answers` | aus | Alle Antworten als ein Objekt. |
+| einer pro Feld | aus | Die Antwort auf dieses Feld. |
+| `cancelled` | aus | `true`, wenn die Person auf **Abbrechen** geklickt hat. |
+
+Das Blatt hat **Abbrechen** und **Fortfahren**. Antworten auf Felder vom Typ `secret` sind im Durchlaufprotokoll
+verborgen.
+
+### Zeigen und warten [#show-and-wait]
+
+Zeigt eine Nachricht, einen Code zum Kopieren und einen Link zum Öffnen und wartet dann auf **Fortfahren** oder darauf,
+dass ein Wert an `until` ankommt. Nutze es für Geräteanmeldungen: Zeige den Code, während ein Block „Abfragen“ auf die
+Genehmigung wartet.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Titel** | Der Titel des Blatts. |
+| **Nachricht** | Was angezeigt wird (erforderlich). |
+| **Code** | Groß angezeigt, mit **Code kopieren** (ein Gerätecode). |
+| **Link** | Angezeigt mit **Im Browser öffnen**. |
+| **QR** | **Zeigt den Link auch als QR-Code.** Standardmäßig aus. |
+
+Alle fünf nehmen Vorlagen an.
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `run` | ein | Zeigt das Blatt. Ein Objekt füllt die Vorlagen. |
+| `until` | ein | Macht von selbst weiter, wenn ein Wert ankommt, etwa das `success` eines Blocks „Abfragen“. |
+| `done` | aus | Was bei `run` hereingekommen ist. |
+
+Ist `until` verbunden, steht auf dem Blatt **Danach geht es von selbst weiter.** **Nicht mehr warten** schließt es und
+lässt den Block fehlschlagen.
+
+### Genehmigen [#approve]
+
+Bittet dich um Genehmigung, bevor der Flow weitergeht – vor etwas, das sich nicht rückgängig machen lässt.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Nachricht** | Die Frage (erforderlich). Vorlagen sind erlaubt. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `run` | ein | Fragt. Ein Objekt füllt die Vorlagen der Nachricht. |
+| `approved` | aus | Was bei `run` hereingekommen ist, nach **Genehmigen**. |
+| `declined` | aus | Was bei `run` hereingekommen ist, nach **Ablehnen**. |
+
+Genehmigen ist immer Sache der Person. Wenn ein Agent einen Flow ausführt und einen Block „Genehmigen“ beantwortet, legt
+Echolot dir die Frage zuerst vor. In **Place a test order** fragt der Block „Genehmigen“ namens **Keep the order?**
+`Keep order {{body.id}} for CHF {{body.total.amount}}?` mit der Bestellung, die der Shop gerade angelegt hat;
+**Ablehnen** schickt sie weiter zu **Cancel order**.
+
+<Shot id="flows-approve-sheet" alt="Das Genehmigen-Blatt von Place a test order: Keep the order? mit der Bestell-ID und dem Gesamtbetrag in Schweizer Franken sowie den Tasten „Ablehnen“ und „Genehmigen“" />
+
+## Logik [#logic]
+
+### Wenn [#if]
+
+Sendet, was hereinkommt, nach einer [Bedingung](#conditions) an `true` oder `false`.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Bedingung** | Ein JavaScript-Ausdruck (erforderlich), etwa `value.status == 200`. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `value` | ein | Der Wert, der geprüft wird. |
+| `true`, `false` | aus | Derselbe Wert, aus einem der beiden Ausgänge. |
+
+**Morning stock check** verwendet einen Block „Wenn“ namens **Running low?** mit
+`value.body.items.some(p => p.stock.bern < 5)` auf die Produkte, die der Shop zurückgegeben hat.
+
+### Switch [#switch]
+
+Sendet, was hereinkommt, an den ersten Fall, dessen Bedingung zutrifft, sonst an `default`.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Fälle** | Eine Liste (erforderlich). Jeder Fall hat einen `name` (sein Ausgangsport) und eine `condition`. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `value` | ein | Der Wert, der geprüft wird. |
+| einer pro Fall | aus | Der Wert, wenn dieser Fall der erste ist, der zutrifft. |
+| `default` | aus | Der Wert, wenn kein Fall zutrifft. |
+
+### Auswerten [#evaluate]
+
+Führt JavaScript auf dem aus, was hereinkommt. Der letzte Ausdruck ist das Ergebnis: `({ id: value.body.id })` oder
+`a + b`. Code mit einem eigenen `return` läuft als Rumpf einer Funktion, und was `return` liefert, ist das Ergebnis. Ein
+Promise wird abgewartet. `pm.test` und `pm.expect` funktionieren wie in
+[Skripten](/docs/requests/scripts-and-tests), und ihre Ergebnisse zählen als Tests des Durchlaufs. Zeilen von
+`console.log` landen im Durchlaufprotokoll.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Code** | Das JavaScript (erforderlich). |
+| **Eingänge** | Namen der Eingänge, durch Kommas getrennt; jeder ist eine Variable im Code. Leer gilt `value`. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| einer pro Name in **Eingänge** | ein | Der Wert dieser Variablen. |
+| `result` | aus | Das Ergebnis. |
+| `fail` | aus | Der Fehler, wenn der Code eine Ausnahme ausgelöst hat. |
+
+```js
+// Inputs: pages. Joins the lists that Collect gathered.
+return pages.flat();
+```
+
+### Verzögern [#delay]
+
+Wartet und gibt den Wert dann weiter.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Millisekunden** | Wie lange gewartet wird (erforderlich). Eine Zahl oder eine Vorlage wie `{{wait}}`. |
+
+Ports: `value` ein, `value` aus.
+
+## Schleifen [#loops]
+
+### Wiederholen [#repeat]
+
+Sendet `index` so oft wie **Anzahl**, von 0 aufwärts gezählt, dann `done`.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Anzahl** | Wie oft (erforderlich): 0 bis 100.000. Eine Zahl oder eine Vorlage wie `{{pages}}`. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `run` | ein | Startet die Schleife. |
+| `index` | aus | 0, 1, 2 … einmal pro Runde. |
+| `done` | aus | Was bei `run` hereingekommen ist, nach der letzten Runde. |
+
+### Für jedes [#for-each]
+
+Sendet nacheinander jedes Element einer Liste, dann `done`. Es hat keine Einstellungen.
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `list` | ein | Die Liste. Alles andere lässt den Block fehlschlagen. |
+| `item` | aus | Ein Element pro Runde. |
+| `index` | aus | Die Position des Elements, ab 0. |
+| `done` | aus | Die ganze Liste, nach der letzten Runde. |
+
+### Sammeln [#collect]
+
+Sammelt, was während einer Schleife ankommt, in einer Liste und sendet sie, wenn die Schleife fertig ist. Es hat keine
+Einstellungen.
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `item` | ein | Ein Wert pro Runde. |
+| `list` | aus | Alles Gesammelte, sobald die Schleife endet, zu der der Block gehört. |
+
+Jede Runde einer Schleife ist fertig, bevor die nächste beginnt, und die Blöcke, die sie erreicht, laufen in jeder Runde
+erneut. Werte von außerhalb der Schleife, etwa eine Eingabe von Start, bleiben für jede Runde verfügbar.
+
+### Abfragen [#poll]
+
+Sendet eine gesicherte Anfrage immer wieder, bis eine Bedingung zutrifft (eine Anmeldung genehmigt, ein Job fertig)
+oder die Frist abläuft.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Anfrage** | Die gesicherte Anfrage (erforderlich). |
+| **Variablen** | Namen, durch Kommas getrennt; jeder wird zu einem Eingang, der diese `{{variable}}` füllt. |
+| **Bis** | Eine [Bedingung](#conditions) auf `response`, die letzte Antwort. Standard: `response.status >= 200 && response.status < 300`. |
+| **Intervall** | Sekunden zwischen zwei Sendevorgängen. Standard 5. Eine Zahl oder eine Vorlage. |
+| **Frist** | Sekunden, bis aufgegeben wird. Standard 300. Eine Zahl oder eine Vorlage. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `send` | ein | Startet das Abfragen. Kommt ein Objekt an, werden seine Schlüssel zu Variablen. |
+| einer pro Name in **Variablen** | ein | Der Wert für diese Variable. |
+| `success` | aus | Die Antwort, die die Bedingung erfüllt hat. |
+| `timeout` | aus | Die letzte Antwort, wenn die Frist abgelaufen ist. Ist `timeout` nicht verbunden, schlägt stattdessen der Block fehl. |
+| `fail` | aus | Der Fehler, wenn ein Sendevorgang fehlgeschlagen ist. |
+
+Anders als bei „Anfrage“ lässt eine Antwort außerhalb von 2xx den Block „Abfragen“ nicht fehlschlagen: Er sendet erneut,
+bis **Bis** zutrifft.
+
+## Daten [#data]
+
+### Wert [#value]
+
+Ein fester Wert: Text, eine Zahl, `true` oder `false`, eine Liste oder ein Objekt.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Wert** | Text, eine Zahl oder JSON (erforderlich). |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `run` | ein | Sendet den Wert bei jedem Eintreffen erneut. |
+| `value` | aus | Der Wert. Ist nichts mit `run` verbunden, wird er einmal am Anfang gesendet. |
+
+### Vorlage [#template]
+
+Text, dessen `{{name}}` aus dem ankommenden Objekt und den Variablen des Durchlaufs gefüllt wird.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Text** | Der Text mit [Vorlagen](#templates) (erforderlich). |
+
+Ports: `values` ein (ein Objekt), `text` aus.
+
+### Auswählen [#select]
+
+Greift per Pfad Werte aus dem heraus, was hereinkommt, je einen pro Ausgang.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Felder** | Eine Liste (erforderlich). Jedes Feld hat einen `name` (sein Ausgangsport) und einen `path`, etwa `$.body.user_code`. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `value` | ein | Der Wert, aus dem ausgewählt wird, oft eine Antwort. |
+| einer pro Feld | aus | Der Wert an diesem Pfad, oder `null`, wenn dort nichts ist. |
+| `all` | aus | Alle Felder als ein Objekt. |
+
+Pfade sind der gemeinsame Teil von JSONPath:
+
+| Pfad | Wählt |
+| --- | --- |
+| `$.body.items[0].sku` | Einen Schlüssel, dann das erste Element einer Liste. |
+| `$.body.items[-1]` | Das letzte Element. |
+| `$.body.items[*].sku` | `sku` jedes Elements, als Liste. |
+| `$['content-type']` | Einen Schlüssel mit Zeichen, die ein Punkt nicht aufnehmen kann. |
+| `body.id` | Ohne `$` beginnt der Pfad beim Wert. |
+
+### Variable setzen [#set-variable]
+
+Sichert Werte als Variablen, damit spätere Blöcke und Anfragen sie mit `{{name}}` lesen.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Variablen** | Eine Liste (erforderlich). Jede hat einen `name`, einen `path` in das, was hereingekommen ist (leer: alles), eine `scope` und `secret`. |
+
+| Ebene (`scope`) | Wohin der Wert geht |
+| --- | --- |
+| `run` | Nur in diesen Durchlauf und die Anfragen, die er sendet. |
+| `environment` | In die aktive Umgebung (der Standard). Ist keine Umgebung gewählt, schlägt der Durchlauf hier fehl. |
+| `workspace` | In die eigenen Variablen des Arbeitsbereichs. |
+| `global` | Aus Flows nicht beschreibbar: Der Durchlauf schlägt fehl und bittet dich, in der Umgebung oder im Arbeitsbereich zu sichern. |
+
+Mit `secret` an kommt der Wert in den Schlüsselbund, nie in eine Datei, und ab dem Moment, in dem er den Block
+verlässt, ist er im Durchlaufprotokoll und in dem, was Agenten sehen, verborgen. Findet `path` nichts, behält die
+Variable ihren alten Wert, sodass eine Token-Antwort ohne neues Refresh-Token das vorhandene nicht löscht. Siehe
+[Secrets](/docs/workspaces/secrets).
+
+Ports: `value` ein, `value` aus (das Hereingekommene, weitergegeben).
+
+### Variable lesen [#get-variable]
+
+Liest eine Variable so, wie Anfragen sie sehen: zuerst die des Durchlaufs, dann die der Umgebung, des Arbeitsbereichs
+und die globalen.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Name** | Die Variable (erforderlich). |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `run` | ein | Liest sie bei jedem Eintreffen erneut. |
+| `value` | aus | Ihr Wert, oder `null`, wenn es keinen gibt. Ist nichts mit `run` verbunden, wird sie einmal am Anfang gelesen. |
+
+## Ausgabe [#output]
+
+### Anzeigen [#display]
+
+Gibt weiter, was hereinkommt, unverändert, damit du es dir ansehen kannst: Wähle den Block nach einem Durchlauf aus und
+lies **Letzter Durchlauf** im Inspektor.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Format** | `auto`, `text`, `json`, `table` oder `image`. Standard `auto`. |
+
+Ports: `value` ein, `value` aus.
+
+### Log [#log]
+
+Schreibt eine Zeile ins Durchlaufprotokoll.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Nachricht** | Die Zeile, mit Vorlagen. `{{value}}` ist das Hereingekommene; bei leerer Nachricht alles davon. |
+
+Ports: `value` ein, `value` aus. In **Place a test order** schreibt **Order failed** `Create order answered {{status}}`,
+wenn sich die Bestellung nicht aufgeben lässt.
+
+### Prüfen [#assert]
+
+Prüft, was hereinkommt. Jede Prüfung ist ein Testergebnis des Durchlaufs, und eine fehlgeschlagene lässt
+`echolot flow run` fehlschlagen.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Prüfungen** | Eine Liste (erforderlich). Jede Prüfung hat einen `name` und eine `condition` auf `value`. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `value` | ein | Der Wert, der geprüft wird. |
+| `passed` | aus | Der Wert, wenn jede Prüfung zutrifft. |
+| `failed` | aus | Der Wert, wenn eine Prüfung fehlschlägt. |
+
+```js
+value.status === 200   // Answers 200
+value.time < 2000      // Within two seconds
+```
+
+### Mitteilen [#notify]
+
+Zeigt eine macOS-Mitteilung von Echolot. macOS fragt beim ersten Mal nach der Erlaubnis. In der Befehlszeile wird die
+Mitteilung stattdessen ausgegeben.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Titel** | Der Titel der Mitteilung (erforderlich). Vorlagen sind erlaubt. |
+| **Nachricht** | Ihr Text. Vorlagen sind erlaubt. |
+
+Ports: `value` ein, `value` aus. **Morning stock check** endet mit einem Block „Mitteilen“ namens **Restock** mit dem
+Titel `Restock Bern`.
+
+### Datei schreiben [#write-file]
+
+Schreibt, was hereinkommt, in eine Datei im Ordner des Arbeitsbereichs.
+
+| Einstellung | Was sie bewirkt |
+| --- | --- |
+| **Pfad** | Relativ zum Ordner des Arbeitsbereichs, etwa `exports/items.json` (erforderlich). Vorlagen sind erlaubt. |
+| **Format** | `json` (formatiert), `text` oder `csv`. Standard `json`. |
+
+| Port | Seite | Was er trägt |
+| --- | --- | --- |
+| `value` | ein | Was geschrieben wird. |
+| `path` | aus | Der Pfad der Datei, relativ zum Arbeitsbereich. |
+| `fail` | aus | Warum sie nicht geschrieben werden konnte. |
+
+Eine vorhandene Datei wird ersetzt. Die eigenen Dateien des Arbeitsbereichs sind tabu: die Ordner `requests`, `flows`,
+`environments`, `mocks`, `mcp-servers` und `specs`, `workspace.toml` und versteckte Dateien. Bei CSV wird aus einer
+Liste von Objekten eine Zeile pro Objekt mit einer Spalte pro Schlüssel; alles andere wird mit einem Wert pro Zeile
+geschrieben.
+
+## Werte zwischen Blöcken [#values-between-blocks]
+
+Werte sind JSON: Text, Zahlen, `true` und `false`, Listen, Objekte oder `null`.
+
+### Das Antwortobjekt [#the-response-object]
+
+„Anfrage“ und „Abfragen“ senden eine Antwort als Objekt:
+
+```json
+{
+  "status": 201,
+  "reason": "Created",
+  "headers": { "content-type": "application/json", "location": "/v1/orders/ord_9Px3Kd" },
+  "body": { "id": "ord_9Px3Kd", "total": { "amount": 449, "currency": "CHF" } },
+  "time": 182.4,
+  "url": "https://demo.echolot.dev/v1/orders"
+}
+```
+
+- `body` ist geparstes JSON, wenn die Antwort JSON ist, sonst Text, und `null`, wenn sie leer ist.
+- Header-Namen sind kleingeschrieben. Ein Header, der mehrfach gesendet wurde, wird mit `, ` verbunden.
+- `time` ist der ganze Austausch in Millisekunden.
+- Ein Body über 8 MB kommt als `null` mit `"truncated": true` an. Die vollständige Antwort steht weiterhin im
+  [Verlauf](/docs/workspaces/history).
+
+### Vorlagen [#templates]
+
+Einstellungen mit dem Hinweis „Vorlagen sind erlaubt“ füllen `{{name}}` aus dem, was in den Block hereinkam:
+
+- `{{status}}`, `{{body.id}}` oder `{{body.items[0].sku}}`: ein Schlüssel oder ein [Pfad](#select) in das Objekt, das
+  hereingekommen ist.
+- `{{value}}` bei „Log“, „Mitteilen“ und „Datei schreiben“: der ganze Wert, der hereingekommen ist.
+- Variablen, die ein Block „Variable setzen“ mit der Ebene `run` gesichert hat.
+
+Ein Name, der nichts trifft, bleibt, wie er ist, sodass die eigenen `{{variables}}` eines Blocks „Anfrage“ beim Senden
+weiterhin aus der Umgebung aufgelöst werden. Objekte und Listen werden als JSON-Text geschrieben.
+
+### Bedingungen [#conditions]
+
+„Wenn“, „Switch“, „Abfragen“ und „Prüfen“ nehmen einen JavaScript-Ausdruck, der wahr oder falsch ist. `value` ist das
+Hereingekommene; **Bis** bei „Abfragen“ liest es als `response`, was auch überall sonst funktioniert.
+
+```js
+value.status == 200
+response.status === 200 && !!(response.body && response.body.access_token)
+value.body.items.length > 0
+```
+
+Ein Ausdruck, der eine Ausnahme auslöst, lässt den Block fehlschlagen (bei „Prüfen“ lässt er diese Prüfung
+fehlschlagen).
+
+## Grenzen [#limits]
+
+Damit eine falsche Verbindung nicht ewig laufen kann, stoppt ein Durchlauf nach 10.000 Blockausführungen oder einer
+Stunde. Durchläufe, die Webhooks starten, stoppen nach zwei Minuten.

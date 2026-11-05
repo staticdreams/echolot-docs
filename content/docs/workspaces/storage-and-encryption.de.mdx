@@ -1,0 +1,119 @@
+---
+title: "Speicher und Verschlüsselung"
+description: "Wo Echolot Arbeitsbereiche, Antwort-Bodys und Verlauf aufbewahrt, wie viel es behält und wie du Antwort-Bodys auf der Festplatte verschlüsselst."
+---
+ Echolot hält zwei Arten von Daten getrennt. Deine Arbeitsbereiche sind Ordner, die du ablegst, wo du willst. Die
+eigenen Daten von Echolot (Antwort-Bodys, Verlauf, Absturzberichte) liegen in seinem Speicherordner auf deinem Mac.
+Löschst du diesen Ordner, verlierst du Verlauf, nie eine Anfrage.
+
+## Wo was liegt [#where-things-are]
+
+| Was | Wo |
+| --- | --- |
+| Arbeitsbereiche | Wo immer du sie erstellst oder aufbewahrst. |
+| Geheime Werte, OAuth-Tokens, der Schlüssel für die Verschlüsselung | Dein Anmelde-Schlüsselbund. |
+| Antwort-Bodys und Mitschnitte der Übertragung | `Payloads` im Speicherordner von Echolot. |
+| Verlauf | `History` im Speicherordner von Echolot: eine Datei pro Arbeitsbereich. |
+| Unterhaltungen mit dem Assistenten, die du nicht geteilt hast | `Assistant` im Speicherordner von Echolot. |
+| Absturzberichte, wenn du sie erlaubst | `Crash Reports` im Speicherordner von Echolot. |
+| Deine eigenen Code-Vorlagen | `Code Templates` im Speicherordner von Echolot. Siehe [Exportieren](/docs/workspaces/exporting#copy-a-request-as-code). |
+| Der Arbeitsbereich „Examples“ | `Examples.echolot` im Speicherordner von Echolot. |
+| Einstellungen, globale Variablen, die aktive Umgebung jedes Arbeitsbereichs | Die Einstellungen von Echolot. |
+
+Der Speicherordner von Echolot ist `~/Library/Application Support/Echolot`. Um ihn zu öffnen, gehe zu
+**Einstellungen › Über** und klicke neben **Antworten und Verlauf** auf **Im Finder anzeigen**.
+
+<Edition only="appstore">
+  Die App-Store-Edition hält dieselben Daten stattdessen in ihrem eigenen Container statt in
+  `~/Library/Application Support/Echolot`. **Einstellungen › Über › Im Finder anzeigen** öffnet in beiden Editionen den
+  richtigen Ordner. Arbeitsbereiche bleiben in beiden dort, wo du sie aufbewahrst, und öffnen sich in beiden.
+</Edition>
+
+## Antwort-Bodys [#response-bodies]
+
+Jeder Antwort-Body geht beim Eintreffen direkt in eine Datei, nie in den Arbeitsspeicher, sodass eine Antwort von
+mehreren Gigabyte kein Problem ist. Ein Body wird nur einmal gespeichert, egal wie oft er eintrifft: Dieselbe Anfrage
+zehnmal mit derselben Antwort zu senden behält eine Kopie.
+
+Lege fest, wie viel Platz Bodys einnehmen dürfen, unter **Einstellungen › Speicher › Antwort-Bodys**:
+**Antwort-Bodys behalten bis** 1, 2, 5 (der Standard), 10, 20 oder 50 GB. Oberhalb dieser Größe entfernt Echolot die am
+längsten nicht benutzten Bodys. Es behält immer:
+
+- Bodys, die in einem offenen Tab angezeigt werden,
+- die neueste Antwort jeder gesicherten Anfrage, damit sie nach einem Neustart wieder angezeigt wird,
+- Bodys, die andere Anfragen über [dynamische Werte](/docs/requests/dynamic-values) wie `$responseJSONPath` lesen.
+
+Die Zeile unter dem Limit zeigt, wie viel Platz die gespeicherten Bodys auf der Festplatte einnehmen. Um den Platz jetzt
+freizugeben, klicke auf **Gespeicherte Bodys entfernen …** und bestätige. Echolot behält nur, was offene Fenster
+brauchen: Bodys, die in einem offenen Tab angezeigt werden, und die neueste Antwort jeder Anfrage in offenen
+Arbeitsbereichen. Jeder andere Body geht, auch die von Arbeitsbereichen, die nicht offen sind, und lässt sich nicht
+zurückholen. Anfragen und ihr Verlauf bleiben; alte Antworten werden ohne ihre Bodys angezeigt.
+
+Der Verlauf behält die Anfrage, die jeder Austausch gesendet hat. Ein Anfrage-Body über 256 KB wird nicht im Verlauf
+aufbewahrt; der Mitschnitt der Übertragung hat weiterhin seinen Anfang.
+
+## Verlauf [#history]
+
+**Einstellungen › Speicher › Verlauf** legt fest, wie viele Antworten der [Verlauf](/docs/workspaces/history) pro
+Anfrage behält: 10, 25, 50 (der Standard), 100 oder 200. Ältere Einträge gehen zuerst. Jedes Senden wird mit seinem
+Absender aufbewahrt: du, ein Durchlauf oder ein Agent. Um den Verlauf eines Arbeitsbereichs zu löschen, nutze
+**Verlauf löschen …** im Menü ⋯ seiner [Seite „Verlauf“](/docs/workspaces/history); der Verlauf einer einzelnen Anfrage
+lässt sich im selben Menü ihrer Verlaufsliste löschen.
+
+<Shot id="workspaces-settings-storage" alt="Einstellungen, Bereich „Speicher“: „Antwort-Bodys auf der Festplatte verschlüsseln“, „Antwort-Bodys behalten bis“ 5 GB und „Verlauf pro Anfrage“ 50 Antworten" />
+
+## Antwort-Bodys auf der Festplatte verschlüsseln [#encrypt-response-bodies-on-disk]
+
+Antworten können personenbezogene Daten, Tokens und alles andere enthalten, was eine API zurückgibt. Bei eingeschalteter
+Verschlüsselung ist im Speicherordner von Echolot nichts von einer Antwort ohne einen Schlüssel aus deinem Schlüsselbund
+lesbar.
+
+1. Öffne **Einstellungen › Speicher**.
+2. Schalte **Antwort-Bodys auf der Festplatte verschlüsseln** ein.
+
+Echolot erzeugt beim ersten Mal einen Schlüssel und hält ihn in deinem Anmelde-Schlüsselbund, als
+**Echolot response storage key**. Neue Bodys werden sofort verschlüsselt geschrieben. Bereits gespeicherte Bodys werden
+im Hintergrund verschlüsselt; die Einstellung zeigt, wie weit das ist („120 von 860 werden verschlüsselt …“), und dann
+den Zustand, etwa „Alle 860 gespeicherten Bodys sind verschlüsselt.“
+
+Bodys werden mit AES-256 im Counter-Modus verschlüsselt, sodass Echolot jeden Teil eines Bodys lesen kann, ohne den Rest
+zu entschlüsseln: Viewer, die Suche in einer Antwort und große Bodys funktionieren wie zuvor.
+
+### Was sie abdeckt [#what-it-covers]
+
+| Verschlüsselt | Nicht verschlüsselt |
+| --- | --- |
+| Antwort-Bodys | Dateien des Arbeitsbereichs (sie enthalten ohnehin keine geheimen Werte) |
+| Mitschnitte der Übertragung (die rohen gesendeten und empfangenen Bytes) | Die Datei des Verlaufs: Namen, Adressen, Header, Status und Zeiten |
+| Formatierte Kopien von Bodys | Die Einstellungen von Echolot |
+
+Die Datei des Verlaufs ist nicht verschlüsselt, deshalb enthält sie bei eingeschalteter Verschlüsselung keinen
+Body-Text. Die Suche findet dann Anfragen nach Name, Adresse und Headern, nicht nach dem, was ihre Bodys sagen. Das
+Einschalten der Verschlüsselung entfernt den Body-Text, den der Verlauf schon indiziert hatte. Geheime Werte sind im
+Verlauf maskiert, egal ob die Verschlüsselung an oder aus ist.
+
+### Ausschalten [#turning-it-off]
+
+Schalte **Antwort-Bodys auf der Festplatte verschlüsseln** aus. Neue Bodys werden wieder im Klartext geschrieben, und
+Echolot entschlüsselt die gespeicherten im Hintergrund („120 von 860 werden entschlüsselt …“). Der Schlüssel bleibt im
+Schlüsselbund, sodass Bodys, die noch nicht entschlüsselt sind, weiter lesbar sind.
+
+Antworten, die aufgezeichnet wurden, während die Verschlüsselung an war, bleiben aus der Body-Suche des Verlaufs heraus.
+Antworten danach sind wieder nach Body durchsuchbar.
+
+<Callout type="warn">
+  Behalte den Eintrag **Echolot response storage key** in deinem Schlüsselbund. Echolot braucht ihn, um Bodys zu lesen,
+  die verschlüsselt sind.
+</Callout>
+
+Lässt sich der Schlüssel nicht erzeugen oder lesen, sagt die Einstellung das („Der Schlüssel für die Verschlüsselung
+konnte nicht im Schlüsselbund gesichert werden …“), und die Bodys bleiben, wie sie sind.
+
+## Platz schaffen [#free-up-room]
+
+- Verringere **Antwort-Bodys behalten bis** unter **Einstellungen › Speicher**. Echolot entfernt kurz darauf die am
+  längsten nicht benutzten Bodys.
+- Lösche den Verlauf auf der Seite [Verlauf](/docs/workspaces/history#clear-history), für eine Anfrage oder den ganzen
+  Arbeitsbereich.
+- Beende Echolot und lösche `Payloads` oder `History` in seinem Speicherordner. Du verlierst frühere Antworten und den
+  Verlauf; Anfragen, Umgebungen und jede Datei des Arbeitsbereichs bleiben.

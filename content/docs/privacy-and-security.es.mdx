@@ -1,0 +1,159 @@
+---
+title: "Privacidad y seguridad"
+description: "Dónde guarda Echolot tus datos y secretos, qué envía y a quién, y qué te pregunta antes de que ocurra."
+---
+
+Echolot no tiene cuenta ni nube. Tus solicitudes se quedan en archivos de tu Mac, los secretos se quedan en el llavero y
+nada sobre ti ni sobre tus espacios de trabajo sale del Mac a menos que lo envíes tú o actives algo. Esta página enumera
+lo que hace Echolot, y solo eso.
+
+## Tus archivos [#your-files]
+
+- Los **espacios de trabajo** son carpetas de archivos TOML de texto plano, donde los guardes. Echolot nunca los sube.
+- Los **datos propios de Echolot** (cuerpos de respuesta guardados, historial, informes de fallos, conversaciones del
+  Asistente) están en `~/Library/Application Support/Echolot` en este Mac.
+  **Ajustes › Acerca de › Respuestas e historial › Mostrar en el Finder** lo abre. La edición de la App Store lo guarda
+  en su propio contenedor; consulta [Ediciones](/docs/get-started/editions).
+- Las **elecciones personales**, como la disposición de los paneles y los scripts y servidores en los que has confiado,
+  se guardan en los ajustes de la app en este Mac, nunca en el espacio de trabajo.
+
+## Los secretos se quedan en el llavero [#secrets-stay-in-the-keychain]
+
+Los valores secretos nunca van a los archivos del espacio de trabajo, así que puedes confirmar un espacio de trabajo en
+Git.
+
+- Las **variables secretas** se guardan solo en tu llavero de inicio de sesión. El archivo nombra la variable; su valor
+  está en el llavero. Consulta los [secretos](/docs/workspaces/secrets).
+- Las **importaciones** mueven a variables secretas las contraseñas, tokens y claves que encuentran en la autenticación y
+  en las cabeceras de credenciales, y el informe de la importación los nombra, nunca sus valores. Consulta
+  [Importar](/docs/get-started/importing).
+- Las **exportaciones** nunca escriben valores secretos: las variables secretas salen solo por su nombre, y el informe de
+  la exportación cuenta cualquier credencial escrita en claro en una solicitud.
+- Las **capturas de respuesta** que guardan un token en una variable secreta lo escriben solo en el llavero.
+- Las **claves de modelo** del Asistente, los **tokens de inicio de sesión de MCP** y la **contraseña del proxy** también
+  están en el llavero. Una contraseña de proxy o una frase de contraseña de un certificado escritas como texto sin
+  cifrar muestran una advertencia con **Trasladar al llavero**.
+- La herramienta de línea de comandos lee los mismos elementos del llavero. macOS pregunta una vez antes de que otra app o
+  la otra edición lea un elemento; elige **Permitir siempre**.
+
+## Las credenciales se quedan con su servidor [#credentials-stay-with-their-server]
+
+Cuando una redirección lleva a otro origen (otro esquema, host o puerto), Echolot descarta las credenciales antes de
+seguirla: `Authorization`, `Cookie`, las cabeceras habituales de claves de API, la cabecera de la autenticación con clave
+de API y cualquier cabecera que contenga un secreto, y los ajustes de Digest, AWS y certificado de cliente. Un secreto que
+defines para un servidor nunca se entrega a otro mediante una redirección.
+
+## Cuerpos de respuesta en el disco [#response-bodies-on-disk]
+
+Las respuestas se escriben en el disco a medida que llegan, y cada envío se conserva en el historial de este Mac.
+**Ajustes › Almacenamiento** decide cuánto y cómo se guarda:
+
+| Ajuste | Significado |
+| --- | --- |
+| **Cifrar los cuerpos de respuesta en el disco** | Los cuerpos, las capturas de red y las copias con formato se cifran con una clave guardada en tu llavero de inicio de sesión, así que nada de una respuesta se puede leer en la carpeta de almacenamiento de Echolot sin ella. Los cuerpos guardados se cifran en segundo plano; al desactivarlo, se descifran. |
+| **Conservar cuerpos de respuesta de hasta** | Por encima de este tamaño, se eliminan los cuerpos usados hace más tiempo. Los cuerpos abiertos en una pestaña se conservan siempre. |
+| **Historial por solicitud** | Cuántas respuestas conserva cada solicitud. |
+
+Mientras el cifrado está activado, la búsqueda en el historial encuentra solicitudes por nombre, dirección y cabeceras, no
+por lo que dicen sus cuerpos: el índice de búsqueda del historial no está cifrado, así que no guarda texto de los cuerpos,
+y activar el cifrado elimina el texto de cuerpos que tenía. Los espacios de trabajo no se ven afectados. Consulta
+[Almacenamiento y cifrado](/docs/workspaces/storage-and-encryption).
+
+## Entornos protegidos [#protected-environments]
+
+Marca un entorno como protegido (Production, por ejemplo) y todo envío que inicies mientras esté activo pregunta antes:
+el **Enviar** de una solicitud (que entonces dice **Enviar a Production…**), las conexiones, las ejecuciones de la página
+Ejecución, las ejecuciones manuales de flujos, el Envío rápido y las acciones de Atajos, las llamadas y comprobaciones de
+MCP, **Obtener token**, las descargas de esquemas y la reflexión de gRPC. La pregunta nombra el entorno y muestra lo que
+saldría, con los secretos enmascarados.
+
+**Cancelar** es el botón predeterminado, así que <kbd>Return</kbd> nunca envía a un entorno protegido por accidente, y
+<kbd>Esc</kbd> también cancela. **No volver a preguntar hasta que cambie de entorno** deja de preguntar en esa ventana
+hasta que cambia su entorno; nunca se guarda. Los agentes siempre preguntan. Consulta los [entornos
+protegidos](/docs/workspaces/protected-environments).
+
+<Shot id="privacy-protected-send" alt="La pregunta antes de enviar al entorno protegido Production, que nombra el entorno y la solicitud que saldría, con Cancelar como botón predeterminado" />
+
+## Scripts y programas locales [#scripts-and-local-programs]
+
+- Los **scripts** (previos a la solicitud y de pruebas) se ejecutan en un entorno aislado dentro de Echolot. Un script solo
+  puede enviar solicitudes a través de Echolot, con las mismas reglas que tus propios envíos.
+- Los scripts se ejecutan solo cuando confías en ellos **en este Mac**. Los scripts que escribes en Echolot son de
+  confianza. Los scripts que llegan de otro sitio (una importación, un `git pull`, una edición fuera de Echolot)
+  detienen el envío hasta que eliges **Revisar scripts…** y confías en ellos. La confianza se guarda por el contenido de
+  los scripts, fuera del espacio de trabajo, así que un espacio de trabajo nunca puede dar confianza a sus propios
+  scripts.
+- Los **servidores MCP que se ejecutan como programa local** se inician solo después de que apruebes su comando en la
+  página Servidores MCP (**Confiar y comprobar**). Cualquier cambio en el comando, sus argumentos o su entorno vuelve a
+  preguntar.
+
+## El Asistente y los proveedores de modelos [#the-assistant-and-model-providers]
+
+El Asistente, y los comentarios de IA de Echo si los activas, usan el proveedor de modelos que eliges en
+**Ajustes › Asistente**.
+
+- Las claves de modelo se quedan en el llavero de este Mac y se envían solo a la dirección propia del proveedor.
+- **El primer mensaje a un proveedor pregunta antes de que se envíe nada**, una vez por proveedor (un servidor compatible,
+  por su host). La pregunta dice qué le llega: para el Asistente, tus mensajes, los datos del espacio de trabajo que lee
+  el Asistente y los resultados de sus herramientas. Los valores secretos nunca se envían.
+- Los comentarios de IA de Echo envían solo datos breves sobre lo que ha ocurrido (un tipo de solicitud, un código de
+  estado, una duración): nunca nombres, direcciones, cabeceras, cuerpos, variables ni secretos.
+- El modelo integrado de Apple y los servidores de este Mac (como Ollama) nunca preguntan: nada sale del Mac.
+- **Ajustes › Asistente › Pueden recibir tus datos** enumera los proveedores que has permitido, cada uno con
+  **Revocar**. Un proveedor revocado vuelve a preguntar la próxima vez.
+- El Asistente te pregunta antes de cambiar datos o de llegar a un host nuevo, y trabaja con las mismas herramientas y
+  reglas que los agentes externos.
+
+Consulta el [Asistente](/docs/ai/assistant).
+
+## Agentes de IA externos [#external-ai-agents]
+
+Agentes como Claude Code, Cursor o Codex pueden usar un espacio de trabajo a través del servidor MCP de Echolot, solo si
+los dejas.
+
+- **Desactivado de forma predeterminada.**
+  **Ajustes › Agentes › Permitir que los agentes usen los espacios de trabajo abiertos** lo activa, y cada espacio de
+  trabajo puede desactivar los agentes en **Ajustes del espacio de trabajo › Agentes**.
+- **Solo en este Mac.** El servidor escucha en la entrada y la salida estándar, o en `127.0.0.1` con un token. Nada llega
+  a él desde la red.
+- **Tú apruebas.** De forma predeterminada, las lecturas y los envíos seguros se ejecutan; los envíos que pueden cambiar
+  datos, los hosts nuevos y los cambios en el espacio de trabajo te preguntan (**Denegar**, **Permitir una vez**,
+  **Permitir en esta sesión**). Los entornos protegidos y los hosts nuevos siempre preguntan.
+- **Los secretos nunca llegan a un agente.** Los agentes se refieren a los secretos por su nombre. Todo lo que recibe un
+  agente, errores incluidos, tiene los valores secretos eliminados, tal como están escritos, en JSON, con codificación
+  porcentual y en Base64. El historial que lee un agente tiene las credenciales enmascaradas.
+- **Nunca se ofrecen.** Las reglas de los agentes, el proxy, los certificados, la autenticación y los scripts no son
+  herramientas que puedan usar los agentes.
+- **Cada llamada queda registrada.** El historial muestra quién envió cada solicitud, los agentes por su nombre, y
+  **Agentes** en la ventana enumera las llamadas recientes.
+
+Consulta los [Agentes](/docs/ai/agents) y [Deja que un agente de IA use tu espacio de trabajo con
+seguridad](/docs/tutorials/agents-safely).
+
+## Datos de uso e informes de fallos [#usage-data-and-crash-reports]
+
+Ambos están en **Ajustes › Privacidad**: los datos de uso están desactivados de forma predeterminada; los informes de
+fallos guardados en este Mac, activados.
+
+- **Compartir datos de uso anónimos.** Cuando está activado, Echolot dice a sus desarrolladores qué funciones se usan
+  (enviar una solicitud, una ejecución, una comprobación de MCP) con datos breves como el tipo de solicitud y el código
+  de estado, e informa de los errores con sus trazas de pila. Nunca URL, cabeceras, cuerpos, variables, secretos ni
+  respuestas. Va a PostHog, el servicio de analíticas que usa Echolot.
+- **Recopilar informes de fallos.** Activado de forma predeterminada. macOS entrega a Echolot sus informes de fallos y de
+  bloqueos en el siguiente arranque y Echolot los guarda en este Mac, para que puedas adjuntarlos a un informe de error.
+  Solo contienen trazas de pila y no se envían a ninguna parte. **Mostrar en el Finder** los abre.
+
+## Conexiones que hace Echolot por su cuenta [#connections-echolot-makes-on-its-own]
+
+Además de las solicitudes que envías, Echolot se conecta a la red solo para esto:
+
+| Qué | Cuándo | Qué envía |
+| --- | --- | --- |
+| **Buscar actualizaciones** (descarga directa) | Una vez al día si **Buscar actualizaciones automáticamente** está activado, o cuando eliges **Buscar actualizaciones…** | Pide a GitHub la lista de versiones. GitHub ve la versión de la app y tu dirección IP. |
+| **Estado de la beta** (descarga directa, versiones beta) | Al arrancar y una vez al día | Descarga un pequeño archivo firmado de GitHub Pages, sin cookies ni credenciales guardadas. Puede terminar una versión beta antes de tiempo o ampliarla. |
+| **Vistas previas de imágenes** en los árboles de respuesta | Solo cuando el puntero se detiene sobre una dirección de imagen en un árbol JSON o XML | Descarga esa imagen como un navegador, sin cookies ni credenciales guardadas, de 10 MB como máximo. No se registra en el historial y no ejecuta scripts. |
+| **Datos de uso** | Solo cuando están activados | Consulta más arriba. |
+| **Tu proveedor de modelos** | Solo cuando usas el Asistente o los comentarios de IA de Echo, después de que lo hayas permitido | Consulta más arriba. |
+
+La edición de la App Store no busca actualizaciones ni comprueba el estado de la beta: la App Store gestiona sus
+actualizaciones.

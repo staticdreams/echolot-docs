@@ -1,0 +1,208 @@
+---
+title: "Ajustes de la solicitud"
+description: "Elige la versión de HTTP, las redirecciones, las cookies, la descompresión, las comprobaciones de TLS, el tiempo de espera y el modo sin procesar de una solicitud, y define proxies y certificados."
+---
+
+La pestaña **Ajustes** contiene cómo viaja una solicitud: qué versión de HTTP usa, si sigue redirecciones, si guarda
+cookies, si comprueba certificados y cuánto puede tardar. Los proxies y los certificados se definen para todo el espacio
+de trabajo o para la app, más abajo en esta página.
+
+<Shot id="requests-http-settings" alt="La pestaña Ajustes de una solicitud: Modo sin procesar, Versión de HTTP en Automático con su nota, Verificar certificados TLS, Seguir redirecciones con Máximo de redirecciones 10, cookies, Descomprimir respuestas y Tiempo de espera 60 s" />
+
+## La pestaña Ajustes [#the-settings-tab]
+
+| Ajuste | Predeterminado | Qué hace |
+| --- | --- | --- |
+| **Modo sin procesar** | Desactivado | Envía exactamente las cabeceras de la pestaña **Cabeceras**, sin añadir nada. |
+| **Versión de HTTP** | **Automático** | **Automático**, **HTTP/1.1**, **HTTP/2** o **HTTP/3**. |
+| **Verificar certificados TLS** | Activado | Comprueba el certificado del servidor en las direcciones `https://`. |
+| **Seguir redirecciones** | Activado | Sigue las respuestas 3xx, hasta **Máximo de redirecciones**. |
+| **Máximo de redirecciones** | 10 | De 1 a 50. |
+| **Enviar y guardar cookies** | Activado | Envía las cookies que el almacén de la ventana tiene para la dirección, y conserva las que establece la respuesta. |
+| **Descomprimir respuestas** | Activado | Pide respuestas comprimidas y las decodifica. |
+| **Tiempo de espera** | 60 s | El tiempo que puede tardar todo el intercambio, de 1 segundo a una hora, en pasos de 5 segundos. |
+
+Solo los ajustes que cambias se guardan en el archivo de la solicitud. La pestaña muestra un punto cuando algún ajuste
+difiere de su valor predeterminado, y dice **Ajustes (sin procesar)** mientras el modo sin procesar está activado.
+**Restablecer valores predeterminados** devuelve todos los ajustes a su valor original.
+
+En el archivo de la solicitud, los ajustes se ven así:
+
+```toml
+[settings]
+http-version = "http2"
+follow-redirects = false
+timeout = 10.0
+```
+
+## Versión de HTTP [#http-version]
+
+| Opción | Qué envía Echolot |
+| --- | --- |
+| **Automático** | HTTP/2 cuando el servidor lo ofrece, y si no HTTP/1.1. Cuando un servidor ofrece HTTP/3 (con una cabecera `Alt-Svc`), las solicitudes posteriores a él usan HTTP/3, y vuelven a TCP si no conecta. |
+| **HTTP/1.1** | Solo HTTP/1.1. |
+| **HTTP/2** | Solo HTTP/2: sobre TLS, o sobre `http://` sin cifrar con conocimiento previo (h2c). |
+| **HTTP/3** | Solo HTTP/3 sobre QUIC. |
+
+HTTP/3 tiene límites:
+
+- Necesita **macOS 27 o posterior**. En un Mac más antiguo, la pestaña lo indica y no se puede enviar una solicitud
+  establecida en **HTTP/3**; **Automático** se queda en HTTP/2 y HTTP/1.1.
+- Solo direcciones `https://`.
+- Sin proxies (incluido el del sistema), sin archivos de CA personalizados y sin certificados de cliente. Una solicitud
+  establecida en **HTTP/3** que necesita alguno de ellos se rechaza con el motivo. En **Automático**, esas solicitudes se
+  quedan en TCP.
+- El modo sin procesar no se puede usar con HTTP/3.
+
+En **Automático**, cuando una respuesta ofrece HTTP/3, su tarjeta de detalles muestra **HTTP/3 ofrecido**. Si falla la
+conexión QUIC de la solicitud siguiente, Echolot la envía por TCP, olvida la oferta y la tarjeta de detalles dice por qué.
+Nada se envía dos veces.
+
+Otros dos casos cambian de versión por sí solos:
+
+- [NTLM](/docs/requests/auth#ntlm) necesita HTTP/1.1. En **Automático**, las solicitudes NTLM van por HTTP/1.1; en
+  **HTTP/2** o **HTTP/3** se rechazan.
+- Cuando un servidor restablece una solicitud HTTP/2 con `HTTP_1_1_REQUIRED`, Echolot habla HTTP/1.1 con ese servidor a
+  partir de entonces. Una solicitud que se puede repetir sin riesgo se envía de nuevo enseguida por HTTP/1.1; cualquier
+  otra solicitud se detiene con un error que lo indica, y va por HTTP/1.1 cuando la envías otra vez.
+
+La tarjeta de detalles de la respuesta muestra la versión que se usó, junto a la versión de TLS.
+
+## Redirecciones [#redirects]
+
+Con **Seguir redirecciones** activado, Echolot sigue las respuestas `301`, `302`, `303`, `307` y `308` hacia direcciones
+`http://` y `https://`:
+
+- `303` se convierte en un `GET` (un `HEAD` sigue siendo `HEAD`), sin el cuerpo.
+- `301` y `302` convierten un `POST` en un `GET`, como hacen los navegadores.
+- `307` y `308` conservan el método y el cuerpo.
+
+Cada salto queda registrado. La tarjeta de detalles muestra **3 redirecciones** (o cuántas haya); haz clic para ver el
+estado, el método, la dirección y el tiempo de cada salto, y la dirección final. Pruébalo con **Echo › Follow redirects**
+en Alpenglow.
+
+Una redirección a otro origen descarta tus credenciales: las cabeceras `Authorization` y `Cookie`, las cabeceras de clave
+de API, las cabeceras que contienen un secreto, la firma (Digest, AWS, Hawk, EdgeGrid, NTLM) y el certificado de cliente.
+Consulta [Las credenciales se quedan con su origen](/docs/requests/auth#credentials-stay-with-their-origin).
+
+Con **Seguir redirecciones** desactivado, la respuesta 3xx es la respuesta.
+
+## Cookies [#cookies]
+
+Cada ventana tiene un almacén de cookies. Con **Enviar y guardar cookies** activado, una solicitud envía las cookies del
+almacén que coinciden con su dirección, y las cookies que establece su respuesta se guardan en él. Desactívalo para una
+solicitud que no deba enviar ni conservar ninguna.
+
+La pestaña **Cookies** de la respuesta muestra tres listas: **Enviada con la solicitud**, **Establecida por la respuesta** y
+**Guardada en esta ventana**. Elimina una cookie con su botón, o todas con **Borrar todo**. Consulta
+[Respuestas](/docs/requests/responses#cookies).
+
+El almacén sigue las reglas de los navegadores: una respuesta no puede establecer una cookie para todo un sufijo público
+como `.com` o `.co.uk`. Prueba **Echo › Set a cookie** en Alpenglow y después cualquier otra solicitud a
+`demo.echolot.dev`.
+
+## Descomprimir respuestas [#decompress-responses]
+
+Con **Descomprimir respuestas** activado, Echolot envía `Accept-Encoding: gzip, deflate, br, zstd` (salvo que definas
+tú esa cabecera) y decodifica las respuestas gzip, deflate, Brotli y Zstandard. La pestaña **Cuerpo** muestra el cuerpo
+decodificado; los bytes tal como llegaron se quedan en la pestaña **Red**, y el menú de guardado del cuerpo ofrece
+**Guardar cuerpo codificado…**. La tarjeta de detalles dice, por ejemplo, `br, 12 KB → 48 KB`.
+
+Desactívalo para ver una respuesta exactamente como la comprimió el servidor, o para no enviar ninguna cabecera
+`Accept-Encoding`.
+
+## Verificar certificados TLS [#verify-tls-certificates]
+
+Déjalo activado salvo que pruebes contra un servidor cuyo certificado tu Mac no considera de confianza y no puedas añadir
+su CA. Con él desactivado, la tarjeta de detalles muestra un candado naranja abierto, y su ventana emergente dice **La
+verificación de certificados está desactivada**.
+
+Una forma mejor para una CA privada es darle confianza para ese host: consulta [Certificados](#certificates).
+
+## Tiempo de espera [#timeout]
+
+El tiempo de espera es el tiempo total que puede tardar el intercambio, desde la conexión hasta el último byte. Cuando se
+agota, la solicitud se detiene con **Se agotó el tiempo de espera de la solicitud** y se cierra la conexión.
+
+## Modo sin procesar [#raw-mode]
+
+El modo sin procesar sirve para enviar una solicitud byte a byte tal como la escribiste, incluso si está mal formada, para
+probar cómo la trata un servidor. Echolot omite las cabeceras que añade a toda solicitud (`Host`, `User-Agent`, `Accept`,
+`Accept-Encoding`, `Cookie`, `Content-Length` y la delimitación) y no comprueba que la solicitud esté bien formada. Bajo
+**GENERADAS AUTOMÁTICAMENTE**, la pestaña **Cabeceras** dice
+**Modo sin procesar: Echolot no añade cabeceras; solo se envían las de arriba.**
+
+Para una solicitud que envíe solo tus propias cabeceras, define también **Autenticación** en **Sin autenticación** y
+escribe tu propio `Content-Type` si el cuerpo necesita uno. El modo sin procesar escribe HTTP/1.1, así que no se puede
+usar con HTTP/3.
+
+## Reintentos [#retries]
+
+Echolot mantiene las conexiones abiertas y las reutiliza, lo que ahorra el tiempo de DNS, de conexión y de TLS; la
+tarjeta de detalles dice **Conexión reutilizada** cuando lo hace. A veces un servidor ha cerrado una conexión mantenida
+abierta justo cuando sale una solicitud. Entonces:
+
+- Una solicitud que se puede repetir sin riesgo se envía de nuevo por una conexión nueva: un `GET`, `HEAD`, `OPTIONS`,
+  `TRACE`, `PUT` o `DELETE`, o cualquier solicitud con una cabecera `Idempotency-Key`. La tarjeta de detalles dice que se
+  envió de nuevo.
+- Cualquier otra solicitud (un `POST` sin `Idempotency-Key`, por ejemplo) no se envía de nuevo, porque el servidor puede
+  haber actuado sobre ella. Se detiene con
+  **La conexión se cerró antes de llegar ninguna respuesta; puede que el servidor haya aplicado la solicitud**.
+
+Echolot nunca reintenta en ningún otro caso.
+
+## Proxies [#proxies]
+
+De forma predeterminada, las solicitudes pasan por el proxy elegido en **Ajustes › Red**:
+
+| Proxy | Significado |
+| --- | --- |
+| **Ajustes del Sistema** | Los proxies HTTP, HTTPS y SOCKS de **Ajustes del Sistema › Red**, con sus excepciones. No se usa la configuración automática de proxy (PAC). |
+| **Ninguno** | Todas las solicitudes se conectan directamente. |
+| **Manual** | Un proxy HTTP, HTTPS (TLS hacia el proxy) o SOCKS5, como `http://proxy:3128` o `socks5://host:1080`, con un nombre de usuario y una contraseña opcionales (guardados en el llavero), y hosts a los que llegar directamente en **Sin proxy para** (`localhost, *.internal`). |
+
+Un espacio de trabajo puede definir su propio proxy, que viaja con él hasta los compañeros y la herramienta de línea de
+comandos:
+
+1. Abre **Ajustes del espacio de trabajo…** en el selector de espacio de trabajo al pie de la barra lateral.
+2. Elige la pestaña **Proxy** y desactiva **Usar el ajuste de proxy de la app**.
+3. Elige **Ajustes del Sistema**, **Entorno (HTTPS_PROXY…)** (lee `HTTPS_PROXY`, `HTTP_PROXY` y `NO_PROXY`),
+   **Ninguno** o **Manual**.
+4. Para **Manual**, rellena **Proxy** (admite variables, como `{{proxy}}`), **Nombre de usuario** y **Contraseña**, y
+   **Sin proxy para**. Escribe la contraseña como variable secreta, `{{proxy_password}}`: los archivos del espacio de
+   trabajo nunca contienen secretos. Una contraseña literal ofrece **Trasladar al llavero**.
+
+HTTP/3 nunca pasa por un proxy. Consulta [Espacios de trabajo](/docs/workspaces).
+
+## Certificados [#certificates]
+
+Para un host que usa una autoridad de certificación privada, o que pide un certificado de cliente (TLS mutuo), añade una
+regla en el espacio de trabajo:
+
+1. Abre **Ajustes del espacio de trabajo…** y elige la pestaña **Certificados**.
+2. Haz clic en **Añadir host** y escribe el host, como `api.example.com`, o `*.internal` para todos los subdominios.
+3. Junto a **CA de confianza**, haz clic en **Elegir…** y selecciona uno o varios archivos PEM. Se consideran de confianza
+   además de los del sistema.
+4. Para un certificado de cliente, elige el archivo junto a **Certificado de cliente**: un archivo PEM o un `.p12`
+   (`.pfx`). Para un certificado PEM cuyo archivo no tiene clave, elige también el archivo de **Clave privada**.
+5. Si la clave o el `.p12` tiene una frase de contraseña, escríbela como variable secreta en **Frase de contraseña**, como
+   `{{p12_passphrase}}`.
+
+Cuenta la primera regla que coincide con un host. Los archivos dentro del espacio de trabajo se guardan como rutas
+relativas a él, así que la regla funciona para todas las personas que tienen el espacio de trabajo. Los certificados de
+cada regla se usan solo para su host: una redirección a otro host nunca presenta el certificado de cliente del primer
+host.
+
+<Edition only="appstore">
+  La edición de la App Store solo puede leer los archivos que has elegido. Los archivos de CA, los certificados de cliente
+  y las claves que eliges aquí siguen siendo legibles en los envíos posteriores. Una regla que hizo un compañero, y que
+  apunta a archivos fuera del espacio de trabajo, necesita que le des esos archivos a la app una vez: el envío se detiene
+  y el panel de respuesta ofrece **Permitir acceso…**.
+</Edition>
+
+## Ajustes de toda la app [#app-wide-settings]
+
+El proxy es el único ajuste de solicitud con un valor predeterminado para toda la app (**Ajustes › Red**). Todos los demás
+ajustes parten, para cada solicitud, de los valores predeterminados de la tabla de arriba, y el archivo de la solicitud
+conserva lo que cambias. Para cambiar ajustes de muchas solicitudes a la vez, selecciónalas en la barra lateral y usa
+**Editar N solicitudes…** para sus cabeceras, parámetros y autenticación, o edita los archivos.

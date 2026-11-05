@@ -1,0 +1,185 @@
+---
+title: "Einstellungen"
+description: "Jeder Bereich der Einstellungen von Echolot, jede Option darin, was sie tut und ihr Standardwert."
+---
+
+Die Einstellungen von Echolot gelten für die App auf diesem Mac: wie sie aussieht, der Proxy, wie viel sie behält, die
+KI-Anbieter und ob Agenten hereinkommen dürfen. Einstellungen, die zu einem Arbeitsbereich gehören (seine Auth,
+Variablen,
+sein Proxy, Zertifikate und Agentenregeln), liegen unter **Arbeitsbereichseinstellungen …** im Arbeitsbereichsmenü
+unten in
+der Seitenleiste und wandern mit dem Arbeitsbereich; siehe [Arbeitsbereiche](/docs/workspaces).
+
+Öffne die Einstellungen mit **Echolot › Einstellungen …** oder <kbd>⌘</kbd><kbd>,</kbd>. Die Bereiche stehen links in
+einer Liste. Das Suchfeld darüber (<kbd>⌘</kbd><kbd>F</kbd>) behält nur die Bereiche, die eine passende Einstellung
+enthalten; <kbd>↩</kbd> öffnet den ersten. Die Einstellungen öffnen sich auf dem Bereich, den du zuletzt genutzt hast.
+
+<Shot id="settings-general" alt="Die Einstellungen im Bereich „Allgemein“: Sprache, Erscheinungsbild, Code und Antworten, Schnellversand, Echo, das Befehlszeilentool und Updates" />
+
+## Allgemein [#general]
+
+Die Sprache, das Erscheinungsbild und wie Code und Antworten angezeigt werden.
+
+| Einstellung | Was sie tut | Standard |
+| --- | --- | --- |
+| **Sprache** | Die Sprache, die Echolot spricht: **System** folgt Systemeinstellungen › Allgemein › Sprache & Region, oder wähle eine der Sprachen von Echolot (sie stehen in ihren eigenen Namen). Eine neue Wahl gilt nach einem Neustart, und unter der Einstellung erscheint **Echolot neu starten**. Der Abschnitt wird gezeigt, sobald Echolot mehr als eine Sprache hat. | System |
+| **Erscheinungsbild** | **System**, **Hell**, **Dunkel** oder **Marine**, für jedes Echolot-Fenster, unabhängig davon, was macOS nutzt. Marine ist der dunkle Modus in Tiefwasserblau. | System |
+| **Schriftgröße für Code** | Die Größe von Antwort-Bodys, der Hex-Ansicht, des JSON-Baums und der Code-Editoren, von 10 bis 22 pt. Menü **Ansicht**: <kbd>⌘</kbd><kbd>+</kbd> und <kbd>⌘</kbd><kbd>−</kbd> ändern sie ebenfalls. | 12 pt |
+| **Lange Zeilen in Antworten umbrechen** | Bricht lange Zeilen in den Ansichten **Body**, **Roh** und **Übertragung** der Antwort um, statt seitwärts zu scrollen. | Aus |
+
+### Schnellversand [#quick-send]
+
+| Einstellung | Was sie tut | Standard |
+| --- | --- | --- |
+| **Schnellversand in der Menüleiste anzeigen** | Ein Menüleistensymbol und ein Kurzbefehl, der in jeder App funktioniert, öffnen ein Panel, um eine gesicherte Anfrage deiner geöffneten und zuletzt genutzten Arbeitsbereiche zu senden. Siehe [Schnellversand](/docs/mac/quick-send). | Aus |
+| **Tastaturkurzbefehl** | Klicke darauf und drücke die Tasten, um ihn zu ändern; **Zurücksetzen** stellt den Standard wieder her. Die Einstellungen sagen, wenn eine andere App die Tasten belegt. | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Leertaste</kbd> |
+
+### Echo [#echo]
+
+| Einstellung | Was sie tut | Standard |
+| --- | --- | --- |
+| **Statusbildschirm von Echo im Seitenkopf anzeigen** | Der kleine Bildschirm, der zeigt, was im Fenster los ist. Siehe [Echo](/docs/ai/echo). | An |
+| **Humor** | **Nur Fakten**, **Ein bisschen** oder **Jede Menge**. | Ein bisschen |
+| **KI einige Kommentare von Echo schreiben lassen** | Ein Modell schreibt einige Zeilen: das On-Device-Modell von Apple, wo der Mac es hat, sonst das Modell, das unter Einstellungen › Assistent gewählt ist. Nicht verfügbar mit **Nur Fakten**. **Geschrieben von** zeigt, welches Modell, und fragt bei Bedarf um dessen Erlaubnis. | Aus |
+
+### Befehlszeilentool [#command-line-tool]
+
+<Edition only="direct">
+  Dieser Abschnitt gibt es nur in der direkt geladenen Version. Die App-Store-Version kann das Tool nicht installieren;
+  installiere es separat von der Download-Seite, siehe [Das Befehlszeilentool](/docs/cli).
+</Edition>
+
+- **Mitgeliefertes Tool**: wo das Tool `echolot` in der App liegt.
+- **In deinem PATH**: **Nicht installiert** mit **Befehlszeilentool installieren …**, oder der Pfad des Links mit
+  **Neu installieren** und **Entfernen**. Die Installation legt einen `echolot`-Link auf das mitgelieferte Tool in
+  `/opt/homebrew/bin` oder `/usr/local/bin` an, sodass `echolot run` und `echolot mcp setup` im Terminal funktionieren.
+  Ist keiner der beiden Ordner beschreibbar, fragt macOS nach dem Passwort eines Administrators. Ein Link auf eine
+  andere
+  Kopie von Echolot ist orange markiert mit **Neu installieren**; eine Datei, die Echolot nicht dorthin gelegt hat,
+  zeigt
+  **Ersetzen …**, was vor dem Ersetzen nachfragt.
+
+**Echolot › Befehlszeilentool installieren …** macht dasselbe.
+
+### Updates [#updates]
+
+<Edition only="appstore">
+  In der App-Store-Version steht in diesem Abschnitt **Der App Store hält Echolot aktuell.**
+</Edition>
+
+| Einstellung | Was sie tut | Standard |
+| --- | --- | --- |
+| **Automatisch nach Updates suchen** | Sucht einmal am Tag auf GitHub nach einer neuen Version und fragt vor dem Installieren nach. | An |
+| **Updates automatisch laden und installieren** | Installiert Updates, ohne zu fragen. Braucht die Einstellung darüber. | Aus |
+| **Zuletzt geprüft** | Wann Echolot zuletzt gesucht hat, mit **Jetzt prüfen**. | |
+
+Updates sind signiert, und Echolot installiert nur solche, die von seinem Entwickler signiert sind.
+**Echolot › Nach Updates suchen …** sucht sofort. Selbst gebaute Versionen suchen nicht nach Updates.
+
+## Netzwerk [#network]
+
+Der Proxy, über den Anfragen gehen.
+
+| **Proxy** | Was passiert |
+| --- | --- |
+| **Systemeinstellungen** (der Standard) | HTTP-, HTTPS- und SOCKS-Proxys aus den Systemeinstellungen › Netzwerk, mit ihren Ausnahmen. Die automatische Proxy-Konfiguration (PAC) wird nicht genutzt. |
+| **Ohne** | Jede Anfrage verbindet sich direkt. |
+| **Manuell** | Ein HTTP-, HTTPS- (TLS zum Proxy) oder SOCKS5-Proxy, festgelegt in den Feldern darunter. |
+
+Bei **Manuell**:
+
+- **Proxy**: die Adresse des Proxys, etwa `http://proxy:3128` oder `socks5://host:1080`.
+- **Benutzername**: optional.
+- **Passwort**: im Schlüsselbund gehalten. Verfügbar, sobald es einen Benutzernamen gibt.
+- **Ohne Proxy für**: Hosts, die den Proxy überspringen, durch Kommas getrennt, etwa `localhost, *.internal`.
+
+Ein Arbeitsbereich kann unter **Arbeitsbereichseinstellungen › Proxy** einen eigenen Proxy festlegen, der Vorrang hat.
+HTTP/3 funktioniert nicht über einen Proxy: Eine solche Anfrage schlägt fehl und sagt warum. Siehe
+[Anfrageeinstellungen](/docs/requests/settings).
+
+## Speicher [#storage]
+
+Wie viel von den Antworten und ihrem Verlauf behalten wird. Siehe
+[Speicher und Verschlüsselung](/docs/workspaces/storage-and-encryption).
+
+| Einstellung | Was sie tut | Standard |
+| --- | --- | --- |
+| **Antwort-Bodys auf der Festplatte verschlüsseln** | Verschlüsselt Bodys, Wire-Mitschnitte und formatierte Kopien mit einem Schlüssel, der in deinem Anmelde-Schlüsselbund liegt. Bereits gespeicherte Bodys werden im Hintergrund verschlüsselt und zurückverwandelt, wenn du es ausschaltest; die Zeile darunter zeigt den Fortschritt und wie viele Bodys verschlüsselt sind. Solange es an ist, findet die Verlaufssuche Anfragen nach Name, Adresse und Headern, nicht nach dem, was ihre Bodys sagen. Arbeitsbereiche sind nicht betroffen. | Aus |
+| **Antwort-Bodys behalten bis** | 1, 2, 5, 10, 20 oder 50 GB. Bodys werden einmal gespeichert, egal wie oft sie eintreffen; über dieser Größe werden die am längsten nicht benutzten entfernt. Bodys, die in einem Tab offen sind, bleiben immer erhalten. Die Zeile darunter zeigt ihre Größe auf der Festplatte; **Gespeicherte Bodys entfernen …** entfernt nach Rückfrage jeden Body, den offene Fenster nicht brauchen. | 5 GB |
+| **Verlauf pro Anfrage** | 10, 25, 50, 100 oder 200 Antworten, die im Verlauf jeder Anfrage behalten werden. Ältere Einträge gehen zuerst; die neueste Antwort jeder Anfrage behält ihren Body. | 50 Antworten |
+
+## Assistent [#assistant]
+
+Der in Echolot eingebaute Agent: Modellanbieter und Schlüssel. Siehe [Der Assistent](/docs/ai/assistant).
+
+<Shot id="settings-assistant" alt="Die Einstellungen im Bereich „Assistent“: zwei Anbieter mit ihren Modellen, die Anbieter, die Daten erhalten dürfen, die vor dem Modell verborgenen Muster und das Formular zum Hinzufügen eines Anbieters" />
+
+-  **Anbieter**: jeder Anbieter, den du hinzugefügt hast. Der angehakte ist der, den der Assistent nutzt. Jeder hat
+  ein Menü
+  (oder Feld) **Modell**, **Modelle laden**, um die Liste neu zu holen, und **Entfernen …**, was seinen Schlüssel aus
+  dem
+  Schlüsselbund löscht. Anthropic-Konten haben außerdem **Aufwand**: **Standard des Modells**, `low`, `medium`, `high`,
+  `xhigh` oder `max`. Ein CLI-Agent hat stattdessen seinen **Befehl**.
+-  **Darf deine Daten erhalten**: die Anbieter, denen du die einmalige Erlaubnis gegeben hast, und was sie abdeckt
+  (**Der Assistent und Echos Kommentare** oder nur **Echos Kommentare**). **Entziehen** nimmt sie zurück; die nächste
+  Nachricht
+  fragt erneut. Das On-Device-Modell von Apple und Server auf diesem Mac fragen nie.
+- **Vor dem Modell verborgen**: ein regulärer Ausdruck pro Zeile. Was in Tool-Ergebnissen passt, wird durch `[hidden]`
+  ersetzt, bevor das Modell es sieht. Geheime Variablen sind immer verborgen; diese sind für den Rest.
+- **Anbieter hinzufügen**: **Anbieter** (**Anthropic**, **OpenAI**, **Google Gemini**, **OpenAI-kompatibel** oder
+  **CLI-Agent (ACP)**), dann **API-Schlüssel**, **Adresse** (OpenAI-kompatibel, `http://127.0.0.1:11434/v1`, wenn leer)
+  oder **Agent** und **Befehl** (CLI-Agent) und **Hinzufügen**.
+
+Schlüssel bleiben im Schlüsselbund auf diesem Mac und werden nur an die eigene Adresse des Anbieters gesendet.
+
+<Edition only="direct">
+  **CLI-Agent (ACP)** gibt es nur in der direkt geladenen Version: Die App-Store-Version kann keine Programme auf deinem
+  Mac starten.
+</Edition>
+
+## Agenten [#agents]
+
+KI-Agenten mit deinen geöffneten Arbeitsbereichen arbeiten lassen. Siehe [Externe Agenten](/docs/ai/agents).
+
+<Shot id="settings-agents" alt="Die Einstellungen im Bereich „Agenten“: der Schalter, der Agenten geöffnete Arbeitsbereiche nutzen lässt, Claude Desktop mit zuletzt genutzten Arbeitsbereichen und die Tool-Sets" />
+
+| Einstellung | Was sie tut | Standard |
+| --- | --- | --- |
+| **Agenten geöffnete Arbeitsbereiche nutzen lassen** | Solange ein Arbeitsbereich geöffnet ist, laufen die Aufrufe von Agenten in Echolot: Du genehmigst Sendungen, die Daten ändern könnten, neue Hosts und Änderungen am Arbeitsbereich und siehst jeden Aufruf unter **Agenten** im Fenster. Geheime Werte erreichen nie einen Agenten. | Aus |
+| **Claude Desktop** | Deine zuletzt genutzten Arbeitsbereiche, jeder mit **Zu Claude hinzufügen**, was Agenten einschaltet und den Arbeitsbereich zu Claude Desktop hinzufügt. **Hinzugefügt**, wenn Claude Desktop ihn hat. Nur in der direkt geladenen Version. | |
+| **Tools für Agenten** | Die Tool-Sets, die Agenten bekommen: **Anfragen** (immer an), **Flows**, **Arbeitsbereich**, **Umgebungen**, **Specs**, **Mocks**, **MCP-Server**, **Verlauf**, **Flows bearbeiten**. | Anfragen und Flows |
+| **Andere Apps** | Claude Code, Cursor, VS Code und Codex verbinden sich über den Knopf **Agenten** oben in einem Arbeitsbereichsfenster. | |
+
+<Edition only="appstore">
+  Statt des Abschnitts „Claude Desktop“ zeigt die App-Store-Version **Befehlszeilentool**: Clients verbinden sich über
+  das
+  separat installierte Tool `echolot`, wobei **Befehlszeilentool laden** zu den Downloads führt. Solange der
+  Arbeitsbereich geöffnet ist, laufen ihre Aufrufe in der App.
+</Edition>
+
+## Datenschutz [#privacy]
+
+Was Echolot sammeln darf, immer aus, bis du es erlaubst. Siehe [Datenschutz und Sicherheit](/docs/privacy-and-security).
+
+| Einstellung | Was sie tut | Standard |
+| --- | --- | --- |
+| **Anonyme Nutzungsdaten teilen** | Sagt den Entwicklern von Echolot, welche Funktionen genutzt werden (das Senden einer Anfrage, ein Durchlauf, eine MCP-Prüfung), mit kleinen Fakten wie der Art der Anfrage und dem Statuscode, und meldet Fehler mit ihren Stacktraces. Nie URLs, Header, Bodys, Variablen, Secrets oder Antworten. | Aus |
+| **Absturzberichte sammeln** | macOS übergibt Echolot beim nächsten Start seine Absturz- und Hängeberichte, und Echolot sichert sie auf diesem Mac, damit du sie an Feedback anhängen kannst. Nur Stacktraces. Sie werden nirgendwohin gesendet. Die Zahl der gesicherten Berichte wird angezeigt, mit **Im Finder anzeigen**. | An |
+| **Update-Suche** | Zeigt, wie oft Echolot GitHub nach der Liste der Versionen fragt: **Einmal am Tag**, **Nur wenn du fragst** oder **Über den App Store**. GitHub sieht die Version der App und deine IP-Adresse, nichts über dich oder deine Arbeitsbereiche. | |
+
+## Über [#about]
+
+Version und wo Echolot seine Daten ablegt.
+
+- **Version**: die Version und der Build, mit **Neuigkeiten** für die Versionshinweise.
+- **Website**: echolot.dev. **Versionen**: alle Versionen und ihre Hinweise.
+-  **Antworten und Verlauf**: **Im Finder anzeigen** öffnet den eigenen Datenordner von Echolot: Antwort-Bodys,
+  Verlauf und
+  Absturzberichte. Arbeitsbereiche liegen dort, wo du sie ablegst; wer diesen Ordner löscht, verliert nur den Verlauf,
+  nie Anfragen.
+- **Danksagungen**: die Schrift von Echo, Departure Mono von Helena Zhang, unter der SIL Open Font License 1.1.
+
+<Edition only="appstore">
+  Die App-Store-Version legt ihre Daten in einem eigenen Container statt im Ordner „Application Support“ ab;
+  **Im Finder anzeigen** öffnet ihn dort.
+</Edition>

@@ -1,0 +1,221 @@
+---
+title: "Flows"
+description: "Verkette deine gesicherten Anfragen, MCP-Server und die Tools von Echolot auf einer Arbeitsfläche zu kleinen Programmen – und führe sie von Hand, nach Zeitplan, über einen Webhook oder als Tool für Agenten aus."
+---
+
+Ein Flow ist ein kleines Programm, das du zeichnest: Blöcke, durch Verbindungen verbunden. Jeder Block tut eine Sache:
+eine gesicherte Anfrage senden, einen Wert aus einer Antwort herausgreifen, verzweigen, wiederholen, dich etwas fragen,
+eine Variable sichern oder eine Datei schreiben. Nutze Flows für Aufgaben, die du sonst in mehreren Schritten von Hand
+erledigst: mit einem Gerätecode anmelden, durch Ergebnisse blättern, Testdaten anlegen und wieder aufräumen, jeden
+Morgen eine API prüfen oder einem KI-Agenten ein einziges Tool geben, das fünf Anfragen ausführt.
+
+Flows liegen im Arbeitsbereich, eine Datei pro Flow im Ordner `flows`, sodass du sie wie deine Anfragen in Git prüfst
+und teilst. Jede Anfrage, die ein Flow sendet, geht denselben Weg wie ein Senden von der Anfrageseite: Variablen, Auth,
+Skripte, Prüfungen, Proxys und [Verlauf](/docs/workspaces/history) gelten alle.
+
+## Die Seite „Flows“ [#the-flows-page]
+
+Wähle **Flows** im Modulwechsler oben in der Seitenleiste oder drücke <kbd>⌘</kbd><kbd>5</kbd>. Die Seitenleiste listet
+die Flows des Arbeitsbereichs. Unter jedem Namen siehst du, wie er startet: `manual`, `agent tool`, `every hour`,
+`scheduled` oder `webhook`. Ein Warnzeichen neben einem Flow bedeutet, dass es Probleme gibt, die du beheben musst,
+bevor er laufen kann.
+
+<Shot id="flows-canvas" alt="Die Seite „Flows“ mit dem geöffneten Flow Place a test order: die Flows in der Seitenleiste, die Arbeitsfläche mit Start, zwei Blöcken „Anfrage“, einem Block „Genehmigen“, einem Block „Log“ und einem Block „Cancel order“ sowie die Einstellungen des Flows rechts" />
+
+Die Seite hat drei Teile:
+
+- **Die Symbolleiste** über der Arbeitsfläche: der Name des Flows (mit **Bearbeitet**, solange eine Änderung noch nicht
+  gesichert ist), die Zahl der Probleme, **Aufräumen**, **Einpassen**, die Zoomstufe, **Duplizieren**, **Durchläufe**,
+  **Durchlaufprotokoll**, **Block**, **Hinweis** und **Ausführen**.
+- **Die Arbeitsfläche** in der Mitte, mit einer kleinen Karte des ganzen Flows in der unteren linken Ecke. Klicke auf
+  die Karte, um die Ansicht dorthin zu bewegen.
+- **Der Inspektor** rechts. Ist nichts ausgewählt, zeigt er den Flow selbst: **Name**, **Beschreibung** und
+  **Eingänge**. Ist ein Block ausgewählt, zeigt er die Einstellungen dieses Blocks.
+
+Solange ein Flow geöffnet ist, listet die Seitenleiste außerdem **Durchläufe von** diesem Flow (die Durchläufe dieses
+Fensters, neueste zuerst) und die **Anfragen** des Arbeitsbereichs, bereit zum Ziehen auf die Arbeitsfläche.
+
+### Flow erstellen [#create-a-flow]
+
+1. Klicke in der Seitenleiste neben **Flows** auf **+**.
+2. Wähle **Leerer Flow** für einen Block „Start“, der mit einem Block „Ausgabe“ verbunden ist, oder wähle unter
+   **Aus einer Vorlage** eine Vorlage (siehe [Vorlagen](/docs/flows/templates)).
+3. Der neue Flow öffnet sich auf der Arbeitsfläche. Benenne ihn im Inspektor unter **Name** um.
+
+Hat der Arbeitsbereich noch keine Flows, bietet die Seite stattdessen die Taste **Neuer Flow** an.
+
+Um einen Flow zu löschen, wähle ihn aus und klicke neben **Flows** auf **−**, oder klicke bei gedrückter Control-Taste
+auf ihn und wähle **Löschen …**. Echolot fragt vorher nach und legt die Datei in den Papierkorb. Flows, die den
+gelöschten ausführen, funktionieren dann nicht mehr.
+
+## Auf der Arbeitsfläche bauen [#build-on-the-canvas]
+
+### Blöcke hinzufügen [#add-blocks]
+
+- Klicke in der Symbolleiste auf **Block** oder drücke <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd>. Die Blockauswahl öffnet
+  sich: Tippe, um zu suchen, und klicke dann auf eine Blockart. Mit <kbd>↩</kbd> fügst du den ersten Treffer hinzu. Der
+  neue Block landet in der Mitte der Ansicht und ist ausgewählt.
+- Die Auswahl listet unter **Anfragen** auch die gesicherten Anfragen des Arbeitsbereichs. Wählst du eine aus, entsteht
+  ein Block „Anfrage“, der sie schon sendet.
+- Ziehe eine Anfrage aus **Anfragen** in der Seitenleiste auf die Arbeitsfläche. Sie wird dort, wo du loslässt, zu einem
+  Block „Anfrage“. Klicke bei gedrückter Control-Taste auf eine Anfrage und wähle **Zum Flow hinzufügen**, um ihren
+  Block rechts neben den Flow zu setzen.
+
+Jede Blockart mit ihren Einstellungen und Ports steht unter [Blöcke](/docs/flows/blocks).
+
+<Shot id="flows-block-picker" alt="Die geöffnete Blockauswahl über der Arbeitsfläche: ein Suchfeld, die Blockarten gruppiert unter Auslöser, Aktionen, Personen, Logik, Schleifen, Daten und Ausgabe und am Ende die gesicherten Anfragen" />
+
+### Ports verbinden [#link-ports]
+
+Eingänge sitzen am linken Rand eines Blocks, Ausgänge am rechten. Ein Wert verlässt einen Ausgang, wandert die
+Verbindung entlang und kommt an einem Eingang an; ein Block läuft, sobald jeder verbundene Eingang einen Wert hat.
+
+- Ziehe von einem Ausgang zu einem Eingang, um sie zu verbinden. Der Port unter dem Zeiger leuchtet auf, wenn die
+  Verbindung andocken würde. Du kannst auch an einem Eingang beginnen und zu einem Ausgang ziehen.
+- Ein Eingang nimmt eine Verbindung an. Verbindest du einen weiteren Ausgang damit, ersetzt das die alte Verbindung. Ein
+  Ausgang kann viele Eingänge speisen.
+- Lässt du eine neue Verbindung über leerer Arbeitsfläche los, öffnet sich dort die Blockauswahl. Sie listet nur die
+  Blöcke, die die Verbindung aufnehmen können, und der gewählte Block kommt schon verbunden an.
+- Um eine Verbindung zu verlegen, ziehe sie von dem Eingang weg, an dem sie endet, und lass sie über einem anderen
+  Eingang los. Lässt du sie über leerer Arbeitsfläche los, trennst du sie.
+- Zeige auf eine Verbindung, um in ihrer Mitte eine Taste einzublenden, die sie trennt.
+
+### Auswählen, bewegen und anordnen [#select-move-and-arrange]
+
+- Klicke auf einen Block, um ihn auszuwählen. Mit <kbd>⇧</kbd>-Klick oder <kbd>⌘</kbd>-Klick fügst du Blöcke zur
+  Auswahl hinzu oder nimmst sie heraus.
+- Halte <kbd>⇧</kbd> oder <kbd>⌘</kbd> gedrückt und ziehe auf leerer Arbeitsfläche, um einen Auswahlrahmen aufzuziehen.
+  Blöcke, die er berührt, kommen zur Auswahl.
+- Ziehe einen Block, um ihn zu bewegen. Drücke <kbd>Esc</kbd>, um die Auswahl aufzuheben.
+- Die Pfeiltasten wählen den nächsten Block in dieser Richtung aus, und die Ansicht folgt ihm. Ist nichts ausgewählt,
+  beginnen sie bei Start.
+- **Aufräumen** ordnet die Blöcke in Spalten an, in der Reihenfolge, in der sie laufen.
+- **Duplizieren** (<kbd>⌘</kbd><kbd>D</kbd>) kopiert die ausgewählten Blöcke samt den Verbindungen zwischen ihnen.
+- <kbd>⌫</kbd> löscht die ausgewählten Blöcke mit ihren Verbindungen oder die ausgewählte Verbindung.
+
+Der Inspektor eines ausgewählten Blocks hat **Block löschen**. Sind mehrere Blöcke ausgewählt, zeigt er, wie viele, und
+**Blöcke löschen**. Ein Flow hat genau einen Block „Start“: Er wird nie kopiert oder dupliziert, lässt sich nicht
+pausieren, und sein Inspektor hat kein **Block löschen**.
+
+### Verschieben und zoomen [#pan-and-zoom]
+
+- Ziehe auf leerer Arbeitsfläche oder scrolle mit zwei Fingern oder einem Mausrad, um zu verschieben.
+- Zoome mit einer Pinch-Geste oder halte <kbd>⌘</kbd> gedrückt und scrolle. Die Ansicht zoomt von 20 % bis 250 %, und
+  die Symbolleiste zeigt die Stufe.
+- **Einpassen** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd>) zeigt den ganzen Flow. Es zoomt nie unter 50 % hinaus, damit
+  der Text lesbar bleibt; ein größerer Flow beginnt an seinem linken Rand.
+
+### Kopieren und einsetzen [#copy-and-paste]
+
+**Bearbeiten › Kopieren** (<kbd>⌘</kbd><kbd>C</kbd>), **Ausschneiden** (<kbd>⌘</kbd><kbd>X</kbd>) und **Einsetzen**
+(<kbd>⌘</kbd><kbd>V</kbd>) wirken auf die ausgewählten Blöcke und die Verbindungen zwischen ihnen. Eingesetzte Blöcke
+bekommen neue IDs und bilden die Auswahl. Im selben Flow landen sie neben den Originalen, in einem anderen Flow in der
+Mitte der Ansicht. Du kannst auch in einen Flow eines anderen Arbeitsbereichs einsetzen. Die kopierten Blöcke sind
+JSON-Text, du kannst sie also auch in eine Nachricht oder ein Issue einfügen.
+
+### Notizen [#notes]
+
+Klicke in der Symbolleiste auf **Hinweis**, um eine Haftnotiz hinzuzufügen, und tippe hinein. Notizen liegen hinter den
+Blöcken und werden nicht ausgeführt.
+
+- Ziehe eine Notiz, um sie zu bewegen, und ziehe den Griff in ihrer unteren rechten Ecke, um ihre Größe zu ändern.
+- Doppelklicke auf eine Notiz oder klicke bei gedrückter Control-Taste darauf und wähle **Notiz bearbeiten …**, um den
+  Text zu ändern.
+- Klicke bei gedrückter Control-Taste darauf und wähle **Notiz löschen**, um sie zu entfernen.
+
+Vorlagen nutzen Notizen, um zu sagen, welche Anfragen du wählen sollst.
+
+### Widerrufen und Sichern [#undo-and-saving]
+
+Jede Änderung auf der Arbeitsfläche und im Inspektor lässt sich mit **Bearbeiten › Widerrufen**
+(<kbd>⌘</kbd><kbd>Z</kbd>) und **Wiederholen** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>) widerrufen: Hinzufügen,
+Bewegen, Verbinden, Löschen, Einstellungen, Notizen und Aufräumen.
+
+Du sicherst Flows nicht selbst. Echolot schreibt die Datei einen Moment nach deiner letzten Änderung; bis dahin steht
+neben dem Namen **Bearbeitet**. Schlägt das Sichern fehl, sagt Echolot, warum, und bietet **Erneut versuchen**,
+**Änderungen verwerfen** (zurück zur Datei auf dem Datenträger) und **Weiter bearbeiten** an. Deine Änderungen bleiben
+auf der Arbeitsfläche, bis sie gesichert sind.
+
+### Probleme [#problems]
+
+Echolot prüft den Flow, während du ihn bearbeitest. Die Symbolleiste zeigt die Zahl der Probleme; klicke darauf für die
+Liste und klicke auf ein Problem, um seinen Block auszuwählen. Ein Block mit einem Problem zeigt ein Warnzeichen, und
+sein Inspektor listet die Probleme auf.
+
+Fehler verhindern, dass der Flow läuft: kein Block „Start“, eine erforderliche Einstellung, die leer geblieben ist (etwa
+ein Block „Anfrage“ ohne Anfrage), eine Anfrage oder ein Flow, die es nicht gibt, oder Verbindungen, die im Kreis
+laufen. Warnungen tun das nicht, zum Beispiel bei einem Block, in den nichts verbunden ist und der deshalb nie läuft.
+Um etwas erneut zu tun, nimm [Wiederholen, Für jedes oder Abfragen](/docs/flows/blocks#loops) statt eines Kreises aus
+Verbindungen.
+
+## Eingaben und Ausgaben [#inputs-and-outputs]
+
+**Eingaben** sind die Werte, mit denen ein Durchlauf beginnt. Füge sie im Inspektor hinzu, solange nichts ausgewählt
+ist: Klicke neben **Eingänge** auf **+**, tippe den Namen und wähle seinen Typ (`any`, `text`, `number`, `bool`,
+`object`, `list` oder `secret`). Der Block „Start“ bekommt pro Eingabe einen Ausgang, dazu `run`, das alle Eingaben als
+ein Objekt sendet.
+
+Eingaben stammen aus dem Blatt von **Ausführen**, aus der Option `--input` von `echolot flow run`, aus dem Tool-Aufruf
+eines Agenten oder aus Query und JSON-Body eines Webhooks. Text wird in den Typ der Eingabe umgewandelt: `3` in eine
+Zahl, `true` oder `yes` in einen Bool, JSON-Text in ein Objekt oder eine Liste. Eine Eingabe vom Typ `secret` ist im
+Durchlaufprotokoll und in dem, was Agenten sehen, verborgen.
+
+Einen Standardwert, eine Beschreibung und ob eine Eingabe erforderlich ist, legst du in der Datei des Flows fest (die
+Tabelle `[[inputs]]`: `default`, `description`, `required`; siehe
+[Arbeitsbereichsdateien](/docs/reference/workspace-files)). Das Blatt von **Ausführen** zeigt die Beschreibung als
+Platzhalter des Feldes und trägt den Standardwert ein.
+
+Der Block **Ausgabe** enthält, was der Durchlauf zurückgibt: an den Agenten, der den Flow aufgerufen hat, an
+`echolot flow run`, an den Aufrufer des Webhooks oder an den Block „Flow“ eines übergeordneten Flows. Ein Flow hat
+höchstens einen Block „Ausgabe“.
+
+## Flow ausführen und beobachten [#run-a-flow-and-watch-it]
+
+Klicke auf **Ausführen** oder drücke <kbd>⌘</kbd><kbd>R</kbd>. Ein Flow mit Eingaben öffnet zuerst ein Blatt, in dem du
+sie ausfüllst; leere Felder nehmen den Standardwert der Eingabe. Der Flow wird gesichert und läuft dann mit der aktiven
+Umgebung des Fensters. **Ausführen** ist nicht verfügbar, solange der Flow Fehler hat.
+
+Während des Durchlaufs:
+
+- Der Rand jedes Blocks zeigt seinen Zustand: läuft oder wartet auf dich, bestanden (grün) oder fehlgeschlagen (rot).
+- Das Durchlaufprotokoll öffnet sich unter der Arbeitsfläche. Es listet jeden Block, sobald er fertig ist, mit
+  seiner Zeit, Log-Zeilen, Testergebnissen (**Tests** 3/3 in der Kopfzeile) und dem Ausgang des Durchlaufs. Klicke auf
+  eine Zeile, um ihren Block auszuwählen.
+- Blöcke, die dich etwas fragen („Fragen“, „Zeigen und warten“, „Genehmigen“), öffnen ein Blatt. Siehe
+  [Blöcke der Gruppe „Personen“](/docs/flows/blocks#people).
+- **Stoppen** (<kbd>⌘</kbd><kbd>.</kbd>) ersetzt **Ausführen** und beendet den Durchlauf. Eine Frage auf dem Bildschirm
+  verschwindet.
+
+Nach dem Durchlauf siehst du, wenn du einen Block auswählst, im Inspektor seinen **Letzter Durchlauf**: wie lange er
+gedauert hat und unter **Anzeigen** seine Werte für **Eingabe** und **Ausgabe** nach Port. Damit findest du den Pfad zu
+einem Wert für einen Block „Auswählen“ oder eine Vorlage.
+
+<Shot id="flows-run-log" alt="Die Arbeitsfläche nach einem Durchlauf von Place a test order: Blöcke mit grünem Rand, das Durchlaufprotokoll unter der Arbeitsfläche und der Inspektor mit der Ausgabe von Create order unter „Letzter Durchlauf“" />
+
+Frühere Durchläufe bleiben im Fenster: Klicke in der Seitenleiste unter **Durchläufe von** auf einen oder wähle ihn im
+Menü **Durchläufe** der Symbolleiste, um ihn wieder auf der Arbeitsfläche zu zeigen. **Arbeitsfläche leeren** in diesem
+Menü oder **Leeren** im Durchlaufprotokoll entfernt die Zustände der Durchläufe. Schlägt ein Durchlauf fehl und steht
+das Modell auf dem Mac bereit, erklärt eine Taste in der Kopfzeile des Protokolls den Fehler.
+
+Ist eine [geschützte Umgebung](/docs/workspaces/protected-environments) aktiv, lautet die Taste
+**In Production ausführen …**, und Echolot fragt einmal, bevor der Durchlauf startet.
+
+Mehr zum Ausführen, zu Zeitplänen, Webhooks, Agenten und der Befehlszeile: [Ausführen und
+Auslöser](/docs/flows/running-and-triggers). Für ein Beispiel zum Mitmachen folge [Mit Flows
+automatisieren](/docs/tutorials/automate-with-flows).
+
+## Tastenkürzel [#keyboard-shortcuts]
+
+| Kürzel | Aktion |
+| --- | --- |
+| <kbd>⌘</kbd><kbd>5</kbd> | Modul „Flows“ zeigen |
+| <kbd>⌘</kbd><kbd>R</kbd> | Flow ausführen |
+| <kbd>⌘</kbd><kbd>.</kbd> | Durchlauf stoppen |
+| <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd> | Block hinzufügen |
+| <kbd>⌘</kbd><kbd>D</kbd> | Ausgewählte Blöcke duplizieren |
+| <kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd> | Ganzen Flow einpassen |
+| <kbd>⌘</kbd><kbd>C</kbd>, <kbd>⌘</kbd><kbd>X</kbd>, <kbd>⌘</kbd><kbd>V</kbd> | Blöcke kopieren, ausschneiden, einsetzen |
+| <kbd>⌫</kbd> | Auswahl löschen |
+| <kbd>⌘</kbd><kbd>Z</kbd>, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd> | Widerrufen, wiederholen |
+| Pfeiltasten | Nächsten Block in dieser Richtung auswählen |
+| <kbd>Esc</kbd> | Auswahl aufheben |

@@ -1,0 +1,157 @@
+---
+title: "Nouveautés"
+description: "Les notes de version de chaque version d’Echolot, la plus récente en premier."
+---
+
+Voici les notes qu’Echolot affiche dans **Aide › Nouveautés d’Echolot**, la version la plus récente en premier. Chaque version et ses téléchargements sont aussi sur la [page des versions](https://github.com/staticdreams/echolot-public/releases).
+
+## 0.8.0
+
+*4 novembre 2026 · build 12*
+
+**Nouveautés**
+
+- Echolot parle désormais français, allemand, espagnol, japonais, coréen, russe et chinois simplifié. Il suit la
+  langue du système, ou choisissez-en une dans Réglages › Général › Langue.
+- Une visite guidée au premier lancement, à refaire depuis Aide › Afficher la visite.
+- Le panneau Assistant se redimensionne : faites glisser son bord (un double-clic rétablit la taille par défaut).
+- Les mocks répondent aux opérations de spec sans exemple avec des données fictives toutes neuves, adaptées à chaque
+  champ.
+
+**Améliorations**
+
+- Echo, l’écran d’état dans l’en-tête de page, est activé par défaut.
+- Dans la fenêtre d’approbation de l’Assistant, Autoriser pour cette session couvre désormais toutes les modifications
+  de l’espace de travail d’un coup ; les suppressions demandent toujours.
+- La fenêtre de bienvenue reçoit un ping sonar derrière l’icône de l’app.
+
+**Corrections**
+
+- L’éditeur de requête ne s’affiche plus par-dessus la réponse.
+- La page Accueil s’adapte à une fenêtre étroite : un Assistant large ne la pousse plus par-dessus la barre latérale.
+- Le message d’accueil d’Echo n’est plus tassé, et le titre de l’Assistant tient sur une ligne dans toutes les
+  langues.
+- Supprimer un test avec son bouton moins ne fait plus planter Echolot, pas plus que supprimer un abonnement ou un
+  message MQTT, un message WebSocket ou une émission Socket.IO. Merci à Amit de l’avoir signalé.
+- Le bouton moins de la liste Flux supprime le flux sélectionné ; il ne prenait les clics que sur son trait fin.
+
+## 0.7.1
+
+*3 novembre 2026 · build 11*
+
+**Nouveautés**
+
+- La carte Sonar de l’Accueil place chaque envoi de la dernière heure, des 24 dernières heures, des 7 ou des 30
+  derniers jours selon son temps de réponse, avec les envois, les réponses OK, la médiane et le p95 comparés à la
+  période précédente.
+- Marine, une seconde apparence sombre dans les bleus des eaux profondes (Réglages › Général › Apparence).
+- L’authentification de l’espace de travail depuis n’importe quelle requête : l’onglet Auth ouvre l’authentification
+  du dossier ou de l’espace de travail dont hérite une requête (Authentification de l’espace de travail… pour une
+  requête qui a la sienne), et les réglages du dossier et de l’espace de travail se connectent avec OAuth 2.0 une seule
+  fois pour toutes les requêtes qui en héritent.
+- Plus d’authentifications : OAuth 1.0, l’octroi par mot de passe d’OAuth 2.0 et ses réglages avancés, et
+  l’authentification ASAP de Postman importée en JWT Bearer.
+- Les agents et l’Assistant peuvent ajouter une authentification et des captures aux requêtes (identifiants uniquement
+  sous forme de `{{variables}}`), définir l’authentification d’un dossier et essayer un flux une fois après votre
+  approbation ; Réglages › Assistant › Demander avant peut limiter les questions aux suppressions, aux nouveaux hôtes
+  et aux environnements protégés.
+- Les requêtes dont le dernier appel a échoué affichent un signe d’avertissement dans la liste des requêtes, avec ce
+  qui n’a pas fonctionné.
+
+**Améliorations**
+
+- Les réponses de l’Assistant s’affichent en Markdown et restent fluides pendant qu’elles arrivent.
+- Les cartes de flux montrent ce qu’elles font, les conditions se modifient sous forme de règles, et la dernière
+  expression d’un bloc Évaluer en est le résultat.
+- Réglages › Stockage indique la place qu’occupent les corps de réponse, et Supprimer les corps stockés… la libère.
+- Sur les petits écrans, l’Assistant et les variables épinglées ne poussent plus la fenêtre au-delà de l’écran : les
+  variables flottent à la place.
+
+**Corrections**
+
+- Correctifs de sécurité issus de deux audits : les jetons OAuth sont conservés par environnement et par réglages et
+  ne partent jamais vers un autre hôte ; les agents ne peuvent pas écrire d’identifiants dans les fichiers ni envoyer
+  de secrets à de nouveaux hôtes sans demander ; les serveurs mock, MCP et webhook arrêtés ferment toutes leurs
+  connexions.
+- Correction d’un plantage sur les très grands nombres dans les valeurs, des proxys HTTPS qui échouaient avec les
+  serveurs HTTP/2, du texte terminé par `"""` qui changeait à l’enregistrement, et des déplacements ou renommages qui
+  effaçaient l’historique d’annulation des onglets ouverts.
+- Avec le chiffrement au repos activé, l’historique ne conserve plus les corps de requête en clair.
+- Les réglages de l’espace de travail et du dossier suivent votre apparence, Marine comprise, et gardent la même
+  taille quand vous changez d’onglet.
+- La barre d’appel gRPC tient dans son volet : les longs noms de proto, de service et de méthode sont tronqués au lieu
+  de déborder sur la réponse.
+
+## 0.6.0
+
+*2 novembre 2026 · build 9*
+
+**Nouveautés**
+
+- Les mocks n’ont plus besoin de spec : créez des routes à la main (méthode, chemin avec `{id}`, code d’état,
+  en-têtes, corps et règles sur la requête), avec des données fictives dans leurs corps : `{{$randomFullName}}`,
+  `{{request.params.id}}`, `{{#repeat 10}}`…`{{/repeat}}`. Créer des requêtes transforme les routes d’un mock en
+  requêtes.
+- Les mêmes valeurs fictives fonctionnent dans les requêtes, et echolot fake génère des données fictives à partir d’un
+  modèle en ligne de commande.
+- Sélectionnez plusieurs requêtes dans la barre latérale pour les placer dans un nouveau dossier (Nouveau dossier avec
+  N éléments) ou modifier d’un coup leurs en-têtes, paramètres de requête et authentification (Modifier N requêtes…).
+- Echo, un écran d’état facultatif dans l’en-tête de page (Réglages › Général › Echo), raconte ce qui se passe dans la
+  fenêtre, et un clic déroule un rapport de la session.
+- Aide › Documentation d’Echolot (⌘?) ouvre la nouvelle documentation sur docs.echolot.dev, et Aide › Aide pour cette
+  page ouvre la page consacrée à ce que vous regardez.
+
+**Améliorations**
+
+- Echolot demande une fois par fournisseur de modèles avant de lui envoyer quoi que ce soit ; Réglages › Assistant
+  liste ce que vous avez autorisé, avec Révoquer. Le modèle sur l’appareil d’Apple et les serveurs sur votre Mac ne
+  demandent jamais.
+- Après une mise à jour, rien ne s’ouvre tout seul : un bouton Nouveautés dans l’en-tête de page affiche les nouvelles
+  notes.
+- La palette de commandes ne propose que ce qui a du sens sur la page affichée.
+- Les réponses JSON affichent les échappements \u sous la forme des caractères qu’ils représentent.
+- La surbrillance de la barre latérale glisse d’une ligne à l’autre, et le sélecteur de modules bondit vers le module
+  choisi.
+
+**Corrections**
+
+- Ajouter une règle et Ajouter un en-tête conservent la ligne qu’ils ajoutent et y placent le curseur.
+- Les boutons de la fenêtre ne sont plus coupés quand une autre fenêtre passe au premier plan.
+
+## 0.5.0
+
+*31 octobre 2026 · build 7*
+
+**Améliorations**
+
+- Les environnements protégés demandent avant davantage d’actions : appels, vérifications et surveillances MCP,
+  Obtenir le jeton, récupérations de schéma, réflexion gRPC et messages envoyés sur une session ouverte après un
+  changement d’environnement.
+- Un mot de passe de proxy ou une phrase secrète de certificat conservé en texte brut affiche désormais un
+  avertissement, avec Placer dans le trousseau à côté ; effacer l’historique d’une requête demande d’abord
+  confirmation.
+- Taper `{{` propose à nouveau les variables de la requête dans la barre d’URL, et, dans leurs réglages, les variables
+  avec lesquelles se résout l’authentification d’un dossier ou d’un espace de travail.
+- L’arbre JSON ouvre plus vite les grandes réponses, et le canevas des flux se déplace plus en douceur.
+
+**Corrections**
+
+- Les secrets restent en place : les en-têtes de clé d’API et ceux qui contiennent un secret ne suivent plus une
+  redirection vers une autre origine, l’historique ne conserve plus les secrets Hawk, EdgeGrid, NTLM, de proxy ou de
+  certificat, et avec le stockage chiffré, le texte d’une réponse reste hors de l’index de recherche.
+- Les agents lisent l’historique avec les identifiants masqués, et une correspondance de recherche qui touche un
+  secret n’est ni comptée ni affichée ; les limites d’un agent s’appliquent aussi dans les flux qu’il exécute.
+- La connexion NTLM fonctionne en HTTP/1.1 sans qu’une autre requête emprunte sa connexion, et un serveur qui exige
+  HTTP/1.1 l’obtient. HTTP/3 essaie toutes les adresses d’un hôte à la fois, comme le fait TCP.
+- Les réponses qui gonflent de façon absurde une fois décodées (au-delà de 100 pour 1 après 256 Mo), ainsi que les
+  messages WebSocket et Socket.IO assemblés à partir de fragments énormes, sont coupés au lieu de remplir la mémoire.
+- L’exportation n’écrit jamais par-dessus, dans ou autour de l’espace de travail d’origine, place dans la corbeille ce
+  qu’elle remplace et indique combien d’identifiants ont été écrits en clair.
+- Les modifications ne sont plus perdues : les réglages du dossier et de l’espace de travail, les routes de mock et un
+  onglet fermé juste avant de quitter sont tous écrits, et un enregistrement qui échoue conserve votre texte.
+- Fermer une fenêtre arrête ses exécutions et ses envois. Les exécutions avec itérations côte à côte gardent leurs
+  propres valeurs $response, et les fichiers de données jusqu’à 100 Mo se chargent sans figer la fenêtre.
+- Un flux dont le script de requête échoue prend désormais le chemin d’échec, et les services en arrière-plan suivent
+  le choix d’aucun environnement.
+
+Les notes des versions précédentes sont dans la [version anglaise](/docs/whats-new).

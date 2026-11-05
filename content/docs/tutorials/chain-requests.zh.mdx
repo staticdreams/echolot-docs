@@ -1,0 +1,96 @@
+---
+title: "串联请求"
+description: "只登录一次，存储令牌，让每个需要它的请求都能发送它，并使用动态值和 Idempotency-Key。"
+---
+
+大多数 API 都需要通过登录获得的令牌。在本教程中，你会把演示商店的令牌从登录响应存入变量，通过整个文件夹的认证来发送它，把一个响应中的值读取到下一个请求里，并用 `Idempotency-Key` 安全地下订单。
+
+- **用时：** 15 分钟。
+- **你需要：** [你的第一个工作区](/docs/tutorials/first-workspace)中的工作区，已选择 **Demo** 环境，并有 **Auth › Sign in** 请求。Alpenglow 已经构建好了这一切；可以打开它对照。
+- **你将学到：** 响应捕获、继承的认证、动态值和响应值。
+
+## 1. 存储登录响应中的令牌 [#1-store-the-token-from-the-sign-in-response]
+
+1. 打开 **Auth › Sign in** 并发送（<kbd>⌘</kbd><kbd>R</kbd>）。
+2. 在响应的**正文**标签页中，把视图切换为 **JSON 树**。
+3. 把指针停在 `access_token` 这一行上。值的后面会出现几个小按钮。选取帮助提示为<strong>存入变量…</strong>的那一个。
+4. 在**存入变量**弹出窗口中：
+   - 把名称改为 `token`。
+   - 在范围下选取**环境“Demo”**：每台服务器都有自己的令牌。
+   - 确认已勾选**密钥 · 保存在钥匙串中，绝不写入文件**。对于 `token` 这样的名称，Echolot 会自动勾选。
+   - 保持勾选**每次发送时更新 · 随此请求存储**。
+5. 选取**存入**。
+
+打开请求的**变量**标签页。**来自响应**下有一行：`token`，来源为 **JSON**，路径 `$.access_token`，存入 **Demo**，机密。从现在起，每次成功发送 **Sign in** 都会把新令牌写入 `{{token}}`。400 或更高的响应，或者不含该值的响应，都不会改动这个变量。详见[响应捕获](/docs/requests/captures)。
+
+<Shot id="tutorials-chain-store-variable" alt="JSON 树中 access_token 值上方的“存入变量”弹出窗口，其中显示范围，并勾选了密钥框" />
+
+## 2. 通过整个文件夹发送令牌 [#2-send-the-token-from-a-whole-folder]
+
+不必在每个请求上设置 Bearer 认证，只需在文件夹上设置一次。
+
+1. 创建文件夹 `Orders`（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>）。
+2. 右键点按 **Orders**，选取**文件夹设置…**。
+3. 在**认证**标签页中，把**类型**设为 **Bearer 令牌**，**令牌**设为 `{{token}}`。选取**完成**。
+4. 右键点按 **Orders**，选取**新建请求**，并命名为 `List orders`。把它的 URL 设为 `{{baseURL}}/orders`。
+5. 打开它的**认证**标签页。**类型**是**继承**，**使用**一行说明它采用的是文件夹的 Bearer 令牌。
+6. 发送。
+
+你会得到 Heidi 的三个订单：`ord_7Hk2Lw`（已发货）、`ord_8Jm4Qx`（已付款）和 `ord_5Fd9Ra`（已送达）。**Orders** 中每个新请求都会以同样的方式发送令牌。请求默认是**继承**，即采用最近的文件夹的认证，然后是工作区的认证。其他类型参见[认证](/docs/requests/auth)。
+
+如果之后收到 `401 Unauthorized`，说明令牌已失效：它的有效期是一小时。再次发送 **Sign in**，令牌就会更新。
+
+## 3. 读取另一个响应中的值 [#3-read-a-value-from-another-response]
+
+下一个请求会从 **List orders** 的响应中读取第一个订单的 id，因此你无需手动拷贝。
+
+1. 在 **Orders** 中创建请求 `Get order`。
+2. 在它的 URL 栏中，先输入 `{{baseURL}}/orders/`，再输入 `{{$response`。列表会显示**响应**分组中的动态值。选取 **JSONPath 筛选的响应**。
+3. 在打开的表单中，把**请求**设为 **List orders** 请求（`orders/list-orders`），把 **JSONPath** 设为 `$.items[0].id`。在**尚无响应时**保持**先发送**。选取**完成**。
+
+URL 中现在有一个标记，代表 `{{$responseJSONPath('orders/list-orders', '$.items[0].id')}}`。把指针停在上面可查看它当前的值：`ord_7Hk2Lw`。发送 **Get order**，就会得到该订单及其订单行和配送信息。如果 **List orders** 从未发送过，Echolot 会先发送它。
+
+## 4. 用动态值下订单 [#4-place-an-order-with-dynamic-values]
+
+动态值在每次发送时重新生成。在新订单中使用其中两个。
+
+1. 在 **Orders** 中创建请求 `Create order`，方法为 **POST**，URL 为 `{{baseURL}}/orders`。
+2. 在**正文**标签页中选取 **JSON** 并输入正文。用 `{{` 列表插入 **ISO 8601 时间戳**：
+
+   ```json
+   {
+     "lines": [
+       { "sku": "TNT-MH-2P", "quantity": 1 },
+       { "sku": "PCK-TIT-30", "quantity": 2 }
+     ],
+     "note": "Placed from Echolot at {{$isoTimestamp}}"
+   }
+   ```
+
+3. 在**标头**标签页中添加标头 `Idempotency-Key`。在值中输入 `{{` 并选取 **UUID**（`{{$uuid}}`）。
+4. 发送。
+
+响应是 `201 Created`，带有类似 `/v1/orders/ord_…` 的 `Location` 标头，商店还会把你的 `Idempotency-Key` 原样返回。备注中带有发送的时间。演示服务不存储任何内容，因此之后无法取回这个新订单。所有动态值都列在[参考](/docs/reference/dynamic-values)中。
+
+<Shot id="tutorials-chain-create-order" alt="Create order 返回 201 Created，响应标头中有 Location 和 Idempotency-Key" />
+
+## 5. 看看 Idempotency-Key 的作用 [#5-see-what-the-idempotency-key-does]
+
+`Idempotency-Key` 告诉服务器，使用相同密钥的发送是同一个订单，所以再次发送绝不会重复下单。
+
+1. 再次发送 **Create order**。`Location` 中的 id 变了：`{{$uuid}}` 生成了新的密钥。
+2. 在**标头**标签页中，把 `{{$uuid}}` 替换为固定值，例如 `tutorial-order-1`。
+3. 发送两次。两次响应带有同一个订单 id。
+
+真实的 API 用这个密钥丢弃第一次已经送达的重复请求。Echolot 也会用到它：当保持打开的连接在收到任何响应之前关闭时，只有在发送两次无害的情况下，它才会在新连接上重新发送请求。`GET`、`PUT`、`DELETE` 以及其他安全或幂等的方法是这样，任何带有 `Idempotency-Key` 标头的请求也是这样。不带它的 `POST` 则会失败，因此订单绝不会在你不知情的情况下被下两次。完成后请把 `{{$uuid}}` 改回去。
+
+商店还会检查另外两件事：
+
+- 把某个数量改为 `0` 并发送：`422 Unprocessable Content` 会列出每一行的问题。
+- Alpenglow 中的 **Orders with OAuth 2** 通过客户端凭据获取令牌。这个令牌可以读取订单，但不能下单：用它发送 `POST /v1/orders` 会返回 `403 Forbidden`。
+
+## 后续步骤 [#next-steps]
+
+- [测试 API 并在 CI 中运行](/docs/tutorials/test-in-ci)：添加检查，一次性运行整条请求链。
+- [脚本与测试](/docs/requests/scripts-and-tests)：捕获不够用时，可以使用 `pm.environment.set()` 等。
+- [OAuth 2.0 和其他认证类型](/docs/requests/auth)：让 Echolot 为你获取并刷新令牌。

@@ -1,0 +1,90 @@
+---
+title: "에디션"
+description: "직접 다운로드 버전과 Mac App Store 버전을 비교하고, 어느 쪽을 고를지, 두 버전 사이를 오가는 방법을 설명합니다."
+---
+
+Echolot은 같은 코드로 만든 두 가지 에디션으로 제공됩니다. [echolot.dev](https://echolot.dev)에서 받는 <strong>직접 다운로드</strong> 버전과 <strong>Mac App Store</strong>
+버전입니다. App Store 버전은 Apple의 App Sandbox 안에서 실행됩니다. 샌드박스는 앱이 네트워크를 사용하고, 사용자가 고른 파일을 읽고 쓰고, 자체 데이터를
+보관하도록 허용합니다. 반면 Mac의 다른 프로그램을 실행하거나 다른 앱의 파일을 읽고 쓰는 것은 허용하지 않습니다. 아래의 차이는 거의 모두 여기서 비롯됩니다.
+
+App Store 버전은 아직 App Store에 올라와 있지 않습니다. 이 페이지의 내용은 모두 App Store 버전이 어떻게 만들어졌는지를 설명합니다.
+
+## 각 에디션의 기능 [#what-each-edition-has]
+
+| | 직접 다운로드 | Mac App Store |
+| --- | --- | --- |
+| 모든 프로토콜: HTTP/1.1, HTTP/2, HTTP/3, GraphQL, gRPC, WebSocket, SSE, Socket.IO, MQTT | ✓ | ✓ |
+| 파일로 된 작업 공간, Git, 환경, 키체인의 비밀 값 | ✓ | ✓ |
+| 스크립트, 테스트, 실행, 데이터 기반 실행 | ✓ | ✓ |
+| 기록, 저장된 응답, 저장 데이터 암호화 | ✓ | ✓ |
+| 명세, 모의 서버, 일정과 웹훅이 있는 플로 | ✓ | ✓ |
+| 가져오기와 내보내기 | ✓ | ✓ |
+| 빠른 보내기, 전역 단축키, 단축어 동작, 훑어보기 | ✓ | ✓ |
+| HTTP 기반 MCP 서버 | ✓ | ✓ |
+| 로컬 프로그램으로 실행되는 MCP 서버(stdio: `npx`, `uvx` 등) | ✓ | 작업 공간에 보관되지만 시작되지 않습니다. 명령줄 도구나 직접 다운로드 버전을 사용하십시오. |
+| API 키, Ollama와 호환되는 다른 서버, Apple 온디바이스 모델을 쓰는 어시스턴트 | ✓ | ✓ |
+| 명령줄 에이전트(Claude Code, Codex, Gemini CLI)를 쓰는 어시스턴트 | ✓ | ✗ |
+| Echo와 AI 코멘트 | ✓ | ✓ |
+| 외부 에이전트를 위한 Echolot의 MCP 서버 | ✓ | ✓, 별도로 설치한 명령줄 도구를 통해 |
+| 다른 앱 설정에서 MCP 서버 가져오기 | 자동으로 찾습니다 | 설정 파일을 직접 고르며, 패널이 알맞은 폴더에서 열립니다 |
+| Claude Code, Cursor, VS Code, Codex 연결 | ✓ | ✓, 별도로 설치한 명령줄 도구를 통해 |
+| Claude Desktop 확장 프로그램(`.mcpb`), <strong>Claude에 추가</strong> | ✓ | ✗ |
+| 명령줄 도구 | 앱 안에 있음, <strong>Echolot › 명령줄 도구 설치…</strong> | 따로 설치(릴리스 페이지의 zip) |
+| 업데이트 | 앱에서, <strong>Echolot › 업데이트 확인…</strong> | App Store |
+| 베타 빌드 만료 | 예, 릴리스 후 30일 | 만료되지 않음(베타는 TestFlight로 배포) |
+
+작업 공간 밖의 파일도 다르게 처리됩니다. App Store 버전에서 Echolot은 사용자가 열기 패널에서 고른 파일만 읽을 수 있습니다. 열어 본 모든 작업 공간과
+요청에 쓰려고 고른 모든 파일(파일에서 스트리밍하는 본문, 양식 부분, 클라이언트 인증서)을 기억하며, 재시작한 뒤나 파일이 옮겨진 뒤에도 마찬가지입니다.
+요청 파일에 경로를 직접 적는 것처럼 Echolot이 받은 적 없는 파일이 필요한 전송은 `Echolot is not allowed to read “…”` 오류와 함께 실패합니다.
+실패한 응답에서 <strong>접근 허용…</strong>을 선택하고 파일을 고르십시오. [문제 해결](/docs/troubleshooting)을 참고하십시오.
+
+## 어느 쪽을 고를까 [#which-to-choose]
+
+다음에 해당하면 <strong>직접 다운로드</strong> 버전을 선택합니다.
+
+- 로컬 프로그램으로 실행되는 MCP 서버를 사용합니다(`npx`, `uvx`, `docker` 또는 바이너리로 시작하는 대부분의 서버).
+- 어시스턴트가 Claude Code, Codex, Gemini CLI를 구동하게 하려고 합니다.
+- 앱과 함께 설치되고 업데이트되는 명령줄 도구나, 한 번에 설치되는 Claude Desktop 확장 프로그램이 필요합니다.
+
+App Store에서 받는 앱을 선호하고, App Store의 업데이트와 앱을 둘러싼 샌드박스를 원하며, MCP 서버에 HTTP로 접근할 수 있다면 <strong>App Store 버전</strong>을
+선택합니다.
+
+두 버전은 같은 작업 공간을 열 수 있으므로 나중에 마음을 바꿔도 됩니다.
+
+## 에디션 간 이동 [#moving-between-editions]
+
+macOS에게는 두 에디션이 같은 앱이므로, 한 번에 하나만 설치하십시오. 떠나는 쪽을 종료하고 제거한 뒤([제거](/docs/get-started/install#uninstall)) 다른 쪽을
+설치합니다.
+
+- <strong>작업 공간</strong>은 일반 폴더이며 두 에디션 모두에서 열립니다. App Store 버전에서는 각 작업 공간을 <strong>파일 › 작업 공간 열기…</strong>나 Finder에서 한 번 열어
+  샌드박스가 Echolot이 읽도록 허용하게 합니다. 그 후에는 <strong>파일 › 최근 사용 항목 열기</strong>에 남아 있습니다.
+- <strong>비밀 값</strong>은 로그인 키체인에 남아 있으며 공유됩니다. 다른 에디션이 자신이 만들지 않은 비밀 값을 처음 읽을 때 macOS가 항목마다 한 번씩 묻습니다.
+  <strong>항상 허용</strong>을 선택하십시오. 명령줄 도구도 같은 방식으로 묻습니다.
+- 어시스턴트의 <strong>모델 키</strong>도 다른 에디션에서 한 번 다시 묻거나, <strong>설정 › 어시스턴트</strong>에서 다시 추가할 수 있습니다.
+- <strong>기록과 저장된 응답</strong>은 기록한 에디션에 남습니다. 에디션마다 저장 폴더가 따로 있습니다. 요청은 잃어버리지 않고, 과거 응답만 따로 남습니다.
+
+## 각 에디션이 데이터를 보관하는 위치 [#where-each-edition-keeps-its-data]
+
+작업 공간은 두 에디션 모두 저장한 위치에 있습니다. Echolot 자체 데이터(저장된 응답 본문, 기록, 충돌 보고서, 어시스턴트 대화, 예제 작업 공간)는
+다음 위치에 있습니다.
+
+| 에디션 | 폴더 |
+| --- | --- |
+| 직접 다운로드 | `~/Library/Application Support/Echolot` |
+| Mac App Store | `~/Library/Containers/com.staticdreams.Echolot/Data/Library/Application Support/Echolot` |
+
+<strong>설정 › 정보 › 응답 및 기록 › Finder에서 보기</strong>를 선택하면 알맞은 폴더가 열립니다. 이 폴더를 삭제하면 기록과 저장된 응답은 사라지지만 요청은
+사라지지 않습니다.
+
+## App Store 사용자를 위한 명령줄 도구 [#the-command-line-tool-for-app-store-users]
+
+App Store는 앱 밖에 코드를 설치하는 것을 허용하지 않으므로 App Store 버전에는 명령줄 도구가 들어 있지 않습니다. 도구는 따로 설치하십시오.
+[릴리스 페이지](https://github.com/staticdreams/echolot-public/releases)에서 `echolot-<version>-macos.zip`을 내려받습니다. 이 도구는 만료되지
+않습니다. [명령줄 도구](/docs/cli)를 참고하십시오.
+
+다음 작업에 이 도구가 필요합니다.
+
+- 터미널과 CI에서 작업 공간 실행,
+- 로컬 프로그램으로 시작하는 MCP 서버 실행(`echolot mcp check`, `echolot mcp serve`),
+- Claude Code, Cursor, VS Code, Codex 같은 외부 에이전트 연결. 이들의 설정에는 이 도구의 이름이 들어가며, 작업 공간이 앱에서 열려 있는 동안 에이전트의
+  호출은 앱에서 실행되고 사용자가 승인합니다. [에이전트](/docs/ai/agents)를 참고하십시오.

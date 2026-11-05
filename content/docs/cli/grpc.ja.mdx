@@ -1,0 +1,86 @@
+---
+title: "echolot grpc"
+description: "gRPCサーバのサービスとメソッドを一覧表示し、JSONメッセージで呼び出します。"
+---
+
+`echolot grpc` は、gRPCサービスを記述し、そのメソッドを呼び出します。メッセージはJSONで書きます。サービスは、サーバのリフレクションか `.proto` ファイルから読み取ります。
+アプリでの同じ操作については、[gRPCリクエスト](/docs/requests/grpc)を参照してください。
+
+| サブコマンド | 動作 |
+| --- | --- |
+| `echolot grpc describe` | サーバまたは `.proto` ファイルのサービスとメソッドを、各メソッドのフィールドとともに一覧表示します。 |
+| `echolot grpc call` | メソッドを呼び出し、応答をJSONで出力します。 |
+
+例では、Alpenglowのインベントリサービス（Alpenglowワークスペースの `specs/inventory.proto`）を使います。サービスはMac上の `localhost:50051` で動作します。デモAPIはgRPCを提供できません。
+
+## echolot grpc describe [#echolot-grpc-describe]
+
+```sh
+echolot grpc describe [<url>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>] [--json]
+```
+
+```sh
+echolot grpc describe --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+```text
+Alpenglow.echolot/specs/inventory.proto: 1 service
+alpenglow.inventory.v1.Inventory
+  ListWarehouses (unary): alpenglow.inventory.v1.ListWarehousesRequest → alpenglow.inventory.v1.ListWarehousesResponse
+  WatchStock (server streaming): alpenglow.inventory.v1.WatchStockRequest → alpenglow.inventory.v1.StockLevel
+    skus: repeated string
+  Reserve (unary): alpenglow.inventory.v1.ReserveRequest → alpenglow.inventory.v1.Reservation
+    sku: string
+    quantity: int32
+    orderId: string
+```
+
+代わりにサーバを指定する（`echolot grpc describe http://localhost:50051`）と、そのリフレクションサービスに問い合わせます。各メソッドには、ユニタリ、サーバストリーミング、
+クライアントストリーミング、双方向のどれか、リクエストとレスポンスの型、リクエストのフィールドが表示されます。
+
+| オプション | 意味 |
+| --- | --- |
+| `<url>` | サーバ（`http://host:port` または `https://host:port`）。`--proto` を使う場合は不要です。 |
+| `--proto <file>` | サービスを記述する `.proto` ファイル。インポート先は同じ場所に置きます。指定しない場合は、サーバのリフレクションに問い合わせます。 |
+| `-H`、`--header <header>` | `'Name: value'` 形式のメタデータ。複数回指定できます。 |
+| `-k`、`--insecure` | TLS証明書の検証をスキップします。 |
+| `--timeout <seconds>` | 呼び出し全体を待つ秒数。デフォルトは30。 |
+| `--json` | 記述内容をJSONで出力します。 |
+
+## echolot grpc call [#echolot-grpc-call]
+
+```sh
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+```
+
+`<method>` は `package.Service/Method` です。メッセージはJSONで、デフォルトは `{}` です。`-d -` で標準入力から読み込みます。クライアントストリーミングのメソッドでは配列を指定し、
+各要素が1つのメッセージになります。応答はJSONとして標準出力に出力されます。
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserve \
+  -d '{"sku": "TNT-MH-2P", "quantity": 1, "orderId": "ord_7Hk2Lw"}' \
+  --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+ステータス、受信したメッセージの数、所要時間は標準エラーに出力されます。`OK` 以外のステータスでは、終了コード1で終了します。
+
+| オプション | 意味 |
+| --- | --- |
+| `-d`、`--data <json>` | JSONのメッセージ。`-` は標準入力から読み込みます。デフォルトは `{}`。 |
+| `--deadline <ms>` | ミリ秒単位のデッドライン。`grpc-timeout` として送信されます。 |
+| `--compress <algorithm>` | 送信するメッセージを圧縮します：`gzip` または `deflate`。圧縮された応答は、指定にかかわらず読み取れます。 |
+| `--proto <file>` | サービスを記述する `.proto` ファイル。インポート先は同じ場所に置きます。指定しない場合は、サーバのリフレクションに問い合わせます。 |
+| `-H`、`--header <header>` | `'Name: value'` 形式のメタデータ。複数回指定できます。 |
+| `-k`、`--insecure` | TLS証明書の検証をスキップします。 |
+| `--timeout <seconds>` | 呼び出し全体を待つ秒数。デフォルトは30。 |
+
+`http://` はTLSなしのHTTP/2を使い、`https://` はTLSを使います。よく使われる型（`google.protobuf.Timestamp` など）は組み込まれているため、それらをインポートする `.proto` ファイルに
+追加のファイルは必要ありません。
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | `describe` がサービスを見つけました。`call` がステータス `OK` で終了しました。 |
+| `1` | サーバに接続できないか記述できなかった、または呼び出しのステータスが `OK` ではありませんでした。 |
+| `64` | オプションが正しくありません。 |

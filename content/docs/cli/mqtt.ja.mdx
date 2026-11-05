@@ -1,0 +1,100 @@
+---
+title: "echolot mqtt"
+description: "MQTTブローカー（バージョン3.1.1または5.0、TCP、TLS、WebSocket経由）のトピックをサブスクライブし、メッセージをパブリッシュします。"
+---
+
+`echolot mqtt` は、ターミナルからMQTTブローカーと通信します：`subscribe` は届いたメッセージを出力し、`publish` はメッセージを送信します。
+どちらもデフォルトではMQTT 5.0を使い、指定すれば3.1.1を使います。接続はTCP（`mqtt://`）、TLS（`mqtts://`）、WebSocket（`ws://`、`wss://`）のいずれかです。
+アプリでの同じ操作については、[MQTTリクエスト](/docs/requests/mqtt)を参照してください。
+
+例では、Alpenglowのリクエスト **Warehouse sensors** と同じように、Mac上の `localhost` にあるブローカーを使います。デモAPIはMQTTを動かせません。
+
+## echolot mqtt subscribe [#echolot-mqtt-subscribe]
+
+```sh
+echolot mqtt subscribe [<options>] <broker> <filters> ...
+```
+
+`<broker>` は `mqtt://host[:1883]`、`mqtts://host[:8883]`、`ws://host/mqtt`、`wss://host/mqtt` のいずれかです。`<filters>` は1つ以上のトピックフィルターで、
+`+` は1階層に、`#` は残りすべてに一致します。
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/+/temperature' --qos 1
+```
+
+```text
+warehouses/bern/temperature 4.5
+warehouses/zurich/temperature 5.1
+```
+
+各メッセージは、標準出力に1行で出力されます：トピック、スペース、ペイロードの順です。UTF-8のテキストでないペイロードは、Base64で出力されます。`--json` を指定すると、
+各メッセージは `topic`、`payload`（または `payload_base64`）、`qos`、`retain` を持つJSON行になり、そのまま `jq` に渡せます。
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 10 --json | jq -r .payload
+```
+
+サブスクリプションは、あなたが停止する（<kbd>⌃</kbd><kbd>C</kbd>）、ブローカーが切断する、`--listen` で指定した秒数が経過する、または `--count` で指定した数のメッセージが届くまで続きます。
+ブローカーが拒否したフィルターは、標準エラーに表示されます。
+
+| オプション | 意味 |
+| --- | --- |
+| `--qos <level>` | `0`（最大1回）、`1`（最低1回）、`2`（ちょうど1回）。デフォルトは0。 |
+| `--listen <seconds>` | 待ち受ける秒数。`0` は、停止するかブローカーが切断するまで待ち受けます。デフォルトは0。 |
+| `--count <n>` | このメッセージ数で停止します。 |
+| `--json` | 各メッセージをJSON行で出力します：topic、payload、qos、retain。バイナリのペイロードはBase64。 |
+
+## echolot mqtt publish [#echolot-mqtt-publish]
+
+```sh
+echolot mqtt publish [<options>] <broker> <topic>
+```
+
+`-m` でペイロードを指定します。指定しない場合は、標準入力の各行が1つのメッセージになります。
+
+```sh
+echolot mqtt publish mqtt://localhost warehouses/bern/temperature -m '4.5' --qos 1
+tail -f readings.log | echolot mqtt publish mqtt://localhost warehouses/bern/log
+```
+
+QoS 1または2では、Echolotはブローカーがすべてのメッセージを確認応答するまで待ち、拒否されたメッセージがあればそれを表示します。QoS 0では、パブリッシュした数を表示します。
+
+| オプション | 意味 |
+| --- | --- |
+| `-m`、`--message <payload>` | ペイロード。 |
+| `--qos <level>` | `0`（最大1回）、`1`（最低1回）、`2`（ちょうど1回）。デフォルトは0。 |
+| `--retain` | あとからサブスクライブする相手のために、ブローカーにメッセージを保持させます。 |
+
+## 両方に共通のオプション [#options-of-both]
+
+| オプション | 意味 |
+| --- | --- |
+| `--mqtt-version <version>` | プロトコルのバージョン：`5` または `3.1.1`。デフォルトは5。 |
+| `--client-id <id>` | クライアントID。デフォルトは `echolot-` とランダムな接尾辞。 |
+| `-u`、`--user <name>` | ユーザ名。 |
+| `--password <password>` | パスワード。環境変数 `ECHOLOT_MQTT_PASSWORD` の使用をおすすめします。 |
+| `--keep-alive <seconds>` | ping間隔の秒数。`0` はなし。デフォルトは60。 |
+| `--timeout <seconds>` | 接続とブローカーの応答を待つ秒数。デフォルトは30。 |
+| `-i`、`--insecure` | ブローカーのTLS証明書を検証しません。 |
+| `-v`、`--verbose` | 接続とブローカーの応答を標準エラーに出力します。 |
+| `--proxy <url>` | このプロキシ経由で接続します：`http://host:port`、`https://…`、`socks5://user:password@host:port`。 |
+| `--no-proxy` | `HTTP_PROXY` などを無視して直接接続します。 |
+| `--cacert <file>` | このPEMファイル内のCA証明書も信頼します。複数回指定できます。 |
+| `--cert <file>` | このクライアント証明書を送信します：PEMファイル（`--key` と併用）または `.p12`/`.pfx` ファイル。 |
+| `--key <file>` | クライアント証明書のPEM秘密鍵。証明書ファイルに鍵が含まれていない場合に使います。 |
+| `--pass <passphrase>` | 鍵またはPKCS#12ファイルのパスフレーズ。`ECHOLOT_CERT_PASSPHRASE` の使用をおすすめします。 |
+
+ここでの `-i` は `--insecure` を意味し、`echolot send` のような「include」ではありません。
+
+```sh
+export ECHOLOT_MQTT_PASSWORD='…'
+echolot mqtt publish mqtts://broker.example.com:8883 status/door -m open --retain -u heidi
+```
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | 接続し、サブスクライブまたはパブリッシュしました。 |
+| `1` | `subscribe`：ブローカーが接続またはすべてのサブスクリプションを拒否しました。`publish`：ブローカーが接続、またはQoS 1・2のメッセージを拒否しました。 |
+| `64` | オプションまたはブローカーのアドレスが正しくありません。 |

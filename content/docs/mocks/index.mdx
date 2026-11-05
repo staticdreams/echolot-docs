@@ -98,8 +98,10 @@ The **Spec Responses** card lists every operation with a menu: **First success**
 and for a status with several examples, the example. The choice is saved with the mock.
 
 The body is the response's named example (the one asked for, or the first), its single `example`, or else a body
-made from its schema. When the spec documents several media types, the request's `Accept` header picks one. The
-documented headers and content type are sent too. A `204`, a `304` and answers to `HEAD` have no body.
+made from its schema: fake data that fits each field's type, format and name (an email address for a field of format
+`email`), within the schema's limits, made again on every request. A field named like a path parameter repeats it.
+When the spec documents several media types, the request's `Accept` header picks one. The documented headers and
+content type are sent too. A `204`, a `304` and answers to `HEAD` have no body.
 
 Other answers the mock gives:
 

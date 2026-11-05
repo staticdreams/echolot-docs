@@ -1,0 +1,111 @@
+---
+title: "工作区"
+description: "工作区是什么，如何创建、打开和切换工作区，以及哪个文件存放什么。"
+---
+
+工作区包含一个 API 或项目的全部内容：它的请求和文件夹、环境、MCP 服务器、规范、模拟和流程。它是一个由纯 TOML 文件组成的文件夹，每个请求一个文件，因此你可以阅读它、审阅它，并把它放进 Git。
+
+## 创建工作区 [#create-a-workspace]
+
+1. 选择**文件 › 新建工作区…**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>），或在欢迎窗口中选择**新建工作区…**。
+2. 选一个位置和名称。名称栏起初是 `My API.echolot`。
+3. 点按**创建**。
+
+Echolot 会创建带有 `workspace.toml` 和一个空的 `requests` 文件夹的文件夹，并在单独的窗口中打开它。工作区的名称就是去掉 `.echolot` 的文件夹名称。
+
+想不创建任何内容就试用 Echolot，请在欢迎窗口或“文件”菜单中选择**打开示例**：这是一个现成的工作区，里面有指向公共 API 的请求、重定向和大型响应。[演示 API](/docs/tutorials/demo-api) 提供了更完整的示例 Alpenglow。
+
+## 打开工作区 [#open-a-workspace]
+
+- **文件 › 打开工作区…**（<kbd>⌘</kbd><kbd>O</kbd>），或在欢迎窗口中选择**打开工作区…**。选取一个 `.echolot` 包，或包含 `workspace.toml` 的普通文件夹。
+- 在访达中双击 `.echolot` 包，或把它拖到程序坞中的 Echolot 上。
+- **文件 › 打开最近使用的**列出你最近打开的十个工作区。**清除菜单**会清空这份列表；工作区本身保留在原处。
+- 在终端中：`open "My API.echolot"`。
+
+每个工作区都在自己的窗口中打开。打开已经打开的工作区，会把它的窗口带到最前面。
+
+如果你在访达中移动或重新命名了工作区，Echolot 会跟随它：它仍留在“打开最近使用的”中，并从新位置重新打开。
+
+<Shot id="workspaces-welcome" alt="欢迎窗口：左侧是“新建工作区”“打开工作区”和“打开示例”，右侧是最近使用的工作区" />
+
+## 欢迎窗口 [#the-welcome-window]
+
+没有打开任何工作区时，Echolot 会显示欢迎窗口。左侧是：**新建工作区…**、**打开工作区…** 和**打开示例**。右侧是：**最近使用的工作区**，每个都附有它所在的文件夹。点按其中一个即可打开。
+
+## 在工作区之间切换 [#switch-between-workspaces]
+
+- **文件 › 切换工作区…**（<kbd>⌘</kbd><kbd>P</kbd>）显示一个浮动的最近使用的工作区列表。输入文字筛选，然后按 <kbd>↩</kbd>。
+- 边栏底部的工作区切换器显示工作区的名称以及是否已全部存储。点按它，可使用**最近使用的工作区**、**新建工作区…**、**打开工作区…**、**工作区设置…** 和**在访达中显示**。
+
+<Shot id="workspaces-switcher" alt="边栏底部已展开的工作区切换器，显示最近使用的工作区和“工作区设置”" />
+
+## 存储 [#saving]
+
+没有“存储”命令。Echolot 会在你停止输入片刻之后，把每项更改写入对应的文件。工作区切换器会显示当前的状态：
+
+| 显示 | 含义 |
+| --- | --- |
+| **已全部存储** | 每项编辑都已写入文件。 |
+| **正在存储…** | 正在写入。 |
+| **1 个未存储的请求**（或更多） | 编辑在等待写入。边栏中请求旁的圆点标记了它。 |
+| **无法存储** | 写入失败。Echolot 会保留这项编辑，并告诉你出了什么问题。 |
+
+关闭窗口或退出 Echolot 时，会先写入剩余的内容。如果某项编辑无法写入，Echolot 会在放弃它之前先询问。
+
+## 撤销和重做 [#undo-and-redo]
+
+每项编辑都可以用**编辑 › 撤销**（<kbd>⌘</kbd><kbd>Z</kbd>）撤销，并用**编辑 › 重做**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>）重做：在请求中输入、重新命名、移动和删除项目、变量、环境、文件夹和工作区设置、规范、模拟和流程。输入在停顿之前算作一步。撤销属于窗口，因此在每个页面中的工作方式都一样。
+
+## 没有询问就不会删除任何内容 [#nothing-is-deleted-without-asking]
+
+每次删除都会先询问：请求、文件夹、环境、MCP 服务器、规范和模拟。询问中的红色按钮没有键盘快捷键，因此 <kbd>↩</kbd> 绝不会删除；<kbd>Esc</kbd> 取消。在边栏中，<kbd>⌫</kbd> 只会提议删除单个请求；文件夹和多个项目要从上下文菜单中删除。
+
+你删除的内容会进入访达中的废纸篓，绝不会直接从磁盘上消失。要找回它，请选择**编辑 › 撤销**，或把文件从废纸篓移回工作区文件夹。
+
+## 在访达中 [#in-the-finder]
+
+`.echolot` 工作区是一个包：访达把它显示为带有 Echolot 图标的单个项目，双击即可打开。要查看里面的文件，请按住 Control 键点按它并选择**显示包内容**，或使用工作区切换器中的**在访达中显示**。
+
+在访达中选中工作区后按 <kbd>空格键</kbd>，可进行[快速查看](/docs/mac/quick-look)：显示它的名称、更改时间，以及它有多少请求、文件夹、环境、变量和检查，并列出各环境的名称。
+
+工作区不必以 `.echolot` 结尾。任何带有 `workspace.toml` 的文件夹都能打开，例如 Git 仓库的根目录。
+
+## 什么放在哪里 [#what-lives-where]
+
+```
+Alpenglow.echolot/
+  workspace.toml               名称、ID、工作区变量、默认认证、智能体规则、代理、证书
+  environments/
+    staging.toml               一个环境：它的名称、是否受保护、它的变量
+    production.toml
+  requests/
+    _folder.toml               顶层项目的顺序
+    _folder.pre.js             每个请求都会用到的脚本（以及 _folder.test.js）
+    auth/
+      _folder.toml             文件夹的名称、顺序、文档、认证和变量
+      sign-in.req.toml         一个 HTTP 请求
+      sign-in.body.json        它的正文，放在旁边
+    catalog/
+      search-products.gql.toml 一个 GraphQL 请求
+      search-products.graphql  它的查询
+    inventory/
+      list-warehouses.grpc.toml
+    realtime/
+      order-updates.ws.toml    WebSocket（.sio.toml 为 Socket.IO，.mqtt.toml 为 MQTT）
+    agent-tools/
+      search-catalog.mcp.toml  一个已存储的 MCP 调用
+  mcp-servers/                 MCP 服务器，每个一个文件
+  specs/                       OpenAPI、GraphQL 和 .proto 文件
+  mocks/                       模拟服务器，每个一个文件，以及它们的脚本路由
+  flows/                       流程（.flow.toml）
+```
+
+每种请求都有自己的文件后缀：`.req.toml`（HTTP）、`.gql.toml`（GraphQL）、`.grpc.toml`、`.ws.toml`、`.sio.toml`、`.mqtt.toml` 和 `.mcp.toml`。脚本与其请求放在一起，名为 `<name>.pre.js` 和 `<name>.test.js`。完整格式见[工作区文件](/docs/reference/workspace-files)。
+
+有些内容永远不会进入工作区文件夹：
+
+- **机密值**。机密变量只写入名称；它们的值留在你 Mac 的钥匙串中。见[机密](/docs/workspaces/secrets)。
+- **历史记录和响应正文**。它们保存在 Echolot 自己的储存空间中。见[储存和加密](/docs/workspaces/storage-and-encryption)。
+- **你在这台 Mac 上的选择**：使用中的环境、窗格布局、你信任了哪些脚本，以及全局变量。
+
+因此，工作区文件夹可以放心地共享，打开它的同事从相同的请求开始，并使用他们自己的机密。见 [Git 和团队](/docs/workspaces/git-and-teams)。

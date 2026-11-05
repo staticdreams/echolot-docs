@@ -1,0 +1,172 @@
+---
+title: "echolot flow"
+description: "Lista, ejecuta y crea los flujos de un espacio de trabajo desde el terminal, y sirve sus programaciones y webhooks."
+---
+
+`echolot flow` ejecuta [flujos](/docs/flows) sin la app: una vez desde un terminal o un trabajo de CI, o como un
+servicio que ejecuta los flujos programados cuando les toca y responde a los webhooks.
+
+| Subcomando | Qué hace |
+| --- | --- |
+| `echolot flow list` | Lista los flujos del espacio de trabajo con sus entradas y sus problemas. |
+| `echolot flow run` | Ejecuta un flujo, imprime cada bloque cuando termina y luego la salida del flujo. |
+| `echolot flow new` | Crea un flujo, vacío o a partir de una plantilla; sin un nombre, lista las plantillas. |
+| `echolot flow serve` | Ejecuta los flujos programados cuando les toca y responde a los webhooks, hasta que se detiene. |
+
+Todos los subcomandos reciben el espacio de trabajo con `-w` o `--workspace`.
+
+## echolot flow list [#echolot-flow-list]
+
+```sh
+echolot flow list --workspace <workspace> [--json]
+```
+
+```sh
+echolot flow list -w Alpenglow.echolot
+```
+
+```text
+morning-stock-check  Morning stock check
+order-status-webhook  Order status on webhook
+place-test-order  Place a test order  MCP tool place_test_order
+```
+
+Cada línea tiene el slug del flujo (el nombre de su archivo en `flows/` sin `.flow.toml`) y su nombre y, cuando los
+tiene, sus entradas entre paréntesis (las opcionales entre corchetes), la herramienta MCP con la que se ofrece y el
+número de problemas. `--json` imprime cada flujo con su `slug`, `name`, `description`, `inputs`, `blockCount`, `errors`,
+`warnings` y su `schedule` o `webhook`.
+
+## echolot flow run [#echolot-flow-run]
+
+```sh
+echolot flow run <flow> --workspace <workspace> [--env <env>] [--input <name=value> ...] [--json] [--no-input]
+```
+
+`<flow>` es el slug o el nombre del flujo.
+
+```sh
+echolot flow run morning-stock-check -w Alpenglow.echolot
+```
+
+```text
+✓ start  Start  0 ms
+✓ list  List products  148 ms
+✓ low  Running low?  4 ms
+notification: Restock Bern — A tent is under five in Bern.
+✓ notify  Restock  0 ms
+Morning stock check: passed in 152 ms
+```
+
+- Cada bloque imprime una línea cuando termina: `✓` o `✗`, su ID, su título y su tiempo, con el error si falló. Lo que
+  escriben los bloques Registro y el resultado de cada prueba siguen en líneas propias.
+- Las notificaciones van a la salida de error estándar.
+- La salida del flujo se imprime al final, como JSON, seguida de un resumen en la salida de error estándar.
+- `--input name=value` fija una entrada, como texto convertido al tipo de la entrada. Indícalo una vez por entrada.
+- Cuando un flujo necesita a una persona (una entrada sin valor, un bloque **Aprobar**), Echolot pregunta en el
+  terminal. `--no-input` nunca pregunta: el flujo falla ahí, que es lo que quieres en CI.
+- `--json` imprime todo el registro de la ejecución como JSON en lugar de las líneas de progreso.
+
+```sh
+echolot flow run "Place a test order" -w Alpenglow.echolot --env staging --no-input
+```
+
+| Opción | Significado |
+| --- | --- |
+| `-w`, `--workspace <folder>` | La carpeta del espacio de trabajo. Obligatorio. |
+| `--env <env>` | El entorno que usan las solicitudes del flujo: el nombre de su archivo sin `.toml`, o su nombre. |
+| `--input <name=value>` | Una entrada; el texto se convierte al tipo de la entrada. Repetible. |
+| `--json` | Imprime el registro de la ejecución como JSON en lugar del progreso. |
+| `--no-input` | Nunca pregunta: un flujo que necesita a una persona falla ahí. |
+
+La ejecución falla, y sale con 1, cuando falla el flujo o una de sus pruebas.
+
+## echolot flow new [#echolot-flow-new]
+
+```sh
+echolot flow new [<name>] [--workspace <workspace>] [--template <template>]
+```
+
+Sin un nombre, lista las plantillas:
+
+```text
+device-sign-in  OAuth device sign-in: shows the code and link (with a QR code), waits until the person approves, saves the tokens to the Keychain.
+refresh-token  Trades the refresh token for a new access token and saves both to the Keychain; says so when it fails.
+paginate-and-export  Fetches a number of pages, gathers their items into one list and writes it to a JSON file in the workspace.
+smoke-monitor  Every hour, checks that a request answers 200 quickly; a notification when it does not.
+seed-and-clean-up  Creates a few records, leaves room for what needs them, then deletes each one again.
+```
+
+Con un nombre, escribe un archivo de flujo nuevo:
+
+```sh
+echolot flow new "Export tents" --template paginate-and-export -w Alpenglow.echolot
+```
+
+```text
+Created flows/export-tents.flow.toml.
+```
+
+Las plantillas dejan sus solicitudes para que las elijas, en la app o en el archivo del flujo; una nota en el lienzo
+dice cuáles. Mira [plantillas](/docs/flows/templates).
+
+| Opción | Significado |
+| --- | --- |
+| `-w`, `--workspace <folder>` | La carpeta del espacio de trabajo. |
+| `--template <template>` | La plantilla de la que partir: `device-sign-in`, `refresh-token`, `paginate-and-export`, `smoke-monitor` o `seed-and-clean-up`. Sin ella, el flujo está vacío. |
+
+## echolot flow serve [#echolot-flow-serve]
+
+```sh
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+```
+
+Ejecuta cada flujo con programación cuando le toca y responde a los webhooks de los flujos que tienen uno, hasta que lo
+detienes con <kbd>⌃</kbd><kbd>C</kbd>. Ejecútalo en un servidor o en un contenedor para mantener en marcha las
+automatizaciones de un espacio de trabajo sin la app.
+
+```sh
+echolot flow serve -w Alpenglow.echolot --port 4100
+```
+
+```text
+Serving Alpenglow (Ctrl-C stops it)
+  schedule  Morning stock check: 0 6 * * *
+  webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
+  token     3f9a…
+```
+
+Cada ejecución imprime una línea con la hora, el flujo, cómo terminó y cuánto tardó.
+
+**Webhooks.** Quien llama envía el método y la ruta del webhook del flujo, con el token como
+`Authorization: Bearer <token>`, una cabecera `X-Echolot-Token` o `?token=` en la URL. Las entradas del flujo salen de
+la consulta y de un cuerpo JSON; una entrada llamada `body` recibe el cuerpo entero. La respuesta es la salida del
+flujo como JSON, `500` con el error cuando el flujo falló, `401` sin el token correcto y `404` con las rutas que hay
+para una ruta que ningún flujo tiene.
+
+```sh
+curl -X POST http://127.0.0.1:4100/order-status \
+  -H "Authorization: Bearer $ECHOLOT_WEBHOOK_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"orderId": "ord_7Hk2Lw"}'
+```
+
+El token es `--token`, si no `ECHOLOT_WEBHOOK_TOKEN`, si no uno nuevo que imprime Echolot. La ejecución de un webhook
+puede tardar hasta dos minutos; un cuerpo de más de 8 MB se rechaza entero.
+
+| Opción | Significado |
+| --- | --- |
+| `-w`, `--workspace <folder>` | La carpeta del espacio de trabajo. Obligatorio. |
+| `--env <env>` | El entorno que usan las solicitudes de los flujos. |
+| `--port <port>` | El puerto de los webhooks; `0` elige uno libre. Predeterminado 4100. |
+| `--share` | Responde a los webhooks en todas las interfaces de red, no solo en esta máquina: para contenedores. |
+| `--token <token>` | El token de los webhooks. Predeterminado: `ECHOLOT_WEBHOOK_TOKEN`, si no uno nuevo, impreso. |
+
+Mira [ejecutar flujos y activadores](/docs/flows/running-and-triggers) para las programaciones y los webhooks en la app.
+
+## Códigos de salida [#exit-codes]
+
+| Código | Cuándo |
+| --- | --- |
+| `0` | `run`: el flujo se superó con todas sus pruebas. `list`, `new`: hecho. |
+| `1` | `run`: el flujo falló, o una prueba falló. |
+| `64` | Una opción incorrecta, un flujo o un entorno que no existe, o un `--input` que no es `name=value`. |

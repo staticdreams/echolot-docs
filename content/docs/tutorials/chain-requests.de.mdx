@@ -1,0 +1,129 @@
+---
+title: "Anfragen verketten"
+description: "Melde dich einmal an, speichere das Token und sende es von jeder Anfrage, die es braucht, mit dynamischen Werten und einem Idempotency-Key."
+---
+
+Die meisten APIs wollen ein Token, das du durch eine Anmeldung bekommst. In diesem Tutorial speicherst du das Token des
+Demo-Shops aus der Antwort der Anmeldung in einer Variablen, sendest es über die Auth eines ganzen Ordners, liest einen
+Wert aus einer Antwort in die nächste Anfrage und gibst eine Bestellung sicher mit einem `Idempotency-Key` auf.
+
+- **Dauer:** 15 Minuten.
+- **Du brauchst:** den Arbeitsbereich aus [Dein erster Arbeitsbereich](/docs/tutorials/first-workspace), mit gewählter
+  Umgebung **Demo** und der Anfrage **Auth › Sign in**. Alpenglow hat all das schon gebaut; öffne ihn zum Vergleichen.
+- **Du lernst:** Erfassungen aus Antworten, übernommene Auth, dynamische Werte und Antwortwerte.
+
+## 1. Das Token aus der Antwort der Anmeldung speichern [#1-store-the-token-from-the-sign-in-response]
+
+1. Öffne **Auth › Sign in** und sende sie (<kbd>⌘</kbd><kbd>R</kbd>).
+2. Stelle im Tab **Body** der Antwort die Ansicht auf **JSON-Baum**.
+3. Halte den Zeiger auf die Zeile `access_token`. Hinter dem Wert erscheinen kleine Knöpfe. Wähle den, dessen Hilfetext
+   **In Variable speichern …** lautet.
+4. Im Popover **In Variable speichern**:
+   - Ändere den Namen in `token`.
+   - Wähle unter dem Geltungsbereich **Umgebung „Demo“**: Jeder Server hat seine eigenen Tokens.
+   - Achte darauf, dass **Geheim · im Schlüsselbund, nie in Dateien** angehakt ist. Echolot hakt es bei Namen wie
+     `token` von selbst an.
+   - Lass **Bei jedem Senden aktualisieren · mit dieser Anfrage gesichert** angehakt.
+5. Wähle **Sichern**.
+
+Öffne den Tab **Vars** der Anfrage. Unter **Aus der Antwort** steht eine Zeile: `token`, aus **JSON**, Pfad
+`$.access_token`, gesichert in **Demo**, geheim. Von nun an schreibt jedes erfolgreiche Senden von **Sign in** das neue
+Token in `{{token}}`. Eine Antwort mit Status ab 400 oder ohne den Wert lässt die Variable unberührt. Details unter
+[Erfassungen aus Antworten](/docs/requests/captures).
+
+<Shot id="tutorials-chain-store-variable" alt="Das Popover „In Variable speichern“ über dem Wert von access_token im JSON-Baum, mit seinem Geltungsbereich und dem angehakten Feld „Geheim“" />
+
+## 2. Das Token aus einem ganzen Ordner senden [#2-send-the-token-from-a-whole-folder]
+
+Statt Bearer-Auth an jeder Anfrage zu setzen, setze sie einmal an einem Ordner.
+
+1. Lege einen Ordner `Orders` an (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>).
+2. Klicke mit der rechten Maustaste auf **Orders** und wähle **Ordnereinstellungen …**.
+3. Setze im Tab **Auth** den **Typ** auf **Bearer-Token** und **Token** auf `{{token}}`. Klicke auf **Fertig**.
+4. Klicke mit der rechten Maustaste auf **Orders**, wähle **Neue Anfrage** und nenne sie `List orders`. Setze ihre URL
+   auf `{{baseURL}}/orders`.
+5. Öffne ihren Tab **Auth**. Der **Typ** ist **Übernehmen**, und die Zeile **Nutzt** sagt, dass sie das Bearer-Token des
+   Ordners nimmt.
+6. Sende sie.
+
+Du bekommst Heidis drei Bestellungen: `ord_7Hk2Lw` (versandt), `ord_8Jm4Qx` (bezahlt) und `ord_5Fd9Ra` (geliefert). Jede
+neue Anfrage in **Orders** sendet das Token auf dieselbe Weise. Anfragen beginnen auf **Übernehmen**, was die Auth des
+nächsten Ordners nimmt, dann die des Arbeitsbereichs. Die anderen Typen findest du unter [Auth](/docs/requests/auth).
+
+Bekommst du später `401 Unauthorized`, ist das Token abgelaufen: Es gilt eine Stunde. Sende **Sign in** erneut, und das
+Token wird aktualisiert.
+
+## 3. Einen Wert aus einer anderen Antwort lesen [#3-read-a-value-from-another-response]
+
+Die nächste Anfrage liest die ID der ersten Bestellung aus der Antwort auf **List orders**, du kopierst sie also nie von
+Hand.
+
+1. Lege in **Orders** eine Anfrage `Get order` an.
+2. Tippe in ihr URL-Feld `{{baseURL}}/orders/` und dann `{{$response`. Die Liste zeigt die dynamischen Werte in der
+   Gruppe **Antworten**. Wähle **Antwort, mit JSONPath gefiltert**.
+3. Setze im Formular, das sich öffnet, **Anfrage** auf die Anfrage **List orders** (`orders/list-orders`) und
+   **JSONPath** auf `$.items[0].id`. Lass **Zuerst senden** auf **Wenn sie noch keine Antwort hat**. Klicke auf
+   **Fertig**.
+
+Die URL enthält jetzt ein Token, das für `{{$responseJSONPath('orders/list-orders', '$.items[0].id')}}` steht. Halte den
+Zeiger darauf, um den Wert zu sehen, den es jetzt hat: `ord_7Hk2Lw`. Sende **Get order**, und du bekommst diese
+Bestellung mit ihren Positionen und dem Versand. Wäre **List orders** nie gesendet worden, würde Echolot sie zuerst
+senden.
+
+## 4. Eine Bestellung mit dynamischen Werten aufgeben [#4-place-an-order-with-dynamic-values]
+
+Dynamische Werte entstehen bei jedem Senden neu. Nutze zwei davon in einer neuen Bestellung.
+
+1. Lege in **Orders** eine Anfrage `Create order` mit der Methode **POST** und der URL `{{baseURL}}/orders` an.
+2. Wähle im Tab **Body** den Eintrag **JSON** und tippe den Body. Füge über die `{{`-Liste den **ISO-8601-Zeitstempel**
+   ein:
+
+   ```json
+   {
+     "lines": [
+       { "sku": "TNT-MH-2P", "quantity": 1 },
+       { "sku": "PCK-TIT-30", "quantity": 2 }
+     ],
+     "note": "Placed from Echolot at {{$isoTimestamp}}"
+   }
+   ```
+
+3. Füge im Tab **Header** einen Header `Idempotency-Key` hinzu. Tippe als Wert `{{` und wähle **UUID**
+   (`{{$uuid}}`).
+4. Sende sie.
+
+Die Antwort ist `201 Created` mit einem Header `Location` wie `/v1/orders/ord_…`, und der Shop schickt deinen
+`Idempotency-Key` zurück. Die Notiz trägt die Zeit des Sendens. Die Demo speichert nichts, die neue Bestellung lässt sich
+also danach nicht abrufen. Alle dynamischen Werte stehen in der [Referenz](/docs/reference/dynamic-values).
+
+<Shot id="tutorials-chain-create-order" alt="Create order mit der Antwort 201 Created, mit den Antwort-Headern Location und Idempotency-Key" />
+
+## 5. Sehen, was der Idempotency-Key tut [#5-see-what-the-idempotency-key-does]
+
+Ein `Idempotency-Key` sagt dem Server, dass Sendungen mit demselben Schlüssel dieselbe Bestellung sind, sodass erneutes
+Senden sie nie zweimal aufgibt.
+
+1. Sende **Create order** erneut. Die ID in `Location` ändert sich: `{{$uuid}}` hat einen neuen Schlüssel erzeugt.
+2. Ersetze im Tab **Header** `{{$uuid}}` durch einen festen Wert wie `tutorial-order-1`.
+3. Sende zweimal. Beide Antworten tragen dieselbe Bestell-ID.
+
+Echte APIs nutzen den Schlüssel, um eine wiederholte Anfrage zu verwerfen, die beim ersten Mal durchkam. Echolot nutzt
+ihn auch: Schließt sich eine offen gehaltene Verbindung vor jeder Antwort, sendet es eine Anfrage nur dann auf einer
+frischen Verbindung noch einmal, wenn zweimaliges Senden harmlos ist. Das gilt für `GET`, `PUT`, `DELETE` und die
+anderen sicheren oder idempotenten Methoden und für jede Anfrage mit einem `Idempotency-Key`-Header. Ein `POST` ohne
+einen schlägt stattdessen fehl, sodass eine Bestellung nie hinter deinem Rücken zweimal aufgegeben wird. Setze
+`{{$uuid}}` wieder ein, wenn du fertig bist.
+
+Zwei weitere Dinge prüft der Shop:
+
+- Ändere eine Menge auf `0` und sende: `422 Unprocessable Content` listet auf, was an jeder Position falsch ist.
+- **Orders with OAuth 2** in Alpenglow holt sein Token per Client-Credentials. Dieses Token darf Bestellungen lesen, aber
+  nicht aufgeben: `POST /v1/orders` damit antwortet mit `403 Forbidden`.
+
+## Nächste Schritte [#next-steps]
+
+- [Eine API testen und in CI ausführen](/docs/tutorials/test-in-ci): Füge Prüfungen hinzu und lass die ganze Kette auf
+  einmal laufen.
+- [Skripte und Tests](/docs/requests/scripts-and-tests): `pm.environment.set()` und Verwandtes, wenn eine Erfassung nicht
+  reicht.
+- [OAuth 2.0 und die anderen Auth-Typen](/docs/requests/auth): Lass Echolot Tokens für dich holen und erneuern.

@@ -1,0 +1,123 @@
+---
+title: "CI"
+description: "プッシュのたびにワークスペースのチェックを実行します。JUnitレポート、CIからのシークレット、仕様・スキーマ・MCPサーバのゲートも扱います。"
+---
+
+ワークスペースはテキストファイルのフォルダなので、テスト対象のAPIと同じリポジトリに置けます。CIでは、コマンドラインツールがワークスペースをチェックし、リクエストをチェック付きで実行し、
+CIシステムが表示するレポートを書き出します。チェックが失敗すると、ジョブも失敗します。
+
+## ジョブが行うこと [#what-a-job-does]
+
+```sh
+echolot validate Alpenglow.echolot --env staging
+echolot run Alpenglow.echolot --env staging \
+  --reporter console --reporter junit --out echolot-results.xml
+```
+
+1. [`echolot validate`](/docs/cli/validate)は、何かを送信する前に、壊れたファイルや欠けている変数を見つけます。
+2. [`echolot run`](/docs/cli/run)は、リクエストを送信し、チェックとスクリプトを実行します。`console` はジョブのログに実行内容を出力し、`junit` はCIがテスト結果として読み取るファイルを書き出します。
+3. リクエストが失敗すると終了コードは1になり、ジョブが失敗します。
+
+ワークスペースの一部だけを実行するには `--folder`、データ駆動の実行には `--data`、最初の失敗で止めるには `--bail`、不安定な依存先には `--retries` を追加します。
+
+## CIでのシークレット [#secrets-in-ci]
+
+ワークスペースのファイルにはシークレットの値が含まれないため、CIが値を渡す必要があります。それぞれをCIのシークレットに保存し、変数名を大文字にした `ECHOLOT_SECRET_<NAME>` という環境変数として渡します
+（[シークレット](/docs/cli#secrets)を参照）。
+
+| ワークスペースのシークレット変数 | CIの環境変数 |
+| --- | --- |
+| `password` | `ECHOLOT_SECRET_PASSWORD` |
+| `token` | `ECHOLOT_SECRET_TOKEN` |
+| `api-key` | `ECHOLOT_SECRET_API_KEY` |
+
+または、ファイルに書いて `--secrets` で渡します。1行に `NAME=value` を1つ書きます。そのファイルは絶対にコミットしないでください。
+
+ほとんどのCIシステムは `CI` を設定しており、これによってキーチェーンがオフになるため、ジョブがプロンプトで待たされることはありません。レポートはシークレットの値をマスクするので、
+アーティファクトとして保存しても安全です。
+
+- **OAuthのMCPサーバ：** Macで `echolot mcp sign-in <server> --print` を使って1回サインインし、出力された `ECHOLOT_SECRET_…` の値をCIのシークレットとして保存します。
+  [`echolot mcp`](/docs/cli/mcp)を参照してください。
+- **キャプチャしたシークレット：** キーチェーンがない場合、シークレット変数へのレスポンスのキャプチャは、実行中の次のリクエストに引き継がれません。そのような変数には、CIから値を渡すか、
+  シークレットではない変数にキャプチャしてください。
+
+## GitHub Actions [#github-actions]
+
+macOSランナーで、リリースからツールをダウンロードして実行します。
+
+```yaml
+# .github/workflows/api-checks.yml
+name: API checks
+on: [push, pull_request]
+
+jobs:
+  echolot:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Echolot command-line tool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo staticdreams/echolot-public --pattern 'echolot-*-macos.zip'
+          unzip -o echolot-*-macos.zip -d "$RUNNER_TEMP/echolot"
+          echo "$RUNNER_TEMP/echolot" >> "$GITHUB_PATH"
+
+      - name: Check the workspace
+        run: echolot validate Alpenglow.echolot --env staging
+        env:
+          ECHOLOT_SECRET_PASSWORD: ${{ secrets.ALPENGLOW_STAGING_PASSWORD }}
+
+      - name: Run the requests
+        run: |
+          echolot run Alpenglow.echolot --env staging \
+            --reporter console --reporter junit --out echolot-results.xml
+        env:
+          ECHOLOT_SECRET_PASSWORD: ${{ secrets.ALPENGLOW_STAGING_PASSWORD }}
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: echolot-results
+          path: echolot-results.xml
+```
+
+タグを指定しない `gh release download` は、最新のリリースを取得します。バージョンを固定するには、タグを指定します（`gh release download v0.5.0 …`）。
+
+### Linuxランナー [#linux-runners]
+
+現時点では、ツールはmacOSで動作します。上のジョブもmacOSランナーを使っています。Linux版、Dockerイメージ、すぐに使えるGitHub Actionはまだ公開されていません。公開されたら、このページで紹介します。
+
+## ほかのCI [#any-other-ci]
+
+すべてが終了コード付きのコマンドなので、シェルコマンドを実行できるCIシステムならどれでも使えます。macOSランナー向けのスクリプトです。
+
+```sh
+#!/bin/sh
+set -e
+
+echolot validate Alpenglow.echolot --env staging
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out reports/echolot.xml \
+  --reporter html --out reports/echolot.html
+```
+
+`set -e` は、最初に失敗したコマンドでスクリプトを止めます。CIのテストレポートの設定で `reports/echolot.xml` を指定し、`reports/echolot.html` は、人が開けるようにアーティファクトとして保存してください。
+
+## その他のゲート [#more-gates]
+
+| チェック | コマンド | 失敗する条件 |
+| --- | --- | --- |
+| OpenAPI仕様に問題がない | `echolot spec lint specs/alpenglow.yaml --strict` | エラーまたは警告がある。 |
+| リクエストが仕様に追従している | `echolot spec check -w Alpenglow.echolot <folder>` | 仕様が変わったのに、フォルダが更新されていない。 |
+| GraphQLスキーマの互換性が保たれている | `echolot graphql diff before.graphql specs/shop.graphql` | 破壊的な変更がある（より厳しくするには `--fail-on dangerous`）。 |
+| MCPサーバがモデルから使いやすい | `echolot mcp check --url https://demo.echolot.dev/mcp --quality --strict` | モデルがつまずきそうなツールがある。 |
+| フローが引き続き動作する | `echolot flow run morning-stock-check -w Alpenglow.echolot --no-input` | フローまたはそのテストの1つが失敗する。 |
+| エージェントが仕事をこなせる | `echolot agent "…" -w Alpenglow.echolot --policy-file ci-policy.toml` | エージェントが完了しない。 |
+
+APIが必要とするがCIにはないサーバには、先に[モック](/docs/cli/mock)をバックグラウンドで実行してください。
+
+空のリポジトリからの手順は、[CIでAPIをテストする](/docs/tutorials/test-in-ci)を参照してください。

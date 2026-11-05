@@ -1,0 +1,259 @@
+---
+title: "Der Assistent"
+description: "Frag den eingebauten KI-Agenten von Echolot zu deiner API, oder lass ihn in deinem Arbeitsbereich senden, testen, dokumentieren und reparieren, während du genehmigst, was sich ändert."
+---
+
+Der Assistent ist ein KI-Agent, der in Echolot eingebaut ist. Du fragst in normalen Worten („Warum schlägt Create order
+fehl?“, „Schreib Prüfungen für diese Anfrage“), und er arbeitet mit deinem Arbeitsbereich über dieselben Tools, die
+auch externe Agenten bekommen: Er listet Anfragen auf und liest sie, sendet sie, liest Antworten, schreibt Prüfungen,
+bearbeitet Specs, startet Mocks und führt Flows aus. Jeder Aufruf erscheint im Bereich, während er passiert, und alles,
+was Daten ändern könnte, fragt vorher dich.
+
+<Shot id="ai-assistant-panel" alt="Das Assistent-Panel rechts neben der Anfrageseite, mit einer Frage, den Tool-Aufrufen des Assistenten und seiner Antwort" />
+
+## Den Assistenten öffnen [#open-the-assistant]
+
+Der Assistent ist ein Panel, das rechts auf jeder Seite andockt. Öffne oder schließe es auf einem dieser Wege:
+
+- <kbd>⌘</kbd><kbd>J</kbd>
+- **Ansicht › Assistent einblenden** (oder **Assistent ausblenden**)
+- Die Taste mit dem Zauberstab, die letzte der Tasten im Seitenkopf
+
+Jedes Fenster hat seinen eigenen Assistenten, der am Arbeitsbereich dieses Fensters arbeitet.
+
+Um das Panel breiter zu machen, ziehe seinen linken Rand nach links; es nimmt sich Platz von der Seite, bis hinunter
+zur Mindestbreite der Seite. Ziehe nach rechts, um es schmaler zu machen, und doppelklicke auf den Rand, um zur
+üblichen Breite zurückzukehren.
+
+## Einen Modellanbieter wählen [#choose-a-model-provider]
+
+Beim ersten Öffnen des Panels steht dort **Modell wählen**. Wähle **Assistent-Einstellungen öffnen …** oder öffne
+**Einstellungen › Assistent** und füge unter **Anbieter hinzufügen** einen Anbieter hinzu:
+
+| Anbieter | Was du eingibst | Hinweise |
+| --- | --- | --- |
+| **Anthropic** | **API-Schlüssel** | Claude-Modelle. Jedes Konto hat eine Einstellung **Aufwand**: **Standard des Modells**, `low`, `medium`, `high`, `xhigh` oder `max`. |
+| **OpenAI** | **API-Schlüssel** | |
+| **Google Gemini** | **API-Schlüssel** | |
+| **OpenAI-kompatibel** | **Adresse** und ein **API-Schlüssel (optional)** | Jeder Server, der die Chat-Completions-API von OpenAI spricht: Ollama, LM Studio, OpenRouter und andere. Die Adresse ist `http://127.0.0.1:11434/v1` (Ollama auf diesem Mac), solange du keine andere eingibst. |
+| **CLI-Agent (ACP)** | **Agent** und **Befehl** | Ein Coding-Agent auf deinem Mac, der das Agent Client Protocol spricht. Nur im Direkt-Download, siehe unten. |
+
+Wähle **Hinzufügen**. Echolot lädt die Modelle des Anbieters und nimmt das erste; wähle ein anderes im Menü **Modell**
+des Kontos oder wähle **Modelle laden**, um die Liste erneut abzurufen. Wo ein Anbieter keine Modelle auflistet, gib
+den Namen des Modells im Feld **Modell** ein.
+
+Um den Assistenten kostenlos und offline auszuprobieren, lass ein Modell in [Ollama](https://ollama.com) laufen und
+füge es als Anbieter **OpenAI-kompatibel** mit der Standardadresse hinzu.
+
+### Schlüssel bleiben im Schlüsselbund [#keys-stay-in-the-keychain]
+
+API-Schlüssel liegen im Schlüsselbund deiner Anmeldung auf diesem Mac, nie im Arbeitsbereich, und werden nur an die
+eigene Adresse des Anbieters gesendet. **Entfernen …** neben einem Konto löscht seinen Schlüssel aus dem Schlüsselbund.
+
+### Zwischen Anbietern wechseln [#switch-between-providers]
+
+Hast du mehrere Anbieter, ist der mit Häkchen unter **Einstellungen › Assistent › Anbieter** der, den der Assistent
+nutzt. Du kannst auch im Panel wechseln: Das Modellmenü im Kopf des Panels listet jedes Konto als *Anbieter · Modell*,
+und **Assistent-Einstellungen …** an seinem Fuß öffnet die Einstellungen.
+
+### Lokale Coding-Agenten (CLI-Agent) [#local-coding-agents-cli-agent]
+
+<Edition only="direct">
+  Lokale CLI-Agenten gibt es nur im Direkt-Download: Die Version aus dem App Store kann keine Programme starten, die auf
+  deinem Mac installiert sind. Nutze dort einen API-Schlüssel, Ollama oder einen anderen OpenAI-kompatiblen Server.
+</Edition>
+
+Ein CLI-Agent bringt sein eigenes Modell und seine eigene Anmeldung mit. Echolot startet ihn im Ordner des
+Arbeitsbereichs und gibt ihm den Arbeitsbereich über den MCP-Server von Echolot, schalte also zuerst **Einstellungen ›
+Agenten › Agenten geöffnete Arbeitsbereiche nutzen lassen** ein (siehe [Externe Agenten](/docs/ai/agents)). Wähle
+**CLI-Agent (ACP)** als Anbieter und dann einen **Agent**:
+
+| Agent | Befehl | Voraussetzung |
+| --- | --- | --- |
+| **Claude Code** | `npx -y @zed-industries/claude-code-acp` | Node.js; nutzt dein Claude-Abo oder `ANTHROPIC_API_KEY` |
+| **Codex** | `npx -y @zed-industries/codex-acp` | Node.js; nutzt deine ChatGPT-Anmeldung oder `OPENAI_API_KEY` |
+| **Gemini CLI** | `gemini --experimental-acp` | Gemini CLI installiert |
+| **Andere** | Der Befehl, den du eingibst | Jeder Agent, der ACP über Standardeingabe und -ausgabe spricht |
+
+Den Befehl kannst du später im Feld **Befehl** des Kontos ändern. Jede Unterhaltung bekommt einen eigenen
+Agent-Prozess, der endet, wenn du das Fenster schließt. Auch die eigenen Berechtigungsanfragen des Agenten fragen dich.
+
+## Die einmalige Erlaubnis [#the-one-time-permission]
+
+Vor der ersten Nachricht an einen Anbieter fragt Echolot: **An *Anbieter* senden?** Die Frage sagt, was dorthin geht
+(deine Nachrichten, die Daten des Arbeitsbereichs, die der Assistent liest, und seine Tool-Ergebnisse), wohin es geht
+und dass geheime Werte nie gesendet werden. **Abbrechen** ist die Standardtaste, sodass <kbd>↩</kbd> nie versehentlich
+sendet; wähle **Erlauben**, um fortzufahren.
+
+Echolot fragt einmal pro Anbieter: einmal für Anthropic, einmal für OpenAI, einmal für Gemini, einmal für jeden
+OpenAI-kompatiblen Server (nach seinem Host) und einmal für jeden CLI-Agenten. Server auf diesem Mac (`localhost`,
+`127.0.0.1`, `::1`) fragen nie, weil nichts den Mac verlässt. Ein Server anderswo in deinem Netzwerk fragt.
+
+**Einstellungen › Assistent › Darf deine Daten erhalten** listet jeden Anbieter, den du erlaubt hast. **Entziehen**
+nimmt die Erlaubnis zurück; die nächste Nachricht fragt wieder.
+
+## Fragen [#ask]
+
+Tippe in **Frag den Assistenten …** am Fuß des Panels. <kbd>↩</kbd> sendet, <kbd>⇧</kbd><kbd>↩</kbd> beginnt eine neue
+Zeile, und <kbd>⌘</kbd><kbd>.</kbd> hält den Assistenten an, während er arbeitet.
+
+Eine neue Unterhaltung beginnt mit Vorschlägen für die Seite, auf der du bist. Klicke auf einen, um ihn ins Textfeld zu
+übernehmen:
+
+| Seite | Vorschläge |
+| --- | --- |
+| Anfragen | **Sende jede Anfrage in diesem Arbeitsbereich und sag mir, welche fehlschlagen.** · **Warum schlägt die offene Anfrage fehl? Sieh dir ihre letzte Antwort an.** · **Schreib Prüfungen für die offene Anfrage anhand ihrer letzten Antwort.** · **Hol alle Seiten dieser Liste und sichere die Einträge als CSV.** |
+| MCP-Server | **Prüfe diesen MCP-Server und fasse zusammen, was er bietet.** · **Rufe jedes schreibgeschützte Tool dieses Servers einmal auf und berichte, was zurückkam.** |
+| Specs | **Behebe die Probleme, die der Linter in dieser Spec meldet.** · **Dokumentiere die Anfragen in diesem Arbeitsbereich als OpenAPI-Spec.** |
+| Mocks | **Starte einen Mock dieser Spec und richte eine neue Umgebung darauf aus.** · **Sichere die letzten echten Antworten als Beispiele in der Spec.** |
+| Flows | **Erstelle einen Flow, der sich anmeldet und jede Seite einer Liste exportiert.** · **Warum ist der letzte Durchlauf dieses Flows fehlgeschlagen?** |
+
+### Was du geöffnet hast, geht mit [#what-you-have-open-goes-along]
+
+Über dem Textfeld zeigen Chips, was du geöffnet hast: die offene Anfrage, die Seite „Tests“ und ihre fehlgeschlagenen
+Prüfungen, der letzte Durchlauf der Ausführung, die offene Spec, der offene Mock, Flow oder MCP-Server. Jeder Chip wird
+mit deiner Nachricht gesendet, sodass du „diese Anfrage“ oder „der letzte Durchlauf“ sagen kannst. Klicke auf einen
+Chip, um ihn bei der nächsten Nachricht wegzulassen; klicke noch einmal, um ihn zurückzuholen. Bewege den Zeiger über
+einen Chip, um den Satz zu sehen, den das Modell bekommt.
+
+### Was der Assistent kann [#what-the-assistant-can-do]
+
+Der Assistent hat jede Gruppe von Tools, die [externe Agenten](/docs/ai/agents#toolsets) bekommen können, was auch
+immer unter Einstellungen › Agenten eingeschaltet ist: Anfragen und Antworten, Ordner samt ihren Prüfungen ausführen,
+Verlauf, Umgebungen, die Ordner und Variablen des Arbeitsbereichs, Specs, Mocks, MCP-Server und Flows. Genehmigungen
+gelten weiterhin für jede davon.
+
+Die Tools, die die Richtlinie für Agenten, den Proxy, Zertifikate, die Auth des Arbeitsbereichs oder Skripte ändern,
+bekommt er nie.
+
+Jeder Tool-Aufruf erscheint als Karte in der Unterhaltung, mit Eingabe und Ergebnis und dem Hinweis, ob er läuft,
+fertig ist oder fehlgeschlagen. Die Zeile unter dem Textfeld zeigt die bisher verbrauchten Tokens und, wo die Preise
+des Modells bekannt sind, ungefähr, was sie gekostet haben.
+
+## Genehmigen, was sich ändert [#approve-what-changes]
+
+Will der Assistent etwas tun, wonach die Richtlinie fragt, erscheint im Fenster ein Blatt: ***Der Agent* möchte *eine
+Anfrage senden, die Daten ändern kann*** mit dem Aufruf und der Anfrage, wie sie hinausginge, geheime Werte maskiert.
+
+<Shot id="ai-assistant-approval" alt="Das Genehmigungsblatt: Der Agent möchte eine Anfrage senden, die Daten ändern kann, mit der POST-Anfrage, die er senden würde, und den Tasten „Ablehnen“, „Für diese Sitzung erlauben“ und „Einmal erlauben“" />
+
+- **Einmal erlauben** führt diesen Aufruf aus.
+- **Für diese Sitzung erlauben** führt diesen Aufruf und ähnliche Aufrufe ohne Nachfrage aus, bis das Fenster
+  geschlossen wird: jede Änderung am Arbeitsbereich auf einmal, mit welchem Tool auch immer (eine Anfrage erstellen,
+  dann die Auth eines Ordners sichern, dann eine Umgebung), und bei Anfragen dieselbe Methode an denselben Host (jedes
+  GET an `demo.echolot.dev`). Löschen fragt weiterhin, ebenso geschützte Umgebungen, neue Hosts und alles, was enger
+  gefasst ist als eine einfache Änderung, etwa die Version eines Flows; dafür gilt es nur für denselben Aufruf. Das
+  Blatt sagt, was es abdeckt.
+- **Vor Änderungen und Sendungen nicht mehr fragen** ist ein Ankreuzfeld auf dem Blatt für Änderungen und für Anfragen,
+  die Daten ändern. Erlaubst du mit gesetztem Häkchen, wird **Einstellungen › Assistent › Vorher fragen** (unten)
+  eingeschaltet. Für Löschen, neue Hosts oder geschützte Umgebungen wird es nicht angeboten.
+- **Ablehnen** verweigert den Aufruf, und der Assistent erfährt es.
+
+Bei einer Anfrage an einen neuen Host, an eine geschützte Umgebung und beim Löschen ist **Einmal erlauben** nicht die
+Standardtaste, sodass <kbd>↩</kbd> sie nicht genehmigen kann. Eine Frage, die niemand innerhalb von fünf Minuten
+beantwortet, wird abgelehnt. Warten mehrere Aufrufe, sagt das Blatt, wie viele es noch sind.
+
+Was fragt, hängt von den Agentenregeln des Arbeitsbereichs ab. Ohne welche gilt:
+
+| Was der Assistent tut | Ohne Regeln des Arbeitsbereichs |
+| --- | --- |
+| Anfragen und Umgebungen lesen | Läuft |
+| Sichere Anfragen (GET, GraphQL-Queries, MCP-Lesezugriffe) | Läuft |
+| Andere Anfragen (POST, PUT, PATCH, DELETE, Dateien als Body) | Fragt |
+| Anfragen an geschützte Umgebungen | Fragt immer |
+| Anfragen an neue Hosts (keine Anfrage und keine Umgebung im Arbeitsbereich nutzt sie) | Fragt immer |
+| Änderungen am Arbeitsbereich | Fragt |
+| Löschen (Objekte kommen in den Papierkorb) | Fragt |
+
+### Weniger fragen [#ask-less]
+
+**Einstellungen › Assistent › Vorher fragen › Nur vor dem Löschen, neuen Hosts und geschützten Umgebungen fragen**
+beendet die Fragen zu Anfragen und Änderungen: Der Assistent erstellt Anfragen, Umgebungen, Specs, Mocks und Flows und
+sendet POST-, PUT- und DELETE-Anfragen, ohne zu fragen. Jeder Aufruf erscheint weiterhin in der Unterhaltung. Etwas in
+den Papierkorb zu legen, ein Host, den der Arbeitsbereich beim Start des Assistenten nicht nutzte, und eine geschützte
+Umgebung fragen weiterhin, ebenso das Ausführen eines Flows, der Agenten nicht angeboten wird. Die Option ist aus, bis
+du sie einschaltest, und gilt nur für den Assistenten; externe Agenten folgen den Regeln des Arbeitsbereichs.
+
+Um diese zu lockern oder zu verschärfen oder um Hosts und Anfragen zu begrenzen, nutze **Arbeitsbereichseinstellungen
+› Agenten**: siehe [Regeln des Arbeitsbereichs für Agenten](/docs/ai/agents#workspace-rules). Dieselben Regeln gelten
+für externe Agenten. Ist **Agenten dürfen diesen Arbeitsbereich nutzen** dort aus, weigert sich auch der Assistent, in
+diesem Arbeitsbereich zu arbeiten.
+
+### Geschützte Umgebungen [#protected-environments]
+
+Solange eine [geschützte Umgebung](/docs/workspaces/protected-environments) aktiv ist, fragt jede Anfrage, die der
+Assistent sendet, vorher, welche Methode sie auch hat und was die Regeln auch sagen. **Für diese Sitzung erlauben**
+deckt nur denselben Aufruf ab.
+
+## Was das Modell nie sieht [#what-the-model-never-sees]
+
+- **Geheime Werte.** Echolot ersetzt den Wert jeder geheimen Variable, bevor irgendetwas an das Modell geht, in den
+  Nachrichten, den Tool-Ergebnissen und den Fehlern. Das Modell sieht Secrets nur mit Namen.
+- **Deine eigenen Muster.** **Einstellungen › Assistent › Vor dem Modell verborgen** nimmt einen regulären Ausdruck pro
+  Zeile. Alles, was in dem, was die Tools zurückgeben, passt, wird durch `[hidden]` ersetzt, bevor das Modell es sieht.
+  Nutze es für Daten, die keine geheime Variable sind, etwa Kunden-IDs oder E-Mail-Adressen. Eine Zeile, die kein
+  gültiger regulärer Ausdruck ist, wird rot angezeigt und weggelassen.
+- **Ganze Bodys von Antworten.** Antworten erreichen das Modell als Zusammenfassungen (Status, Header, Zeiten, eine
+  Gliederung und die ersten Bytes des Bodys, Ergebnisse der Prüfungen) mit einem Handle; mehr vom Body liest es über
+  dieses Handle, einen JSONPath oder eine Suche auf einmal.
+
+Um genau zu sehen, was mit deiner nächsten Nachricht mitgeht, wähle im Kopf des Panels die Taste mit dem Auge,
+**Was das Modell sieht**. Sie zeigt die Anweisungen, die Tools, die Unterhaltung und den Kontext, mit einer Schätzung der
+Tokens.
+
+## Eine Unterhaltung aufbewahren [#keep-a-conversation]
+
+Unterhaltungen bleiben auf diesem Mac, pro Arbeitsbereich. Im Kopf des Panels:
+
+- **Neue Unterhaltung** (der Stift) beginnt eine frische.
+- **Frühere Unterhaltungen** (die Uhr) listet die Unterhaltungen unter **Auf diesem Mac** und unter **In diesem
+  Arbeitsbereich geteilt**. Klicke auf eine, um sie zu öffnen.
+- Das Menü zum Aufbewahren (das Fach mit dem Pfeil) macht aus der Unterhaltung etwas Bleibendes:
+
+| Befehl | Was er macht |
+| --- | --- |
+| **Als Tests sichern** | Legt einen Ordner *Assistant · Titel der Unterhaltung* an, mit einer Anfrage für jede Anfrage, die der Assistent gesendet hat, der Reihe nach nummeriert, jede mit einer Prüfung des Status, den sie bekam. |
+| **Als Flow sichern** | Derselbe Ordner, dazu ein Flow, der diese Anfragen nacheinander sendet. |
+| **Im Arbeitsbereich teilen** | Sichert die Unterhaltung im Ordner `assistant/` des Arbeitsbereichs als Markdown-Protokoll und als Aufzeichnung, Secrets ersetzt, sodass Teammitglieder sie nach einem Git-Pull lesen und unter **In diesem Arbeitsbereich geteilt** öffnen können. |
+| **Aufrufe wiederholen** | Führt die Tool-Aufrufe der Unterhaltung der Reihe nach erneut aus, ohne Modell, und zeigt das Ergebnis als neue Unterhaltung. Genehmigungen gelten wie bei jedem Aufruf. |
+
+**Als Tests sichern** und **Als Flow sichern** sind verfügbar, sobald die Unterhaltung eine Anfrage gesendet hat.
+
+## Apple Intelligence auf diesem Mac [#apple-intelligence-on-this-mac]
+
+Mit macOS 26 und eingeschalteter Apple Intelligence nutzt Echolot außerdem das On-Device-Modell von Apple für kleine
+Aufgaben, die den Mac nie verlassen und weder Anbieter noch Erlaubnis brauchen:
+
+- Das Apple-Intelligence-Menü im Antwortbereich: **Antwort zusammenfassen**, **Fehler erklären** (bei fehlerhaften
+  Antworten), **Prüfungen vorschlagen** (mit einer Taste, um die Prüfungen hinzuzufügen, die Echolot ausführen kann) und
+  **Namen vorschlagen** (mit einer Taste, um die Anfrage umzubenennen).
+- **Fehler erklären** bei einem fehlgeschlagenen Flow-Durchlauf und **Protokoll zusammenfassen** im Protokoll eines
+  laufenden Mocks.
+- [Kommentare von Echo](/docs/ai/echo#ai-comments), wenn du sie einschaltest.
+
+Jede Antwort sagt **Auf diesem Mac beantwortet; nichts wurde gesendet.** Wo das Modell nicht verfügbar ist, erscheinen
+diese Tasten nicht. Das Assistent-Panel selbst nutzt immer einen Anbieter aus den Einstellungen › Assistent.
+
+## Die Tools eines Servers mit einem Modell ausprobieren [#try-a-servers-tools-with-a-model]
+
+Auf der Seite [MCP-Server](/docs/mcp-servers/tools-and-quality) zeigt die Karte **Mit einem Modell ausprobieren**,
+welche der Tools eines Servers ein Modell wählen würde. Tippe in **Worum würde jemand einen Agenten mit diesem Server
+bitten?** ein, was jemand einen Agenten tun lassen könnte, und wähle **Ausprobieren**. Das unter Einstellungen ›
+Assistent gewählte Modell sieht die Tools des Servers und sagt, welches es mit welchen Argumenten aufrufen würde; es
+wird nichts aufgerufen. Aufrufe, die nicht zum Eingabeschema eines Tools passen, zeigen, was falsch ist, und so zeigen
+sich unklare Namen und Beschreibungen von Tools.
+
+Der erste Versuch mit einem Anbieter fragt dieselbe einmalige Erlaubnis wie der Assistent. CLI-Agenten werden hier nicht
+genutzt.
+
+## Fehlerbehebung [#troubleshooting]
+
+- **„Wähle zuerst einen Modellanbieter in ‚Einstellungen › Assistent‘.“** Kein Anbieter ist angehakt. Füge einen hinzu
+  oder hake einen unter **Einstellungen › Assistent › Anbieter** an.
+- **„Agenten sind für diesen Arbeitsbereich deaktiviert“**: **Arbeitsbereichseinstellungen › Agenten › Agenten dürfen diesen
+  Arbeitsbereich nutzen** ist aus (`[agents] enabled = false` in `workspace.toml`). Schalte es ein, um den Assistenten
+  dort zu nutzen.
+- **Ein Anbieter zeigt nach Hinzufügen oder Modelle laden einen Fehler.** Prüfe den Schlüssel und bei einem
+  OpenAI-kompatiblen Server, dass er unter dieser Adresse läuft. Die Meldung nennt den Anbieter und was schiefging.
+- **Ein CLI-Agent startet nicht.** Prüfe, dass sein Befehl im Terminal läuft und dass **Einstellungen › Agenten ›
+  Agenten geöffnete Arbeitsbereiche nutzen lassen** an ist.

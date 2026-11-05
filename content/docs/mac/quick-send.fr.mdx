@@ -1,0 +1,74 @@
+---
+title: "Envoi rapide"
+description: "Envoyez une requête enregistrée depuis n’importe quelle app avec un raccourci clavier ou la barre des menus, et voyez la réponse sans passer par Echolot."
+---
+
+Envoi rapide envoie l’une de vos requêtes enregistrées, où que vous soyez. Appuyez sur son raccourci dans n’importe quelle
+app, tapez quelques lettres du nom de la requête, appuyez sur <kbd>↩</kbd>, et l’état, la durée et la taille
+reviennent dans un petit panneau. L’app dans laquelle vous étiez reste au premier plan.
+
+<Shot id="mac-quick-send-panel" alt="Le panneau Envoi rapide au-dessus d’une autre app, avec une recherche de produits, les requêtes Alpenglow correspondantes et l’état de la réponse de celle qui vient d’être envoyée" />
+
+## L’activer [#turn-it-on]
+
+Envoi rapide est désactivé tant que vous ne l’activez pas.
+
+1. Ouvrez **Réglages › Général**.
+2. Sous **Envoi rapide**, activez **Afficher Envoi rapide dans la barre des menus**.
+
+Un avion en papier apparaît dans la barre des menus, et le raccourci fonctionne dans toutes les apps.
+
+### Changer le raccourci [#change-the-shortcut]
+
+Le raccourci est <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> tant que vous n’en choisissez pas un autre. Pour le changer,
+cliquez sur le raccourci à côté de **Raccourci** et appuyez sur les nouvelles touches. <kbd>Esc</kbd> conserve l’ancien,
+et **Réinitialiser** revient à <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd>.
+
+Un raccourci qui fonctionne dans toutes les apps doit comporter <kbd>⌘</kbd>, <kbd>⌃</kbd> ou <kbd>⌥</kbd>, ou une touche
+de fonction, pour que la saisie ne le déclenche jamais. Tant qu’il est enregistré, aucune autre app ne reçoit ces
+touches. Si une autre app les utilise déjà, les Réglages indiquent que le raccourci n’a pas pu être enregistré ;
+choisissez-en un autre.
+
+<Callout title="Sources de saisie">
+  macOS peut utiliser <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> pour passer à la source de saisie suivante quand cette
+  option est activée dans Réglages Système › Clavier › Raccourcis clavier. Si vous l’utilisez, choisissez un autre
+  raccourci pour Envoi rapide.
+</Callout>
+
+## Envoyer une requête [#send-a-request]
+
+1. Appuyez sur le raccourci, ou cliquez sur l’avion en papier dans la barre des menus.
+2. Tapez dans **Envoyer une requête enregistrée…** pour réduire la liste. Chaque ligne indique la méthode et le nom de la
+   requête, ainsi que son espace de travail et son dossier.
+3. Choisissez-en une avec <kbd>↑</kbd> et <kbd>↓</kbd> et appuyez sur <kbd>↩</kbd>, ou cliquez dessus.
+
+Le bas du panneau montre le résultat : le code d’état, la raison (ou le nom de la requête), la durée et la taille, ou la
+raison de l’échec de l’envoi. **Ouvrir dans Echolot** affiche la requête dans la fenêtre de son espace de travail, en
+ouvrant l’espace de travail s’il n’est pas ouvert.
+
+Le panneau se ferme avec <kbd>Esc</kbd> ou quand vous cliquez ailleurs.
+
+## Les requêtes proposées [#which-requests-it-offers]
+
+Le panneau liste d’abord toutes les requêtes enregistrées des espaces de travail ouverts dans Echolot, puis celles de vos
+espaces de travail récents (les dix derniers que vous avez ouverts), dans l’ordre de la barre latérale de chaque espace de
+travail. Un espace de travail n’a pas besoin d’être ouvert pour que vous puissiez envoyer ses requêtes.
+
+Une requête envoyée depuis Envoi rapide part comme depuis sa fenêtre :
+
+- Avec l’environnement que l’espace de travail utilise dans sa fenêtre, ou celui qu’il a utilisé en dernier.
+- Avec ses scripts et ses vérifications.
+- Dans l’[historique](/docs/workspaces/history) de la requête : la réponse est là quand vous ouvrez la requête.
+
+<Edition only="appstore">
+  Envoi rapide fonctionne de la même façon dans l’édition App Store. Un espace de travail qui n’est pas ouvert est
+  accessible grâce à l’accès que vous avez donné à Echolot en l’ouvrant avec **Fichier › Ouvrir un espace de travail…**.
+</Edition>
+
+## Environnements protégés [#protected-environments]
+
+Quand l’environnement de la requête est [protégé](/docs/workspaces/protected-environments), le panneau demande d’abord :
+**Envoyer à *Environnement* ?**, avec la méthode et l’adresse vers lesquelles l’envoi serait fait, secrets masqués.
+**Annuler** est le bouton par défaut : <kbd>↩</kbd> n’envoie donc pas ; cliquez sur **Envoyer** (ou **Connecter** pour une
+requête WebSocket, Socket.IO ou MQTT) pour continuer. Si vous avez choisi de ne plus être interrogé pour cet environnement
+dans la fenêtre ouverte de l’espace de travail, Envoi rapide ne le demande pas non plus.

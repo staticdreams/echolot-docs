@@ -1,0 +1,151 @@
+---
+title: "Export"
+description: "Exportez un espace de travail ou un dossier en espace de travail Echolot, en collection Postman, Insomnia ou Bruno, et une requête en cURL, en code ou en HAR."
+---
+
+Exportez un espace de travail ou l’un de ses dossiers pour le remettre à quelqu’un qui utilise un autre outil, ou en
+faire une copie sur un autre Mac. Echolot écrit quatre formats : un espace de travail Echolot, une collection Postman
+v2.1, un fichier Insomnia v5 et une collection Bruno. Les valeurs secrètes ne quittent jamais votre trousseau.
+
+## Exporter un espace de travail ou un dossier [#export-a-workspace-or-a-folder]
+
+1. Lancez l’export :
+   - L’espace de travail entier : **Fichier › Exporter l’espace de travail…** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd>), ou
+     **Exporter l’espace de travail…** dans le menu **+** à côté de **Requêtes** dans la barre latérale.
+   - Un dossier : faites un clic droit dessus et choisissez **Exporter le dossier…**, ou sélectionnez-le et choisissez
+     **Fichier › Exporter le dossier…**.
+2. Choisissez un format. Chacun indique combien de requêtes il transporte.
+3. Laissez **Inclure les environnements** coché pour exporter aussi les environnements, ou décochez-le.
+4. Cliquez sur **Exporter…**, choisissez l’emplacement, puis cliquez sur **Exporter**.
+
+Echolot suggère un format : Postman quand il transporte toutes les requêtes, sinon le format qui en transporte le plus,
+et un espace de travail Echolot quand aucun autre format n’en transporte. Un format qui ne peut transporter aucune des
+requêtes ne peut pas être choisi.
+
+<Shot id="workspaces-export-sheet" alt="La feuille Exporter l’espace de travail pour Alpenglow : quatre formats, Postman Collection v2.1 sélectionné, indiquant combien des 29 requêtes chacun transporte et quels types restent de côté" />
+
+## Les formats [#the-formats]
+
+| Format | À quoi il sert | Types de requête transportés | Écrit sous forme de |
+| --- | --- | --- | --- |
+| **Espace de travail Echolot** | « Tout, chaque type de requête, pour un autre Mac ou un collègue. » | Tous | Un dossier d’espace de travail (`.echolot`) |
+| **Postman Collection v2.1** | « Le format que la plupart des outils d’API importent : Postman, Insomnia, Bruno, Hoppscotch, Apidog. » | HTTP, GraphQL | Un fichier `.postman_collection.json` ; un dossier quand les environnements suivent |
+| **Insomnia v5** | « Un seul fichier YAML pour Insomnia 10 et ultérieur, environnements compris. » | HTTP, GraphQL, WebSocket, Socket.IO, gRPC | Un fichier `.yaml` |
+| **Collection Bruno** | « Un dossier de fichiers .bru à garder dans Git et à ouvrir dans Bruno. » | HTTP, GraphQL | Un dossier |
+
+Les requêtes MQTT et les appels MCP enregistrés ne vont que dans un espace de travail Echolot. Un format montre les types
+qu’il laisse de côté avant l’export. Pour Alpenglow, Postman indique « 21 requêtes sur 29 · MCP, MQTT, Socket.IO,
+WebSocket et gRPC restent de côté ».
+
+## Ce qu’un dossier emporte avec lui [#what-a-folder-takes-with-it]
+
+Un dossier est exporté avec ce dont il hérite : les variables, l’auth et les scripts de l’espace de travail et des
+dossiers qui l’entourent. Les requêtes envoient alors dans l’autre outil ce qu’elles envoient dans Echolot.
+
+## Le rapport [#the-report]
+
+Après l’export, la feuille indique ce qui a été écrit, par exemple « Export terminé : 21 requêtes, 7 dossiers,
+3 environnements au format Postman Collection v2.1 dans … ». Deux listes suivent quand il y a quelque chose à dire :
+
+- **Non inclus** : chaque requête pour laquelle le format n’a pas de place, et pourquoi (« Postman Collection v2.1 n’a
+  pas de requêtes MQTT. »).
+- **Modifié au passage** : chaque élément qui est sorti différent.
+
+<Shot id="workspaces-export-report" alt="Le rapport d’export après l’export d’Alpenglow vers Postman : Non inclus liste huit requêtes gRPC, WebSocket, Socket.IO, MQTT et MCP ; Modifié au passage liste des captures, une valeur dynamique et un secret écrit en clair" />
+
+Cliquez sur **Afficher dans le Finder** pour voir l’export, ou sur **Fermer**.
+
+Ce qui change d’habitude dans Postman, Insomnia et Bruno :
+
+- Les **captures de réponse** ne sont pas exportées. Les autres outils définissent des variables depuis des scripts.
+- Les **réglages par requête** (délais, TLS, redirections, version HTTP) ne sont pas exportés, sauf là où le format a le
+  même réglage.
+- Les **vérifications** deviennent les tests de l’autre outil quand il a un équivalent. Le rapport compte celles qu’il
+  n’a pas, comme les vérifications JSON Schema, OpenAPI et les filtres JSONPath.
+- Les **scripts** sont écrits pour l’API `pm` de Postman. Ils vont dans Postman tels quels ; ceux d’Insomnia utilisent
+  `insomnia` à la place ; ceux de Bruno passent tels quels et peuvent demander des retouches pour l’API de Bruno.
+- Les **valeurs dynamiques** pour lesquelles l’autre outil n’a pas d’équivalent sont conservées telles qu’écrites.
+  Remplacez-les avant d’envoyer là-bas.
+- Les **corps de fichier** pointent vers le chemin du fichier sur votre Mac. Choisissez de nouveau le fichier là où la
+  collection est ouverte.
+- Les **modes d’auth** que l’autre outil n’a pas sont omis ou modifiés, et le rapport les nomme.
+- Les **abonnements GraphQL** sur WebSocket deviennent de simples requêtes GraphQL, et les envois de fichiers GraphQL ne
+  sont pas exportés.
+
+## Les secrets restent chez vous [#secrets-stay-home]
+
+Les variables secrètes sortent par leur nom, sans leurs valeurs, dans tous les formats. La personne qui ouvre l’export
+définit les valeurs dans son outil.
+
+Un mot de passe, un jeton ou une clé saisi directement dans un champ d’auth ou d’en-tête, sans passer par une variable
+secrète, est écrit en clair. Le rapport les compte : « 1 mot de passe, jeton ou clé est écrit en clair… ». Dans
+Alpenglow, c’est le secret client OAuth 2.0 de **Auth › Orders with OAuth 2**. Placez de telles valeurs dans le
+trousseau avant de partager le fichier. Voir [secrets](/docs/workspaces/secrets).
+
+## Une copie d’espace de travail Echolot [#an-echolot-workspace-copy]
+
+Un export en **Espace de travail Echolot** est un nouvel espace de travail, avec un ID à lui : il ne partage donc aucun
+secret du trousseau avec le vôtre.
+
+- Un espace de travail entier emporte tout : requêtes, environnements, serveurs MCP, specs, mocks, flux et conversations
+  de l’Assistant partagées.
+- Un dossier emporte les environnements, les serveurs MCP et les specs, et garde sa place : les dossiers au-dessus
+  suivent, chacun ne contenant que le suivant, de sorte que ce dont il hérite et les références entre ses requêtes
+  tiennent toujours. Les flux, les mocks et les conversations de l’Assistant partagées restent avec l’espace de
+  travail ; le rapport le dit.
+
+Le dossier propre à Git et les fichiers `.DS_Store` du Finder ne sont pas copiés.
+
+## Où un export peut aller [#where-an-export-may-go]
+
+Echolot n’écrit jamais un export par-dessus l’espace de travail dont il vient, ni dedans, ni autour. Quand vous choisissez
+un fichier ou un dossier qui existe déjà, Echolot place l’ancien dans la corbeille et écrit l’export à sa place.
+
+## En ligne de commande [#on-the-command-line]
+
+`echolot export` écrit les mêmes formats :
+
+```sh
+echolot export alpenglow.postman_collection.json -w Alpenglow.echolot --format postman
+echolot export orders-bruno -w Alpenglow.echolot --format bruno --folder orders --no-environments
+```
+
+`--format` vaut `echolot`, `postman`, `insomnia` ou `bruno`. Ce pour quoi un format n’a pas de place est nommé sur la
+sortie d’erreur standard. Voir [importer et exporter](/docs/cli/import-export).
+
+## Copier une requête en code [#copy-a-request-as-code]
+
+Depuis la page de la requête, pour la requête ouverte :
+
+- **Requête › Copier en tant que cURL** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd>) place une commande `curl` dans le
+  presse-papiers, variables et secrets résolus.
+- **Requête › Générer du code…** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd>) affiche la requête sous forme de code, variables
+  résolues. Les scripts ne s’exécutent pas, et les secrets apparaissent tels quels. Choisissez un langage, puis
+  **Copier** ou **Enregistrer…**.
+
+Générer du code connaît cURL, Swift (URLSession), JavaScript (fetch et axios), TypeScript (fetch), Python (requests et
+httpx), Go (net/http), Kotlin (OkHttp), Java (HttpClient), C# (HttpClient), PHP (cURL) et Rust (reqwest).
+
+Pour ajouter un langage, cliquez sur **Ouvrir le dossier des modèles** et placez-y un fichier `.template`. Sa première
+ligne le nomme dans la liste, sous forme de commentaire : `{{! Ruby · Net::HTTP }}`. Un modèle portant le même nom de
+fichier qu’un modèle intégré, comme `python-requests.template`, le remplace.
+
+<Callout type="warn">
+  Le code et les commandes cURL contiennent les secrets de la requête en clair. Ne les collez pas là où d’autres peuvent
+  les lire.
+</Callout>
+
+## Exporter un échange en HAR [#export-an-exchange-as-har]
+
+Pour conserver ou partager un échange tel qu’il s’est déroulé, choisissez **Requête › Exporter l’échange en HAR…**, ou
+**Exporter l’échange en HAR…** dans le menu d’enregistrement au-dessus du corps de la réponse. Le fichier HAR contient la
+requête et la réponse.
+
+L’[Exécution](/docs/requests/runner) exporte tous les échanges d’une exécution dans un seul fichier HAR, et
+`echolot run --reporter har` fait de même en ligne de commande.
+
+Le menu d’enregistrement au-dessus du corps de la réponse propose aussi **Enregistrer le corps…**,
+**Ouvrir dans l’app par défaut** et, pour une réponse compressée ou gRPC, **Enregistrer le corps encodé…** : les octets
+tels qu’ils sont arrivés.
+
+Les specs s’exportent depuis la page [Specs](/docs/specs).

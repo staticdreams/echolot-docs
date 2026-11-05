@@ -1,0 +1,117 @@
+---
+title: "Deine erste Anfrage"
+description: "Lege einen Arbeitsbereich an, sende eine Anfrage an die Demo-API und lies die Antwort, in wenigen Minuten."
+---
+
+Diese Seite führt dich von einem leeren Echolot zu einer gesendeten Anfrage und einer gelesenen Antwort. Sie nutzt
+[die Demo-API](/docs/tutorials/demo-api) unter `https://demo.echolot.dev`, einen fiktiven Outdoor-Shop, der ohne
+jede Einrichtung antwortet.
+
+## 1. Arbeitsbereich anlegen [#1-create-a-workspace]
+
+Ein Arbeitsbereich ist ein Ordner, der deine Anfragen enthält, jeweils eine Datei. Lege zuerst einen an.
+
+<Steps>
+<Step>
+
+Wähle im Willkommensfenster **Neuer Arbeitsbereich …** (oder **Datei › Neuer Arbeitsbereich …**,
+<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>).
+
+</Step>
+<Step>
+
+Gib ihm einen Namen, zum Beispiel `Alpenglow.echolot`, wähle, wo er liegen soll, und klicke auf **Erstellen**.
+
+</Step>
+</Steps>
+
+Der Arbeitsbereich öffnet sich in einem eigenen Fenster. Er ist leer, daher steht auf der Seite
+**Dieser Arbeitsbereich ist leer**.
+
+## 2. Anfrage anlegen [#2-make-a-request]
+
+<Steps>
+<Step>
+
+Wähle auf der Seite **Neue Anfrage** oder drücke <kbd>⌘</kbd><kbd>N</kbd>. In der Seitenleiste erscheint eine Anfrage
+namens **Neue Anfrage**, ihr Name ist ausgewählt. Tippe `List products` und drücke <kbd>Return</kbd>.
+
+</Step>
+<Step>
+
+Klicke auf das Adressfeld oben auf der Seite (es zeigt **URL eingeben, \{\{variables\}\} verwenden**) und tippe:
+
+```txt
+https://demo.echolot.dev/v1/products?category=tents&per_page=5
+```
+
+Die Methode ist **GET**, und das passt. Der Tab **Parameter** listet jetzt `category` und `per_page`; du kannst sie dort
+oder in der Adresse ändern.
+
+</Step>
+</Steps>
+
+Du musst nichts sichern. Echolot schreibt die Anfrage einen Moment, nachdem du aufgehört hast zu tippen, in eine
+`.req.toml`-Datei im Ordner des Arbeitsbereichs, und unter dem Namen des Arbeitsbereichs unten in der Seitenleiste
+steht **Alles gesichert**.
+
+<Callout title="Du hast schon einen cURL-Befehl?">
+  Füge ihn ins Adressfeld ein. Echolot übernimmt daraus Methode, Adresse, Header, Body und Auth und listet unter der
+  Adressleiste alles auf, was es nicht verwenden konnte.
+</Callout>
+
+## 3. Anfrage senden [#3-send-it]
+
+Drücke <kbd>⌘</kbd><kbd>R</kbd> oder wähle **Senden**. Auch <kbd>⌘</kbd><kbd>↩</kbd> sendet. Solange die Anfrage läuft,
+wird aus **Senden** der Knopf **Abbrechen** (<kbd>⌘</kbd><kbd>.</kbd>).
+
+<Shot id="get-started-first-response" alt="Die gesendete Anfrage List products, mit Status 200 über der Antwort und dem JSON-Body im Antwortbereich" />
+
+## 4. Antwort lesen [#4-read-the-response]
+
+Der Antwortbereich liegt neben der Anfrage (oder darunter, wenn du das Layout „Untereinander“ wählst).
+
+- **Die Zeile über der Antwort** zeigt den Status (`200 OK`), die Zeit und die Größe. Halte den Zeiger darauf, um die
+  Details zu sehen: die Größen, die Zeit jeder Phase (DNS, Connect, TLS, Waiting, Transfer), die TLS-Verbindung und
+  alle Weiterleitungen.
+- **Body** zeigt den Body. Mit den Optionen unter **Ansicht** darüber wechselst du die Darstellung: **Text**, **JSON**
+  (formatiert), **JSON-Baum** und bei anderen Inhalten **XML**, **Formular**, **MessagePack** oder **Vorschau**. Echolot
+  wählt die erste anhand des Content-Types. Mit <kbd>⌘</kbd><kbd>F</kbd> suchst du Text im Body.
+- **Header** listet die Header der Antwort. Die Demo-API legt die Gesamtzahl in `X-Total-Count` und die
+  nächsten Seiten in `Link` ab.
+- **Cookies** listet die Cookies, die die Antwort gesetzt hat.
+- **Roh** und **Hex** zeigen die Bytes, wie sie empfangen wurden. **Übertragung** zeigt den ganzen Austausch, wie er
+  über das Netzwerk ging, gesendet und empfangen.
+- **Tests** zeigt die Ergebnisse der Prüfungen der Anfrage, sobald sie welche hat.
+
+Jede Antwort bleibt außerdem im [Verlauf](/docs/workspaces/history) der Anfrage (<kbd>⌘</kbd><kbd>Y</kbd>), sodass du
+zu ihr zurückkehren und sie mit der nächsten vergleichen kannst.
+
+## 5. Prüfung hinzufügen [#5-add-a-check]
+
+Prüfungen laufen nach jedem Senden und sagen dir, wenn eine API nicht mehr so antwortet, wie sie soll.
+
+1. Öffne den Tab **Tests** der Anfrage.
+2. Wähle **Aus Antwort erzeugen …**. Echolot schlägt anhand der Antwort, die du gerade erhalten hast, Prüfungen vor:
+   den Status, den Content-Type, Werte im JSON.
+3. Hake die gewünschten an und wähle **N Tests hinzufügen** (der Knopf zählt die Prüfungen, die du angehakt hast).
+4. Sende erneut. Der Tab **Tests** der Antwort zeigt jede Prüfung als bestanden oder fehlgeschlagen.
+
+[Skripte und Tests](/docs/requests/scripts-and-tests) behandelt jede Art von Prüfung.
+
+## Nächste Schritte [#next-steps]
+
+- Sende einen Body: Lege eine weitere Anfrage an, stelle die Methode auf **POST**, die Adresse auf
+  `https://demo.echolot.dev/echo/anything` und tippe auf dem Tab **Body** etwas JSON. Die Demo schickt zurück, was sie
+  bekommen hat.
+- Kopiere die Anfrage mit **Anfrage › Als cURL kopieren** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd>) als cURL-Befehl oder
+  erzeuge mit **Anfrage › Code erzeugen …** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd>) Code dafür.
+- Lege die Serveradresse in eine Variable und füge Umgebungen hinzu: [Umgebungen](/docs/workspaces/environments).
+- Finde dich zurecht: [Das Fenster](/docs/get-started/the-window).
+- Folge einer längeren Anleitung: [Dein erster Arbeitsbereich](/docs/tutorials/first-workspace).
+
+<Callout type="warn" title="Die Demo-API wird geteilt">
+  Sie nimmt von jeder Adresse 120 Anfragen pro Minute an (10 pro Minute für ihre großen, langsamen und streamenden
+  Endpunkte). Über dem Limit antwortet sie mit `429 Too Many Requests` und einem `Retry-After`-Header; warte so viele
+  Sekunden und sende erneut.
+</Callout>

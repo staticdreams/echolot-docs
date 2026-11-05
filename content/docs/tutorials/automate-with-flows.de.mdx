@@ -1,0 +1,151 @@
+---
+title: "Mit einem Flow automatisieren"
+description: "Baue auf der Canvas einen Flow, der sich anmeldet, Bestellungen auflistet, entscheidet und dich benachrichtigt; führe ihn aus, plane ihn und starte ihn von einem Webhook."
+---
+
+Ein Flow verkettet auf einer Canvas Anfragen und andere Schritte, sodass eine Aufgabe, die du von Hand erledigst, mit
+einem Klick läuft, nach einem Zeitplan oder wenn ein anderes System sie aufruft. In diesem Tutorial baust du
+**Orders to ship**: Er meldet sich beim Demo-Shop an, listet Heidis Bestellungen auf und sendet eine Mitteilung, wenn eine bezahlt,
+aber noch nicht versandt ist.
+
+- **Dauer:** 20 Minuten.
+- **Du brauchst:** den [Arbeitsbereich Alpenglow](/docs/tutorials#the-alpenglow-workspace) mit gewählter
+  **Keine Umgebung**. Sein Flow **Morning stock check** ist ein fertiges Beispiel derselben Form.
+- **Du lernst:** Blöcke und Verbindungen, die Blöcke „Wenn“ und „Mitteilen“, das Protokoll eines Durchlaufs, Zeitpläne,
+  Webhooks und `echolot flow run`.
+
+## 1. Einen Flow anlegen [#1-make-a-flow]
+
+1. Wechsle zu **Flows** (<kbd>⌘</kbd><kbd>5</kbd>).
+2. Öffne das Menü **+** der Seitenleiste (**Neuer Flow**) und wähle **Leerer Flow**. Ein Flow **Neuer Flow** öffnet sich
+   mit einem Block **Start**, der mit einem Block **Ausgabe** verbunden ist.
+3. Klicke auf die leere Canvas, sodass kein Block ausgewählt ist. Setze im Inspektor den **Namen** auf `Orders to ship`
+   und die **Beschreibung** auf `Says when an order is paid but not shipped.`
+
+Solange ein Flow geöffnet ist, listet die Seitenleiste die **Anfragen** des Arbeitsbereichs zum Ziehen auf die Canvas.
+Der Abschnitt **Aus einer Vorlage** des Menüs **+** beginnt stattdessen mit einem fertigen Flow, etwa
+**Paginate and export**; siehe [Vorlagen](/docs/flows/templates).
+
+## 2. Die Anfragen hinzufügen [#2-add-the-requests]
+
+1. Halte den Zeiger auf die Verbindung zwischen **Start** und **Ausgabe** und wähle ihren Knopf
+   **Diese Verbindung trennen**.
+2. Ziehe **Auth › Sign in** aus der Seitenleiste auf die Canvas. Es wird ein Block **Anfrage** mit dem Titel **Sign in**,
+   mit der Eingabe `send` und den Ausgaben `success` und `fail`.
+3. Ziehe **Orders › List orders** rechts daneben auf die Canvas.
+4. Verbinde sie: Ziehe vom Port `run` von **Start** zum Port `send` von **Sign in**, dann vom Port `success` von
+   **Sign in** zum Port `send` von **List orders**.
+
+**Sign in** speichert das Token bei jedem Erfolg in `{{token}}`, sodass **List orders** das neue sendet. Die Ausgabe
+`success` eines Anfrage-Blocks trägt die Antwort: `status`, `headers`, `body`, `time` und `url`. `fail` löst aus, wenn
+die Anfrage keine Antwort bekommt oder eine Prüfung fehlschlägt.
+
+## 3. Mit einem Wenn-Block entscheiden [#3-decide-with-an-if-block]
+
+1. Wähle in der Symbolleiste **Block** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd>), tippe `If` in
+   **Blöcke oder Anfragen suchen** und drücke <kbd>↩</kbd>.
+2. Setze im Inspektor den **Titel** auf `Waiting to ship?` und die **Bedingung** auf:
+
+   ```js
+   value.body.items.some(o => o.status === 'paid')
+   ```
+
+   Die Bedingung ist JavaScript. `value` ist das, was hereingekommen ist: hier die Antwort von **List orders**.
+3. Verbinde `success` von **List orders** mit `value` des Wenn-Blocks.
+
+## 4. Dich selbst benachrichtigen [#4-notify-yourself]
+
+1. Ziehe vom Port `true` des Wenn-Blocks und lass über der leeren Canvas los. Dort öffnet sich die Blockauswahl. Wähle
+   **Mitteilen**: Der Block kommt mit `true` verbunden.
+2. Setze in den Einstellungen des Blocks den **Titel** auf `Orders to ship` und die **Nachricht** auf:
+
+   ```text
+   {{value.body.total}} orders, at least one paid and waiting.
+   ```
+
+   `{{value…}}` füllt Teile dessen ein, was hereingekommen ist; Variablen des Arbeitsbereichs funktionieren auch.
+3. Verbinde `success` von **List orders** auch mit `value` des Blocks **Ausgabe**. Ein Webhook antwortet mit dem, was bei
+   **Ausgabe** ankommt (Schritt 7).
+
+Wähle **Aufräumen**, um die Blöcke in der Reihenfolge ihrer Ausführung auszurichten, und **Einpassen**
+(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd>), um sie alle zu sehen.
+
+<Shot id="tutorials-flows-canvas" alt="Ein Flow auf der Canvas nach einem Durchlauf: Start, ein Anfrage-Block, ein Wenn-Block und ein Mitteilen-Block, der vom Port true aus verbunden ist, alle als Fertig markiert" />
+
+## 5. Ausführen [#5-run-it]
+
+1. Wähle **Ausführen** (<kbd>⌘</kbd><kbd>R</kbd>).
+2. Jeder Block zeigt beim Laufen ein Abzeichen, dann **Fertig**. Das Protokoll des Durchlaufs unter der Canvas listet
+   jeden Block mit seiner Zeit.
+3. Eine Mitteilung sagt **Orders to ship**: 3 orders, at least one paid and waiting. Die Bestellung `ord_8Jm4Qx` der Demo
+   ist bezahlt. Beim ersten Mal fragt macOS, ob Echolot Mitteilungen zeigen darf.
+4. Wähle **List orders**. Der **Letzte Durchlauf** im Inspektor zeigt, was hereinkam und hinausging; wechsle bei
+   **Anzeigen** zwischen **Eingabe** und **Ausgabe**.
+
+Ändere die Bedingung in `o.status === 'cancelled'` und führe erneut aus: Der Wenn-Block sendet seinen Wert an `false`, das
+mit nichts verbunden ist, sodass keine Mitteilung kommt. Setze sie zurück.
+
+Schlägt ein Durchlauf fehl, zeigt der fehlgeschlagene Block den Fehler. Wo das On-Device-Modell des Macs verfügbar ist,
+sagt **Fehler erklären** im Protokoll des Durchlaufs, was schiefging. Frühere Durchläufe bleiben im Menü **Durchläufe**
+der Symbolleiste. Mehr unter [Ausführen und Auslöser](/docs/flows/running-and-triggers).
+
+## 6. Nach Zeitplan ausführen [#6-run-it-on-a-schedule]
+
+1. Wähle den Block **Start**. Sein Inspektor hat einen Abschnitt **Auslöser**.
+2. Schalte **Zeitplan** ein. Setze **Alle** auf `60` Minuten oder wähle **Feste Zeiten (cron)** und tippe in
+   **Cron-Zeile: Minute, Stunde, Tag, Monat, Wochentag** eine Cron-Zeile wie `0 7 * * 1-5` für sieben Uhr an Werktagen.
+3. Wähle **Erlauben**. Echolot bittet dich, einen Flow zu erlauben, bevor ihn etwas ohne dich startet, und fragt nach
+   einer Änderung erneut (**Wieder erlauben**). **Entziehen** stoppt ihn.
+
+Der Inspektor zeigt den nächsten Durchlauf. Zeitpläne laufen, solange das Arbeitsbereichsfenster geöffnet ist. Um sie ohne
+die App laufen zu lassen, nutze `echolot flow serve -w Alpenglow.echolot` auf einem Mac oder Server, der eingeschaltet
+bleibt.
+
+## 7. Von einem Webhook starten [#7-start-it-from-a-webhook]
+
+1. Schalte in den **Auslösern** des Blocks **Start** **Webhook** ein. Lass die Methode auf **POST** und setze den Pfad
+   auf `/orders-to-ship`.
+2. Wähle **Erlauben**. Der Inspektor zeigt die Adresse auf `127.0.0.1` mit **URL kopieren** und **Token kopieren**.
+3. Rufe ihn im Terminal mit dem Token als Bearer-Token auf:
+
+   ```sh
+   curl -X POST 'http://127.0.0.1:PORT/orders-to-ship' -H 'Authorization: Bearer TOKEN'
+   ```
+
+   Füge die URL und das Token ein, die du kopiert hast. Der Flow läuft, und die Antwort ist das, was bei **Ausgabe**
+   ankam: die Bestellungen.
+
+Eine Query und ein JSON-Body füllen die Eingaben des Flows. Der Webhook antwortet nur auf diesem Mac, solange das Fenster
+geöffnet ist; `echolot flow serve` bedient Webhooks ohne die App, standardmäßig auf Port 4100. **Order status on webhook**
+von Alpenglow ist ein weiteres Beispiel. Ein Flow kann auch KI-Agenten als Tool angeboten werden (
+**Agenten (ein MCP-Tool)**); siehe [Agenten](/docs/ai/agents).
+
+## 8. Im Terminal ausführen [#8-run-it-from-terminal]
+
+```sh
+echolot flow list -w Alpenglow.echolot
+echolot flow run "Orders to ship" -w Alpenglow.echolot
+```
+
+Es gibt jeden Block aus, sobald er fertig ist, mit seiner Zeit, dann den Text der Mitteilung und das Ergebnis:
+
+```text
+✓ start  Start  0 ms
+✓ …      Sign in  168 ms
+✓ …      List orders  116 ms
+✓ …      Waiting to ship?  4 ms
+notification: Orders to ship — 3 orders, at least one paid and waiting.
+✓ …      Notify  0 ms
+Orders to ship: passed in 304 ms
+```
+
+Füge in CI `--no-input` hinzu, damit ein Flow, der einen Menschen braucht, fehlschlägt, statt zu warten. Der Flow ist eine
+Datei im Ordner `flows` des Arbeitsbereichs, er wandert also mit den Anfragen, die er nutzt, in Git. Siehe
+[`echolot flow`](/docs/cli/flow).
+
+## Nächste Schritte [#next-steps]
+
+- [Blöcke](/docs/flows/blocks): Approve, Ask, For Each, Poll, Write File und der Rest.
+- [Vorlagen](/docs/flows/templates): Geräteanmeldung, Token-Erneuerung, Paginieren und Exportieren, ein Smoke-Monitor.
+- [Einen Agenten deinen Arbeitsbereich sicher nutzen lassen](/docs/tutorials/agents-safely): Biete einem Agenten einen Flow
+  als ein Tool an.

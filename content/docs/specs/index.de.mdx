@@ -1,0 +1,118 @@
+---
+title: "Specs"
+description: "Bewahre OpenAPI-Dokumente und .proto-Dateien im Arbeitsbereich auf, lies ihre Gliederung und Probleme und mache Anfragen daraus."
+---
+
+Auf der Seite „Specs“ entwirfst und verwahrst du den Vertrag einer API: OpenAPI-Dokumente (OpenAPI 3.0 und 3.1 sowie
+Swagger 2.0) und die `.proto`-Dateien von gRPC-Diensten. Echolot prüft eine Spec, während du sie bearbeitest, macht
+daraus Anfragen, die mit ihr im Gleichschritt bleiben, und stellt sie als [Mock](/docs/mocks) bereit, bevor es die API
+gibt.
+
+Öffne sie mit **Specs** in der Modulauswahl der Seitenleiste oder mit <kbd>⌘</kbd><kbd>3</kbd>.
+
+<Shot id="specs-page" alt="Die Seite „Specs“ mit geöffneter alpenglow.yaml im visuellen Editor: Die Seitenleiste listet die Spec mit ihrer Gliederung aus Endpunkten und Schemas; die Seite zeigt die Karten „Überblick“, „Server“ und „Endpunkte“" />
+
+## Specs im Arbeitsbereich [#specs-in-the-workspace]
+
+Specs sind Dateien im Ordner `specs` des Arbeitsbereichs und kommen deshalb mit allem anderen in Git. Das Beispiel
+Alpenglow hat drei: `alpenglow.yaml` (das OpenAPI-Dokument des Shops), `shop.graphql` und `inventory.proto`. Die Seite
+„Specs“ listet OpenAPI-Dokumente unter **Specs** und `.proto`-Dateien unter **Proto-Dateien**. GraphQL-Schemas im Ordner
+verwenden [GraphQL-Anfragen](/docs/requests/graphql); sie werden hier nicht aufgeführt.
+
+Das **+** im Kopf von **Specs** in der Seitenleiste fügt eine hinzu:
+
+| Eintrag | Was er tut |
+| --- | --- |
+| **Neue Spec** | Beginnt ein OpenAPI-3.1-Dokument mit dem Titel `New API` und öffnet es im visuellen Editor. |
+| **Neue Spec aus Antworten …** | Schreibt eine Spec aus Anfragen, die du gesendet hast, und den Antworten, die sie bekamen. Siehe [Spec aus Antworten](/docs/specs/specs-from-traffic). |
+| **Spec-Datei hinzufügen …** | Kopiert ein OpenAPI- oder Swagger-Dokument (YAML oder JSON) von deinem Mac in den Ordner `specs`. |
+| **Neue Proto-Datei** | Beginnt eine `.proto`-Datei aus einem kleinen Beispieldienst. Siehe [.proto-Dateien](/docs/specs/proto-files). |
+| **Proto-Datei hinzufügen …** | Kopiert eine `.proto`-Datei in den Ordner `specs`. |
+
+Ein OpenAPI-Dokument mit **Datei › Importieren …** zu [importieren](/docs/get-started/importing) ist etwas anderes: Das
+erzeugt Anfragen daraus, keine Spec zum Bearbeiten.
+
+Klicke eine Spec mit der rechten Maustaste an für **Anfragen erzeugen**, **Im Finder anzeigen**, **Exportieren**
+(**Als YAML …** oder **Als JSON …**) und **Löschen …**. Löschen fragt zuerst nach und legt die Datei in den
+Papierkorb; Dateien, auf die sie verweist, bleiben bestehen, ebenso Mocks davon.
+
+## Die Gliederung [#the-outline]
+
+Klicke eine Spec an, um sie zu öffnen. Unter der Liste zeigt die Seitenleiste ihre Gliederung:
+
+- **Überblick**, also Titel, Version und Beschreibung.
+- **ENDPUNKTE**, jede Operation mit ihrer Methode und ihrem Pfad. Veraltete sind durchgestrichen. Halte den Zeiger auf
+  einen, um seine Zusammenfassung zu sehen.
+- **SCHEMAS**, die wiederverwendbaren Schemas.
+- **Dateien**, wenn die Spec auf andere Dateien verweist (siehe [Specs auf mehrere Dateien verteilt](#specs-split-across-files)).
+
+Klicke einen Eintrag an, um ihn zu öffnen: Im visuellen Editor öffnet sich seine Karte und scrollt ins Bild; im Code
+springt der Editor zu seiner Zeile.
+
+## Visuell und Code [#visual-and-code]
+
+Der Schalter **Editor** im Seitenkopf bestimmt, wie du die geöffnete Spec siehst:
+
+- **Visuell**: Karten für Überblick, Server, Endpunkte und Schemas, bearbeitet mit Feldern und Menüs.
+- **Code**: das Dokument als YAML oder JSON, mit Zeilennummern.
+
+Beide bearbeiten denselben Text, und Echolot sichert ihn kurz nach jeder Änderung. [Eine Spec bearbeiten](/docs/specs/editing)
+behandelt beide.
+
+## Probleme [#problems]
+
+Echolot prüft die Spec mit dem Linter, während du sie bearbeitest. Die Leiste über dem Editor zeigt **Keine Probleme**
+oder die Anzahl der Fehler und Warnungen. Eine rote Fehlerzahl steht außerdem neben der geöffneten Spec in der
+Seitenleiste.
+
+<Shot id="specs-problems" alt="Das Popover „Probleme“ über einer Spec: Fehler und Warnungen, jeweils mit Meldung und Zeilennummer" />
+
+Klicke darauf für die Liste: zuerst Fehler, dann Warnungen und Hinweise, jeweils mit ihrer Zeile. Wähle einen Eintrag, um
+zu dieser Zeile zu springen. Ist die Liste leer, steht dort, dass das Dokument der OpenAPI-Spezifikation entspricht und
+jede Referenz aufgelöst wird.
+
+Wonach der Linter unter anderem sucht:
+
+- Eine `openapi`-Version, die Echolot liest, `info` mit Titel und Version und Pfade, die mit `/` beginnen.
+- Pfadparameter, die im Pfad stehen und mit `required: true` markiert sind, und Parameter, die nicht doppelt definiert
+  sind.
+- Eine Beschreibung bei jeder Antwort und Operations-IDs, die nur einmal vorkommen.
+- Oben deklarierte Tags, definierte Sicherheitsschemata, Arrays mit `items` und Enums mit Werten.
+- Referenzen, die auf etwas zeigen, in dieser Datei oder in einer anderen in `specs`.
+- Kein `servers`: Anfragen, die aus der Spec entstehen, beginnen dann mit `{{baseUrl}}`, was du selbst festlegst.
+
+Das Befehlszeilenwerkzeug führt denselben Linter in CI aus: siehe [echolot spec](/docs/cli/spec).
+
+## Specs auf mehrere Dateien verteilt [#specs-split-across-files]
+
+Eine Spec kann Teile anderer Dateien mit `$ref` einbinden, etwa `$ref: schemas/pet.yaml#/Pet`. Die Dateien müssen im Ordner
+`specs` des Arbeitsbereichs liegen. Die Seitenleiste listet sie unter **Dateien**: Klicke eine an, um sie in **Code** zu
+öffnen. Halte im Code-Editor den Zeiger auf ein `$ref`, um zu sehen, worauf es zeigt, und klicke mit <kbd>⌘</kbd>
+darauf, um dorthin zu springen, in dieser oder in der anderen Datei.
+
+Echolot liest die Teile überall zusammen, wo es die Spec verwendet: beim Linter, beim Erzeugen von Anfragen, bei Mocks.
+Exportierst du die Spec, werden die Dateien, auf die sie verweist, in die eine Datei geschrieben, die du sicherst.
+
+## Exportieren [#exporting]
+
+**Exportieren** in der Leiste über dem Editor (**Als YAML exportieren …** oder **Als JSON exportieren …**) sichert die Spec
+als eine Datei außerhalb des Arbeitsbereichs, mit den Dateien, auf die sie verweist, hineingeschrieben. Nicht gesicherte
+Änderungen werden zuerst gesichert, der Export entspricht also dem, was der Editor zeigt.
+
+## Anfragen, die der Spec folgen [#requests-that-follow-the-spec]
+
+**Anfragen erzeugen** in der Leiste über dem Editor legt einen nach der Spec benannten Ordner mit einer Anfrage für jeden
+Endpunkt an und öffnet die erste. Der Ordner folgt der Spec: Ändert sich die Spec, kannst du die Änderungen auf seine
+Anfragen anwenden, ohne zu verlieren, was du in ihnen bearbeitet hast.
+
+Folgt ein Ordner der Spec, wird aus dem Knopf **Anfragen**, ein Menü mit **„Ordner“ auf Änderungen prüfen …** für jeden
+Ordner, der ihr folgt, und **Weiteren Ordner erzeugen**. Das Prüfen öffnet **OpenAPI-Sync**, das auflistet, was **Neu in
+der Spec**, **In der Spec geändert** und **Nicht mehr in der Spec** ist. Hake die gewünschten Änderungen an und klicke auf
+**1 Änderung anwenden** (oder **3 Änderungen anwenden** usw.). Deine Änderungen bleiben immer erhalten; wo du und die Spec
+dasselbe geändert haben, bleibt deine Fassung. Ist eine Operation verschwunden, kommt ihre Anfrage in den Papierkorb, es
+sei denn, du hast sie bearbeitet: Dann bleibt sie und folgt der Spec nicht mehr. **Trennen** beendet, dass der Ordner der
+Spec folgt, und lässt seine Anfragen, wie sie sind.
+
+Ein Ordner kann auch einer Spec außerhalb des Arbeitsbereichs folgen, einer Datei oder einer URL: Klicke den Ordner in der
+Seitenleiste der Anfragen mit der rechten Maustaste an und wähle **Mit OpenAPI-Spec verknüpfen …**. Das
+Befehlszeilenwerkzeug prüft und wendet Änderungen mit `echolot spec check` und `echolot spec apply` an.

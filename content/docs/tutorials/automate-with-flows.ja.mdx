@@ -1,0 +1,118 @@
+---
+title: "フローで自動化する"
+description: "サインインして注文を一覧し、判断して通知するフローをキャンバスで作り、実行し、スケジュールし、Webhookから開始します。"
+---
+
+フローは、リクエストなどのステップをキャンバス上でつなぎます。手作業で行っている作業を、ワンクリックで、スケジュールに従って、または別のシステムから呼び出されたときに実行できます。
+このチュートリアルでは、**Orders to ship**を作ります。デモショップにサインインしてHeidiの注文を一覧し、支払い済みでまだ発送されていない注文があれば通知を送ります。
+
+- <strong>所要時間：</strong>20分。
+- **必要なもの：**[Alpenglowワークスペース](/docs/tutorials#the-alpenglow-workspace)で**環境なし**を選んだ状態。フロー**Morning stock check**は、同じ形をした完成例です。
+- <strong>学べること：</strong>ブロックと接続、条件分岐ブロックと通知ブロック、実行ログ、スケジュール、Webhook、`echolot flow run`。
+
+## 1. フローを作る [#1-make-a-flow]
+
+1. **フロー**に切り替えます（<kbd>⌘</kbd><kbd>5</kbd>）。
+2. サイドバーの<strong>+</strong>メニュー（<strong>新規フロー</strong>）を開いて、<strong>空のフロー</strong>を選びます。<strong>開始</strong>ブロックが<strong>出力</strong>ブロックに接続された、<strong>新規フロー</strong>が開きます。
+3. キャンバスの空いている場所をクリックして、ブロックが選択されていない状態にします。インスペクタで、**名前**を`Orders to ship`、**説明**を`Says when an order is paid but not shipped.`にします。
+
+フローを開いている間、サイドバーにはワークスペースの**リクエスト**が一覧され、キャンバスにドラッグできます。**+**メニューの**テンプレートから**セクションでは、**ページを取得して書き出す**のような用意済みのフローから始められます。[テンプレート](/docs/flows/templates)を参照してください。
+
+## 2. リクエストを追加する [#2-add-the-requests]
+
+1. **開始**と**出力**の間の接続にポインタを重ねて、**この接続を切断**ボタンを選びます。
+2. サイドバーから**Auth › Sign in**をキャンバスにドラッグします。**Sign in**というタイトルの**リクエスト**ブロックになり、入力`send`と出力`success`、`fail`を持ちます。
+3. **Orders › List orders**を、その右側のキャンバスにドラッグします。
+4. 接続します。**開始**の`run`ポートから**Sign in**の`send`ポートへ、次に**Sign in**の`success`ポートから**List orders**の`send`ポートへドラッグします。
+
+**Sign in**は成功するたびにトークンを`{{token}}`に保存するので、**List orders**は新しいトークンを送信します。リクエストブロックの`success`出力は、レスポンスを渡します。`status`、`headers`、`body`、`time`、`url`です。`fail`は、リクエストにレスポンスがない場合やチェックが失敗した場合に発火します。
+
+## 3. 条件分岐ブロックで判断する [#3-decide-with-an-if-block]
+
+1. ツールバーの**ブロック**を選び（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd>）、**ブロックまたはリクエストを検索**に`If`と入力して<kbd>↩</kbd>を押します。
+2. インスペクタで、**タイトル**を`Waiting to ship?`にし、**条件**を次のようにします。
+
+   ```js
+   value.body.items.some(o => o.status === 'paid')
+   ```
+
+   条件はJavaScriptです。`value`は入ってきた値で、ここでは**List orders**のレスポンスです。
+3. **List orders**の`success`を、条件分岐ブロックの`value`に接続します。
+
+## 4. 自分に通知する [#4-notify-yourself]
+
+1. 条件分岐ブロックの`true`ポートからドラッグして、何もないキャンバスの上で離します。その場所にブロックピッカーが開きます。**通知**を選びます。`true`に接続された状態で追加されます。
+2. ブロックの設定で、**タイトル**を`Orders to ship`にし、**メッセージ**を次のようにします。
+
+   ```text
+   {{value.body.total}} orders, at least one paid and waiting.
+   ```
+
+   `{{value…}}`は、入ってきた値の一部を埋め込みます。ワークスペースの変数も使えます。
+3. **List orders**の`success`を、**出力**ブロックの`value`にも接続します。Webhookは、**出力**に届いたものを応答として返します（ステップ7）。
+
+**整頓**を選ぶとブロックが実行順に並び、**全体表示**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd>）を選ぶとすべてが見えるようになります。
+
+<Shot id="tutorials-flows-canvas" alt="実行後のキャンバス上のフロー：開始、リクエストブロック、条件分岐ブロック、そのtrueポートに接続された通知ブロック。すべて完了と表示されている" />
+
+## 5. 実行する [#5-run-it]
+
+1. **実行**を選びます（<kbd>⌘</kbd><kbd>R</kbd>）。
+2. 各ブロックには、実行中はバッジが表示され、その後**完了**と表示されます。キャンバスの下の実行ログには、すべてのブロックとその時間が並びます。
+3. 通知に**Orders to ship**：3 orders, at least one paid and waiting.と表示されます。デモの注文`ord_8Jm4Qx`が支払い済みだからです。初回は、Echolotが通知を表示してよいかをmacOSが尋ねます。
+4. **List orders**を選びます。インスペクタの**前回の実行**に、入ってきた値と出ていった値が表示されます。**表示**で**入力**と**出力**を切り替えます。
+
+条件を`o.status === 'cancelled'`に変更してもう一度実行します。条件分岐ブロックは値を`false`に送りますが、そこには何も接続されていないので、通知は来ません。元に戻してください。
+
+実行が失敗したときは、失敗したブロックにエラーが表示されます。Macのオンデバイスモデルが使える環境では、実行ログの**失敗の理由を説明**で、何が問題だったかがわかります。
+過去の実行は、ツールバーの**実行**メニューに残ります。詳しくは[実行とトリガー](/docs/flows/running-and-triggers)を参照してください。
+
+## 6. スケジュールで実行する [#6-run-it-on-a-schedule]
+
+1. **開始**ブロックを選びます。インスペクタに**トリガー**セクションがあります。
+2. <strong>スケジュール</strong>をオンにします。<strong>間隔</strong>を選んだ状態で、`60`分ごとに設定します。または<strong>時刻を指定（cron）</strong>を選んで、平日の7時なら`0 7 * * 1-5`のように、cronの行（分、時、日、月、曜日）を入力します。
+3. **許可**を選びます。Echolotは、フローが自分の操作なしに開始される前に許可を求め、フローが変更されたときにも再び尋ねます（**再び許可**）。**許可を取り消す**と止まります。
+
+インスペクタには次回の実行が表示されます。スケジュールは、ワークスペースのウインドウを開いている間に実行されます。アプリなしで実行するには、電源を入れたままのMacやサーバで`echolot flow serve -w Alpenglow.echolot`を使います。
+
+## 7. Webhookから開始する [#7-start-it-from-a-webhook]
+
+1. **開始**ブロックの**トリガー**で、**Webhook**をオンにします。メソッドは**POST**のままにして、パスを`/orders-to-ship`にします。
+2. **許可**を選びます。インスペクタに、`127.0.0.1`上のアドレスが、**URLをコピー**と**トークンをコピー**とともに表示されます。
+3. ターミナルで、トークンをBearerトークンとして呼び出します。
+
+   ```sh
+   curl -X POST 'http://127.0.0.1:PORT/orders-to-ship' -H 'Authorization: Bearer TOKEN'
+   ```
+
+   コピーしたURLとトークンをペーストしてください。フローが実行され、レスポンスは**出力**に届いたもの、つまり注文になります。
+
+クエリ文字列とJSONボディは、フローの入力に渡されます。Webhookが応答するのはこのMacだけで、ウインドウを開いている間に限られます。`echolot flow serve`は、アプリなしでWebhookを提供します（デフォルトのポートは4100）。
+Alpenglowの**Order status on webhook**も別の例です。フローは、AIエージェントにツールとして提供することもできます（**エージェント（MCPツール）**）。[エージェント](/docs/ai/agents)を参照してください。
+
+## 8. ターミナルから実行する [#8-run-it-from-terminal]
+
+```sh
+echolot flow list -w Alpenglow.echolot
+echolot flow run "Orders to ship" -w Alpenglow.echolot
+```
+
+各ブロックが完了するたびに時間とともに出力され、続いて通知のテキストと結果が出力されます。
+
+```text
+✓ start  Start  0 ms
+✓ …      Sign in  168 ms
+✓ …      List orders  116 ms
+✓ …      Waiting to ship?  4 ms
+notification: Orders to ship — 3 orders, at least one paid and waiting.
+✓ …      Notify  0 ms
+Orders to ship: passed in 304 ms
+```
+
+CIでは`--no-input`を付けると、人の操作が必要なフローは待たずに失敗します。フローはワークスペースの`flows`フォルダにあるファイルなので、使っているリクエストとともにGitに入ります。[`echolot flow`](/docs/cli/flow)を参照してください。
+
+## 次のステップ [#next-steps]
+
+- [ブロック](/docs/flows/blocks)：承認、確認、各項目を繰り返す、ポーリング、ファイルに書き込む、その他。
+- [テンプレート](/docs/flows/templates)：デバイスサインイン、トークンの更新、ページを取得して書き出す、死活監視。
+- [エージェントにワークスペースを安全に使わせる](/docs/tutorials/agents-safely)：フローを1つのツールとしてエージェントに提供します。

@@ -1,0 +1,238 @@
+---
+title: "echolot mcp"
+description: "MCPサーバと、モデルから見たそのツールをチェックし、サインインし、AIエージェントにワークスペースを提供し、MCPクライアントを設定します。"
+---
+
+`echolot mcp` は、2つの方向でMCPサーバを扱います。`check` と `sign-in` は、[MCPサーバのページ](/docs/mcp-servers)と同じように、他者のサーバと通信します。
+`serve` と `setup` は、あなたのワークスペースをMCPサーバにして、Claude CodeやCursorなどのAIエージェントがそのリクエストを一覧表示、送信、テストできるようにします。
+[エージェント](/docs/ai/agents)を参照してください。
+
+| サブコマンド | 動作 |
+| --- | --- |
+| `echolot mcp check` | MCPサーバに接続し、提供している内容を一覧表示します。`--quality` は、モデルから見たツールの状態を報告します。 |
+| `echolot mcp sign-in` | OAuthを要求するワークスペースのMCPサーバにサインインします。 |
+| `echolot mcp sign-out` | このMacでのそのサインインを破棄します。 |
+| `echolot mcp serve` | MCP経由でエージェントにワークスペースを提供します。 |
+| `echolot mcp setup` | MCPクライアントをワークスペースに接続する方法を出力します。 |
+
+## echolot mcp check [#echolot-mcp-check]
+
+```sh
+echolot mcp check [--url <url>] [--header <header> ...] [--env <env> ...] [--verbose] [--timeout <seconds>] [--quality] [--strict] [--as <provider>] -- [<command> ...]
+```
+
+`--url` でStreamable HTTPのエンドポイントを指定するか、`--` の後にstdioサーバを起動するコマンドを指定します。Echolotは、サーバがステートレスなプロトコル（2026-07-28）か、
+ハンドシェイクのある以前のプロトコルのどちらを使うかを判別し、ツール、リソース、プロンプトを一覧表示します。
+
+```sh
+echolot mcp check --url https://demo.echolot.dev/mcp
+```
+
+```text
+alpenglow-mcp 1.5.0: MCP 2025-11-25 (session, initialize)
+  connected in 263 ms, round trip 54 ms
+  instructions: The Alpenglow demo shop from docs.echolot.dev. Read-only: search the catalog, look up products and orders.
+3 tools
+  search_catalog: Searches the Alpenglow catalog by text and returns matching products with price and stock.
+  get_product: Returns one product by SKU, with its price, weight, rating and stock per warehouse.
+  order_status: Returns an order's status, total and shipping estimate.
+1 resource
+  alpenglow://catalog/categories  categories
+1 prompt
+  pack_for_a_trip: Suggests gear for a trip.
+```
+
+stdioサーバの場合：
+
+```sh
+echolot mcp check -- npx -y @modelcontextprotocol/server-everything
+echolot mcp check -e API_KEY=demo -- uvx some-mcp-server --flag
+```
+
+### モデルから見たツール [#how-a-model-sees-the-tools]
+
+`--quality` を付けると、モデルがサーバから受け取る内容が追加されます：ツールの一覧が毎ターン各プロバイダのコンテキストで消費する量（見積もり）、最も消費量の大きいツール、
+モデルがつまずきそうな点（スキーマの問題、わかりにくい説明や重複する説明など）。アプリの**モデルから見たこのサーバ**と同じレポートです。
+[ツールと品質](/docs/mcp-servers/tools-and-quality)を参照してください。
+
+```sh
+echolot mcp check --url https://demo.echolot.dev/mcp --quality
+```
+
+```text
+How a model sees the tools (estimates)
+  Anthropic      572 tokens a turn, 0.3% of a 200k context
+  OpenAI         166 tokens a turn, 0.1% of a 200k context
+  Google Gemini  225 tokens a turn, 0.1% of a 200k context
+  largest: search_catalog 98, get_product 66, order_status 62
+Nothing a model would stumble over.
+```
+
+`--strict` を付けると、問題（警告や注記ではないもの）があるとき終了コード1で終了します。CI向けです。`--as anthropic`、`--as openai`、`--as gemini` は、そのプロバイダのAPIが受け取る形で
+ツール一覧だけを出力します。
+
+| オプション | 意味 |
+| --- | --- |
+| `--url <url>` | Streamable HTTPのエンドポイント（`http://127.0.0.1:3000/mcp` など）。 |
+| `-H`、`--header <header>` | `--url` 用のHTTPヘッダー（`'Name: value'` 形式）。複数回指定できます。 |
+| `-e`、`--env <NAME=value>` | stdioサーバ用の環境変数。複数回指定できます。 |
+| `-v`、`--verbose` | 送受信したすべてのメッセージを標準エラーに出力します。 |
+| `--timeout <seconds>` | 各応答を待つ秒数。デフォルトは30。 |
+| `--quality` | モデルから見たツールの状態を報告します：プロバイダごとのコスト、スキーマと説明の問題。 |
+| `--strict` | `--quality` と併用：問題があるとき終了コード1で終了します。 |
+| `--as <provider>` | プロバイダのAPIが受け取る形でツール一覧だけを出力します：`anthropic`、`openai`、`gemini`。 |
+
+## echolot mcp sign-in と sign-out [#echolot-mcp-sign-in-and-sign-out]
+
+```sh
+echolot mcp sign-in <server> [--workspace <workspace>] [--env <env>] [--force] [--print] [--verbose]
+echolot mcp sign-out <server> [--workspace <workspace>]
+```
+
+`<server>` は、ワークスペースの `mcp-servers` フォルダにあるサーバのファイル名から `.toml` を除いたものです。サインインではブラウザが開き、127.0.0.1でリダイレクトを待ちます。
+
+```sh
+echolot mcp sign-in alpenglow-mcp -w Alpenglow.echolot
+```
+
+- Macでは、サインインはアプリと共有するキーチェーンに保存されます。このMac上のアプリと `echolot run` がそれを使います。
+- それ以外の場合や `--print` を指定した場合、Echolotはサインインを `ECHOLOT_SECRET_…='…'` の行として出力します。その値をCIのシークレットとして保存し、
+  Echolotを実行する場所で変数を設定してください。リフレッシュトークンが含まれるため、パスワードと同じように扱ってください。
+- `ECHOLOT_BROWSER` には、サインインページを開く別のコマンドを指定します。
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。デフォルトはカレントフォルダ。 |
+| `--env <env>` | サーバの設定を解決する変数を持つ環境。 |
+| `--force` | 有効なサインインがあっても、もう一度サインインします。 |
+| `--print` | サインインを `ECHOLOT_SECRET_` 変数として出力します。CI向けです。 |
+| `-v`、`--verbose` | サインインの各手順を標準エラーに出力します。 |
+
+`sign-out` は、キーチェーンからサインインを削除します。キーチェーンがない場合は破棄するものがないため、代わりに変数を削除してください。
+
+## echolot mcp serve [#echolot-mcp-serve]
+
+```sh
+echolot mcp serve [<workspace>] [--env <env>] [--policy <policy>] [--toolsets <toolsets>] [--http <port>] [--verbose] [--headless] [--trust-workspace-policy]
+```
+
+MCP経由でエージェントにワークスペースを提供します。エージェントは、アプリと同じツールを通じて、そのリクエストの一覧表示、読み取り、送信、実行、ハンドルによるレスポンスの照会、
+リクエストの作成や変更ができます。クライアントには、次のコマンドを持つstdioサーバとして追加します。
+
+```sh
+echolot mcp serve /path/to/Alpenglow.echolot
+```
+
+**アプリが開いている場合。** Echolotアプリがワークスペースを開いていて、エージェントを許可している場合（**設定 › エージェント**）、クライアントはアプリに接続されます。
+承認が必要な操作はアプリがあなたに確認し、エージェントの動作も確認できます。`--headless` を指定すると、それでも単独で提供します。
+
+**単独で動作する場合。** アプリがない場合は確認できる相手がいないため、ポリシーで確認が必要な操作は拒否されます。
+
+| ポリシー | 実行される操作 |
+| --- | --- |
+| `standard`（デフォルト） | 読み取りと安全な送信（`GET` など）。その他の送信、ワークスペースが知らないホスト、ワークスペースへの変更は拒否されます。 |
+| `readonly` | 読み取りのみ。 |
+| `permissive` | 送信とワークスペースへの変更。削除、ワークスペースが知らないホスト、保護された環境への送信は拒否されます。 |
+
+シークレットは `ECHOLOT_SECRET_` 変数とこのMacのキーチェーンから解決され、エージェントに渡ることはありません。ヘッドレスの場合、サーバが実行するスクリプトは、起動時にワークスペースにあったものだけです。
+
+**ワークスペース自身のルール。** `workspace.toml` の `[agents]` セクションで、ワークスペースのエージェントをオフにしたり、操作の種類ごとにポリシーを厳しくしたりできます。
+ポリシーを緩めるルールは `--trust-workspace-policy` を指定した場合にだけ有効で、指定しない場合は、無視したルールをEcholotが表示します。新しいホストと保護された環境は、
+完全に許可されることはありません。キーは[ワークスペースのファイル](/docs/reference/workspace-files#agents)にあります。
+
+**ツールセット。** `requests` は常に提供されます。`--toolsets` でグループをカンマ区切りで追加するか、`all` を指定します。
+
+| ツールセット | 対象のツール |
+| --- | --- |
+| `requests` | リクエストの一覧表示、読み取り、作成、送信、レスポンス、履歴、GraphQL、実行中のモック。常にオンです。 |
+| `flows` | エージェント向けに公開したフローの実行と、フローからの質問への回答。デフォルトでオンです。 |
+| `workspace` | フォルダとリクエストの作成、名前の変更、移動、複製、削除、フォルダの認証、ワークスペースの変数、収集したデータのファイルとしての保存。 |
+| `environments` | 環境の作成、変更、削除。 |
+| `specs` | OpenAPI仕様の読み取り、書き込み、リント、フォルダとの紐づけ、変更の適用。 |
+| `mocks` | モックサーバとそのルートの作成、変更、削除（ダミーデータを含む）、ルートからのリクエスト作成、レスポンスのサンプルとしての保存。 |
+| `mcp-servers` | MCPサーバの追加、変更、チェック、削除。 |
+| `history` | 過去のやり取りの表示、比較、削除。 |
+| `flow-editing` | フローの読み取り、作図、削除。`try_flow` は、人が承認したあとにフローを1回実行します（ヘッドレスでは承認できる人がいないため拒否されます）。 |
+
+エージェントのポリシー、プロキシ、証明書、認証設定、スクリプトは、どのツールセットでもエージェントには提供されません。
+
+**HTTP経由。** `--http <port>` は、stdioの代わりにStreamable HTTPを127.0.0.1で提供します（`0` で空いているポートが選ばれます）。このMac上のどのプロセスもループバックポートに
+アクセスできるため、クライアントはBearerトークンを送信する必要があり、トークンはEcholotが出力します。
+
+```sh
+echolot mcp serve Alpenglow.echolot --http 0 --policy readonly
+```
+
+```text
+Echolot MCP server for Alpenglow at http://127.0.0.1:52817/mcp (policy readonly)
+Clients send the header  Authorization: Bearer 6f1c…
+```
+
+トークンを自分で決めるには、`ECHOLOT_MCP_TOKEN` を設定します。
+
+| オプション | 意味 |
+| --- | --- |
+| `--env <env>` | 環境を指定しない呼び出しが使う環境。 |
+| `--policy <policy>` | `standard`、`readonly`、`permissive`。デフォルトは `standard`。 |
+| `--toolsets <list>` | 提供するツールグループ（カンマ区切り）、または `all`。デフォルトは `requests,flows`。 |
+| `--http <port>` | stdioの代わりに、このポートで127.0.0.1にStreamable HTTPを提供します（`0` で自動選択）。 |
+| `-v`、`--verbose` | すべてのメッセージを標準エラーに出力します。 |
+| `--headless` | Echolotアプリがこのワークスペースを開いていても、単独で提供します。 |
+| `--trust-workspace-policy` | ワークスペースの `[agents]` ルールが、ポリシーを厳しくするだけでなく緩めることも許可します。 |
+
+## echolot mcp setup [#echolot-mcp-setup]
+
+```sh
+echolot mcp setup <client> [--workspace <workspace>] [--name <name>] [--version <version>]
+```
+
+クライアントがワークスペースのために `echolot mcp serve` を起動するのに必要な内容を出力します。何も変更しません。出力をクライアントが読み込む場所にコピーしてください。
+出力されるコマンドは、実行した `echolot` のパスです。
+
+| クライアント | 出力される内容 |
+| --- | --- |
+| `claude-code` | 実行する `claude mcp add --scope user …` コマンド。 |
+| `claude-desktop` | Claude Desktopの設定用の `mcpServers` エントリ。 |
+| `cursor` | Cursorの `mcp.json` 用の `mcpServers` エントリ。 |
+| `vscode` | VS Codeの `mcp.json` 用の `servers` エントリ。 |
+| `codex` | Codexの `config.toml` 用の `[mcp_servers.…]` テーブル。 |
+| `mcpb` | `server/echolot` がこのバイナリであるClaude Desktop拡張機能の `manifest.json`。`--workspace` を指定しない場合、拡張機能はインストール時にワークスペースを尋ねます。 |
+
+```sh
+echolot mcp setup claude-code -w Alpenglow.echolot
+```
+
+```text
+claude mcp add --scope user echolot-alpenglow -- /usr/local/bin/echolot mcp serve /Users/you/Alpenglow.echolot
+```
+
+```sh
+echolot mcp setup cursor -w Alpenglow.echolot
+```
+
+```json
+{
+  "mcpServers" : {
+    "echolot-alpenglow" : {
+      "args" : ["mcp", "serve", "/Users/you/Alpenglow.echolot"],
+      "command" : "/usr/local/bin/echolot"
+    }
+  }
+}
+```
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。MCPBは、省略されると尋ねます。 |
+| `--name <name>` | クライアントでのサーバ名。デフォルトは `echolot-<workspace>`。 |
+| `--version <version>` | MCPBマニフェストに書き込むバージョン。デフォルトはこのツールのバージョン。 |
+
+アプリの**設定 › エージェント**でも、同じクライアントを設定できます。[エージェント](/docs/ai/agents)を参照してください。
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | 接続した、サインインした、停止されるまで提供した、または出力した。 |
+| `1` | `check` が接続できなかったかチェックが失敗した、`--quality --strict` が問題を検出した、または `sign-in` が失敗したかサーバがOAuthを要求しなかった。 |
+| `64` | オプションが正しくない、不明なポリシーまたはクライアント、不明な環境、または `[agents]` セクションでエージェントがオフになっているワークスペース。 |

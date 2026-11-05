@@ -1,0 +1,14 @@
+{
+  "title": "工作区",
+  "pages": [
+    "index",
+    "folders",
+    "environments",
+    "secrets",
+    "protected-environments",
+    "git-and-teams",
+    "history",
+    "storage-and-encryption",
+    "exporting"
+  ]
+}

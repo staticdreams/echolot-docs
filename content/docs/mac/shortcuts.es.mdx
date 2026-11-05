@@ -1,0 +1,93 @@
+---
+title: "Atajos"
+description: "Ejecuta solicitudes y carpetas guardadas desde la app Atajos, con Siri y en automatizaciones, y usa el resultado en la acción siguiente."
+---
+
+Echolot añade dos acciones a la app Atajos: **Ejecutar solicitud** y **Ejecutar carpeta**. Envían solicitudes guardadas
+con sus comprobaciones, como hace la [ejecución](/docs/requests/runner), y pasan el resultado a la acción siguiente.
+Úsalas para comprobar una API cada mañana, con un atajo de teclado o pidiéndoselo a Siri. Echolot no pasa al primer
+plano mientras se ejecutan.
+
+<Shot id="mac-shortcuts-action" alt="La app Atajos con la acción Ejecutar carpeta de Echolot configurada para ejecutar la carpeta Catalog del espacio de trabajo Alpenglow, seguida de una acción Si sobre su valor Superadas" />
+
+## Las acciones [#the-actions]
+
+Búscalas en la app Atajos escribiendo Echolot, en **Solicitudes**.
+
+### Ejecutar solicitud [#run-request]
+
+Envía una solicitud guardada de un espacio de trabajo con sus comprobaciones y devuelve el resultado. En el editor
+aparece como **Ejecutar *solicitud* en *espacio de trabajo***.
+
+| Parámetro | Qué elegir |
+| --- | --- |
+| **Espacio de trabajo** | Un espacio de trabajo abierto en Echolot, o uno de tus espacios de trabajo recientes. |
+| **Solicitud** | Una solicitud guardada de ese espacio de trabajo. Cada una muestra su método y su ruta. |
+| **Entorno** | Opcional. El nombre del entorno tal como lo muestra el espacio de trabajo, o su slug. Si está vacío, el entorno que usa el espacio de trabajo en su ventana, o el que usó la última vez. |
+
+### Ejecutar carpeta [#run-folder]
+
+Ejecuta todas las solicitudes de una carpeta, en orden y con sus comprobaciones, y devuelve el resultado. En el editor
+aparece como **Ejecutar *carpeta* en *espacio de trabajo***.
+
+| Parámetro | Qué elegir |
+| --- | --- |
+| **Espacio de trabajo** | Un espacio de trabajo abierto en Echolot, o uno de tus espacios de trabajo recientes. |
+| **Carpeta** | Una carpeta de ese espacio de trabajo, o **Todo el espacio de trabajo (*nombre*)** para todas las solicitudes. |
+| **Entorno** | Opcional, como en Ejecutar solicitud. |
+
+Las solicitudes se ejecutan con sus scripts y comprobaciones, y sus respuestas van al
+[historial](/docs/workspaces/history) del espacio de trabajo, igual que desde su ventana. El espacio de trabajo no
+tiene que estar abierto.
+
+<Edition only="appstore">
+  Las acciones funcionan igual en la edición de la App Store. A un espacio de trabajo que no está abierto se accede con
+  el permiso que diste a Echolot al abrirlo.
+</Edition>
+
+## El resultado [#the-outcome]
+
+Las dos acciones devuelven un **Resultado de la ejecución** para la acción siguiente y muestran su resumen cuando
+termina el atajo.
+
+| Propiedad | Qué contiene |
+| --- | --- |
+| **Superadas** | Si todas las solicitudes se ejecutaron sin error y todas las comprobaciones se superaron (las comprobaciones omitidas no cuentan en contra). |
+| **Solicitudes** | Cuántas solicitudes se ejecutaron. |
+| **Solicitudes con fallos** | Cuántas fallaron. |
+| **Estado** | El código de estado, para una sola solicitud. |
+| **Duración (ms)** | El tiempo en milisegundos, para una sola solicitud. |
+| **Resumen** | Una línea, como `GET List products: 200 in 182 ms, 3 of 3 checks passed` para una solicitud, o `2 of 9 requests failed` para una carpeta. |
+| **Fallos** | Una línea por cada solicitud con fallos: su nombre y el error o las comprobaciones que fallaron. |
+
+## Entornos protegidos [#protected-environments]
+
+Cuando el entorno está [protegido](/docs/workspaces/protected-environments), Atajos pregunta antes de enviar nada, con
+el entorno y lo que se enviaría. Si lo rechazas, la acción termina sin enviar nada.
+
+## Siri [#siri]
+
+Las acciones de Echolot están listas para Siri sin configurar ningún atajo: di “Ejecuta una solicitud en Echolot” o
+“Envía una solicitud con Echolot” para Ejecutar solicitud, y “Ejecuta una carpeta en Echolot” o “Ejecuta las
+solicitudes de una carpeta en Echolot” para Ejecutar carpeta.
+
+## Ejemplo: comprobar la tienda cada mañana [#example-check-the-shop-every-morning]
+
+Con el espacio de trabajo de ejemplo Alpenglow, que funciona con la [API de demostración](/docs/tutorials/demo-api):
+
+<Steps>
+<Step>
+En la app Atajos, crea un atajo nuevo y añade **Ejecutar carpeta**. Elige el espacio de trabajo Alpenglow y la carpeta
+**Catalog**.
+</Step>
+<Step>
+Añade **Si**, con **Superadas** del **Resultado de la ejecución** como entrada y **es falso** como condición.
+</Step>
+<Step>
+Dentro del Si, añade **Mostrar notificación** con el **Resumen** del resultado, o **Fallos** para cada solicitud con
+fallos.
+</Step>
+<Step>
+En **Automatización**, crea una automatización personal que ejecute el atajo cada mañana.
+</Step>
+</Steps>

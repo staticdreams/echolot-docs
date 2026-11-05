@@ -1,0 +1,124 @@
+---
+title: "テンプレート"
+description: "アプリまたはecholot flow newで、用意されたテンプレート（デバイスサインイン、リフレッシュトークン、ページを取得して書き出す、死活監視、データ作成と後片付け）からフローを始めます。"
+---
+
+テンプレートは、ほとんどのAPIで必要になる作業のために用意された、できあいのフローです。テンプレートには、ブロック、ブロック間の接続、キャンバス上のメモが含まれています。あなたのAPIのことは知らないので、リクエストブロックとポーリングブロックにはまだリクエストが設定されていません。リクエストを選ぶまで、それぞれに問題が表示され、メモには何を選ぶかが書かれています。
+
+## テンプレートからフローを作成する [#create-a-flow-from-a-template]
+
+**アプリでの手順:**
+
+1. フローのページで、サイドバーの<strong>フロー</strong>の横にある<strong>+</strong>をクリックします。
+2. **テンプレートから**の下でテンプレートを選びます。ポインタを合わせると、何をするものかが読めます。
+3. テンプレートの名前でフローが開き、表示に収まります。インスペクタの**名前**で名前を変更します。
+4. メモを読み、リクエストブロックとポーリングブロックを1つずつ選択して**リクエスト**を選びます。ツールバーの問題の数がなくなれば、フローを実行できます。
+
+<Shot id="flows-new-from-template" alt="サイドバーのフローの横にある+ボタンのメニュー。空のフローと、テンプレートからの下にデバイスサインイン、リフレッシュトークン、ページを取得して書き出す、死活監視、データ作成と後片付けが並んでいる" />
+
+**コマンドラインでの手順:**
+
+```sh
+# テンプレートを一覧表示する
+echolot flow new
+
+# テンプレートからフローを作成する
+echolot flow new "Export products" --template paginate-and-export -w Alpenglow.echolot
+```
+
+`echolot flow new`は`flows/export-products.flow.toml`を書き込み、そのパスを出力します。`--template`を付けないと、開始ブロックを出力ブロックにつないだ空のフローが作成されます。リクエストは、アプリまたはフローのファイルで選びます。[echolot flow](/docs/cli/flow)を参照してください。
+
+エージェントも、EcholotのMCPサーバを通じて、テンプレートからフローを作成できます。
+
+## デバイスサインイン [#device-sign-in]
+
+`device-sign-in`。OAuth 2.0のデバイスグラント（RFC 8628）でサインインします。デバイスコードを要求し、コードとリンクを表示し、あなたが承認するまでトークンエンドポイントをポーリングして、アクセストークンとリフレッシュトークンをシークレット変数として保存します。
+
+| ブロック | 種類 | 内容 |
+| --- | --- | --- |
+| Ask for a device code | リクエスト | `device_code`、`user_code`、`verification_uri`、`interval`、`expires_in`を返すリクエストを送信します。**このリクエストを選んでください。** |
+| Codes | 抽出 | ボディからその5つの値を取り出します（`code`は`$.body.device_code`）。 |
+| Show the code | 表示して待機 | `Open {{verification_uri}} and enter the code. This goes on by itself once you have approved it.`、**コードをコピー**付きのユーザーコード、**ブラウザで開く**とQRコード付きのリンクを表示します。 |
+| Wait for approval | ポーリング | トークンのリクエストを`{{interval}}`秒ごとに送信し、`access_token`付きの200が返るまで、最長で`{{expires_in}}`秒続けます。変数`code`はデバイスコードです。**このリクエストを選んでください。** |
+| Save the tokens | 変数を設定 | `accessToken`と`refreshToken`を、環境にシークレットとして保存します。 |
+| Done | テンプレート | `Signed in; the tokens are in the Keychain.` |
+| Output | 出力 | そのテキストを返します。 |
+
+<Shot id="flows-template-device-sign-in" alt="デバイスサインインのテンプレートから作ったフロー。開始、Ask for a device code、Codes、並んだShow the codeとWait for approval、Save the tokens、Done、出力が並び、どのリクエストを選ぶかを書いたメモが付いている" />
+
+Show the codeとWait for approvalは並行して実行されます。ポーリングが送信している間はシートが開いたままで、ポーリングが成功すると自動的に閉じます（`success`がシートの`until`に接続されています）。
+
+トークンのリクエストは、`grant_type`に`urn:ietf:params:oauth:grant-type:device_code`、`device_code={{code}}`を付けて送信します。以降は、ほかのリクエストが`{{accessToken}}`を使います。トークンは環境に保存されるので、環境を選んだ状態でフローを実行してください。
+
+## リフレッシュトークン [#refresh-token]
+
+`refresh-token`。リフレッシュトークンで新しいアクセストークンを取得し、両方をシークレット変数として保存します。開始ブロックに[スケジュール](/docs/flows/running-and-triggers#schedule)を設定すると、トークンを新しく保てます。
+
+| ブロック | 種類 | 内容 |
+| --- | --- | --- |
+| Refresh the token | リクエスト | トークンのリクエストを送信します。`grant_type=refresh_token`と`refresh_token={{refreshToken}}`です。**このリクエストを選んでください。** |
+| Save the tokens | 変数を設定 | `accessToken`と`refreshToken`を、環境にシークレットとして保存します。新しいリフレッシュトークンがないレスポンスでは、古いものが残ります。 |
+| Valid for | 抽出 | `$.body.expires_in`を取り出します。 |
+| Output | 出力 | 新しいトークンが有効な秒数を返します。 |
+| Say it failed | 通知 | リクエストが失敗したとき: `The token could not be refreshed`と`The server answered {{status}}. Sign in again.` |
+
+## ページを取得して書き出す [#paginate-and-export]
+
+`paginate-and-export`。ページごとに1回リクエストを送信し、すべてのページの項目を1つのリストにまとめて、ワークスペースフォルダの`exports/items.json`に書き込みます。入力`pages`（数値、デフォルトは3）で、取得するページ数を指定します。
+
+| ブロック | 種類 | 内容 |
+| --- | --- | --- |
+| Each page | 繰り返す | `{{pages}}`回実行します。 |
+| Page number | 評価 | `return { page: index + 1 };`で、ページは1、2、3…になります。 |
+| Fetch the page | リクエスト | `{{page}}`を設定してリクエストを送信します（たとえば`?page={{page}}`）。**このリクエストを選んでください。** |
+| Items | 抽出 | 1ページ分のリストである`$.body`を取り出します。 |
+| All pages | 収集 | すべてのページのリストを集めます。 |
+| One list | 評価 | `return pages.flat();`でそれらをつなげます。 |
+| Export | ファイルに書き込む | `exports/items.json`をJSONとして書き込みます。 |
+| Output | 出力 | ファイルのパスを返します。 |
+
+リストがボディ全体ではない場合は、**Items**のパスを変更します。Alpenglowの**Catalog › List products**では、アドレスに`&page={{page}}`を追加し、**Items**を`$.body.items`にします。デモAPIは、商品を`items`の下に返します。
+
+## 死活監視 [#smoke-monitor]
+
+`smoke-monitor`。1時間ごとにリクエストを送信し、2秒以内に200で応答するかをチェックします。応答しないときは通知が表示されます。スケジュール（60分ごと）は、すでに開始ブロックに設定されています。開始するには、そこで**許可**をクリックするか、`echolot flow serve`で実行します。
+
+| ブロック | 種類 | 内容 |
+| --- | --- | --- |
+| Send | リクエスト | 監視するリクエストを送信します。**このリクエストを選んでください。** |
+| Healthy | アサート | **Answers 200**（`value.status === 200`）と**Within two seconds**（`value.time < 2000`）をチェックします。 |
+| Output | 出力 | 2つのチェックがどちらも成功したときに、レスポンスを受け取ります。 |
+| Unhealthy | 通知 | チェックが失敗したとき: `Smoke check failed`と`{{url}} answered {{status}} in {{time}} ms.` |
+| Failed | 通知 | リクエストが失敗したとき: `Smoke check failed`と`The request failed or did not answer with a 2xx status.` |
+
+アサートのチェックはテストなので、APIが正常でないと`echolot flow run`は失敗します。そのため、同じフローをCIのチェックにできます。
+
+## データ作成と後片付け [#seed-and-clean-up]
+
+`seed-and-clean-up`。リストの項目ごとに1件のレコードを作成し、作成したものをログに書き、その後で各レコードを削除します。データが必要なチェックは、ログがある場所に置いてください。
+
+| ブロック | 種類 | 内容 |
+| --- | --- | --- |
+| Records | 値 | `[{"title": "First"}, {"title": "Second"}, {"title": "Third"}]`。 |
+| Each record | 各項目を繰り返す | 各レコードを順に送ります。 |
+| Create | リクエスト | レコードを作成します。各レコードのキーがその送信の変数になるため、リクエストでは`{{title}}`を使います。**このリクエストを選んでください。** |
+| Its id | 抽出 | `$.body.id`を取り出します。 |
+| Made | 収集 | 新しいIDを集めます。 |
+| Use the data | ログ | `Seeded {{value}}`をログに書きます。データが必要な処理に置き換えてください。 |
+| Each id | 各項目を繰り返す | 各IDを順に送ります。 |
+| Delete | リクエスト | レコードを削除します。変数は`{{id}}`です。**このリクエストを選んでください。** |
+| Deleted | 収集 | 削除したものを集めます。 |
+| Count | 評価 | `return { deleted: gone.length };` |
+| Output | 出力 | 削除した件数を返します。 |
+
+新しいIDがレスポンスの別の場所にある場合は、**Its id**を変更します。
+
+## Alpenglowのフロー [#the-flows-in-alpenglow]
+
+サンプルのワークスペースには、テンプレートと並べて見られる3つのフローがあります。
+
+- **Place a test order**: サインインし、注文を行い、承認ブロックで注文を残すかどうかをあなたに確認し、拒否されると注文をキャンセルします。エージェントには`place_test_order`として提供されています。
+- **Morning stock check**: 毎日6:00に商品を一覧取得し、ベルンのテントの在庫が少なくなったときに通知を表示します。
+- **Order status on webhook**: `POST /order-status`に、注文で応答します。
+
+[フローで自動化する](/docs/tutorials/automate-with-flows)では、1つを手順に沿って組み立てます。

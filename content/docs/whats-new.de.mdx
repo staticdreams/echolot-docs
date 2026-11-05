@@ -1,0 +1,153 @@
+---
+title: "Neuigkeiten"
+description: "Die Versionshinweise jeder Echolot-Version, die neueste zuerst."
+---
+
+Das sind die Hinweise, die Echolot unter **Hilfe › Neu in Echolot** zeigt, die neueste Version zuerst. Jede Version und ihre Downloads stehen auch auf der [Releases-Seite](https://github.com/staticdreams/echolot-public/releases).
+
+## 0.8.0
+
+*4. November 2026 · Build 12*
+
+**Neu**
+
+- Echolot spricht jetzt Französisch, Deutsch, Spanisch, Japanisch, Koreanisch, Russisch und vereinfachtes Chinesisch.
+  Es folgt der Systemsprache, oder du wählst eine unter „Einstellungen › Allgemein › Sprache“.
+- Eine geführte Tour beim ersten Start, jederzeit erneut über „Hilfe › Tour zeigen“.
+- Das Panel des Assistenten lässt sich in der Größe ändern: Zieh an seinem Rand (ein Doppelklick stellt die
+  Standardbreite wieder her).
+- Mocks beantworten Spec-Operationen ohne Beispiel mit frischen Beispieldaten, die zu jedem Feld passen.
+
+**Verbesserungen**
+
+- Echo, der Statusbildschirm im Seitenkopf, ist standardmäßig eingeschaltet.
+- Im Genehmigungsdialog des Assistenten gilt „Für diese Sitzung erlauben“ jetzt für alle Änderungen am Arbeitsbereich
+  auf einmal; vor dem Löschen wird weiterhin gefragt.
+- Das Willkommensfenster bekommt einen Sonar-Ping hinter dem App-Symbol.
+
+**Fehlerbehebungen**
+
+- Der Anfrage-Editor zeichnet nicht mehr über die Antwort.
+- „Start“ passt in ein schmales Fenster, sodass ein breiter Assistent die Seite nicht mehr über die Seitenleiste
+  schiebt.
+- Echos Begrüßung wird nicht mehr gestaucht, und der Titel des Assistenten bleibt in jeder Sprache einzeilig.
+- Das Entfernen eines Tests mit seiner Minus-Taste bringt Echolot nicht mehr zum Absturz, ebenso wenig das Entfernen
+  eines MQTT-Abonnements oder einer MQTT-Nachricht, einer WebSocket-Nachricht oder eines zu sendenden
+  Socket.IO-Ereignisses. Danke an Amit für die Meldung.
+- Die Minus-Taste in der Liste „Flows“ löscht den ausgewählten Flow; bisher reagierte sie nur auf Klicks auf ihre
+  dünne Linie.
+
+## 0.7.1
+
+*3. November 2026 · Build 11*
+
+**Neu**
+
+- Die Sonar-Karte auf „Start“ trägt jede gesendete Anfrage der letzten Stunde, der letzten 24 Stunden, 7 oder 30 Tage
+  nach Antwortzeit auf, mit „Gesendet“, „Erfolgreich“, Median und p95 im Vergleich zum Zeitraum davor.
+- Marine, ein zweites dunkles Erscheinungsbild in den Blautönen der Tiefsee („Einstellungen › Allgemein ›
+  Erscheinungsbild“).
+- Arbeitsbereichs-Auth von jeder Anfrage aus: Der Tab „Auth“ öffnet die Auth des Ordners oder Arbeitsbereichs, die
+  eine Anfrage übernimmt („Arbeitsbereichs-Auth …“ bei einer Anfrage mit eigener Auth), und Ordner- und
+  Arbeitsbereichseinstellungen melden sich einmal mit OAuth 2.0 für alle Anfragen an, die übernehmen.
+- Mehr Auth: OAuth 1.0, der Passwort-Grant von OAuth 2.0 und die Einstellungen unter „Erweitert“ sowie Postmans
+  ASAP-Auth, importiert als JWT Bearer.
+- Agenten und der Assistent können Anfragen Auth und Erfassungen geben (Anmeldedaten nur als `{{variables}}`), die
+  Auth eines Ordners festlegen und einen Flow einmal ausprobieren, nachdem du ihn genehmigt hast; mit „Einstellungen ›
+  Assistent › Vorher fragen“ lassen sich Rückfragen auf Löschen, neue Hosts und geschützte Umgebungen beschränken.
+- Anfragen, deren letzter Aufruf fehlgeschlagen ist, zeigen in der Anfrageliste ein Warnzeichen mit dem, was
+  schiefging.
+
+**Verbesserungen**
+
+- Die Antworten des Assistenten werden als Markdown dargestellt und bleiben flüssig, während sie gestreamt werden.
+- Flow-Karten zeigen, was sie tun, Bedingungen werden als Regeln bearbeitet, und der letzte Ausdruck eines
+  „Auswerten“-Blocks ist sein Ergebnis.
+- „Einstellungen › Speicher“ zeigt, wie viel Platz Antwort-Bodys belegen, und „Gespeicherte Bodys entfernen …“ gibt
+  ihn frei.
+- Auf kleineren Bildschirmen schieben der Assistent und angeheftete Variablen das Fenster nicht mehr über den
+  Bildschirmrand hinaus: Die Variablen schweben stattdessen.
+
+**Fehlerbehebungen**
+
+- Sicherheitskorrekturen aus zwei Audits: OAuth-Tokens werden pro Umgebung und Einstellungen aufbewahrt und gehen nie
+  an einen anderen Host; Agenten können ohne Nachfrage keine Anmeldedaten in Dateien schreiben und keine Secrets an
+  neue Hosts senden; gestoppte Mock-, MCP- und Webhook-Server schließen jede Verbindung.
+- Behoben: ein Absturz bei sehr großen Zahlen in Werten, HTTPS-Proxys, die mit HTTP/2-Servern scheiterten, Text, der
+  auf `"""` endet und sich beim Sichern änderte, sowie Verschiebungen oder Umbenennungen, die das Widerrufen in offenen
+  Tabs zurücksetzten.
+- Bei eingeschalteter Verschlüsselung auf der Festplatte behält der Verlauf Anfrage-Bodys nicht mehr im Klartext.
+- Arbeitsbereichs- und Ordnereinstellungen folgen deinem Erscheinungsbild, Marine eingeschlossen, und behalten beim
+  Wechseln der Tabs ihre Größe.
+- Die gRPC-Aufrufleiste passt in ihren Bereich: Lange Proto-, Service- und Methodennamen werden gekürzt, statt in die
+  Antwort zu laufen.
+
+## 0.6.0
+
+*2. November 2026 · Build 9*
+
+**Neu**
+
+- Mocks brauchen keine Spec mehr: Lege Routen von Hand an (Methode, Pfad mit `{id}`, Status, Header, Body und Regeln
+  für die Anfrage), mit Beispieldaten in ihren Bodys: `{{$randomFullName}}`, `{{request.params.id}}`, `{{#repeat
+  10}}`…`{{/repeat}}`. „Anfragen erstellen“ macht aus den Routen eines Mocks Anfragen.
+- Dieselben Beispielwerte funktionieren in Anfragen, und echolot fake schreibt Beispieldaten aus einer Vorlage auf der
+  Kommandozeile.
+- Wähle mehrere Anfragen in der Seitenleiste aus, um sie in einen neuen Ordner zu legen („Neuer Ordner mit N
+  Objekten“) oder ihre Header, Query-Parameter und Auth auf einmal zu ändern („N Anfragen bearbeiten …“).
+- Echo, ein optionaler Statusbildschirm im Seitenkopf („Einstellungen › Allgemein › Echo“), erzählt, was im Fenster
+  passiert, und ein Klick entrollt einen Bericht über die Sitzung.
+- „Hilfe › Echolot-Dokumentation“ (⌘?) öffnet die neue Dokumentation auf docs.echolot.dev und „Hilfe › Hilfe zu dieser
+  Seite“ die Seite über das, was du gerade ansiehst.
+
+**Verbesserungen**
+
+- Echolot fragt einmal pro Modellanbieter, bevor etwas an ihn gesendet wird; „Einstellungen › Assistent“ listet auf,
+  was du erlaubt hast, mit „Entziehen“. Für Apples On-Device-Modell und Server auf deinem Mac wird nie gefragt.
+- Nach einem Update öffnet sich nichts von selbst: Die Taste „Neuigkeiten“ im Seitenkopf zeigt die neuen
+  Versionshinweise.
+- Die Befehlspalette bietet nur an, was auf der angezeigten Seite sinnvoll ist.
+- JSON-Antworten zeigen \u-Escapes als die Zeichen, für die sie stehen.
+- Die Hervorhebung in der Seitenleiste gleitet von Zeile zu Zeile, und der Modulumschalter federt zum gewählten Modul.
+
+**Fehlerbehebungen**
+
+- „Regel hinzufügen“ und „Header hinzufügen“ behalten die hinzugefügte Zeile und setzen den Cursor hinein.
+- Die Ampel-Tasten des Fensters erscheinen nicht mehr abgeschnitten, wenn ein anderes Fenster nach vorn kommt.
+
+## 0.5.0
+
+*31. Oktober 2026 · Build 7*
+
+**Verbesserungen**
+
+- Geschützte Umgebungen fragen bei mehr Dingen nach: MCP-Aufrufe, Prüfungen und Beobachtungen, „Token holen“,
+  Schema-Abrufe, gRPC-Reflection und Nachrichten, die nach einem Umgebungswechsel in einer offenen Sitzung gesendet
+  werden.
+- Ein Proxy-Passwort oder eine Zertifikats-Passphrase im Klartext trägt jetzt eine Warnung, mit „In den Schlüsselbund
+  verschieben“ daneben; vor dem Löschen des Verlaufs einer einzelnen Anfrage wird zuerst gefragt.
+- Die Eingabe von `{{` bietet in der URL-Leiste wieder die Variablen der Anfrage an und in den Einstellungen eines
+  Ordners oder Arbeitsbereichs die Variablen, mit denen seine Auth aufgelöst wird.
+- Der JSON-Baum öffnet große Antworten schneller, und die Flow-Arbeitsfläche lässt sich flüssiger verschieben.
+
+**Fehlerbehebungen**
+
+- Secrets bleiben, wo sie sind: API-Key-Header und Header mit einem Secret folgen keiner Weiterleitung mehr zu einem
+  anderen Ursprung, der Verlauf behält keine Hawk-, EdgeGrid-, NTLM-, Proxy- oder Zertifikat-Secrets mehr, und bei
+  verschlüsseltem Speicher bleibt der Text einer Antwort aus dem Suchindex heraus.
+- Agenten lesen den Verlauf mit maskierten Anmeldedaten, und ein Suchtreffer, der ein Secret berührt, wird weder
+  gezählt noch angezeigt; die Grenzen eines Agenten gelten auch in den Flows, die er ausführt.
+- Die NTLM-Anmeldung funktioniert über HTTP/1.1, ohne dass eine andere Anfrage ihre Verbindung ausleiht, und ein
+  Server, der auf HTTP/1.1 besteht, bekommt es. HTTP/3 versucht alle Adressen eines Hosts gleichzeitig, wie TCP.
+- Antworten, die sich absurd ausdehnen (über 100 zu 1 jenseits von 256 MB), sowie WebSocket- und Socket.IO-Nachrichten
+  aus riesigen Fragmenten werden abgeschnitten, statt den Speicher zu füllen.
+- Der Export schreibt nie über den Arbeitsbereich, aus dem er stammt, nie in ihn hinein und nie um ihn herum, legt
+  Ersetztes in den Papierkorb und sagt, wie viele Anmeldedaten im Klartext geschrieben wurden.
+- Änderungen gehen nicht mehr verloren: Ordner- und Arbeitsbereichseinstellungen, Mock-Routen und ein Tab, der kurz
+  vor dem Beenden geschlossen wird, werden alle gesichert, und ein fehlgeschlagenes Sichern behält deinen Text.
+- Das Schließen eines Fensters stoppt seine Durchläufe und Sendevorgänge. Durchläufe, deren Iterationen parallel
+  laufen, behalten ihre eigenen $response-Werte, und Datendateien bis 100 MB laden, ohne das Fenster einzufrieren.
+- Ein Flow, dessen Anfrage-Skript fehlschlägt, nimmt jetzt den Fehlerpfad, und Hintergrunddienste folgen der Wahl
+  „Keine Umgebung“.
+
+Die Hinweise früherer Versionen stehen in der [englischen Fassung](/docs/whats-new).

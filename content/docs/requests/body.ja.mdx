@@ -1,0 +1,99 @@
+---
+title: "リクエストボディ"
+description: "JSON、フォーム、マルチパートのアップロード、GraphQL、テキスト、XML、HTML、ファイルそのものを、HTTPリクエストのボディとして送信します。"
+---
+
+<strong>ボディ</strong>タブは、リクエストがヘッダーの後に送る内容を設定する場所です。タブ上部の行で種類を選ぶと、下のエディタがそれに合わせて切り替わります。
+リクエストにボディがあると、タブにドットが表示されます。
+
+<Shot id="requests-http-body-json" alt="Create orderのボディタブ。JSONを選択し、エディタに注文明細が表示され、右側に整形ボタンがある" />
+
+## ボディの種類 [#body-types]
+
+| 種類 | 送信する内容 | Echolotが追加するContent-Type |
+| --- | --- | --- |
+| <strong>なし</strong> | ボディなし。 | なし |
+| <strong>JSON</strong> | エディタ内のテキスト。 | `application/json` |
+| <strong>URLエンコード</strong> | Webフォームが送信するときと同じ、名前と値のペア。 | `application/x-www-form-urlencoded` |
+| <strong>マルチパート</strong> | ファイルアップロード付きのWebフォームが送信するときと同じ、テキストフィールドとファイル。 | バウンダリ付きの`multipart/form-data` |
+| <strong>GraphQL</strong> | クエリのテキストをそのまま。 | `application/graphql` |
+| <strong>生データ</strong> | テキスト、XML、HTML。2段目のチップで選びます。 | `text/plain`、`application/xml`、`text/html` |
+| <strong>バイナリ</strong> | ファイルをバイト単位でそのまま。 | なし |
+
+Content-Typeは、<strong>ヘッダー</strong>タブの<strong>自動生成</strong>の下に表示されます。別のものを送るには、自分で`Content-Type`ヘッダーを追加します。Echolotのものの代わりに使われます。
+長さとフレーミングのヘッダーは、リクエストの送信時に決まります。
+
+テキストのボディにはどれも`{{variables}}`と[動的な値](/docs/requests/dynamic-values)を入れられ、送信時に埋められます：
+
+```json
+{
+  "lines": [{ "sku": "{{productId}}", "quantity": 1 }],
+  "note": "Sent at {{$isoTimestamp}}"
+}
+```
+
+## JSON [#json]
+
+エディタにJSONを入力するか貼り付けます。行番号、シンタックスカラー、変数用の`{{`リストが使えます。
+
+<strong>整形</strong>をクリックすると、JSONがインデントされます。変数は書いたままなので、文字列中や単独の値としての`{{productId}}`には手を加えません。
+ペインが狭いときは、ボタンには魔法の杖だけが表示されます。
+
+試すには、Alpenglowの例で<strong>Orders › Create order</strong>を開いてそのボディを見るか、受け取ったボディをそのまま返す<strong>Echo › Echo anything</strong>を送信します。
+
+## URLエンコード [#url-encoded]
+
+フィールドは、ヘッダーと同じく<strong>キー</strong>と<strong>値</strong>の表に並びます：
+
+- <strong>フィールドを追加</strong>をクリックして追加します。チェックを入れたフィールドは送信され、外したフィールドは保持されますが送信されません。
+- <strong>一括編集</strong>をクリックすると、すべてのフィールドをテキストとして編集できます。1行に1つの`Name: value`で、オフにしたフィールドの前には`//`が付きます。
+
+Echolotは送信時に名前と値をエンコードします。変数が挿入するものもエンコードされるので、値に含まれる`+`、`&`、スペースはその文字のまま届きます。
+
+## マルチパート [#multipart]
+
+各行がフォームの1つのパートです：
+
+1. チェックボックスにチェックを入れると、そのフィールドが送信されます。
+2. <strong>名前</strong>を入力します。
+3. <strong>テキスト</strong>または<strong>ファイル</strong>を選びます。
+   - <strong>テキスト</strong>では、<strong>値</strong>を入力します。`{{variables}}`を含められます。
+   - <strong>ファイル</strong>では、<strong>選択…</strong>をクリックしてファイルを選びます。名前のないフィールドには、拡張子を除いたファイル名が使われます。パートには、ファイルの名前がそのままファイル名として付きます。
+4. 必要なら、パートのContent-Type（例：`image/png`）を<strong>種類</strong>に入力します。空のまま（`type (auto)`）にすると、ファイルには拡張子から決まった種類が付き
+   （`.json`、`.png`、`.pdf`など。それ以外は`application/octet-stream`）、テキストフィールドには付きません。
+
+行を追加するには<strong>フィールドを追加</strong>をクリックし、削除するには<strong>−</strong>ボタンを押します。ファイルはリクエスト送信時にディスクからストリーミングされるため、
+大きなアップロードもメモリに収まる必要はありません。
+
+## GraphQL [#graphql]
+
+<strong>GraphQL</strong>は、`Content-Type: application/graphql`でクエリのテキストをボディとして送信します。クエリをこの形式で受け取るサーバ向けです。
+変数、スキーマからの補完、スキーマエクスプローラ、サブスクリプションを備えた本格的なGraphQLクライアントが必要なら、代わりに<strong>新規GraphQLリクエスト</strong>を作成してください。
+[GraphQL](/docs/requests/graphql)を参照してください。
+
+## 生データ：テキスト、XML、HTML [#raw-text-xml-and-html]
+
+<strong>生データ</strong>を選び、横の行で<strong>テキスト</strong>、<strong>XML</strong>、<strong>HTML</strong>のいずれかを選びます。エディタはXMLとHTMLに色を付け、Content-Typeは選択に従います。
+
+## バイナリ：ファイル [#binary-a-file]
+
+<strong>バイナリ</strong>を選び、<strong>ファイルを選択…</strong>をクリックして、送信するファイルを選びます。タブにはファイルの名前、サイズ、パスが表示されます。
+<strong>別のファイルを選択…</strong>で置き換えられます。ファイルはサイズにかかわらず、リクエストを送信するたびにディスクから読み込まれるので、
+リクエストは常にその時点のファイルを送信します。ファイルを選ぶまでは、何も送信されません。
+
+<Edition only="appstore">
+  App Storeエディションが読み込めるのは、自分で選んだファイルだけです。<strong>ボディ</strong>タブで選んだファイルは、以降の送信でも読み込めるままです。
+  リクエストが、アプリに渡されたことのないファイル（たとえばチームメイトが自分のMacで選んだファイル）を指している場合、送信は止まり、
+  レスポンスペインに<strong>アクセスを許可…</strong>が表示されます。ファイルを選ぶと、リクエストがもう一度送信されます。
+</Edition>
+
+## ボディの保存先 [#where-bodies-are-saved]
+
+入力したボディは、リクエストの隣に専用のファイルとして保存されます。たとえば`create-order.req.toml`の隣の`create-order.body.json`で、Gitで読みやすくなります。
+バイナリのボディは、ファイルのパスとして保存されます。[ワークスペースのファイル](/docs/reference/workspace-files)を参照してください。
+
+## 大きなボディ [#large-bodies]
+
+バイナリとマルチパートのファイルは、リクエストの送信時にディスクからストリーミングされるので、どんなサイズのアップロードもメモリに読み込まずに送信できます。
+レスポンスは別の話で、到着するそばからディスクに書き込まれ、数百メガバイトでもビューアで軽快に動作します。
+[レスポンス](/docs/requests/responses#large-responses)を参照してください。

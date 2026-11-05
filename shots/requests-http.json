@@ -96,5 +96,41 @@
       540,
       440
     ]
+  },
+  {
+    "id": "requests-http-auth-inherit",
+    "page": "requests/auth",
+    "scene": "Alpenglow, no environment. Open Orders › List orders (Auth tab on Inherit, the Orders folder sets Bearer Token). The Workspace auth row shows Set Up Workspace Auth… .",
+    "frame": "the request pane with the Auth tab",
+    "crop": [
+      278,
+      178,
+      552,
+      144
+    ]
+  },
+  {
+    "id": "requests-http-auth-oauth-advanced",
+    "page": "requests/auth",
+    "scene": "Alpenglow, no environment. Open Auth › Orders with OAuth 2, Auth tab, Advanced open with Refresh automatically on, one row in Authorization request (access_type = offline) and one in Token request (resource = https://demo.echolot.dev, Body).",
+    "frame": "the request pane with the Auth tab scrolled to Advanced",
+    "crop": [
+      278,
+      178,
+      552,
+      664
+    ]
+  },
+  {
+    "id": "requests-http-auth-oauth1",
+    "page": "requests/auth",
+    "scene": "A copy of Alpenglow, no environment. A request OAuth 1.0 (Auth tab: OAuth 1.0, HMAC-SHA1, consumer key {{consumerKey}}, consumer secret {{consumerSecret}}, access token and token secret as variables, Add to Header).",
+    "frame": "the request pane with the Auth tab",
+    "crop": [
+      278,
+      178,
+      552,
+      580
+    ]
   }
 ]

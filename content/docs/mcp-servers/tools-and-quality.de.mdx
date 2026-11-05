@@ -1,0 +1,107 @@
+---
+title: "Tools und Qualität"
+description: "Sieh, was die Tools eines Servers ein Modell bei jedem Zug kosten, worüber ein Modell stolpern würde und welches Tool es wählen würde."
+---
+
+Ein Modell sieht nie einen MCP-Server. Es sieht die Liste der Tools des Servers, die bei jedem Zug einer Unterhaltung
+gesendet und in das eigene Format des jeweiligen Anbieters umgewandelt wird. Die Karte **So sieht ein Modell diesen
+Server** auf der Seite „MCP-Server“ zeigt diese Liste, wie ein Modell sie bekommt: was sie kostet, welche Tools am
+meisten kosten und welche Namen, Beschreibungen und Schemas ein Modell falsch verstehen würde. Nutze sie, während du
+einen Server baust, oder bevor du den Server von jemand anderem einem Agenten gibst.
+
+Die Karte erscheint unter **Tools**, sobald eine Prüfung mindestens ein Tool aufgelistet hat.
+
+<Shot id="mcp-quality-card" alt="Die Karte „So sieht ein Modell diesen Server“ für Alpenglow MCP: Zahlen der Tokens für Anthropic, OpenAI und Google Gemini, die größten Tools und die Zeile „Nichts, worüber ein Modell stolpern würde“" />
+
+## Was die Tools kosten [#what-the-tools-cost]
+
+Oben zeigt die Karte die Tokens, die die Liste der Tools bei **Anthropic**, **OpenAI** und **Google Gemini** bei jedem
+Zug braucht, gezählt im Format des jeweiligen Anbieters. Darunter sagt eine Zeile, wie viele Tools das sind und welchen
+Anteil an einem Kontext von 200k das größte der drei einnimmt.
+
+Die Zahlen sind Schätzungen, auf etwa 15 % genau gegenüber dem, was die Anbieter zählen. Sie taugen zum Vergleichen von
+Servern und dazu zu sehen, was eine Änderung an einer Beschreibung oder einem Schema bewirkt.
+
+**Größte Tools** listet die fünf Tools auf, die am meisten kosten, mit ihren Tokens. Ein Server mit einem Tool lässt
+diese Liste aus.
+
+## Worüber ein Modell stolpern würde [#what-a-model-would-stumble-over]
+
+Als Nächstes kommt die Liste der Befunde, die schlimmsten zuerst. Die Überschrift zählt sie (zum Beispiel
+`1 problem, 2 warnings`) oder lautet **Nichts, worüber ein Modell stolpern würde**. Jeder Befund nennt das Tool, sagt,
+was falsch ist, und schlägt eine Lösung vor.
+
+| Art | Bedeutung |
+| --- | --- |
+| Problem | Ein Anbieter lehnt das Tool ab, oder ein Modell kann nur raten, wie es zu nutzen ist. Behebe diese zuerst. |
+| Warnung | Es funktioniert, aber ein Modell wählt wahrscheinlich das falsche Tool oder füllt die Argumente schlecht aus. |
+| Hinweis | Gut zu wissen, etwa eine Einschränkung, die ein Anbieter weglässt. |
+
+Was Echolot bei jedem Tool prüft:
+
+| Befund | Art | Was zu tun ist |
+| --- | --- | --- |
+| Der Name ist keiner, den ein Anbieter akzeptiert | Problem | Nutze Buchstaben, Ziffern, `_` und `-`, bis zu 64 Zeichen. Anthropic und OpenAI lehnen den Rest ab. |
+| Keine Beschreibung | Problem | Sage, was das Tool tut, was es braucht und was es zurückgibt. |
+| Die Beschreibung sagt kaum mehr als der Name | Warnung | Sage, was das Tool braucht und zurückgibt und wann man es statt eines ähnlichen Tools nutzt. |
+| Eine lange Beschreibung (über 1.500 Zeichen) | Hinweis | Sie wird bei jedem Zug erneut gelesen. |
+| Das Eingabeschema ist kein Objekt | Problem | Jeder Anbieter will `{"type": "object", "properties": …}`. Ein Tool ohne Parameter sagt `"properties": {}`. |
+| Das Schema hat keine Properties | Hinweis | Sage `"properties": {}` für keine Parameter oder beschreibe die vorhandenen. |
+| Nimmt ein beliebiges Objekt | Warnung | Beschreibe die Properties, die das Tool liest, damit das Modell keine Argumente erfindet. |
+| Verlangt einen Parameter, den die Properties nicht definieren | Problem | Definiere die Property oder nimm sie aus `required`. |
+| Parameter ohne Typ | Problem | Gib jedem einen `type` (oder ein `enum`). Sonst rät ein Modell, und der strikte Modus von OpenAI lehnt es ab. |
+| Freie Objekte (ohne Properties) | Warnung | Beschreibe die Schlüssel oder sage in der Beschreibung, was hineingehört. |
+| Parameter ohne Beschreibung | Warnung | Eine Zeile je Parameter: was er ist und ein Beispielwert. |
+| Nutzt `$ref` | Warnung | Gemini lässt es weg, sodass der Parameter dort alles akzeptiert; der strikte Modus von OpenAI braucht es inline. |
+| Schlüsselwörter, die Gemini weglässt, etwa `oneOf`, `pattern` oder `additionalProperties` | Hinweis | Die Einschränkung geht bei Gemini verloren. |
+| Ein großes Schema (über etwa 1.000 Tokens) | Warnung | Teile das Tool auf oder verlagere selten genutzte Optionen aus dem Schema. |
+| Mehr als 25 Parameter | Warnung | Teile das Tool auf oder gruppiere die Optionen. |
+| Mehr als 5 Ebenen tief verschachtelt | Warnung | Mache die Argumente flacher; Modelle füllen tiefe Strukturen schlecht aus. |
+| Ein Enum mit mehr als 40 Werten | Hinweis | Jeder Wert wird bei jedem Zug gelesen. |
+
+Und in der Liste als Ganzes:
+
+| Befund | Art | Was zu tun ist |
+| --- | --- | --- |
+| Namen, die ein Modell verwechseln würde (gleich, wenn Groß- und Kleinschreibung, `_` und `-` ignoriert werden) | Problem | Benenne die Tools nach dem, was sie unterscheidet. |
+| Zwei Tools mit derselben Beschreibung | Problem | Sage, was sie unterscheidet; ein Modell wählt zwischen Tools anhand ihrer Beschreibungen. |
+| Zwei Beschreibungen, die ungefähr dasselbe sagen (60 % ihrer Wörter oder mehr gemeinsam) | Warnung | Sage in jeder, wann man sie statt der anderen nutzt. |
+| Mehr als 128 Tools | Problem | OpenAI lehnt mehr als 128 ab. Biete weniger an oder teile den Server auf. |
+| Mehr als 40 Tools | Warnung | Ein Modell wählt schlechter unter vielen. Biete weniger auf einmal an oder teile den Server nach Themen auf. |
+| Die Liste kostet mehr als 20.000 Tokens pro Zug | Warnung | Kürze Beschreibungen und Schemas oder biete weniger Tools an. |
+
+Klicke nach einer Änderung am Server noch einmal auf **Prüfung**: Die Karte folgt der neuen Liste der Tools.
+
+## Die Liste, wie ein Anbieter sie erhält [#the-list-as-a-provider-receives-it]
+
+Öffne unten in der Karte **Die Liste, wie ein Anbieter sie erhält** und wähle **Anthropic**, **OpenAI** oder
+**Google Gemini**. Du siehst die Liste der Tools, wie die API dieses Anbieters sie bekommt, als JSON. **Kopieren** kopiert
+sie. Hier siehst du zum Beispiel, was das Format von Gemini aus einem Schema weglässt.
+
+## Mit einem Modell ausprobieren [#try-with-a-model]
+
+Die Karte **Mit einem Modell ausprobieren** darunter fragt ein echtes Modell, welches Tool es aufrufen würde. Tippe, was
+jemand einen Agenten mit diesem Server tun lassen könnte, etwa `Is the two-person tent in stock?`, und klicke auf
+**Ausprobieren**.
+
+<Shot id="mcp-try-with-a-model" alt="Die Karte „Mit einem Modell ausprobieren“: ein Prompt zu einem Zelt und die Antwort des Modells, ein Aufruf von search_catalog mit seinen Argumenten" />
+
+Das Modell sieht die Tools des Servers und antwortet mit den Aufrufen, die es machen würde. Es wird nichts aufgerufen.
+Zu jedem Aufruf siehst du das Tool und seine Argumente; Argumente, die nicht zum Schema des Tools passen, sind markiert,
+mit dem, was falsch ist. So zeigen sich unklare Namen und Beschreibungen. Darunter zeigt Echolot die verbrauchten
+Tokens und, bei Modellen, deren Preis es kennt, ungefähr, was der Zug gekostet hat.
+
+Die Karte nutzt das Modell, das unter [Einstellungen › Assistent](/docs/ai/assistant) gewählt ist. Ohne eines sagt sie,
+dass du dort einen Modellanbieter wählen sollst. Beim ersten Versuch fragt Echolot, ob es den Prompt und die Tools des
+Servers an diesen Anbieter senden darf; On-Device-Modelle und Server auf deinem Mac fragen nicht.
+
+## Von der Befehlszeile [#from-the-command-line]
+
+`echolot mcp check --quality` gibt denselben Bericht in einem Terminal aus, und `--strict` lässt ihn mit dem Exit-Code 1
+fehlschlagen, wenn es ein Problem gibt, sodass die CI eines Servers seine Liste der Tools in Form halten kann.
+`--as anthropic`, `--as openai` oder `--as gemini` gibt nur die Liste aus, wie dieser Anbieter sie erhält. Siehe
+[echolot mcp](/docs/cli/mcp).
+
+```sh
+echolot mcp check --url https://demo.echolot.dev/mcp --quality
+```

@@ -1,0 +1,217 @@
+---
+title: "脚本和测试"
+description: "在“测试”标签页中无需代码即可检查每个响应，也可以用请求前脚本和测试脚本中的 JavaScript 检查。"
+---
+
+测试告诉你响应是否符合预期。Echolot 提供两种编写测试的方式：在请求的 **测试** 标签页中设置、无需代码的检查，以及在请求发送之前和得到应答之后运行的 JavaScript 脚本。
+两者都在每次发送之后运行，在[运行器](/docs/requests/runner)中和命令行中也一样。
+
+## “测试”标签页中的检查 [#checks-in-the-tests-tab]
+
+<Shot id="requests-tests-tab" alt="List products 的测试标签页，有四项检查，每项都带绿色对勾：状态等于 200，JSON 值 $.items.length 大于 0，标头 Content-Type 包含 json，响应时间小于 1000" />
+
+1. 打开一个请求，例如 Alpenglow 工作区中的 **Catalog › List products**。
+2. 选取 **测试** 标签页。
+3. 选取 **添加测试** 并选择要检查的内容。
+4. 在旁边的菜单中选择一种比较，并输入期望值。
+5. 发送请求。每项检查会显示绿色对勾或红色叉号，失败的检查会在下方说明原因。
+
+检查与请求一起存储，从此之后对每个响应运行。每行开头的复选框可以关闭检查而不移除它；减号按钮则移除它。“测试”标签页的徽标统计检查数量，标签页底部显示有多少通过，
+例如 **4 项通过** 或 **1 个失败，共 4 个**。
+
+期望值是模板，所以其中可以使用 `{{variables}}`：**Catalog › Get product** 检查 `$.sku` 等于 `{{productId}}`。
+
+### 可以检查什么 [#what-you-can-check]
+
+| 检查 | 读取的内容 | 比较 |
+| --- | --- | --- |
+| **状态** | 状态码 | 等于、不等于、小于、大于、为以下之一 |
+| **标头** | 按名称读取的响应标头 | 存在、不存在、等于、不等于、包含、不包含、匹配正则 |
+| **JSON 值** | JSON 正文中某个 JSONPath 处的值 | 存在、不存在、等于、不等于、包含、不包含、小于、至多为、大于、至少为、匹配正则、类型为、为以下之一 |
+| **正文** | 作为文本的整个正文 | 包含、不包含、等于、匹配正则 |
+| **响应时间（毫秒）** | 这次交换的总耗时，以毫秒计 | 小于、至多为、大于、至少为 |
+| **大小（字节）** | 正文的大小，以字节计 | 小于、至多为、大于、至少为 |
+| **JSON Schema** | 依据你粘贴的 JSON Schema 检查正文 | 匹配 |
+| **GraphQL 错误** | GraphQL 响应的 `errors` 数组 | 等于、小于、大于（针对它们的数量）；包含、不包含（针对它们的消息） |
+| **MCP 错误** | MCP 调用是否失败：`true` 或 `false` | 等于 |
+| **工具输出 Schema** | 依据工具自己的 `outputSchema` 检查 MCP 工具结果的 `structuredContent` | 匹配 |
+| **OpenAPI 规范** | 依据关联的 OpenAPI 规范中针对响应状态的 Schema 检查正文 | 匹配 |
+| **gRPC 状态** | gRPC 调用的状态，按名称或代码 | 等于、不等于、为以下之一 |
+
+新检查带有合理的初始值：**状态** 等于 `200`，**响应时间（毫秒）** 小于 `1000`，**GraphQL 错误** 等于 `0`，**MCP 错误** 等于 `false`，**gRPC 状态** 等于 `OK`，**JSON Schema** 为 `{"type": "object"}`。
+
+### 值如何比较 [#how-values-compare]
+
+- **等于** 把数字作为数字比较，所以 `200` 等于 `200.0`，并忽略值两侧的空格。
+- **为以下之一** 接受以逗号分隔的列表：`200, 201, 204`。
+- **匹配正则** 在正则表达式匹配值中任何位置时通过。
+- **类型为** 接受 `object`、`array`、`string`、`number`、`integer`、`boolean` 或 `null`。
+- 数字比较要求两边都是数字；否则会失败，并给出相应说明。
+
+### JSON 值 [#json-values]
+
+路径是由键和索引组成、以 `$` 开头的 JSONPath：`$.items[0].sku`、`$.data.search.totalCount`。负索引从末尾计数：`$.items[-1]`。加上 `.length` 可以统计数组的项数或对象的键数：
+`$.items.length` 大于 `0`。Echolot 只读取正文中通向该值的那一部分，所以 JSON 检查适用于任意大小的正文。
+
+带 **包含** 或 **不包含** 的 **正文** 检查同样适用于任意大小的正文。其他的正文比较，以及 **JSON Schema** 和 **GraphQL 错误**，会读取整个正文，并在 50 MB 处停止。
+
+### 针对其他类型请求的检查 [#checks-for-other-kinds-of-request]
+
+- **GraphQL**：服务器用状态 200 回应错误，所以请添加 **GraphQL 错误** 等于 `0` 来捕捉它们。用 **包含** 检查是否返回了某条特定的消息。
+- **MCP 调用**：**MCP 错误** 等于 `false`，在调用成功时通过。对标记为错误的结果以及 JSON-RPC 错误，它会失败，消息会显示服务器所说的内容。**工具输出 Schema** 依据工具声明的 Schema 检查工具结果；
+  工具没有声明时会失败。见 [MCP 请求](/docs/requests/mcp-requests)。
+- **gRPC**：**gRPC 状态** 接受 `OK` 和 `NOT_FOUND` 之类的名称，或 0 到 16 的代码；`5`、`not_found` 和 `NOT_FOUND` 是同一个状态。失败的检查会显示状态消息。见 [gRPC](/docs/requests/grpc)。
+- **OpenAPI 规范**：请求所在的文件夹（或其上方的某个文件夹）必须关联到一个规范，而且请求必须符合它的某个操作。检查随后依据规范中为返回的状态所记录的 Schema 来验证正文。
+  规范记录了没有 JSON 正文的状态，则通过；未记录的状态则失败。见[规范](/docs/specs)。
+
+### 根据响应添加检查 [#add-checks-from-a-response]
+
+你不必手动输入每项检查：
+
+- 测试标签页中的 **从响应生成…** 会根据最近一次响应提出检查。对任何良好响应都成立的检查，例如状态、内容类型和作为 JSON Schema 的正文结构，已经勾选。
+  在多次调用之间会变化的值以及时间，会提供但不勾选。选取 **推断出的 Schema** 可以阅读提出的 Schema。选取 **添加 1 项测试**（或 **添加 N 项测试**）保留已勾选的检查。请先发送请求：这个按钮需要有响应。
+- 在响应的 **正文** 的 JSON 树视图中，右键点按某个值并选取 **添加断言**：它会添加一项 **JSON 值** 检查，要求该路径等于这个值。
+- 在响应的 **标头** 中，右键点按某个标头并选取 **添加检查**：它会添加一项 **标头** 检查，要求该标头等于这个值。
+
+<Shot id="requests-tests-generate" alt="List products 的“从响应生成测试”面板，状态、内容类型和推断出的 Schema 已勾选，另外提供了一项未勾选的值检查" />
+
+### 结果 [#results]
+
+响应窗格的 **测试** 标签页列出每项检查及其结果和找到的值（`got 200`），然后是脚本中的每个测试。边栏中的 **测试** 页面（**视图 › 测试**，<kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>）
+列出每个带有检查的请求，以及这些检查在它最近一次响应中的情况；点按其中一个可打开该请求。
+
+## 脚本 [#scripts]
+
+脚本是使用 Postman `pm.*` API 的 JavaScript，所以大多数 Postman 脚本可以原样运行。一个请求可以有两种：
+
+- **请求前** 脚本在请求发送之前运行。它可以更改请求、设置变量，或跳过请求。
+- **测试** 脚本在响应到达之后运行。它用 `pm.test` 检查响应，并可以为之后的请求保存值。
+
+<Shot id="requests-scripts-tab" alt="List products 在“测试”上的脚本标签页，有一个检查状态和项数的 pm.test，并打开了“代码片段”菜单" />
+
+1. 打开一个请求并选取 **脚本** 标签页。
+2. 在顶部选取 **请求前** 或 **测试**。名称后面的圆点，例如 **测试 •**，表示该脚本有代码。
+3. 编写脚本。编辑器为 JavaScript 着色，并在你输入时补全 `pm.` 路径。**代码片段** 会为常见情形添加现成的脚本。
+4. 发送请求。
+
+例如，**Catalog › List products** 的测试脚本：
+
+```js
+pm.test("Status code is 200", () => {
+  pm.response.to.have.status(200);
+});
+
+pm.test("Returns tents", () => {
+  const body = pm.response.json();
+  pm.expect(body.items.length).to.be.above(0);
+});
+```
+
+以及一个为它所运行的每个请求添加标头的请求前脚本：
+
+```js
+pm.request.headers.add({ key: "X-Request-Id", value: pm.variables.replaceIn("{{$guid}}") });
+```
+
+每个 `pm.test` 都会出现在响应的 **测试** 标签页的“脚本”下，排在测试标签页的检查之后。抛出异常的脚本显示为 **脚本错误** 及其消息。脚本用 `console.log`、`console.info`、`console.warn` 和
+`console.error` 写出的内容会出现在响应的 **控制台** 标签页中，标有 `pre` 或 `test`；脚本运行过之后，才有这个标签页。
+
+### 代码片段 [#snippets]
+
+| 代码片段 | 用于 |
+| --- | --- |
+| **状态码为 200**、**响应时间低于 500 毫秒**、**JSON 值存在**、**标头存在**、**正文包含文本** | 测试 |
+| **为后续请求存储一个值** | 测试：`pm.environment.set("token", pm.response.json().token)` |
+| **接着运行另一个请求** | 测试：`pm.execution.setNextRequest("Request name")` |
+| **设置变量**、**添加标头**、**用 HMAC-SHA256 为请求签名**、**请先获取令牌**、**跳过此请求** | 请求前 |
+
+### 文件夹和工作区上的脚本 [#scripts-on-folders-and-the-workspace]
+
+文件夹和工作区也可以有脚本，作用于其中的每个请求。在边栏中从文件夹的上下文菜单（**文件夹设置…**）或 **工作区设置…** 的 **脚本** 标签页打开它们。
+
+对于每个请求，Echolot 先运行工作区的脚本，然后从外到内运行每个文件夹的脚本，最后运行请求自己的脚本。请求前脚本和测试脚本的顺序相同。只有已存储的请求才会运行脚本。
+
+MCP 调用没有脚本标签页，也不运行脚本。其他每种类型的请求都有。
+
+### `pm` API 一览 [#the-pm-api-at-a-glance]
+
+完整列表见[脚本 API 参考](/docs/reference/scripting-api)。
+
+| 对象 | 作用 |
+| --- | --- |
+| `pm.test(name, fn)`、`pm.expect(value)` | 具名测试和 Chai 风格的断言：`pm.expect(x).to.equal(1)` |
+| `pm.response` | 测试脚本中的响应：`code`、`status`、`headers`、`responseTime`、`responseSize`、`json()`、`text()`，以及 `pm.response.to.have.status(200)`、`.header()`、`.body()`、`.jsonBody()`、`pm.response.to.be.ok`、`.success`、`.json`、`.clientError`、`.serverError`、`.notFound` |
+| `pm.request` | 请求：`url`、`method`、`headers`、`body`；请求前脚本可以添加、替换和移除标头及查询参数 |
+| `pm.variables` | 所有范围，最近的优先：`get`、`set`、`has`、`unset`、`replaceIn`、`toObject` |
+| `pm.environment`、`pm.collectionVariables`、`pm.globals` | 当前环境、工作区的变量，以及全局变量 |
+| `pm.iterationData` | 运行的数据行：`get`、`has`、`toObject` |
+| `pm.info` | `requestName`、`requestId`、`iteration`（从 0 开始）、`iterationCount`、`eventName` |
+| `pm.execution` | `setNextRequest(name)`（`null` 结束运行）和 `skipRequest()` |
+| `pm.cookies` | 响应的 Cookie |
+| `pm.sendRequest` | 发送另一个请求 |
+| `console` | `log`、`info`、`warn`、`error` |
+| `CryptoJS` | `MD5`、`SHA1`、`SHA256`、`SHA512`、`HmacSHA1`、`HmacSHA256`、`HmacSHA512`，以及 `CryptoJS.enc`（`Hex`、`Base64`、`Utf8`、`Latin1`） |
+
+`require` 提供 `lodash`、`ajv`、`tv4`、`crypto-js`、`uuid`、`atob` 和 `btoa`。不用它也可以使用 `_`（lodash）、`tv4`、`btoa`、`atob` 和 `setTimeout`。Postman 较旧的全局对象
+（`postman.setEnvironmentVariable`、`tests[...]`、`environment`、`globals`、`data`、`iteration`）仍然可用。其他任何模块都会失败，并显示 "The module … is not available in Echolot scripts."。
+
+### 脚本设置的变量 [#variables-that-scripts-set]
+
+`pm.environment.set`、`pm.collectionVariables.set` 和 `pm.globals.set` 所写入的是当前值：它与窗口同生命周期，在请求解析时覆盖该范围已存储的值，并且绝不会写入工作区文件。
+所以脚本保存的令牌能到达之后的请求，而不会进入 Git。要把响应中的值保留在工作区中，请改用[捕获](/docs/requests/captures)。
+
+`pm.variables.set` 只为当前这次运行设置值：运行开始时不带以这种方式设置的值。
+
+### 发送另一个请求 [#sending-another-request]
+
+`pm.sendRequest` 在脚本中发送请求，例如先获取令牌的请求。它接受 URL，或带有 `url`、`method`、`header` 和 `body` 的对象，以及回调函数或它返回的 promise：
+
+```js
+pm.sendRequest({
+  url: pm.variables.replaceIn("{{baseURL}}/auth/token"),
+  method: "POST",
+  header: { "Content-Type": "application/json" },
+  body: { mode: "raw", raw: JSON.stringify({ email: "heidi@alpenglow.ch", password: "alpenglow" }) },
+}, (error, response) => {
+  if (!error) pm.environment.set("token", response.json().access_token);
+});
+```
+
+该请求与 Echolot 的任何其他发送一样发出，使用相同的代理和证书，但不带工作区或文件夹的认证。脚本最多等待应答 30 秒。
+
+### 跳过请求和选择下一个请求 [#skipping-requests-and-choosing-the-next-one]
+
+请求前脚本中的 `pm.execution.skipRequest()` 会阻止请求被发送；响应窗格和运行器会说明它被跳过了。运行中的 `pm.execution.setNextRequest("Get order")` 会接着跳到那个请求，
+而 `setNextRequest(null)` 结束运行。见[运行器](/docs/requests/runner)。
+
+## 来自 Echolot 之外的脚本 [#scripts-from-outside-echolot]
+
+脚本就是代码，所以 Echolot 只运行你在这台 Mac 上信任的脚本。你在 Echolot 中编写的脚本，在存储时就被信任。以其他方式到达的脚本，即来自导入、来自 Git，或来自在其他编辑器中的编辑，需要等待：
+
+- 脚本标签页显示 **这些脚本来自 Echolot 之外**，并带有 **信任脚本**。
+- 发送请求会停下来并显示 **查看脚本…**。它会打开 **要运行这些脚本吗？**，列出每个尚未运行的脚本及其来源（请求、文件夹或工作区）。读过之后，选取 **信任并发送**，或选取 **取消**。
+
+信任保存在这台 Mac 上，按工作区区分，针对确切的代码：脚本在 Echolot 之外被更改时，它会再次询问。信任从不随工作区流转，所以共享的工作区无法信任它自己的脚本。
+
+命令行工具会运行你给定的工作区的每个脚本。`echolot mcp serve` 只运行工作区在启动时就已有的脚本。
+
+## 沙盒及其限制 [#the-sandbox-and-its-limits]
+
+脚本在 Echolot 内部的 JavaScript 沙盒中运行。它们没有文件系统，没有自己的网络，也不能访问这台 Mac：唯一的出口是 `pm.sendRequest`、`console` 和变量。每次发送都从全新的沙盒开始。
+
+| 限制 | 值 |
+| --- | --- |
+| 一个事件（请求前或测试）的所有脚本的 JavaScript 时间 | 5 秒 |
+| 内存 | 128 MB |
+| 等待 `pm.sendRequest` 的应答 | 30 秒 |
+| 脚本能看到的响应正文 | 前 32 MB |
+
+运行时间过长的脚本会失败，显示 "the script took longer than 5 s"；使用内存过多的脚本会失败，显示 "the script used more memory than allowed"。脚本仍然可以读取工作区的变量（包括机密），并用 `pm.sendRequest`
+把它们发送出去，这就是来自外部的脚本要等待你信任的原因。
+
+## 疑难解答 [#troubleshooting]
+
+- **“从响应生成…”呈灰色**：请先发送请求。它适用于 HTTP 和 GraphQL 请求。
+- **“此请求的文件夹未关联 OpenAPI 规范”**：把文件夹关联到一个规范，或移除 **OpenAPI 规范** 检查。
+- **““…”不是此版本能理解的 JSONPath”**：只使用键和索引，例如 `$.items[0].sku`。
+- **脚本不运行**：检查请求是否已存储，它是否不是 MCP 调用，以及脚本是否没有在等待你的信任。

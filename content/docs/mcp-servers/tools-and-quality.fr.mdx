@@ -1,0 +1,107 @@
+---
+title: "Outils et qualité"
+description: "Voyez ce que les outils d’un serveur coûtent à un modèle à chaque tour, ce sur quoi un modèle trébucherait, et quel outil il choisirait."
+---
+
+Un modèle ne voit jamais un serveur MCP. Il voit la liste des outils du serveur, envoyée à chaque tour d’une
+conversation et convertie dans le format propre à chaque fournisseur. La carte **Comment un modèle voit ce serveur** de
+la page Serveurs MCP montre cette liste telle qu’un modèle la reçoit : ce qu’elle coûte, quels outils coûtent le plus,
+et les noms, descriptions et schémas qu’un modèle comprendrait mal. Utilisez-la pendant que vous construisez un
+serveur, ou avant de confier le serveur de quelqu’un d’autre à un agent.
+
+La carte apparaît sous **Outils** dès qu’une vérification a listé au moins un outil.
+
+<Shot id="mcp-quality-card" alt="La carte Comment un modèle voit ce serveur pour Alpenglow MCP : nombres de jetons pour Anthropic, OpenAI et Google Gemini, les outils les plus lourds, et la ligne Rien qui ferait trébucher un modèle" />
+
+## Ce que coûtent les outils [#what-the-tools-cost]
+
+Le haut de la carte donne les jetons que prend la liste des outils avec **Anthropic**, **OpenAI** et **Google Gemini**,
+à chaque tour, comptés dans le format de chaque fournisseur. En dessous, une ligne indique combien d’outils cela
+représente et quelle part d’un contexte de 200 k prend le plus lourd des trois.
+
+Les nombres sont des estimations, à environ 15 % près de ce que comptent les fournisseurs. Ils servent à comparer des
+serveurs, et à voir l’effet d’un changement de description ou de schéma.
+
+**Outils les plus lourds** liste les cinq outils qui coûtent le plus, avec leurs jetons. Un serveur avec un seul outil
+saute cette liste.
+
+## Ce sur quoi un modèle trébucherait [#what-a-model-would-stumble-over]
+
+Vient ensuite la liste des constats, les pires d’abord. Le titre les compte (par exemple `1 problem, 2 warnings`), ou
+indique **Rien qui ferait trébucher un modèle**. Chaque constat nomme l’outil, dit ce qui ne va pas et suggère une
+solution.
+
+| Genre | Signification |
+| --- | --- |
+| Problème | Un fournisseur refuse l’outil, ou un modèle ne peut que deviner comment l’utiliser. À corriger en premier. |
+| Avertissement | Cela fonctionne, mais un modèle risque de choisir le mauvais outil ou de mal remplir les arguments. |
+| Remarque | Bon à savoir, comme une contrainte qu’un fournisseur ignore. |
+
+Ce qu’Echolot vérifie dans chaque outil :
+
+| Constat | Genre | Que faire |
+| --- | --- | --- |
+| Le nom n’est pas de ceux qu’un fournisseur accepte | Problème | Utilisez des lettres, des chiffres, `_` et `-`, jusqu’à 64 caractères. Anthropic et OpenAI refusent le reste. |
+| Pas de description | Problème | Dites ce que fait l’outil, ce dont il a besoin et ce qu’il renvoie. |
+| La description n’en dit guère plus que le nom | Avertissement | Dites ce dont l’outil a besoin et ce qu’il renvoie, et quand l’utiliser plutôt qu’un outil semblable. |
+| Une longue description (plus de 1 500 caractères) | Remarque | Elle est relue à chaque tour. |
+| Le schéma d’entrée n’est pas un objet | Problème | Chaque fournisseur veut `{"type": "object", "properties": …}`. Un outil sans paramètres dit `"properties": {}`. |
+| Le schéma n’a aucune propriété | Remarque | Écrivez `"properties": {}` pour aucun paramètre, ou décrivez ceux qui existent. |
+| Accepte n’importe quel objet | Avertissement | Décrivez les propriétés que l’outil lit, pour que le modèle n’invente pas d’arguments. |
+| Exige un paramètre que les propriétés ne définissent pas | Problème | Définissez la propriété, ou retirez-la de `required`. |
+| Paramètres sans type | Problème | Donnez à chacun un `type` (ou un `enum`). Sinon un modèle devine, et le mode strict d’OpenAI le refuse. |
+| Objets libres (sans propriétés) | Avertissement | Décrivez les clés, ou dites dans la description ce qu’on y met. |
+| Paramètres sans description | Avertissement | Une ligne chacun : ce que c’est et un exemple de valeur. |
+| Utilise `$ref` | Avertissement | Gemini l’ignore, le paramètre accepte donc n’importe quoi à cet endroit ; le mode strict d’OpenAI veut qu’il soit en ligne. |
+| Mots-clés que Gemini ignore, comme `oneOf`, `pattern` ou `additionalProperties` | Remarque | La contrainte est perdue avec Gemini. |
+| Un gros schéma (plus d’environ 1 000 jetons) | Avertissement | Scindez l’outil, ou sortez du schéma les options rarement utilisées. |
+| Plus de 25 paramètres | Avertissement | Scindez l’outil, ou regroupez les options. |
+| Imbriqué sur plus de 5 niveaux | Avertissement | Aplatissez les arguments ; les modèles remplissent mal les structures profondes. |
+| Une énumération de plus de 40 valeurs | Remarque | Chaque valeur est lue à chaque tour. |
+
+Et dans la liste dans son ensemble :
+
+| Constat | Genre | Que faire |
+| --- | --- | --- |
+| Des noms qu’un modèle confondrait (les mêmes une fois la casse, `_` et `-` ignorés) | Problème | Nommez les outils d’après ce qui les distingue. |
+| Deux outils avec la même description | Problème | Dites ce qui les distingue ; un modèle choisit entre les outils d’après leurs descriptions. |
+| Deux descriptions qui disent à peu près la même chose (60 % de leurs mots ou plus en commun) | Avertissement | Dites dans chacune quand l’utiliser plutôt que l’autre. |
+| Plus de 128 outils | Problème | OpenAI en refuse plus de 128. Proposez-en moins, ou scindez le serveur. |
+| Plus de 40 outils | Avertissement | Un modèle choisit moins bien parmi beaucoup. Proposez-en moins à la fois, ou scindez le serveur par sujet. |
+| La liste coûte plus de 20 000 jetons par tour | Avertissement | Raccourcissez les descriptions et les schémas, ou proposez moins d’outils. |
+
+Après avoir modifié le serveur, cliquez de nouveau sur **Vérification** : la carte suit la nouvelle liste d’outils.
+
+## La liste telle qu’un fournisseur la reçoit [#the-list-as-a-provider-receives-it]
+
+Ouvrez **La liste telle que la reçoit un fournisseur** au bas de la carte, et choisissez **Anthropic**, **OpenAI** ou
+**Google Gemini**. Vous voyez la liste des outils telle que l’API de ce fournisseur la reçoit, en JSON. **Copier** la
+copie. C’est ici que vous voyez, par exemple, ce que le format de Gemini retire d’un schéma.
+
+## Essayer avec un modèle [#try-with-a-model]
+
+La carte **Essayer avec un modèle** en dessous demande à un vrai modèle quel outil il appellerait. Saisissez ce que
+quelqu’un pourrait demander à un agent de faire avec ce serveur, comme `Is the two-person tent in stock?`, et cliquez
+sur **Essayer**.
+
+<Shot id="mcp-try-with-a-model" alt="La carte Essayer avec un modèle : un prompt à propos d’une tente, et la réponse du modèle, un appel à search_catalog avec ses arguments" />
+
+Le modèle voit les outils du serveur et répond avec les appels qu’il ferait. Rien n’est appelé. Pour chaque appel, vous
+voyez l’outil et ses arguments ; les arguments qui ne correspondent pas au schéma de l’outil sont signalés, avec ce qui
+ne va pas. C’est ainsi que se révèlent les noms et descriptions peu clairs. En dessous, Echolot affiche les jetons
+utilisés et, pour les modèles dont il connaît le prix, environ ce que le tour a coûté.
+
+La carte utilise le modèle choisi dans [Réglages › Assistant](/docs/ai/assistant). Sans modèle, elle demande d’y
+choisir un fournisseur de modèle. Au premier essai, Echolot demande s’il peut envoyer le prompt et les outils du
+serveur à ce fournisseur ; les modèles sur l’appareil et les serveurs sur votre Mac ne demandent pas.
+
+## Depuis la ligne de commande [#from-the-command-line]
+
+`echolot mcp check --quality` affiche le même rapport dans un terminal, et `--strict` le fait échouer avec le code de
+sortie 1 en cas de problème, pour que la CI d’un serveur puisse maintenir sa liste d’outils en bon état.
+`--as anthropic`, `--as openai` ou `--as gemini` affiche seulement la liste telle que ce fournisseur la reçoit. Voir
+[echolot mcp](/docs/cli/mcp).
+
+```sh
+echolot mcp check --url https://demo.echolot.dev/mcp --quality
+```

@@ -1,0 +1,8 @@
+{
+  "title": "모의 서버",
+  "pages": [
+    "index",
+    "routes",
+    "scripted-routes"
+  ]
+}

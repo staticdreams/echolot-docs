@@ -1,0 +1,112 @@
+---
+title: "MQTT"
+description: "Conéctate a un broker MQTT 3.1.1 o 5.0, suscríbete a temas con un QoS, publica mensajes y síguelos en el registro."
+---
+
+Una solicitud MQTT se conecta a un broker, se suscribe a filtros de temas y publica mensajes. Se mantiene conectada
+mientras trabajas, y el registro muestra todos los mensajes de los temas que sigues. Echolot habla MQTT 3.1.1 y 5.0.
+
+<Shot id="requests-mqtt-log" alt="Realtime › Warehouse sensors conectada al broker local: la pestaña Suscribirse con warehouses/+/temperature en QoS 1, y el registro de mensajes con lecturas de temperatura por tema" />
+
+<Callout title="Pruébalo con Alpenglow">
+  **Realtime › Warehouse sensors** se conecta a un broker local en `localhost`, de la carpeta `examples/servers` del
+  repositorio de la documentación (`bun run realtime`).
+</Callout>
+
+## Conectar [#connect]
+
+1. Elige **Archivo › Nueva solicitud MQTT**, o **Nueva solicitud MQTT** en el menú **+** junto a **Solicitudes** en la
+   barra lateral.
+2. Escribe la dirección del broker.
+3. Elige el protocolo en el menú de la insignia **MQTT**, antes de la dirección: **MQTT 5.0** (el predeterminado) o
+   **MQTT 3.1.1**.
+4. Elige **Conectar** (<kbd>⌘</kbd><kbd>R</kbd>). Dice **Desconectar** mientras hay conexión.
+
+| Dirección | Se conecta por | Puerto predeterminado |
+| --- | --- | --- |
+| `mqtt://broker` | TCP | 1883 |
+| `mqtts://broker` | TLS | 8883 |
+| `ws://broker` | WebSocket, ruta `/mqtt` salvo que la dirección tenga una | Como en cualquier dirección `ws://` |
+| `wss://broker` | WebSocket sobre TLS, ruta `/mqtt` salvo que la dirección tenga una | Como en cualquier dirección `wss://` |
+
+Las `{{variables}}` funcionan en la dirección: la solicitud de sensores de Alpenglow usa `mqtt://{{mqttHost}}`.
+
+El editor tiene estas pestañas: **Docs**, **Suscribirse**, **Publicar**, **Conexión**, **Autenticación**, **Variables**,
+**Pruebas**, **Scripts** y **Ajustes**. Los ajustes como la verificación de TLS, el proxy y los certificados se aplican
+como en las [solicitudes HTTP](/docs/requests/settings).
+
+## Nombre de usuario y contraseña [#user-name-and-password]
+
+El nombre de usuario y la contraseña de MQTT son la autenticación **Basic** de la solicitud, en la pestaña
+**Autenticación**. Guarda la contraseña en una [variable secreta](/docs/workspaces/secrets), como `{{mqttPassword}}`, para
+que se quede en el llavero y fuera del archivo de la solicitud. Como cualquier autenticación, se puede definir una vez en
+una carpeta o en el espacio de trabajo. Los demás tipos de autenticación no se aplican a MQTT.
+
+## La conexión [#the-connection]
+
+La pestaña **Conexión** contiene el resto del CONNECT:
+
+| Campo | Qué hace |
+| --- | --- |
+| **ID de cliente** | El id del cliente, con `{{variables}}`. Vacío usa `echolot-` y un sufijo aleatorio |
+| **Inicio limpio** (5.0) o **Sesión limpia** (3.1.1) | Empieza sin las suscripciones ni los mensajes que el broker guardó para este id de cliente. Activado por defecto |
+| **Keep alive** | Segundos entre pings; 0 para ninguno. 60 por defecto |
+| **Última voluntad** | **Publicar una última voluntad si se cae la conexión**, con **Tema de última voluntad**, **Carga útil de última voluntad**, QoS y **Retener**: el mensaje que publica el broker cuando este cliente desaparece sin despedirse |
+
+## Suscribirse [#subscribe]
+
+La pestaña **Suscribirse** lista los filtros de temas a los que se suscribe la solicitud:
+
+1. Escribe un filtro en el campo de abajo, como `warehouses/+/temperature`. `+` coincide con un nivel y `#` con el resto,
+   como en `logs/#`.
+2. Elige **QoS 0**, **QoS 1** o **QoS 2**.
+3. Elige **Suscribirse** para suscribirte una vez, o **+** para guardar el filtro con la solicitud.
+
+Los filtros guardados con **Suscribirse al conectar** marcado se suscriben cada vez que la solicitud se conecta: en la
+app, en las ejecuciones, desde la línea de comandos y para los agentes. Mientras hay conexión, cada filtro guardado tiene
+botones **Suscribirse** y **Cancelar suscripción**. Con MQTT 5.0, **No local** deja fuera los mensajes que publica este
+mismo cliente.
+
+## Publicar [#publish]
+
+La pestaña **Publicar** envía mensajes:
+
+1. Escribe el tema y la carga útil. Las `{{variables}}` funcionan en ambos.
+2. Elige el QoS, y marca **Retener** para pedirle al broker que conserve el mensaje para suscriptores posteriores.
+3. Elige **Publicar**.
+
+Elige **+** para guardar el mensaje con la solicitud. Los mensajes guardados con **Publicar en ejecuciones** marcado se
+publican en orden cuando la solicitud se ejecuta sin ti. La [Ejecución](/docs/requests/runner) y la línea de comandos se
+conectan, se suscriben a los filtros activados, publican los mensajes activados, escuchan durante 10 segundos y cierran.
+
+## El registro de mensajes [#the-message-log]
+
+La pestaña **Mensajes** del panel de respuesta muestra la sesión: los mensajes recibidos y publicados, las suscripciones y
+las confirmaciones del broker, los más recientes al final, cada uno con su hora y tamaño.
+
+- Un mensaje muestra su tema, su QoS, si estaba retenido y su id de paquete.
+- **Todos los temas** acota el registro a un tema.
+- **Todos**, **Enviado** y **Recibido** filtran por dirección; **Filtrar mensajes** encuentra mensajes por su texto.
+- **Más** formatea una carga útil JSON.
+- La primera línea indica qué id de cliente se conectó y con qué protocolo, y si el broker conservó una sesión anterior.
+  Cuando el broker se desconecta, el registro dice por qué, con el motivo de MQTT.
+
+Las entregas de QoS 1 y 2 se confirman por ti, en ambos sentidos.
+
+Cuando la conexión se cierra, la sesión se conserva en el [Historial](/docs/workspaces/history), con el registro como
+cuerpo de la respuesta, de modo que las comprobaciones sobre el **Cuerpo** funcionan con ella.
+
+## MQTT 5.0 [#mqtt-50]
+
+Los códigos de motivo del broker aparecen por su nombre en el registro y cuando se rechaza una conexión, como `Success` o
+`Not authorized`, en ambas versiones. Con **MQTT 5.0** elegido:
+
+- **No local** en una suscripción deja fuera los mensajes de este mismo cliente.
+- **Inicio limpio** sustituye a la **Sesión limpia** de 3.1.1.
+- Un mensaje guardado puede llevar un tipo de contenido (`content-type` en el archivo de la solicitud), que se envía como
+  la propiedad Content Type.
+
+## Desde la línea de comandos [#from-the-command-line]
+
+`echolot mqtt subscribe` y `echolot mqtt publish` hablan con un broker desde el terminal, con la contraseña en
+`ECHOLOT_MQTT_PASSWORD`. Consulta [echolot mqtt](/docs/cli/mqtt).

@@ -1,0 +1,160 @@
+---
+title: "설정"
+description: "Echolot 설정의 모든 패널과 각 옵션, 그 동작과 기본값을 설명합니다."
+---
+
+Echolot의 설정은 이 Mac의 앱에 대한 것입니다. 모양, 프록시, 보관하는 양, AI 제공업체, 에이전트의 접근 허용 여부가 해당합니다. 작업 공간에 속하는 설정(인증, 변수, 프록시,
+인증서, 에이전트 규칙)은 사이드바 하단의 작업 공간 메뉴에 있는 <strong>작업 공간 설정…</strong>에서 하며, 작업 공간과 함께 이동합니다. [작업 공간](/docs/workspaces)을 참고하십시오.
+
+<strong>Echolot › 설정…</strong> 또는 <kbd>⌘</kbd><kbd>,</kbd>로 설정을 엽니다. 패널은 왼쪽에 나열됩니다. 그 위의 검색 필드(<kbd>⌘</kbd><kbd>F</kbd>)는 일치하는 설정이 있는 패널만
+남기며, <kbd>↩</kbd>는 첫 번째 패널을 엽니다. 설정은 마지막에 사용한 패널에서 열립니다.
+
+<Shot id="settings-general" alt="일반 패널의 설정: 언어, 모양, 코드와 응답, 빠른 보내기, Echo, 명령줄 도구, 업데이트" />
+
+## 일반 [#general]
+
+언어, 모양, 코드와 응답이 표시되는 방식입니다.
+
+| 설정 | 동작 | 기본값 |
+| --- | --- | --- |
+| <strong>언어</strong> | Echolot이 사용하는 언어. <strong>시스템</strong>은 시스템 설정 › 일반 › 언어 및 지역을 따르며, Echolot이 지원하는 언어 중 하나를 고를 수도 있습니다(각 언어의 고유한 이름으로 표시됨). 새로 선택한 언어는 다시 실행한 뒤 적용되며 설정 아래에 <strong>Echolot 다시 실행</strong>이 나타납니다. 이 섹션은 Echolot에 언어가 둘 이상일 때 표시됩니다. | 시스템 |
+| <strong>모양</strong> | 모든 Echolot 윈도우에 대한 <strong>시스템</strong>, <strong>라이트</strong>, <strong>다크</strong>, <strong>마린</strong> 중 하나이며 macOS가 쓰는 것과 관계없이 적용됩니다. 마린은 깊은 바다의 파란색으로 된 다크 모드입니다. | 시스템 |
+| <strong>코드 서체 크기</strong> | 응답 본문, 16진수 보기, JSON 트리, 코드 편집기의 크기. 10에서 22 pt까지. <strong>보기</strong> 메뉴의 <kbd>⌘</kbd><kbd>+</kbd>와 <kbd>⌘</kbd><kbd>−</kbd>로도 바꿀 수 있습니다. | 12 pt |
+| <strong>응답에서 긴 줄 바꿈</strong> | 응답의 <strong>본문</strong>, <strong>원본</strong>, <strong>통신</strong> 보기에서 옆으로 스크롤하지 않고 긴 줄을 줄 바꿈합니다. | 꺼짐 |
+
+### 빠른 보내기 [#quick-send]
+
+| 설정 | 동작 | 기본값 |
+| --- | --- | --- |
+| <strong>메뉴 막대에 빠른 보내기 표시</strong> | 메뉴 막대 항목과 어떤 앱에서든 동작하는 단축키로, 열려 있거나 최근에 연 작업 공간의 저장된 요청을 보내는 패널을 엽니다. [빠른 보내기](/docs/mac/quick-send)를 참고하십시오. | 꺼짐 |
+| <strong>단축키</strong> | 클릭하고 키를 눌러 바꿉니다. <strong>재설정</strong>은 기본값으로 돌아갑니다. 다른 앱이 그 키를 쓰고 있으면 설정에 표시됩니다. | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> |
+
+### Echo [#echo]
+
+| 설정 | 동작 | 기본값 |
+| --- | --- | --- |
+| <strong>페이지 헤더에 Echo의 상태 화면 표시</strong> | 윈도우에서 무슨 일이 일어나는지 알려 주는 작은 화면. [Echo](/docs/ai/echo)를 참고하십시오. | 켜짐 |
+| <strong>유머</strong> | <strong>사실만</strong>, <strong>조금</strong>, <strong>많이</strong> 중에서 선택합니다. | 조금 |
+| <strong>AI가 Echo의 코멘트 일부를 작성하도록 허용</strong> | 모델이 일부 문구를 작성합니다. Mac에 있으면 Apple의 온디바이스 모델을, 없으면 설정 › 어시스턴트에서 선택한 모델을 사용합니다. <strong>사실만</strong>에서는 사용할 수 없습니다. <strong>작성자</strong>는 어떤 모델인지 보여 주며, 필요하면 그 모델의 권한을 묻습니다. | 꺼짐 |
+
+### 명령줄 도구 [#command-line-tool]
+
+<Edition only="direct">
+  이 섹션은 직접 다운로드 버전에만 있습니다. App Store 버전은 도구를 설치할 수 없습니다. 다운로드 페이지에서 따로 설치하십시오. [명령줄 도구](/docs/cli)를 참고하십시오.
+</Edition>
+
+- <strong>내장된 도구</strong>: 앱 안의 `echolot` 도구가 있는 위치.
+- <strong>PATH에 있음</strong>: <strong>설치되지 않음</strong>이면 <strong>명령줄 도구 설치…</strong>가, 설치되어 있으면 링크의 경로와 함께 <strong>다시 설치</strong>와 <strong>제거</strong>가 표시됩니다. 설치하면 내장된 도구를 가리키는
+  `echolot` 링크가 `/opt/homebrew/bin` 또는 `/usr/local/bin`에 만들어지므로 Terminal에서 `echolot run`과 `echolot mcp setup`을 쓸 수 있습니다. 두 폴더 모두 쓸 수
+  없으면 macOS가 관리자 암호를 요청합니다. 다른 Echolot 사본을 가리키는 링크는 주황색으로 표시되며 <strong>다시 설치</strong>가 제공됩니다. Echolot이 만들지 않은 파일에는 <strong>교체…</strong>가
+  표시되며 교체하기 전에 확인합니다.
+
+<strong>Echolot › 명령줄 도구 설치…</strong>도 같은 일을 합니다.
+
+### 업데이트 [#updates]
+
+<Edition only="appstore">
+  App Store 버전에서는 이 섹션에 <strong>App Store가 Echolot을 최신 상태로 유지합니다.</strong>라고 표시됩니다.
+</Edition>
+
+| 설정 | 동작 | 기본값 |
+| --- | --- | --- |
+| <strong>자동으로 업데이트 확인</strong> | 하루에 한 번 GitHub에서 새 버전을 확인하고, 설치하기 전에 묻습니다. | 켜짐 |
+| <strong>자동으로 업데이트 다운로드 및 설치</strong> | 묻지 않고 업데이트를 설치합니다. 위 설정이 필요합니다. | 꺼짐 |
+| <strong>마지막 확인</strong> | Echolot이 마지막으로 확인한 시점과 <strong>지금 확인</strong>. | |
+
+업데이트는 서명되어 있으며 Echolot은 개발자가 서명한 것만 설치합니다. <strong>Echolot › 업데이트 확인…</strong>은 바로 확인합니다. 직접 빌드한 앱은 업데이트를 확인하지 않습니다.
+
+## 네트워크 [#network]
+
+요청이 거치는 프록시입니다.
+
+| <strong>프록시</strong> | 동작 |
+| --- | --- |
+| <strong>시스템 설정</strong>(기본값) | 시스템 설정 › 네트워크의 HTTP, HTTPS, SOCKS 프록시와 그 예외. 자동 프록시 구성(PAC)은 사용하지 않습니다. |
+| <strong>없음</strong> | 모든 요청이 직접 연결됩니다. |
+| <strong>수동</strong> | 아래 필드에 설정하는 HTTP, HTTPS(프록시까지 TLS), SOCKS5 프록시 하나. |
+
+<strong>수동</strong>에서는 다음을 입력합니다.
+
+- <strong>프록시</strong>: `http://proxy:3128`이나 `socks5://host:1080` 같은 프록시 주소.
+- <strong>사용자 이름</strong>: 선택 사항.
+- <strong>비밀번호</strong>: 키체인에 보관됩니다. 사용자 이름이 있어야 사용할 수 있습니다.
+- <strong>직접 연결</strong>: 프록시를 거치지 않는 호스트를 쉼표로 구분해 입력합니다. 예: `localhost, *.internal`.
+
+작업 공간은 <strong>작업 공간 설정 › 프록시</strong>에서 자체 프록시를 설정할 수 있으며, 이것이 우선합니다. HTTP/3은 프록시를 거쳐 동작하지 않습니다. 그런 요청은 이유와 함께 실패합니다.
+[요청 설정](/docs/requests/settings)을 참고하십시오.
+
+## 저장 공간 [#storage]
+
+응답과 그 기록을 얼마나 보관할지 정합니다. [저장 공간과 암호화](/docs/workspaces/storage-and-encryption)를 참고하십시오.
+
+| 설정 | 동작 | 기본값 |
+| --- | --- | --- |
+| <strong>디스크에 저장된 응답 본문 암호화</strong> | 본문, 통신 캡처, 서식이 적용된 사본을 로그인 키체인에 보관된 키로 암호화합니다. 이미 저장된 본문은 백그라운드에서 암호화되며 끄면 다시 원래대로 변환됩니다. 아래 줄에 진행 상황과 암호화된 본문 수가 표시됩니다. 켜져 있는 동안 기록 검색은 본문 내용이 아니라 이름, 주소, 헤더로 요청을 찾습니다. 작업 공간에는 영향이 없습니다. | 꺼짐 |
+| <strong>응답 본문 최대 보관 크기</strong> | 1, 2, 5, 10, 20, 50 GB. 본문은 몇 번 도착하든 한 번만 저장되며, 이 크기를 넘으면 가장 오래 사용하지 않은 것부터 제거됩니다. 탭에서 열려 있는 본문은 항상 보관됩니다. 아래 줄에 디스크에서 차지하는 크기가 표시되고, <strong>저장된 본문 제거…</strong>는 확인한 뒤 열려 있는 윈도우가 필요로 하지 않는 모든 본문을 제거합니다. | 5 GB |
+| <strong>요청당 기록</strong> | 각 요청의 기록에 보관할 응답 수: 10, 25, 50, 100, 200. 오래된 항목부터 삭제되며, 각 요청의 가장 최근 응답은 본문이 유지됩니다. | 응답 50개 |
+
+## 어시스턴트 [#assistant]
+
+Echolot에 내장된 에이전트로, 모델 제공업체와 키를 설정합니다. [어시스턴트](/docs/ai/assistant)를 참고하십시오.
+
+<Shot id="settings-assistant" alt="어시스턴트 패널의 설정: 모델이 있는 제공업체 두 개, 데이터를 받을 수 있는 제공업체, 모델에게 숨길 패턴, 제공업체를 추가하는 양식" />
+
+- <strong>제공업체</strong>: 추가한 모든 제공업체. 체크된 것이 어시스턴트가 사용하는 제공업체입니다. 각각 <strong>모델</strong> 메뉴(또는 필드), 목록을 다시 가져오는 <strong>모델 불러오기</strong>,
+  키체인에서 키를 삭제하는 <strong>제거…</strong>가 있습니다. Anthropic 계정에는 <strong>노력 수준</strong>도 있습니다. <strong>모델 기본값</strong>, `low`, `medium`, `high`, `xhigh`, `max` 중에서 고릅니다.
+  CLI 에이전트에는 대신 <strong>명령어</strong>가 있습니다.
+- <strong>데이터를 받을 수 있음</strong>: 일회성 권한을 준 제공업체와 그 권한의 범위(<strong>어시스턴트 및 Echo의 코멘트</strong> 또는 <strong>Echo의 코멘트</strong>만). <strong>취소</strong>는 권한을 거두며, 다음 메시지에서
+  다시 묻습니다. Apple의 온디바이스 모델과 이 Mac의 서버는 묻지 않습니다.
+- <strong>모델에게 숨김</strong>: 한 줄에 정규 표현식 하나. 도구 결과에서 일치하는 부분은 모델이 보기 전에 `[hidden]`으로 대체됩니다. 비밀 변수는 항상 숨겨지며, 이 항목은 나머지를 위한
+  것입니다.
+- <strong>제공업체 추가</strong>: <strong>제공업체</strong>(<strong>Anthropic</strong>, <strong>OpenAI</strong>, <strong>Google Gemini</strong>, <strong>OpenAI 호환</strong>, <strong>CLI 에이전트(ACP)</strong>)를 고른 다음 <strong>API 키</strong>, <strong>주소</strong>(OpenAI 호환.
+  비워 두면 `http://127.0.0.1:11434/v1`) 또는 <strong>에이전트</strong>와 <strong>명령어</strong>(CLI 에이전트)를 입력하고 <strong>추가</strong>를 선택합니다.
+
+키는 이 Mac의 키체인에 머물며 제공업체 자신의 주소로만 전송됩니다.
+
+<Edition only="direct">
+  <strong>CLI 에이전트(ACP)</strong>는 직접 다운로드 버전에만 있습니다. App Store 버전은 Mac에서 프로그램을 시작할 수 없습니다.
+</Edition>
+
+## 에이전트 [#agents]
+
+AI 에이전트가 열려 있는 작업 공간에서 작업하도록 허용합니다. [외부 에이전트](/docs/ai/agents)를 참고하십시오.
+
+<Shot id="settings-agents" alt="에이전트 패널의 설정: 에이전트가 열린 작업 공간을 사용하도록 허용하는 스위치, 최근 작업 공간이 있는 Claude Desktop, 도구 모음" />
+
+| 설정 | 동작 | 기본값 |
+| --- | --- | --- |
+| <strong>에이전트가 열린 작업 공간을 사용하도록 허용</strong> | 작업 공간이 열려 있는 동안 에이전트의 호출이 Echolot에서 실행됩니다. 데이터를 바꿀 수 있는 전송, 새 호스트, 작업 공간 변경은 사용자가 승인하며, 모든 호출은 윈도우의 <strong>에이전트</strong>에서 볼 수 있습니다. 비밀 값은 에이전트에 전달되지 않습니다. | 꺼짐 |
+| <strong>Claude Desktop</strong> | 최근 작업 공간과 각각의 <strong>Claude에 추가</strong>. 에이전트를 켜고 작업 공간을 Claude Desktop에 추가합니다. Claude Desktop에 있으면 <strong>추가됨</strong>으로 표시됩니다. 직접 다운로드 버전에만 있습니다. | |
+| <strong>에이전트용 도구</strong> | 에이전트가 받는 도구 모음: <strong>요청</strong>(항상 켜짐), <strong>플로</strong>, <strong>작업 공간</strong>, <strong>환경</strong>, <strong>명세</strong>, <strong>모의 서버</strong>, <strong>MCP 서버</strong>, <strong>기록</strong>, <strong>플로 편집</strong>. | 요청과 플로 |
+| <strong>기타 앱</strong> | Claude Code, Cursor, VS Code, Codex는 작업 공간 윈도우 맨 위의 <strong>에이전트</strong> 버튼에서 연결합니다. | |
+
+<Edition only="appstore">
+  Claude Desktop 섹션 대신 App Store 버전에는 <strong>명령줄 도구</strong>가 표시됩니다. 클라이언트는 따로 설치한 `echolot` 도구를 통해 연결하며, <strong>명령줄 도구 받기</strong>가 다운로드로 안내합니다.
+  작업 공간이 열려 있는 동안 클라이언트의 호출은 앱에서 실행됩니다.
+</Edition>
+
+## 개인정보 보호 [#privacy]
+
+Echolot이 수집할 수 있는 것으로, 사용자가 허용하기 전까지는 항상 꺼져 있습니다. [개인정보 보호와 보안](/docs/privacy-and-security)을 참고하십시오.
+
+| 설정 | 동작 | 기본값 |
+| --- | --- | --- |
+| <strong>익명 사용 데이터 공유</strong> | 요청 종류와 상태 코드 같은 작은 정보와 함께 어떤 기능이 사용되는지(요청 보내기, 실행, MCP 검사)를 Echolot 개발자에게 알리고, 스택 트레이스와 함께 오류를 보고합니다. URL, 헤더, 본문, 변수, 비밀 값, 응답은 절대 포함하지 않습니다. | 꺼짐 |
+| <strong>충돌 보고서 수집</strong> | macOS가 다음 실행 때 Echolot에 충돌 및 응답 없음 보고서를 전달하고, Echolot은 이를 이 Mac에 저장하여 피드백에 첨부할 수 있게 합니다. 스택 트레이스만 포함됩니다. 어디로도 전송되지 않습니다. 저장된 보고서 수가 <strong>Finder에서 보기</strong>와 함께 표시됩니다. | 켜짐 |
+| <strong>업데이트 확인</strong> | Echolot이 GitHub에 릴리스 목록을 얼마나 자주 요청하는지 표시합니다. <strong>하루에 한 번</strong>, <strong>요청할 때만</strong>, <strong>App Store를 통해</strong> 중 하나입니다. GitHub는 앱의 버전과 IP 주소만 알 수 있으며 사용자나 작업 공간에 대한 정보는 알 수 없습니다. | |
+
+## 정보 [#about]
+
+버전과 Echolot이 데이터를 보관하는 위치입니다.
+
+- <strong>버전</strong>: 버전과 빌드, 그리고 릴리스 노트를 보는 <strong>새로운 기능</strong>.
+- <strong>웹 사이트</strong>: echolot.dev. <strong>릴리스</strong>: 모든 릴리스와 노트.
+- <strong>응답 및 기록</strong>: <strong>Finder에서 보기</strong>는 Echolot 자체 데이터 폴더를 엽니다. 응답 본문, 기록, 충돌 보고서가 있습니다. 작업 공간은 사용자가 보관하는 위치에 있으며, 이 폴더를 삭제해도
+  기록만 사라지고 요청은 절대 사라지지 않습니다.
+- <strong>크레딧</strong>: Echo의 서체인 Helena Zhang의 Departure Mono, SIL Open Font License 1.1.
+
+<Edition only="appstore">
+  App Store 버전은 Application Support 폴더 대신 자체 컨테이너에 데이터를 보관하며, <strong>Finder에서 보기</strong>가 그곳을 엽니다.
+</Edition>

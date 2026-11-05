@@ -1,0 +1,43 @@
+---
+title: ".proto 文件"
+description: "在工作区中保存 gRPC 服务的 .proto 文件，借助实时大纲编辑它们，并根据其中的方法创建请求。"
+---
+
+`.proto` 文件描述一个 gRPC 服务：它的方法，以及这些方法接收和返回的消息。把它保存在工作区中，[gRPC 请求](/docs/requests/grpc)就会用它来构建和读取消息，而无需询问服务器。“规范”页面把 `.proto` 文件与 OpenAPI 文档并列显示，并为它们提供专属的编辑器和大纲。
+
+Alpenglow 示例有一个 `inventory.proto`，其中包含 `alpenglow.inventory.v1.Inventory` 服务。
+
+<Shot id="specs-proto" alt="“规范”页面中打开的 inventory.proto：左侧是源码，右侧是 Inventory 服务，包含 ListWarehouses、WatchStock 和 Reserve，每个都带有加号按钮，其后是它的消息" />
+
+## 添加文件 [#adding-a-file]
+
+在“规范”边栏中，点按**规范**标题中的 **+**：
+
+- **新建 Proto 文件**会创建 `specs/service.proto`，其中有一个简单的示例服务 `Greeter`，可替换为你自己的。
+- <strong>添加 Proto 文件…</strong>会把 Mac 上的 `.proto` 文件拷贝到 `specs` 文件夹。如果它导入了其他文件，也要把它们拷贝到 `specs`。Google 的常用类型（`google/protobuf/timestamp.proto` 及其他）已内置。
+
+这些文件列在边栏的 **Proto 文件**下。右键点按其中一个可选择**在访达中显示**和**删除…**。删除前会先询问，并把文件移到废纸篓；使用过它的 gRPC 请求随后需要另一个文件或服务器的反射。
+
+## 编辑 [#editing]
+
+点按文件即可打开。源码在左侧，带有语法高亮。其上的栏显示文件、**Protocol Buffers**，以及**没有问题**或解析器发现的第一个问题，例如 `inventory.proto:12: expected “;”`。
+
+右侧的大纲显示文件声明的内容，并在你输入时随编辑器更新：
+
+- 每个 **service** 及其方法。每个方法显示其种类（`unary`、`server streaming` 等）以及输入和输出消息。
+- **消息**，带有字段和类型。
+- **枚举**。
+
+无法解析的文件会显示**文件解析成功后会显示大纲。**
+
+Echolot 会在每次更改后不久存储文件，并在你打开另一个文件或离开页面时存储。如果无法写入，**无法存储 proto 文件**会提供**重试**、**存储副本…**、**放弃更改**和**继续编辑**，与[规范](/docs/specs/editing#saving)相同；你的编辑会保留在编辑器中，直到被存储。
+
+“规范”页面一次只打开一个文件：一个 `.proto` 文件或一个 OpenAPI 规范。打开其中一个会存储并离开另一个。
+
+## 根据方法创建请求 [#requests-from-methods]
+
+点按大纲中方法旁边的 **+**，即可为它创建 gRPC 请求。该请求使用这个 `.proto` 文件，调用对应的服务和方法，并以一条所有字段都取示例值的消息作为起点。把它的 URL 指向你的服务器并发送。[gRPC](/docs/requests/grpc) 介绍了发送、流式方法，以及改为从服务器的反射而不是文件获取方法。
+
+## 通过命令行 [#from-the-command-line]
+
+`echolot grpc describe --proto api.proto` 列出文件中的服务、方法和字段，`echolot grpc call` 则调用一个方法。参见 [echolot grpc](/docs/cli/grpc)。

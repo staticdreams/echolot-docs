@@ -1,0 +1,153 @@
+---
+title: "Ordner"
+description: "Ordne Anfragen in Ordnern, verschiebe und sortiere sie, bearbeite mehrere auf einmal und lege Auth, Variablen und Skripte fest, die jede Anfrage darin erbt."
+---
+
+Ordner gruppieren Anfragen im Anfragenbaum der Seitenleiste, und sie tragen Einstellungen: Auth, Variablen und Skripte,
+die du an einem Ordner festlegst, gelten für jede Anfrage darin. Auf der Festplatte ist ein Ordner ein Verzeichnis unter
+`requests/` mit einer `_folder.toml`.
+
+## Ordner erstellen [#create-a-folder]
+
+- **Datei › Neuer Ordner** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>), während die Seitenleiste **Anfragen** zeigt.
+- Das **+** neben **Anfragen** in der Seitenleiste, dann **Neuer Ordner**.
+- Klicke bei gedrückter Control-Taste auf einen Ordner und wähle **Neuer Ordner**, um einen darin anzulegen, oder klicke
+  bei gedrückter Control-Taste auf leeren Platz im Baum für einen auf oberster Ebene.
+
+Der Name des neuen Ordners ist bereit zum Bearbeiten. Tippe einen Namen und drücke <kbd>↩</kbd>.
+
+**Neue Anfrage** im Kontextmenü eines Ordners legt die Anfrage darin an. **Datei › Neue Anfrage**
+(<kbd>⌘</kbd><kbd>N</kbd>) und die anderen Befehle **Neue … Anfrage** legen sie dort an, wo du im Baum bist.
+
+## Umbenennen, duplizieren und sortieren [#rename-duplicate-and-reorder]
+
+Klicke bei gedrückter Control-Taste auf eine Anfrage oder einen Ordner für sein Menü:
+
+| Befehl | Was er tut |
+| --- | --- |
+| **Anfrage ausführen** / **Ordner ausführen** | Führt sie oder ihn in der [Ausführung](/docs/requests/runner) aus, mit den Prüfungen. |
+| **Umbenennen** | Bearbeitet den Namen an Ort und Stelle. <kbd>↩</kbd> auf einer ausgewählten Zeile tut dasselbe; <kbd>Esc</kbd> bricht ab. |
+| **Duplizieren** | Kopiert eine Anfrage (<kbd>⌘</kbd><kbd>D</kbd>). |
+| **Nach oben**, **Nach unten** | Bewegt das Objekt innerhalb seines Ordners um eine Stelle. |
+| **Im Finder anzeigen** | Zeigt die Datei oder den Ordner des Objekts. |
+| **In den Papierkorb legen …** | Fragt und legt es dann in den Papierkorb. |
+
+Ordner haben außerdem **Neue Anfrage**, **Neuer Ordner**, **Ordnereinstellungen …**, **Mit OpenAPI-Spec verknüpfen …**
+(oder **OpenAPI-Spec auf Änderungen prüfen …**, sobald verknüpft; siehe [Specs](/docs/specs)),
+**In OpenAPI-Spec dokumentieren …** (siehe [Specs aus Datenverkehr](/docs/specs/specs-from-traffic)) und
+**Ordner exportieren …** (siehe [Exportieren](/docs/workspaces/exporting)).
+
+Die Reihenfolge, die du den Objekten gibst, steht in der `_folder.toml` des Ordners, ist also für alle gleich, die den
+Arbeitsbereich öffnen.
+
+## Objekte mit Tastatur und Maus bewegen [#move-items-with-the-keyboard-and-the-mouse]
+
+Im Anfragenbaum bewegen <kbd>↑</kbd> und <kbd>↓</kbd> die Auswahl, <kbd>→</kbd> öffnet einen Ordner und <kbd>←</kbd>
+schließt ihn oder springt zum Ordner darüber.
+
+Ziehe Anfragen und Ordner, um sie zu verschieben:
+
+- Dort, wo das Objekt landen wird, öffnet sich eine Lücke, und die Zeilen darunter machen Platz.
+- Bewege den Zeiger unter einem offenen Ordner nach links oder rechts, um die Tiefe zu wählen: im Ordner oder danach.
+- Verweile einen Moment auf einem geschlossenen Ordner, und er öffnet sich, sodass du zwischen seinen Objekten ablegen
+  kannst. Ordner, die sich so geöffnet haben, schließen sich wieder, wenn das Ziehen woanders endet.
+- Ziehst du eines von mehreren ausgewählten Objekten, bewegt das alle.
+
+Lege Dateien aus dem Finder auf den Baum, um sie in diesen Ordner zu [importieren](/docs/get-started/importing):
+Postman, Insomnia, OpenAPI, HAR und die anderen Formate, die Echolot liest. Füge einen cURL-Befehl ein oder lege ihn
+darauf ab, um daraus eine Anfrage zu machen.
+
+## Mehrere Objekte auswählen [#select-several-items]
+
+Mit <kbd>⌘</kbd>-Klick fügst du ein Objekt hinzu oder nimmst es heraus. Mit <kbd>⇧</kbd>-Klick wählst du alles zwischen
+dem letzten Objekt und diesem aus. Klicke bei gedrückter Control-Taste auf eines der ausgewählten Objekte, um zu sehen,
+was du mit allen tun kannst:
+
+| Befehl | Was er tut |
+| --- | --- |
+| **N Objekte ausführen** | Führt sie in der Ausführung aus. |
+| **N Anfragen bearbeiten …** | Ändert Header, Parameter und Auth jeder ausgewählten Anfrage auf einmal. |
+| **Neuer Ordner mit N Objekten** | Legt einen Ordner an und verschiebt die Objekte hinein. |
+| **N Objekte bewegen nach** | Verschiebt sie in **Arbeitsbereich (oberste Ebene)** oder in einen beliebigen Ordner. |
+| **N Objekte in den Papierkorb legen …** | Fragt und legt sie dann alle in den Papierkorb. |
+
+Sind ein Ordner und Objekte darin zugleich ausgewählt, wirken die Befehle auf den Ordner.
+
+<Shot id="workspaces-multi-select-menu" alt="Zwei ausgewählte Anfragen im Ordner Orders mit ihrem Kontextmenü: „2 Objekte ausführen“, „2 Anfragen bearbeiten“, „Neuer Ordner mit 2 Objekten“, „2 Objekte bewegen nach“ und „2 Objekte in den Papierkorb legen“" />
+
+## Mehrere Anfragen auf einmal bearbeiten [#edit-several-requests-at-once]
+
+**N Anfragen bearbeiten …** öffnet ein Blatt mit drei Tabs: **Header**, **Parameter** und **Auth**. Jede Änderung dort
+geht an jede ausgewählte Anfrage, wenn du auf **Auf N Anfragen anwenden** klickst.
+
+- **Header** und **Parameter** listen jeden Header und jeden Parameter auf, den eine der Anfragen hat. Ein Wert, bei dem
+  sich die Anfragen nicht einig sind, wird als gemischt angezeigt und bleibt in jeder, wie er ist, solange du keinen
+  neuen tippst. Eine Zeile, die einigen Anfragen fehlt, sagt, wie viele sie haben, mit **Allen hinzufügen**, um sie
+  jeder Anfrage zu geben. Entferne eine Zeile, um sie aus jeder Anfrage zu nehmen.
+- **Auth** bietet **Eigene jeder Anfrage behalten**, **Vom Ordner übernehmen**, **Keine Auth** oder dieselbe Auth wie
+  eine der ausgewählten Anfragen (**Wie „List orders“ (Bearer-Token)**). Um allen neue Anmeldedaten zu geben, lege die
+  Anmeldedaten an ihrem Ordner fest und wähle **Vom Ordner übernehmen**.
+
+Die ganze Änderung ist ein Schritt: **Bearbeiten › Widerrufen** nimmt sie für jede Anfrage zurück.
+
+<Shot id="workspaces-bulk-edit" alt="Das Blatt „3 Anfragen bearbeiten“ im Tab „Header“, mit einem Header, den alle drei haben, und einem, den nur einige haben" />
+
+## Ordnereinstellungen [#folder-settings]
+
+Klicke bei gedrückter Control-Taste auf einen Ordner und wähle **Ordnereinstellungen …**. Das Blatt hat diese Tabs:
+
+| Tab | Was er festlegt |
+| --- | --- |
+| **Auth** | Auth für jede Anfrage darin, die keine eigene festlegt. **Übernehmen** (der Standard) reicht die Auth des Ordners darüber oder die des Arbeitsbereichs nach unten weiter. |
+| **Variablen** | Variablen für jede Anfrage in diesem Ordner. Sie überschreiben die des Arbeitsbereichs und der Umgebung. |
+| **Skripte** | Ein Skript vor der Anfrage und ein Test-Skript, die um jede Anfrage in diesem Ordner herum laufen. |
+| **Doku** | Notizen zum Ordner, gespeichert in seiner `_folder.toml`. Außerdem **Diese Anfragen Agenten als Tools anbieten**: siehe [Agenten](/docs/ai/agents). |
+
+Klicke auf **Fertig**, um zu sichern. Schließt du das Blatt anders oder das Fenster, bleiben deine Änderungen ebenfalls
+erhalten.
+
+<Shot id="workspaces-folder-settings" alt="Die Ordnereinstellungen für Orders im Tab „Auth“: Auth „Bearer-Token“ mit dem Token {{token}}" />
+
+In Alpenglow legt der Ordner **Orders** Bearer-Auth mit `{{token}}` fest, sodass jede Anfrage darin das Token sendet,
+das **Auth › Sign in** erfasst hat. Eine Anfrage, die eine eigene Auth festlegt, nutzt stattdessen diese.
+
+## Arbeitsbereichseinstellungen [#workspace-settings]
+
+Die Arbeitsbereichseinstellungen sind die Spitze der Kette: was jede Anfrage im Arbeitsbereich erbt. Öffne sie mit
+**Arbeitsbereichseinstellungen …** im Arbeitsbereichswechsler oder klicke bei gedrückter Control-Taste auf leeren Platz
+im Anfragenbaum.
+
+| Tab | Was er festlegt |
+| --- | --- |
+| **Auth** | Die Standard-Auth für jede Anfrage. |
+| **Variablen** | Variablen des Arbeitsbereichs, die Standardwerte, die Umgebungen, Ordner und Anfragen überschreiben. Dieselbe Liste wie **Arbeitsbereich** auf der Seite [Umgebungen](/docs/workspaces/environments). |
+| **Skripte** | Skripte, die um jede Anfrage herum laufen. |
+| **Agenten** | Die Regeln für KI-Agenten in diesem Arbeitsbereich. Siehe [Agenten](/docs/ai/agents). |
+| **Proxy** | **Proxy-Einstellung der App verwenden** oder ein Proxy für diesen Arbeitsbereich, der mit ihm zu Teammitgliedern und zum Befehlszeilentool geht. Siehe [Anfrageeinstellungen](/docs/requests/settings). |
+| **Zertifikate** | CA-Zertifikate, denen vertraut wird, und Client-Zertifikate, die vorgelegt werden, nach Host. Siehe [Anfrageeinstellungen](/docs/requests/settings). |
+
+## Wie Anfragen erben [#how-requests-inherit]
+
+Bei der Auth nutzt eine Anfrage das Erste aus dieser Reihe, das etwas festlegt: die Anfrage selbst, ihr Ordner, die
+Ordner darüber vom nächsten nach außen, dann der Arbeitsbereich.
+
+Variablen dagegen addieren sich: Die Anfrage sieht die Variablen jeder Ebene, und wo zwei Ebenen denselben Namen
+definieren, gewinnt die nähere. Die Reihenfolge steht unter
+[Umgebungen](/docs/workspaces/environments#which-value-wins).
+
+Skripte laufen der Reihe nach um eine Anfrage herum: zuerst die des Arbeitsbereichs, dann die jedes Ordners von außen
+nach innen, dann die eigenen der Anfrage. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests).
+
+Header werden nicht von Ordnern geerbt; lege gemeinsame Header mit **N Anfragen bearbeiten …** oder in einem Skript vor
+der Anfrage fest.
+
+## Eine Anfrage zu verschieben ändert, was sie erbt [#moving-a-request-changes-what-it-inherits]
+
+Eine Anfrage übernimmt Auth, Variablen und Skripte des Ordners, in dem sie liegt. Verschiebst du sie in einen anderen
+Ordner, übernimmt sie die von dort. Prüfe nach einem Verschieben ihren Tab **Auth**, wenn sie sich auf die Auth ihres
+alten Ordners verlassen hat.
+
+## Ordner löschen [#deleting-folders]
+
+**In den Papierkorb legen …** an einem Ordner fragt vorher und sagt, wie viele Anfragen er enthält. Der Ordner, seine
+Einstellungen und jede Anfrage darin kommen in den Papierkorb im Finder. **Bearbeiten › Widerrufen** holt sie zurück.

@@ -1,0 +1,169 @@
+---
+title: "API를 테스트하고 CI에서 실행하기"
+description: "요청에 검사를 추가하고 실행에서 돌린 다음, 같은 작업 공간을 GitHub Actions에서 명령줄 도구로 실행하여 JUnit 보고서를 만듭니다."
+---
+
+검사는 요청을 테스트로 바꿉니다. 보낼 때마다 무엇이 통과하고 무엇이 통과하지 못했는지 알려 줍니다. 이 튜토리얼에서는 Alpenglow의 요청에 검사를 추가하고, 실행에서
+폴더를 실행한 다음, 같은 작업 공간을 push할 때마다 GitHub Actions에서 `echolot run`으로 실행합니다.
+
+- **소요 시간:** 20분.
+- **필요한 것:** [Alpenglow 작업 공간](/docs/tutorials#the-alpenglow-workspace), 그리고 마지막 부분을 위해 push할 수 있는 GitHub 저장소.
+- **배우는 내용:** 검사, 실행과 보고서, `echolot run`, CI에서의 비밀 값.
+
+## 1. 요청에 있는 검사 살펴보기 [#1-look-at-the-checks-a-request-has]
+
+1. **Catalog › List products**를 열고 **테스트** 탭을 선택합니다.
+2. 검사가 네 개 있습니다. <strong>상태</strong>가 `200`과 같음, <strong>JSON 값</strong> `$.items.length`가 `0`보다 큼, <strong>헤더</strong> `Content-Type`에 `json` 포함, <strong>응답 시간(ms)</strong>이
+   `1000` 미만입니다.
+3. 보냅니다. 탭에 **4개 통과**라고 표시되고, 응답의 **테스트** 탭에는 `4/4`와 함께 각 검사가 **검사** 아래에 나타납니다.
+
+## 2. 검사 직접 추가하기 [#2-add-your-own-checks]
+
+1. **테스트** 탭에서 **테스트 추가**를 열고 **JSON 값**을 선택합니다.
+2. 경로를 `$.items[0].price.currency`로, 비교를 **같음**으로, 기대 값을 `CHF`로 설정합니다.
+3. **테스트 추가**를 다시 열고 **크기(바이트)**, **미만**, `65536`을 선택합니다.
+4. 보냅니다. 검사 여섯 개가 통과합니다.
+
+검사를 더 빠르게 추가하는 방법이 두 가지 있습니다.
+
+- 응답의 **JSON 트리**에서 값을 오른쪽 클릭하고 **검사 추가**를 선택합니다. 검사가 그 값의 경로와 값을 가져옵니다.
+- <strong>응답에서 생성…</strong>은 본문의 <strong>JSON Schema</strong>를 포함하여 최근 응답에서 검사를 제안합니다.
+
+이제 실패를 확인해 봅니다. 응답 시간 검사를 **미만** `1`로 바꾸고 보냅니다. 탭에 **6개 중 1개 실패**라고 표시되고, 응답의 **테스트** 탭에는 실패한 검사 아래에
+실제로 돌아온 값이 나타납니다. 다시 `1000`으로 되돌립니다.
+
+코드가 필요한 검사는 **스크립트** 탭에 `pm.test()`로 테스트 스크립트를 작성합니다. [스크립트와 테스트](/docs/requests/scripts-and-tests)를 참고하십시오.
+
+<Shot id="tutorials-ci-tests-tab" alt="List products의 테스트 탭. 검사 목록이 있고 전송 후 모두 통과함" />
+
+## 3. 실행에서 폴더 실행하기 [#3-run-folders-in-the-runner]
+
+1. **Catalog** 폴더를 오른쪽 클릭하고 **폴더 실행**을 선택합니다. **실행** 페이지가 열리고 폴더 안의 모든 요청을 순서대로 실행합니다.
+2. 통계에 **요청**, **통과**, **실패**, **실패한 검사**, **기간**이 표시되고, **결과** 카드에는 각 요청이 상태, 시간, 실패한 검사와 함께 나열됩니다.
+3. 실행을 직접 설정하려면 **보기 › 실행**(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd>)을 선택합니다. **실행** 카드에서 다음을 설정합니다.
+   - **대상**: **작업 공간 전체**, **폴더** 중 하나, 또는 **요청 하나**. **Auth**를 선택해 실행한 다음 **Orders**를 실행해 보십시오. Orders의 요청들은
+     **Sign in**이 저장한 토큰을 보냅니다.
+   - **환경**, **반복**(`3`으로 해 보십시오), 요청 사이의 **지연**(밀리초), 실패한 요청의 **재시도**, **첫 번째 실패 시 중단**.
+   - <strong>데이터</strong>: <strong>CSV 또는 JSON 선택…</strong>은 행마다 한 번씩, 행의 열을 변수로 사용하여 실행합니다.
+4. **실행**(<kbd>⌘</kbd><kbd>R</kbd>)을 선택합니다.
+5. **보고서 저장**을 열고 **JUnit XML…**, **JSON…**, **HTML…**, **HAR(모든 교환)…** 중에서 선택합니다.
+
+작업 공간 전체를 실행하면 **Realtime**과 **Inventory**도 실행됩니다. 이들의 Socket.IO, MQTT, gRPC 요청은
+[로컬 서버](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt)가 실행 중이지 않으면 실패합니다. 자세한 내용은 [실행](/docs/requests/runner)에
+있습니다.
+
+<Shot id="tutorials-ci-runner" alt="Catalog 폴더를 실행한 뒤의 실행 페이지. 모두 통과함" />
+
+## 4. 터미널에서 실행하기 [#4-run-it-from-terminal]
+
+1. 명령줄 도구를 설치합니다. <strong>Echolot › 명령줄 도구 설치…</strong>를 선택하거나 <strong>설정 › 일반</strong>에서 켭니다. `echolot`이 `PATH`에 추가됩니다.
+
+   <Edition only="appstore">
+     App Store 버전에는 명령줄 도구가 포함되어 있지 않습니다. [릴리스](https://github.com/staticdreams/echolot-public/releases)에서
+     `echolot-<version>-macos.zip`을 내려받아 압축을 풀고 `echolot`을 `PATH`에 있는 폴더에 넣으십시오. [CLI](/docs/cli)를 참고하십시오.
+   </Edition>
+
+2. 모든 파일을 읽을 수 있는지, 모든 변수가 해석되는지 확인합니다.
+
+   ```sh
+   echolot validate Alpenglow.echolot
+   ```
+
+   `29 requests, 3 environments: no problems`가 출력됩니다.
+3. 데모 API 외에는 아무것도 필요하지 않은 폴더 세 개를 실행합니다.
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders
+   ```
+
+   ```text
+   ✓ POST   auth/sign-in  200 142 ms
+       ✓ Status equals 200
+       ✓ JSON value $.access_token exists
+   ✓ GET    auth/who-am-i  200 87 ms
+       ✓ Status equals 200
+   …
+   All 13 requests passed  18/18 checks passed · 1.35 s
+   ```
+
+   `--folder`는 폴더나 요청의 파일 이름(`auth`, `catalog/list-products`)을 받습니다. 요청이 응답을 받지 못하거나 검사가 실패하면 종료 코드가 `1`이므로, 스크립트와
+   CI가 여기서 멈출 수 있습니다.
+4. 콘솔 출력과 함께 JUnit 보고서도 작성합니다.
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders \
+     --reporter junit --out results.xml --reporter console
+   ```
+
+   요청마다 `testsuite`가, 검사마다 `testcase`가 하나씩 생깁니다. 모든 옵션은 [`echolot run`](/docs/cli/run)에 있습니다.
+
+## 5. GitHub Actions에서 실행하기 [#5-run-it-in-github-actions]
+
+1. `Alpenglow.echolot`을 저장소에 커밋합니다.
+2. `.github/workflows/api.yml`을 추가합니다.
+
+   ```yaml
+   name: API checks
+   on: [push, pull_request]
+
+   jobs:
+     api:
+       runs-on: macos-15
+       steps:
+         - uses: actions/checkout@v4
+
+         - name: Install the Echolot CLI
+           env:
+             GH_TOKEN: ${{ github.token }}
+           run: |
+             gh release download --repo staticdreams/echolot-public --pattern 'echolot-*-macos.zip' --dir "$RUNNER_TEMP"
+             unzip -q "$RUNNER_TEMP"/echolot-*-macos.zip -d "$RUNNER_TEMP/echolot"
+             echo "$RUNNER_TEMP/echolot" >> "$GITHUB_PATH"
+
+         - name: Validate
+           run: echolot validate Alpenglow.echolot
+
+         - name: Run
+           run: >
+             echolot run Alpenglow.echolot
+             --folder auth --folder catalog --folder orders
+             --reporter console --reporter junit --out results.xml
+
+         - name: Keep the report
+           if: always()
+           uses: actions/upload-artifact@v4
+           with:
+             name: echolot-results
+             path: results.xml
+   ```
+
+3. push합니다. **Run** 단계는 Mac에서와 같은 줄을 출력하며, 검사가 실패하면 작업이 실패합니다. JUnit 파일은 `echolot-results`라는 이름으로 실행에 첨부되며,
+   JUnit 테스트 보고서 Action이면 무엇이든 표로 보여 줄 수 있습니다.
+
+명령줄 도구는 Apple 실리콘의 macOS에서 실행되므로 작업은 macOS 러너를 사용합니다.
+
+## 6. CI에 비밀 값 전달하기 [#6-give-ci-its-secrets]
+
+Mac의 키체인은 작업 공간과 함께 이동하지 않습니다. CI에서 명령줄 도구는 비밀 변수 `name`을 환경 변수 `ECHOLOT_SECRET_NAME`에서 읽거나, `--secrets`로 지정한
+`NAME=value` 줄로 이루어진 파일에서 읽습니다.
+
+Alpenglow의 데모 암호는 공개되어 있으므로 일반 변수입니다. 실제 암호라면 다음과 같이 합니다.
+
+1. 작업 공간에서 `password` 같은 비밀 변수로 만들고 커밋합니다.
+2. GitHub에서 저장소 시크릿 `API_PASSWORD`를 추가합니다(**Settings › Secrets and variables › Actions**).
+3. 단계에 전달합니다.
+
+   ```yaml
+         - name: Run
+           env:
+             ECHOLOT_SECRET_PASSWORD: ${{ secrets.API_PASSWORD }}
+           run: echolot run Alpenglow.echolot --env staging --reporter console --reporter junit --out results.xml
+   ```
+
+`--env`는 `.toml`을 뺀 환경의 파일 이름이나 환경 이름을 받습니다. CI에 대한 자세한 내용은 [CI](/docs/cli/ci)에 있습니다.
+
+## 다음 단계 [#next-steps]
+
+- [명세 우선으로 설계하고 모의 서버 만들기](/docs/tutorials/spec-first): 앱과 CI에서 OpenAPI 명세와 대조하여 응답을 검사합니다.
+- [실행](/docs/requests/runner): 데이터 파일, 나란히 보는 반복, 재시도.
+- [`echolot run`](/docs/cli/run): `--bail`, `--delay`, HTML 보고서를 포함한 모든 옵션.

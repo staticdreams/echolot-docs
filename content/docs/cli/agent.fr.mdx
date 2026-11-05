@@ -1,0 +1,137 @@
+---
+title: "echolot agent"
+description: "Exécutez l’agent intégré sur une tâche sans l’app, avec un fichier de politique à la place des approbations, pour les scripts et la CI."
+---
+
+`echolot agent` confie une tâche à l’agent intégré, le même que l’[Assistant](/docs/ai/assistant), et le laisse
+travailler avec les outils de l’espace de travail jusqu’à ce qu’il ait terminé. Personne n’est là pour approuver quoi
+que ce soit : une politique décide donc de ce qu’il peut faire. Utilisez-le en CI (« vérifie chaque requête et signale
+ce qui échoue ») ou dans des scripts.
+
+```sh
+echolot agent [<options>] <task>
+```
+
+`<task>` est ce que l’agent doit faire, en langage courant.
+
+## Exécuter une tâche [#run-a-task]
+
+```sh
+export ANTHROPIC_API_KEY=…
+echolot agent "Check every request of the Catalog folder and report what fails" -w Alpenglow.echolot
+```
+
+La réponse du modèle est diffusée sur la sortie standard à mesure qu’il l’écrit. Un résumé va sur la sortie d’erreur à
+la fin :
+
+```text
+Agent finished: 9 tool calls, 18234 in, 1210 out.
+```
+
+`-v` affiche aussi chaque appel d’outil et son résultat sur la sortie d’erreur (`→ send_request …`,
+`← send_request ok in 82 ms`). `--json` affiche à la place toute la session en JSON : chaque message, appel d’outil et
+résultat, l’utilisation des jetons et la façon dont elle s’est terminée.
+
+## Fournisseurs et modèles [#providers-and-models]
+
+| `--provider` | Clé depuis | Modèle |
+| --- | --- | --- |
+| `anthropic` (par défaut) | `ANTHROPIC_API_KEY` | `claude-opus-5-5` sauf indication contraire de `--model`. |
+| `openai` | `OPENAI_API_KEY` | `--model` est obligatoire. |
+| `gemini` | `GEMINI_API_KEY` | `--model` est obligatoire. |
+| `openai-compatible` | `OPENAI_API_KEY` si elle est définie ; aucune n’est nécessaire | `--model` est obligatoire. Pour Ollama, LM Studio, OpenRouter et d’autres serveurs avec l’API OpenAI. `--base-url` est le serveur ; Ollama sur ce Mac (`http://127.0.0.1:11434/v1`) par défaut. |
+
+`--key-env` nomme une autre variable d’environnement pour la clé. Gardez les clés dans les secrets de votre CI, ou
+récupérez-les au moment d’exécuter la commande :
+
+```sh
+op run --env-file agent-keys.env -- echolot agent "Save every product as CSV" \
+  -w Alpenglow.echolot --provider openai --model gpt-5.5 --policy-file ci-policy.toml --json
+```
+
+Une exécution gratuite sur votre propre Mac :
+
+```sh
+echolot agent "List the requests that have no checks" -w Alpenglow.echolot \
+  --provider openai-compatible --model qwen3:4b
+```
+
+## Politiques [#policies]
+
+Les outils de l’agent sont ceux du serveur MCP d’Echolot, avec la même sécurité : les valeurs secrètes n’atteignent
+jamais le modèle, et tout ce que voit le modèle passe par le même masquage. Ce que chaque type d’action peut faire
+vient de la politique :
+
+| `--policy` | Ce qui s’exécute |
+| --- | --- |
+| `standard` (par défaut) | Les lectures et les envois sûrs (comme `GET`). Les autres envois, les nouveaux hôtes et les modifications de l’espace de travail sont refusés. |
+| `readonly` | Les lectures seulement. |
+| `permissive` | Les envois et les modifications de l’espace de travail. Les suppressions, les hôtes que l’espace de travail ne connaît pas et les envois dans des environnements protégés sont refusés. |
+
+Sans personne, « demander » signifie « refuser ».
+
+**Un fichier de politique** assouplit ou durcit la politique de base par type d’action. Il accepte les mêmes règles que
+la section `[agents]` d’un espace de travail, avec ou sans le `[agents]` autour :
+
+```toml
+# ci-policy.toml : laisser l’agent envoyer n’importe quoi aux hôtes de l’espace de travail, mais ne jamais modifier l’espace de travail
+[rules]
+unsafe-send = "allow"
+workspace-write = "refuse"
+destructive = "refuse"
+```
+
+| Action | Couvre |
+| --- | --- |
+| `read` | La lecture des requêtes, des réponses, des environnements et du reste. |
+| `safe-send` | L’envoi de requêtes qui ne changent rien, comme `GET`. |
+| `unsafe-send` | L’envoi de requêtes qui peuvent changer quelque chose, comme `POST` ou `DELETE`. |
+| `protected-send` | L’envoi dans un [environnement protégé](/docs/workspaces/protected-environments). |
+| `new-host` | L’envoi vers un hôte que l’espace de travail ne connaît pas. |
+| `workspace-write` | La création et la modification de requêtes, de dossiers, d’environnements et d’autres fichiers. |
+| `destructive` | La suppression. |
+
+Chacune accepte `allow`, `ask` ou `refuse`. `protected-send` et `new-host` peuvent être durcis mais jamais autorisés
+d’office.
+
+Le fichier de politique compte comme le vôtre : il peut donc assouplir la politique. Les règles `[agents]` propres à
+l’espace de travail ne font que la durcir, sauf si vous passez `--trust-workspace-policy`.
+
+## Limites [#limits]
+
+`--max-steps` arrête l’exécution après ce nombre de tours du modèle (30 par défaut). `--token-budget` l’arrête une fois
+ce nombre de jetons utilisé. Une exécution arrêtée par une limite se termine avec le code 1.
+
+## Options [#options]
+
+| Option | Signification |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Le dossier de l’espace de travail. Par défaut : le dossier courant. |
+| `--env <env>` | L’environnement que les appels utilisent quand ils n’en nomment aucun : son nom de fichier sans `.toml`. |
+| `--provider <provider>` | `anthropic`, `openai`, `gemini` ou `openai-compatible`. `anthropic` par défaut. |
+| `--model <model>` | Le modèle ; obligatoire pour tous les fournisseurs sauf `anthropic`. |
+| `--base-url <url>` | L’URL du fournisseur, pour les serveurs `openai-compatible`. Par défaut : celle d’Ollama. |
+| `--key-env <name>` | La variable d’environnement qui contient la clé d’API, quand ce n’est pas celle que le fournisseur utilise d’habitude. |
+| `--policy <policy>` | La politique de base : `standard`, `readonly` ou `permissive`. `standard` par défaut. |
+| `--policy-file <file>` | Un fichier TOML avec des règles par action (`allow`, `ask`, `refuse`), comme la section `[agents]` d’un espace de travail. |
+| `--trust-workspace-policy` | Laisser les règles `[agents]` de l’espace de travail assouplir la politique, et pas seulement la durcir. |
+| `--toolsets <list>` | Les groupes d’outils à proposer, séparés par des virgules, ou `all` : `requests` (toujours), `flows`, `workspace`, `environments`, `specs`, `mocks`, `mcp-servers`, `history`, `flow-editing`. `all` par défaut. |
+| `--max-steps <n>` | Tours du modèle avant que l’exécution s’arrête. 30 par défaut. |
+| `--token-budget <n>` | Jetons que l’exécution peut utiliser avant de s’arrêter. |
+| `--json` | Afficher toute la session en JSON au lieu de la transcription. |
+| `-v`, `--verbose` | Afficher chaque appel d’outil et son résultat sur la sortie d’erreur. |
+
+Les ensembles d’outils sont décrits sur la page [`echolot mcp`](/docs/cli/mcp#echolot-mcp-serve).
+
+## Codes de sortie [#exit-codes]
+
+| Code | Quand |
+| --- | --- |
+| `0` | Le modèle a terminé la tâche. |
+| `1` | L’exécution a échoué, le modèle a refusé, ou elle a atteint la limite d’étapes, le budget de jetons ou la limite de sortie. |
+| `64` | Une option erronée, un fournisseur ou une politique inconnu, un `--model` manquant, pas de clé d’API, ou un environnement inconnu. |
+
+<Callout>
+  Les données de votre espace de travail vont au fournisseur de modèle que vous choisissez. Utilisez `openai-compatible`
+  avec un serveur sur votre propre Mac quand elles doivent y rester.
+</Callout>

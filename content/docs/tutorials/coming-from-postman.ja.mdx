@@ -1,0 +1,102 @@
+---
+title: "Postmanから移行する"
+description: "Postmanのコレクションと環境を読み込み、対応関係を知り、実行し、Postmanに書き出して戻します。"
+---
+
+EcholotはPostmanのコレクションと環境を、スクリプトも含めてそのまま読み込めます。このチュートリアルでは、コレクションを読み込み、各部分がどこに行ったかを確認し、実行し、ワークスペースをPostmanに書き出して戻します。
+
+- <strong>所要時間：</strong>15分。
+- <strong>必要なもの：</strong>Postmanのコレクション（v2.0またはv2.1）と、JSONで書き出した環境。手元にコレクションがなければ、ステップ1でAlpenglowから作れます。
+- <strong>学べること：</strong>読み込み、対応関係、読み込んだスクリプトの信頼、コレクションを読み込む場合と読み込まない場合の実行、書き出し。
+
+## 1. コレクションを用意する [#1-get-a-collection]
+
+Postmanから：コレクションの<strong>⋯</strong>メニューを開き、<strong>Export</strong>を選んで、<strong>Collection v2.1</strong>のままにします。環境も、それぞれのメニューから同じように書き出します。
+
+代わりにAlpenglowで練習する場合：
+
+1. [Alpenglowワークスペース](/docs/tutorials#the-alpenglow-workspace)を開いて、<strong>ファイル › ワークスペースを書き出す…</strong>を選びます（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd>）。
+2. **Postman Collection v2.1**を選びます。その行には、29件のリクエストのうち21件が対応すると表示されます。PostmanのコレクションにはWebSocket、Socket.IO、MQTT、gRPC、MCPのリクエストがないため、それらは含まれません。
+3. <strong>環境を含める（3）</strong>はオンのままにして、<strong>書き出す…</strong>を選びます。環境を含めると、書き出しはファイルのフォルダになります。名前を付けて<strong>書き出す</strong>を選びます。
+
+フォルダには、`Alpenglow.postman_collection.json`と、環境ごとに1つの`.postman_environment.json`が入ります。レポートには、**除外**された内容と**書き出し時に変更**された内容が一覧されます。
+Echolotのチェックは`pm.test()`スクリプトになり、レスポンスのキャプチャは書き出されず、シークレット変数は値なしで名前だけが書き出されます。
+
+## 2. 読み込む [#2-import-it]
+
+1. 新しいワークスペースを作ります。**ファイル › 新規ワークスペース…**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>）で、名前を`From Postman`にします。
+2. **ファイル › 読み込む…**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd>）を選びます。コレクションと環境のファイルを一緒に選択して、**読み込む**を選びます。
+
+   ファイルをウインドウにドラッグしたり、コレクションのJSONをコピーしてサイドバーにペーストしたり（<kbd>⌘</kbd><kbd>V</kbd>）することもできます。
+3. レポート**読み込み結果**には、各ファイルが形式（**Postmanコレクションv2.1**、**Postman環境**）と取り込まれた内容とともに一覧されます。注記には、そのままでは取り込めなかった内容が示されます。
+
+Alpenglowの書き出しでは、注記に、19件のテストスクリプトが読み込まれ、信頼すると実行されること、そして2件のシークレットの値が、ワークスペースのファイルではなくキーチェーンに保存されたことが示されます。コレクションに入力されていた、デモのパスワードとOAuthのクライアントシークレットです。
+リクエストは、これらを`{{password}}`と`{{orders_with_oauth_2_clientSecret}}`として参照するようになります。**サイドバーに表示**を選びます。
+
+<Shot id="tutorials-postman-import-report" alt="読み込みレポート：PostmanのコレクションとPostmanの環境が読み込まれ、スクリプトとキーチェーンに保存されたシークレットについての注記が表示されている" />
+
+## 3. 対応関係を知る [#3-find-your-way-around]
+
+| Postman | Echolot |
+| --- | --- |
+| コレクション | コレクションの名前が付いたフォルダ。変数、認証、スクリプトは、そのフォルダの<strong>フォルダ設定…</strong>にあります |
+| フォルダ | フォルダ。説明は**ドキュメント**に、変数、認証、スクリプトはフォルダ自身のものとして入ります |
+| リクエスト | 1つのファイルとして保存されたリクエスト。rawボディは種類を保ち、urlencodedは**URLエンコード**に、form-dataは**マルチパート**になり、GraphQLのボディはGraphQLリクエストになります |
+| 環境 | 環境のページ（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>）の環境。secret型の値はキーチェーンに入ります |
+| コレクション変数 | コレクションのフォルダの変数。その中のすべてのリクエストに適用され、環境の変数より優先されます |
+| Pre-request Script、Tests | **スクリプト**タブの**プリリクエスト**スクリプトと**テスト**スクリプト。リクエスト、フォルダ、ワークスペースのいずれかに入ります |
+| `pm.*` | 同じAPI：`pm.test`、`pm.expect`、`pm.response`、`pm.request`、`pm.environment`、`pm.variables`、`pm.collectionVariables`、`pm.globals`、`pm.iterationData`、`pm.sendRequest`、`pm.cookies`、`pm.setNextRequest`、`pm.visualizer`、および古い`postman.*`と`tests[…]` |
+| `require()` | `lodash`、`ajv`、`tv4`、`crypto-js`、`uuid`、`atob`、`btoa` |
+| 認証 | 同じ種類：Basic、Digest、Bearerトークン、APIキー、OAuth 1.0、OAuth 2.0（詳細設定を含む：アドレス内のトークン、更新URL、追加パラメータ）、AWS署名、JWT Bearer、Hawk、Akamai EdgeGrid、NTLM。ASAP（Atlassian）は、同じように設定したJWT Bearerになります。OAuth 2.0のクライアント資格情報とパスワード資格情報はそのままで、インプリシットはPKCE付きの認可コードになり、読み込みレポートにその旨が表示されます |
+| `{{$guid}}`、`{{$timestamp}}`、`{{$randomInt}}`、`{{$randomFirstName}}`などの`$random…`の値 | 同じ名前の動的な値（ダミーデータを含む）と、さらに多くの値 |
+| Collection Runner、Newman | [ランナー](/docs/requests/runner)と[`echolot run`](/docs/cli/run) |
+| モックサーバ | Mac上の[モック](/docs/mocks)：例とダミーデータを使ったルート、またはOpenAPI仕様 |
+| モニター | スケジュールで実行する[フロー](/docs/flows)、またはCIでの`echolot run` |
+
+form-dataのファイルボディとファイルフィールドは、ファイルが別のコンピュータにあるため読み込まれません。レポートにそれぞれが示されるので、**ボディ**タブでファイルを選び直してください。
+
+## 4. スクリプトを信頼する [#4-trust-the-scripts]
+
+スクリプトは、スクリプトにできることなら何でもできるため、読み込んだスクリプトは、あなたが許可するまで実行されません。
+
+1. **Catalog › List products**のように、テストスクリプトがあるリクエストを開き、その**スクリプト**タブを開きます。バナーに**これらのスクリプトはEcholotの外部から来たものです**と表示されます。
+2. スクリプトを読んで、**スクリプトを信頼**を選びます。先に送信した場合はEcholotが尋ね、**信頼して送信**を選ぶと、信頼してすぐに送信します。
+3. 送信します。スクリプトの`pm.test()`の結果が、レスポンスの**テスト**タブの**スクリプト**の下に表示されます。
+
+スクリプトは、Nodeではなく、Echolot独自のJavaScriptサンドボックスで実行されます。[スクリプトとテスト](/docs/requests/scripts-and-tests)と[スクリプトAPI](/docs/reference/scripting-api)を参照してください。
+
+## 5. 実行する [#5-run-it]
+
+1. ページヘッダーで、読み込んだ環境（**Staging**など）を選びます。AlpenglowのデモAPIでは**環境なし**を選びます。
+2. コレクションのフォルダを右クリックして、**フォルダを実行**を選びます。[ランナー](/docs/requests/runner)が、すべてのリクエストをスクリプトとチェックとともに実行します。
+
+コマンドラインツールは、Newmanと同じように、コレクションを読み込まずに実行できます。そこでは、スクリプトは確認なしで実行されます。
+
+```sh
+echolot run Alpenglow.postman_collection.json --folder catalog --reporter console --reporter junit --out results.xml
+```
+
+`--env-file`にはPostmanの環境ファイルを、`--folder`にはフォルダの名前を小文字とハイフンで（`catalog`、`agent-tools`）指定します。`--data users.csv`は、行ごとに1回実行します。シークレットの値は、`ECHOLOT_SECRET_<NAME>`環境変数から取得されます。
+
+## 6. 動作の違い [#6-what-works-differently]
+
+- **すべてがファイルです。** ワークスペースは、リクエストごとに1つのTOMLファイルが入ったフォルダで、Gitにすぐ使えます。アカウントも同期サービスもありません。チームでの共有はGitで行います。[Gitとチーム](/docs/workspaces/git-and-teams)を参照してください。
+- **保存は自動です。** <kbd>⌘</kbd><kbd>S</kbd>はありません。サイドバーの下部に**すべて保存済み**と表示されます。
+- **シークレットがファイルに入ることはありません。** シークレット変数の値は、このMacのキーチェーンにあります。ファイルに入るのはその名前だけです。
+- **コードなしのチェック。** **テスト**タブでは、ステータス、ヘッダー、JSONの値、時間、JSON Schema、OpenAPI仕様を、スクリプトなしでチェックできます。[スクリプトとテスト](/docs/requests/scripts-and-tests)を参照してください。
+- <strong>コードなしのキャプチャ。</strong> テストスクリプトに`pm.environment.set("token", …)`と書く代わりに、レスポンスの値にポインタを重ねて<strong>変数に保存…</strong>を選びます。[リクエストをつなぐ](/docs/tutorials/chain-requests)を参照してください。
+- **HTTPだけではありません。** 同じワークスペースに、WebSocket、Socket.IO、MQTT、gRPC、MCPのリクエスト、仕様、モック、フローを入れられます。
+
+## 7. Postmanに書き出して戻す [#7-export-back-to-postman]
+
+1. <strong>ファイル › ワークスペースを書き出す…</strong>を選ぶか、フォルダを右クリックして<strong>フォルダを書き出す…</strong>を選びます。
+2. **Postman Collection v2.1**を選びます。シートには、いくつのリクエストが対応するかが表示されます。WebSocketなどのセッション系のリクエストは含まれません。**Insomnia v5**はWebSocket、Socket.IO、gRPCも書き出せ、**Brunoコレクション**は`.bru`ファイルのフォルダを書き出します。
+3. <strong>環境を含める</strong>かどうかを選んで、<strong>書き出す…</strong>を選びます。
+
+認証やヘッダーのフィールドに入力した認証情報は平文で書き出され、レポートにその件数が表示されます。先にシークレット変数に移してください。シークレット変数は、値なしで名前だけが書き出されます。[書き出し](/docs/workspaces/exporting)を参照してください。
+
+## 次のステップ [#next-steps]
+
+- [最初のワークスペース](/docs/tutorials/first-workspace)：ワークスペースの構成。
+- [読み込み](/docs/get-started/importing)：Insomnia、OpenAPI、HAR、cURL、Paw、Brunoにも対応しています。
+- [APIをテストしてCIで実行する](/docs/tutorials/test-in-ci)：パイプラインのNewmanを置き換えます。

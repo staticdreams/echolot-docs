@@ -1,0 +1,232 @@
+---
+title: "echolot mcp"
+description: "检查 MCP 服务器以及模型如何看待它们的工具，登录它们，向 AI 智能体提供工作区，并设置 MCP 客户端。"
+---
+
+`echolot mcp` 在两个方向上使用 MCP 服务器。`check` 和 `sign-in` 与别人的服务器通信，就像 [MCP 服务器页面](/docs/mcp-servers)所做的那样。`serve` 和 `setup` 则让你的工作区成为一个 MCP 服务器，
+使 Claude Code 或 Cursor 等 AI 智能体可以列出、发送和测试它的请求；参见[智能体](/docs/ai/agents)。
+
+| 子命令 | 作用 |
+| --- | --- |
+| `echolot mcp check` | 连接到 MCP 服务器并列出它提供的内容；`--quality` 报告模型如何看待它的工具。 |
+| `echolot mcp sign-in` | 登录工作区中要求 OAuth 的 MCP 服务器。 |
+| `echolot mcp sign-out` | 在这台 Mac 上忘记该登录。 |
+| `echolot mcp serve` | 通过 MCP 向智能体提供工作区。 |
+| `echolot mcp setup` | 打印如何将 MCP 客户端连接到工作区。 |
+
+## echolot mcp check [#echolot-mcp-check]
+
+```sh
+echolot mcp check [--url <url>] [--header <header> ...] [--env <env> ...] [--verbose] [--timeout <seconds>] [--quality] [--strict] [--as <provider>] -- [<command> ...]
+```
+
+用 `--url` 给出 Streamable HTTP 端点，或在 `--` 之后给出启动 stdio 服务器的命令。Echolot 会判断服务器使用的是无状态协议（2026-07-28）还是带握手的早期协议，并列出它的工具、
+资源和提示词：
+
+```sh
+echolot mcp check --url https://demo.echolot.dev/mcp
+```
+
+```text
+alpenglow-mcp 1.5.0: MCP 2025-11-25 (session, initialize)
+  connected in 263 ms, round trip 54 ms
+  instructions: The Alpenglow demo shop from docs.echolot.dev. Read-only: search the catalog, look up products and orders.
+3 tools
+  search_catalog: Searches the Alpenglow catalog by text and returns matching products with price and stock.
+  get_product: Returns one product by SKU, with its price, weight, rating and stock per warehouse.
+  order_status: Returns an order's status, total and shipping estimate.
+1 resource
+  alpenglow://catalog/categories  categories
+1 prompt
+  pack_for_a_trip: Suggests gear for a trip.
+```
+
+stdio 服务器：
+
+```sh
+echolot mcp check -- npx -y @modelcontextprotocol/server-everything
+echolot mcp check -e API_KEY=demo -- uvx some-mcp-server --flag
+```
+
+### 模型如何看待这些工具 [#how-a-model-sees-the-tools]
+
+`--quality` 会补充模型从服务器得到的内容：工具列表每一轮在各提供商的上下文中占用多少（估计值）、占用最多的工具，以及模型会在哪里出错，例如 Schema 问题和不清楚或相互重叠的描述。
+它与 App 中的**模型如何看待此服务器**是同一份报告；参见[工具与质量](/docs/mcp-servers/tools-and-quality)。
+
+```sh
+echolot mcp check --url https://demo.echolot.dev/mcp --quality
+```
+
+```text
+How a model sees the tools (estimates)
+  Anthropic      572 tokens a turn, 0.3% of a 200k context
+  OpenAI         166 tokens a turn, 0.1% of a 200k context
+  Google Gemini  225 tokens a turn, 0.1% of a 200k context
+  largest: search_catalog 98, get_product 66, order_status 62
+Nothing a model would stumble over.
+```
+
+`--strict` 让出现问题（不是警告或注明）时以 1 退出，用于 CI。`--as anthropic`、`--as openai` 或 `--as gemini` 只打印该提供商的 API 所接收的工具列表。
+
+| 选项 | 含义 |
+| --- | --- |
+| `--url <url>` | Streamable HTTP 端点，例如 `http://127.0.0.1:3000/mcp`。 |
+| `-H`、`--header <header>` | 以 `'Name: value'` 形式给出的 HTTP 标头，用于 `--url`。可重复。 |
+| `-e`、`--env <NAME=value>` | stdio 服务器的环境变量。可重复。 |
+| `-v`、`--verbose` | 将发送和接收的每条消息打印到标准错误。 |
+| `--timeout <seconds>` | 等待每个应答的秒数。默认 30。 |
+| `--quality` | 报告模型如何看待这些工具：它们在各提供商处的开销、Schema 和描述问题。 |
+| `--strict` | 与 `--quality` 搭配：有问题时以 1 退出。 |
+| `--as <provider>` | 只打印提供商的 API 所接收的工具列表：`anthropic`、`openai` 或 `gemini`。 |
+
+## echolot mcp sign-in 和 sign-out [#echolot-mcp-sign-in-and-sign-out]
+
+```sh
+echolot mcp sign-in <server> [--workspace <workspace>] [--env <env>] [--force] [--print] [--verbose]
+echolot mcp sign-out <server> [--workspace <workspace>]
+```
+
+`<server>` 是服务器在工作区的 `mcp-servers` 文件夹中的文件名，不带 `.toml`。登录会打开你的浏览器，并在 127.0.0.1 上等待重定向：
+
+```sh
+echolot mcp sign-in alpenglow-mcp -w Alpenglow.echolot
+```
+
+- 在 Mac 上，登录信息存入钥匙串，与 App 共享：这台 Mac 上的 App 和 `echolot run` 都会使用它。
+- 在其他地方，或使用 `--print` 时，Echolot 会将它打印为一行 `ECHOLOT_SECRET_…='…'`。请把该值保存为 CI 机密，并在 Echolot 运行的地方设置该变量。
+  它包含刷新令牌：请像对待密码一样对待它。
+- `ECHOLOT_BROWSER` 指定另一个用来打开登录页面的命令。
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹。默认：当前文件夹。 |
+| `--env <env>` | 用其变量来解析服务器设置的环境。 |
+| `--force` | 即使已有可用的登录，也重新登录。 |
+| `--print` | 将登录信息打印为 `ECHOLOT_SECRET_` 变量，用于 CI。 |
+| `-v`、`--verbose` | 将每个登录步骤打印到标准错误。 |
+
+`sign-out` 会从钥匙串中移除该登录。没有钥匙串时，没有什么可忘记的：请改为移除该变量。
+
+## echolot mcp serve [#echolot-mcp-serve]
+
+```sh
+echolot mcp serve [<workspace>] [--env <env>] [--policy <policy>] [--toolsets <toolsets>] [--http <port>] [--verbose] [--headless] [--trust-workspace-policy]
+```
+
+通过 MCP 向智能体提供工作区。智能体通过与 App 相同的工具，列出、读取、发送和运行它的请求，按句柄查询响应，并创建或更改请求。将它作为 stdio 服务器添加到客户端，命令为：
+
+```sh
+echolot mcp serve /path/to/Alpenglow.echolot
+```
+
+**App 已打开时。** 当 Echolot App 打开了该工作区并允许智能体访问（**设置 › 智能体**）时，客户端会被转接到 App。随后 App 会请你批准需要批准的操作，你也能看到智能体做了什么。
+`--headless` 则无论如何都自行提供服务。
+
+**独立运行。** 没有 App 时，没有人可以询问，所以策略本该询问的操作会被拒绝：
+
+| 策略 | 运行什么 |
+| --- | --- |
+| `standard`（默认） | 读取和安全的发送（例如 `GET`）。其他发送、工作区不认识的主机以及对工作区的更改会被拒绝。 |
+| `readonly` | 仅读取。 |
+| `permissive` | 发送以及对工作区的更改。删除会被拒绝，工作区不认识的主机和发送到受保护的环境也会被拒绝。 |
+
+机密从 `ECHOLOT_SECRET_` 变量和这台 Mac 的钥匙串中解析，永远不会到达智能体。在无界面模式下，服务器只运行启动时工作区已有的脚本。
+
+**工作区自己的规则。** `workspace.toml` 中的 `[agents]` 部分可以为该工作区关闭智能体，或按操作类型让策略更严格。会放宽策略的规则只有在使用 `--trust-workspace-policy` 时才算数；
+否则 Echolot 会说明它忽略了哪些规则。新主机和受保护的环境永远不会被直接允许。这些键参见[工作区文件](/docs/reference/workspace-files#agents)。
+
+**工具集。** `requests` 始终提供。`--toolsets` 添加更多组，用逗号分隔，或用 `all`：
+
+| 工具集 | 提供的工具用于 |
+| --- | --- |
+| `requests` | 列出、读取、创建和发送请求；响应、历史记录、GraphQL、正在运行的模拟服务器。始终开启。 |
+| `flows` | 运行提供给智能体的流程，并回答它们提出的问题。默认开启。 |
+| `workspace` | 创建、重新命名、移动、复制和删除文件夹与请求；文件夹的认证；工作区变量；将收集到的数据存储为文件。 |
+| `environments` | 创建、更改和删除环境。 |
+| `specs` | 读取、编写 OpenAPI 规范并对其做 Lint；将文件夹链接到规范并应用更改。 |
+| `mocks` | 创建、更改和删除模拟服务器及其路由，使用示例数据；根据路由创建请求；将响应存储为示例。 |
+| `mcp-servers` | 添加、更改、检查和删除 MCP 服务器。 |
+| `history` | 打开、比较和删除过去的交换记录。 |
+| `flow-editing` | 读取、绘制和删除流程；`try_flow` 在用户批准后运行一次（无界面时没有人可以批准，所以会被拒绝）。 |
+
+任何工具集都从不向智能体提供智能体策略、代理、证书、认证设置和脚本。
+
+**通过 HTTP。** `--http <port>` 在 127.0.0.1 上提供 Streamable HTTP，而不是 stdio（`0` 表示选取一个空闲端口）。由于这台 Mac 上的任何程序都能访问回环端口，
+客户端必须发送一个 Bearer 令牌，Echolot 会将它打印出来：
+
+```sh
+echolot mcp serve Alpenglow.echolot --http 0 --policy readonly
+```
+
+```text
+Echolot MCP server for Alpenglow at http://127.0.0.1:52817/mcp (policy readonly)
+Clients send the header  Authorization: Bearer 6f1c…
+```
+
+设置 `ECHOLOT_MCP_TOKEN` 可以自己指定令牌。
+
+| 选项 | 含义 |
+| --- | --- |
+| `--env <env>` | 调用未指明环境时使用的环境。 |
+| `--policy <policy>` | `standard`、`readonly` 或 `permissive`。默认 `standard`。 |
+| `--toolsets <list>` | 要提供的工具组，用逗号分隔，或用 `all`。默认 `requests,flows`。 |
+| `--http <port>` | 在 127.0.0.1 的此端口上提供 Streamable HTTP（`0` 表示选取一个），而不是 stdio。 |
+| `-v`、`--verbose` | 将每条消息打印到标准错误。 |
+| `--headless` | 即使 Echolot App 打开了此工作区，也自行提供服务。 |
+| `--trust-workspace-policy` | 让工作区的 `[agents]` 规则不仅能收紧策略，也能放宽策略。 |
+
+## echolot mcp setup [#echolot-mcp-setup]
+
+```sh
+echolot mcp setup <client> [--workspace <workspace>] [--name <name>] [--version <version>]
+```
+
+打印客户端为某个工作区启动 `echolot mcp serve` 所需的内容。它不会更改任何内容；请把输出复制到客户端读取的位置。输出中的命令是你所运行的 `echolot` 的路径。
+
+| 客户端 | 打印 |
+| --- | --- |
+| `claude-code` | 要运行的 `claude mcp add --scope user …` 命令。 |
+| `claude-desktop` | 用于 Claude Desktop 配置的 `mcpServers` 条目。 |
+| `cursor` | 用于 Cursor 的 `mcp.json` 的 `mcpServers` 条目。 |
+| `vscode` | 用于 VS Code 的 `mcp.json` 的 `servers` 条目。 |
+| `codex` | 用于 Codex 的 `config.toml` 的 `[mcp_servers.…]` 表。 |
+| `mcpb` | Claude Desktop 扩展的 `manifest.json`，其 `server/echolot` 就是此二进制文件。不带 `--workspace` 时，扩展会在安装时请你指定一个。 |
+
+```sh
+echolot mcp setup claude-code -w Alpenglow.echolot
+```
+
+```text
+claude mcp add --scope user echolot-alpenglow -- /usr/local/bin/echolot mcp serve /Users/you/Alpenglow.echolot
+```
+
+```sh
+echolot mcp setup cursor -w Alpenglow.echolot
+```
+
+```json
+{
+  "mcpServers" : {
+    "echolot-alpenglow" : {
+      "args" : ["mcp", "serve", "/Users/you/Alpenglow.echolot"],
+      "command" : "/usr/local/bin/echolot"
+    }
+  }
+}
+```
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹；省略时 MCPB 会请你指定。 |
+| `--name <name>` | 服务器在客户端中的名称。默认 `echolot-<workspace>`。 |
+| `--version <version>` | 写入 MCPB 清单的版本。默认：此工具的版本。 |
+
+App 中的**设置 › 智能体**会为你设置同样的这些客户端；参见[智能体](/docs/ai/agents)。
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | 已连接、已登录、一直提供服务直到停止，或已打印。 |
+| `1` | `check` 无法连接或检查失败、`--quality --strict` 发现问题，或 `sign-in` 失败或服务器没有要求 OAuth。 |
+| `64` | 选项有误、策略或客户端未知、环境未知，或工作区的 `[agents]` 部分关闭了智能体。 |

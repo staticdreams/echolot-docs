@@ -1,0 +1,94 @@
+---
+title: "La API de demostración"
+description: "Alpenglow, una tienda ficticia de material de montaña en demo.echolot.dev, para probar todas las partes de Echolot."
+---
+
+**https://demo.echolot.dev** es una API hecha para aprender Echolot: Alpenglow, una tienda de material de montaña de
+Zúrich y Berna. Nada de lo que contiene es privado, y nada de lo que le envías se guarda.
+`GET https://demo.echolot.dev/` lista todos los endpoints.
+
+## Iniciar sesión [#sign-in]
+
+La cuenta de demostración es `heidi@alpenglow.ch` con la contraseña `alpenglow`:
+
+```http
+POST https://demo.echolot.dev/v1/auth/token
+Content-Type: application/json
+
+{ "email": "heidi@alpenglow.ch", "password": "alpenglow" }
+```
+
+La respuesta trae un `access_token` (un JWT, válido durante una hora). Envíalo como `Authorization: Bearer <token>` a
+`/v1/me` y `/v1/orders`. El mismo endpoint también acepta credenciales de cliente de OAuth 2: ID de cliente
+`alpenglow-demo`, secreto de cliente `demo-secret`.
+
+## La tienda [#the-shop]
+
+| Endpoint | Qué hace |
+| --- | --- |
+| `GET /v1/products` | Productos, con `q`, `category`, `tag`, `in_stock=true`, `sort` (`name`, `price`, `-price`, `rating`), `page` y `per_page`. La paginación va en las cabeceras `Link` y `X-Total-Count`. |
+| `GET /v1/products/{sku}` | Un producto, como `TNT-MH-2P`, con un `ETag` (envía `If-None-Match` para obtener un 304). |
+| `GET /v1/products/export` | 40 000 productos, unos 14 MB: prueba los visores con una respuesta grande. |
+| `GET /v1/categories` | Categorías con su número de productos. |
+| `GET /v1/me` | El usuario que ha iniciado sesión. |
+| `GET /v1/orders` | Los pedidos de Heidi; `?status=shipped`. |
+| `POST /v1/orders` | `{"lines": [{"sku": "TNT-MH-2P", "quantity": 1}]}`. Responde 201 con un `Location`, 422 con lo que está mal, y el mismo pedido otra vez para la misma `Idempotency-Key`. |
+| `GET /v1/orders/{id}` | Un pedido, como `ord_7Hk2Lw`. |
+| `DELETE /v1/orders/{id}` | Cancelar: 204, o 409 cuando ya se ha enviado. En realidad no cambia nada. |
+
+Los errores llegan como detalles del problema (`application/problem+json`) que dicen qué salió mal. La especificación
+OpenAPI de la tienda está en `https://demo.echolot.dev/openapi.yaml`.
+
+## GraphQL [#graphql]
+
+`POST https://demo.echolot.dev/v1/graphql`, con introspección, así que Echolot completa los campos mientras escribes.
+El esquema está en `/shop.graphql`.
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } stock { warehouse available } }
+  }
+}
+```
+
+## Eventos en directo [#live-events]
+
+- **WebSocket** `wss://demo.echolot.dev/v1/orders`: un evento de pedido cada 1,5 segundos. Envía
+  `{"op": "subscribe", "channel": "orders"}`, `{"op": "ping"}` o cualquier JSON con un `id` para recibir una
+  confirmación. Una sesión dura tres minutos; los mensajes pueden pesar hasta 8 KB, como máximo 20 cada diez segundos.
+- **Server-Sent Events** `GET https://demo.echolot.dev/v1/orders/events`: 20 eventos con un segundo de diferencia y
+  después `end`. Envía `Last-Event-ID` para reanudar.
+
+## MCP [#mcp]
+
+`https://demo.echolot.dev/mcp` es un servidor MCP sobre Streamable HTTP. Añádelo en la página Servidores MCP para
+probar sus herramientas (`search_catalog`, `get_product`, `order_status`), un recurso y un prompt.
+
+## Echo [#echo]
+
+Endpoints para probar el editor de solicitudes:
+
+| Endpoint | Qué hace |
+| --- | --- |
+| `/echo/anything` | Devuelve el método, la consulta, las cabeceras y el cuerpo que enviaste. |
+| `/echo/headers` | Devuelve las cabeceras que enviaste. |
+| `/echo/status/{code}` | Responde con ese estado. |
+| `/echo/delay/{seconds}` | Espera hasta 5 segundos y después devuelve el eco. |
+| `/echo/redirect/{n}` | `n` redirecciones y después `/echo/anything`. |
+| `/echo/cookies`, `/echo/cookies/set?name=value`, `/echo/cookies/delete?name` | Muestra, crea y borra cookies. |
+| `/echo/basic-auth/{user}/{password}` | 200 con autenticación Basic correcta; si no, 401. |
+| `/echo/bearer` | 200 con cualquier token Bearer; si no, 401. |
+| `/echo/bytes/{n}` | `n` bytes aleatorios, hasta 1 MB. |
+| `/echo/xml`, `/echo/html` | Un documento XML y una página HTML. |
+
+## Límites [#limits]
+
+La demo es compartida, así que tiene límites por dirección: 120 solicitudes por minuto, y 10 por minuto para la
+exportación, `bytes`, `delay`, WebSocket y SSE. Si superas un límite, recibes `429 Too Many Requests` con
+`Retry-After`. Los cuerpos pueden pesar hasta 64 KB.
+
+gRPC, Socket.IO y MQTT no pueden ejecutarse ahí; sus tutoriales usan pequeños servidores que ejecutas en tu Mac.
+
+El código fuente de la API de demostración está en [el repositorio de la documentación](https://github.com/staticdreams/echolot-docs/tree/main/demo-api).

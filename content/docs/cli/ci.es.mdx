@@ -1,0 +1,132 @@
+---
+title: "CI"
+description: "Ejecuta las comprobaciones de un espacio de trabajo en cada push, con informes JUnit, secretos de tu CI y las barreras para especificaciones, esquemas y servidores MCP."
+---
+
+Un espacio de trabajo es una carpeta de archivos de texto, así que puede vivir en el mismo repositorio que la API que
+prueba. En CI, la herramienta de línea de comandos comprueba el espacio de trabajo, ejecuta sus solicitudes con sus
+comprobaciones y escribe un informe que muestra tu sistema de CI. Una comprobación fallida hace fallar el trabajo.
+
+## Qué hace un trabajo [#what-a-job-does]
+
+```sh
+echolot validate Alpenglow.echolot --env staging
+echolot run Alpenglow.echolot --env staging \
+  --reporter console --reporter junit --out echolot-results.xml
+```
+
+1. [`echolot validate`](/docs/cli/validate) detecta un archivo roto o una variable que falta antes de enviar nada.
+2. [`echolot run`](/docs/cli/run) envía las solicitudes y ejecuta sus comprobaciones y scripts. `console` imprime la
+   ejecución en el registro del trabajo; `junit` escribe un archivo que tu CI lee como resultados de pruebas.
+3. El código de salida es 1 cuando una solicitud falla, así que el trabajo falla.
+
+Añade `--folder` para ejecutar una parte del espacio de trabajo, `--data` para una ejecución guiada por datos, `--bail`
+para detenerte en el primer fallo y `--retries` para una dependencia inestable.
+
+## Secretos en CI [#secrets-in-ci]
+
+Los archivos del espacio de trabajo no contienen valores secretos, así que el CI tiene que darlos. Guarda cada uno en
+los secretos de tu CI y pásalo como variable de entorno llamada `ECHOLOT_SECRET_<NAME>`, el nombre de la variable en
+mayúsculas (mira [secretos](/docs/cli#secrets)):
+
+| Variable secreta en el espacio de trabajo | Variable de entorno en CI |
+| --- | --- |
+| `password` | `ECHOLOT_SECRET_PASSWORD` |
+| `token` | `ECHOLOT_SECRET_TOKEN` |
+| `api-key` | `ECHOLOT_SECRET_API_KEY` |
+
+O escríbelos en un archivo y pásalo con `--secrets`; un `NAME=value` por línea. No hagas nunca commit de ese archivo.
+
+La mayoría de los sistemas de CI definen `CI`, que desactiva el llavero, así que un trabajo nunca espera a un aviso. Los
+informes enmascaran los valores secretos, así que se pueden conservar como artefactos sin problema.
+
+- **Servidores MCP con OAuth:** inicia sesión una vez en tu Mac con `echolot mcp sign-in <server> --print` y guarda el
+  valor `ECHOLOT_SECRET_…` impreso como secreto de CI. Mira [`echolot mcp`](/docs/cli/mcp).
+- **Secretos capturados:** sin llavero, una captura de respuesta en una variable secreta no se conserva para la
+  solicitud siguiente de la ejecución. Da a esa variable su valor desde el CI, o captura en una variable que no sea
+  secreta.
+
+## GitHub Actions [#github-actions]
+
+En un runner de macOS, descarga la herramienta de las versiones y ejecútala:
+
+```yaml
+# .github/workflows/api-checks.yml
+name: API checks
+on: [push, pull_request]
+
+jobs:
+  echolot:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Echolot command-line tool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo staticdreams/echolot-public --pattern 'echolot-*-macos.zip'
+          unzip -o echolot-*-macos.zip -d "$RUNNER_TEMP/echolot"
+          echo "$RUNNER_TEMP/echolot" >> "$GITHUB_PATH"
+
+      - name: Check the workspace
+        run: echolot validate Alpenglow.echolot --env staging
+        env:
+          ECHOLOT_SECRET_PASSWORD: ${{ secrets.ALPENGLOW_STAGING_PASSWORD }}
+
+      - name: Run the requests
+        run: |
+          echolot run Alpenglow.echolot --env staging \
+            --reporter console --reporter junit --out echolot-results.xml
+        env:
+          ECHOLOT_SECRET_PASSWORD: ${{ secrets.ALPENGLOW_STAGING_PASSWORD }}
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: echolot-results
+          path: echolot-results.xml
+```
+
+`gh release download` sin una etiqueta toma la última versión. Indica una etiqueta (`gh release download v0.5.0 …`) para
+fijar la versión.
+
+### Runners de Linux [#linux-runners]
+
+La herramienta se ejecuta hoy en macOS: el trabajo de arriba usa un runner de macOS. Todavía no se publican una
+compilación para Linux, una imagen de Docker ni una GitHub Action ya preparada; esta página las mostrará cuando existan.
+
+## Cualquier otro CI [#any-other-ci]
+
+Todo es un comando con un código de salida, así que sirve cualquier sistema de CI que ejecute comandos de shell. Un
+script para un runner de macOS:
+
+```sh
+#!/bin/sh
+set -e
+
+echolot validate Alpenglow.echolot --env staging
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out reports/echolot.xml \
+  --reporter html --out reports/echolot.html
+```
+
+`set -e` detiene el script en el primer comando que falla. Apunta el ajuste de informe de pruebas de tu CI a
+`reports/echolot.xml` y conserva `reports/echolot.html` como artefacto para que la gente lo abra.
+
+## Más barreras [#more-gates]
+
+| Comprobación | Comando | Falla cuando |
+| --- | --- | --- |
+| La especificación OpenAPI es sólida | `echolot spec lint specs/alpenglow.yaml --strict` | Tiene errores o avisos. |
+| Las solicitudes siguen la especificación | `echolot spec check -w Alpenglow.echolot <folder>` | La especificación cambió y la carpeta no se actualizó. |
+| El esquema GraphQL sigue siendo compatible | `echolot graphql diff before.graphql specs/shop.graphql` | Un cambio es incompatible (`--fail-on dangerous` para ser más estricto). |
+| Un servidor MCP es utilizable por los modelos | `echolot mcp check --url https://demo.echolot.dev/mcp --quality --strict` | Un modelo tropezaría con una herramienta. |
+| Un flujo sigue funcionando | `echolot flow run morning-stock-check -w Alpenglow.echolot --no-input` | Falla el flujo o una de sus pruebas. |
+| Un agente puede hacer el trabajo | `echolot agent "…" -w Alpenglow.echolot --policy-file ci-policy.toml` | El agente no termina. |
+
+Para un servidor que la API necesita pero que el CI no tiene, ejecuta antes un [mock](/docs/cli/mock) en segundo plano.
+
+Mira [Probar una API en CI](/docs/tutorials/test-in-ci) para un recorrido desde un repositorio vacío.

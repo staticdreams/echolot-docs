@@ -1,0 +1,30 @@
+---
+title: "Vista rápida"
+description: "Previsualiza un espacio de trabajo de Echolot en el Finder con la barra espaciadora, sin abrirlo."
+---
+
+Selecciona un espacio de trabajo `.echolot` en el Finder y pulsa <kbd>Space</kbd>: la Vista rápida muestra lo que
+contiene, sin abrir Echolot. Úsala para encontrar el espacio de trabajo que buscas entre varios, o para ver qué hay en
+el de un compañero antes de abrirlo.
+
+<Shot id="mac-quick-look" alt="Vista rápida sobre el Finder con el espacio de trabajo Alpenglow: su nombre, el archivo, cuándo cambió, los tipos de solicitud, los recuentos y los entornos" />
+
+## Qué muestra la previsualización [#what-the-preview-shows]
+
+- **Espacio de trabajo de Echolot** y el nombre del espacio de trabajo.
+- El nombre del archivo y cuándo cambió por última vez cualquiera de sus archivos, con el tiempo transcurrido.
+- Sus solicitudes por tipo, de más a menos, como `18 HTTP · 3 GraphQL · 2 WebSocket`.
+- El número de **Solicitudes**, **Carpetas**, **Entornos**, **Variables** y **Comprobaciones**, y de **Flujos**,
+  **Servidores MCP**, **Especificaciones** y **Mocks** si los tiene.
+- Los nombres de sus entornos.
+
+La previsualización sigue el modo claro u oscuro de tu Mac.
+
+## Qué no hace [#what-it-doesnt-do]
+
+La previsualización solo lee los archivos del espacio de trabajo. No envía nada, no ejecuta scripts y no abre
+conexiones. Los valores secretos no están en los archivos del espacio de trabajo (viven en el llavero), así que nunca
+aparecen en una previsualización.
+
+La previsualización viene con Echolot, en las dos ediciones; no hay nada que instalar. Para abrir el espacio de
+trabajo, haz doble clic en él o elige **Abrir con Echolot** en la parte superior de la ventana de Vista rápida.

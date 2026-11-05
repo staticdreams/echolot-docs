@@ -1,0 +1,99 @@
+---
+title: "echolot spec"
+description: "在 CI 中对 OpenAPI 文档做 Lint，并让跟随规范的文件夹与规范保持同步。"
+---
+
+`echolot spec` 将[规范页面](/docs/specs)中的两样东西带到终端：Lint 工具，以及规范与由它创建的请求文件夹之间的链接。
+
+| 子命令 | 作用 |
+| --- | --- |
+| `echolot spec lint` | 对 OpenAPI 或 Swagger 文档做 Lint；有错误时（使用 `--strict` 时包括警告）以 1 退出。 |
+| `echolot spec check` | 列出文件夹所跟随的规范中有什么变化；文件夹不是最新时以 1 退出。 |
+| `echolot spec apply` | 将规范的更改应用到文件夹，同时保留在工作区中所做的编辑。 |
+
+## echolot spec lint [#echolot-spec-lint]
+
+```sh
+echolot spec lint <file> [--strict] [--hints]
+```
+
+`<file>` 是规范，YAML 或 JSON。它用 `$ref` 引用的文件会从它旁边读取。
+
+```sh
+echolot spec lint Alpenglow.echolot/specs/alpenglow.yaml
+```
+
+```text
+0 errors, 0 warnings.
+```
+
+每个问题占标准输出上的一行，包含文件、行和列、严重程度、消息，以及括号中的规则，方便编辑器和 CI 指向它。计数输出到标准错误：
+
+```text
+api.yaml:2:1: error: info needs a version (of the API, such as 1.0.0). [info]
+api.yaml:7:7: error: GET /x documents no responses. [responses]
+api.yaml:6:5: hint: GET /x has no operationId; code generators and agents name it from one. [operation-id]
+2 errors, 0 warnings.
+```
+
+| 选项 | 含义 |
+| --- | --- |
+| `--strict` | 警告也算失败。 |
+| `--hints` | 同时列出提示：良好实践，例如 operationId 和描述。提示从不导致失败。 |
+
+规则与规范页面上的相同；参见[编辑规范](/docs/specs/editing)。
+
+## echolot spec check [#echolot-spec-check]
+
+```sh
+echolot spec check [--workspace <workspace>] <folder> [--refresh]
+```
+
+通过导入规范创建的文件夹，或在 App 中链接到某个规范的文件夹，会跟随该规范。`check` 将文件夹与规范的当前状态进行比较，并列出每个被 `added`（新增）、`changed`（更改，附带字段）或 `removed`（移除）的操作。
+如果更改涉及你在工作区中编辑过的内容，会予以说明：这些编辑会被保留。
+
+```sh
+echolot spec check -w Shop.echolot pets
+```
+
+```text
+added    POST /pets
+changed  GET /pets/{id}  (parameters, responses)
+removed  DELETE /pets/{id}
+3 changes, 12 unchanged.
+```
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹。默认：当前文件夹。 |
+| `--refresh` | 先从规范的 URL 重新获取它。 |
+
+`<folder>` 是链接的文件夹的路径，例如 `pets`。在 CI 中使用 `check`，可以在请求落后于规范时让构建失败。
+
+## echolot spec apply [#echolot-spec-apply]
+
+```sh
+echolot spec apply [--workspace <workspace>] <folder> [--operation <operation> ...]
+```
+
+将规范的更改写入文件夹：新操作变成请求，已更改的会被更新，已移除的会被移除。你在请求中所做的编辑会被保留。你编辑过的请求，如果规范里已不再有它的操作，同样会被保留，并且不再跟随规范。
+每行会说明发生了什么：
+
+```text
+added    pets/create-pet
+updated  pets/get-pet  kept edits to headers
+removed  pets/delete-pet
+```
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹。默认：当前文件夹。 |
+| `--operation <operation>` | 只处理这个操作，例如 `"GET /pets"`。可重复；省略时处理每项更改。 |
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | `lint`：没有错误（使用 `--strict` 时也没有警告）。`check`：文件夹是最新的。`apply`：已应用。 |
+| `1` | `lint`：有错误，或使用 `--strict` 时有警告。`check`：有更改需要应用。 |
+| `64` | 选项有误，或文件夹没有跟随规范。 |

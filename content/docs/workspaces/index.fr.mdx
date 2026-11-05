@@ -1,0 +1,148 @@
+---
+title: "Espaces de travail"
+description: "Ce qu’est un espace de travail, comment en créer, en ouvrir et en changer, et quel fichier contient quoi."
+---
+
+Un espace de travail contient tout ce qui concerne une API ou un projet : ses requêtes et ses dossiers, ses
+environnements, ses serveurs MCP, ses specs, ses mocks et ses flux. C’est un dossier de fichiers TOML simples, un
+fichier par requête : vous pouvez le lire, le relire et le conserver dans Git.
+
+## Créer un espace de travail [#create-a-workspace]
+
+1. Choisissez **Fichier › Nouvel espace de travail…** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>), ou **Nouvel espace de
+   travail…** dans la fenêtre d’accueil.
+2. Choisissez un emplacement et un nom. Le champ du nom commence par `My API.echolot`.
+3. Cliquez sur **Créer**.
+
+Echolot crée le dossier avec un `workspace.toml` et un dossier `requests` vide, puis l’ouvre dans sa propre fenêtre. Le
+nom de l’espace de travail est celui du dossier, sans `.echolot`.
+
+Pour essayer Echolot sans rien créer, choisissez **Ouvrir les exemples** dans la fenêtre d’accueil ou dans le menu
+Fichier : un espace de travail prêt à l’emploi avec des requêtes vers des API publiques, des redirections et de grosses
+réponses. L’[API de démo](/docs/tutorials/demo-api) propose un exemple plus complet, Alpenglow.
+
+## Ouvrir un espace de travail [#open-a-workspace]
+
+- **Fichier › Ouvrir un espace de travail…** (<kbd>⌘</kbd><kbd>O</kbd>), ou **Ouvrir un espace de travail…** dans la
+  fenêtre d’accueil. Choisissez un paquet `.echolot`, ou un dossier ordinaire qui contient un `workspace.toml`.
+- Double-cliquez sur un paquet `.echolot` dans le Finder, ou faites-le glisser sur Echolot dans le Dock.
+- **Fichier › Ouvrir l’élément récent** liste les dix derniers espaces de travail ouverts. **Effacer le menu** oublie la
+  liste ; les espaces de travail eux-mêmes restent où ils sont.
+- Depuis le Terminal : `open "My API.echolot"`.
+
+Chaque espace de travail s’ouvre dans sa propre fenêtre. Ouvrir un espace de travail déjà ouvert met sa fenêtre au
+premier plan.
+
+Echolot suit un espace de travail que vous déplacez ou renommez dans le Finder : il reste dans les éléments récents et
+se rouvre depuis son nouvel emplacement.
+
+<Shot id="workspaces-welcome" alt="La fenêtre d’accueil : Nouvel espace de travail, Ouvrir un espace de travail et Ouvrir les exemples à gauche, les espaces de travail récents à droite" />
+
+## La fenêtre d’accueil [#the-welcome-window]
+
+Quand aucun espace de travail n’est ouvert, Echolot affiche la fenêtre d’accueil. À gauche : **Nouvel espace de
+travail…**, **Ouvrir un espace de travail…** et **Ouvrir les exemples**. À droite : **Espaces de travail récents**,
+chacun avec le dossier où il se trouve. Cliquez sur l’un d’eux pour l’ouvrir.
+
+## Passer d’un espace de travail à l’autre [#switch-between-workspaces]
+
+- **Fichier › Changer d’espace de travail…** (<kbd>⌘</kbd><kbd>P</kbd>) affiche une liste flottante des espaces de
+  travail récents. Saisissez du texte pour la filtrer, puis appuyez sur <kbd>↩</kbd>.
+- Le sélecteur d’espace de travail, au pied de la barre latérale, affiche le nom de l’espace de travail et indique si
+  tout est enregistré. Cliquez dessus pour accéder à **Espaces de travail récents**, **Nouvel espace de travail…**,
+  **Ouvrir un espace de travail…**, **Réglages de l’espace de travail…** et **Afficher dans le Finder**.
+
+<Shot id="workspaces-switcher" alt="Le sélecteur d’espace de travail, au pied de la barre latérale, ouvert, avec les espaces de travail récents et les réglages de l’espace de travail" />
+
+## Enregistrement [#saving]
+
+Il n’y a pas de commande Enregistrer. Echolot écrit chaque modification dans son fichier un instant après que vous avez
+cessé de saisir. Le sélecteur d’espace de travail indique où l’on en est :
+
+| Affiché | Signification |
+| --- | --- |
+| **Tout est enregistré** | Toutes les modifications sont dans les fichiers. |
+| **Enregistrement…** | Une écriture est en cours. |
+| **1 requête non enregistrée** (ou plus) | Des modifications attendent d’être écrites. Un point à côté d’une requête dans la barre latérale la signale. |
+| **Impossible d’enregistrer** | Une écriture a échoué. Echolot garde la modification et vous dit ce qui s’est passé. |
+
+Fermer une fenêtre ou quitter Echolot écrit d’abord ce qui reste. Si une modification ne peut pas être écrite, Echolot
+demande avant de l’abandonner.
+
+## Annuler et rétablir [#undo-and-redo]
+
+Chaque modification peut être annulée avec **Édition › Annuler** (<kbd>⌘</kbd><kbd>Z</kbd>) et rétablie avec
+**Édition › Rétablir** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>) : la saisie dans une requête, le renommage, le
+déplacement et la suppression d’éléments, les variables, les environnements, les réglages de dossier et d’espace de
+travail, les specs, les mocks et les flux. La saisie compte pour une seule étape jusqu’à ce que vous marquiez une
+pause. L’annulation appartient à la fenêtre : elle fonctionne de la même façon sur chaque page.
+
+## Rien n’est supprimé sans demander [#nothing-is-deleted-without-asking]
+
+Chaque suppression demande d’abord confirmation : requêtes, dossiers, environnements, serveurs MCP, specs et mocks. Le
+bouton rouge de la question n’a aucun raccourci clavier : <kbd>↩</kbd> ne supprime donc jamais ; <kbd>Esc</kbd>
+annule. Dans la barre latérale, <kbd>⌫</kbd> propose de supprimer une seule requête ; les dossiers et les sélections
+multiples se suppriment depuis le menu contextuel.
+
+Ce que vous supprimez va dans la corbeille du Finder, jamais directement hors du disque. Pour le récupérer, choisissez
+**Édition › Annuler**, ou replacez les fichiers de la corbeille dans le dossier de l’espace de travail.
+
+## Dans le Finder [#in-the-finder]
+
+Un espace de travail `.echolot` est un paquet : le Finder l’affiche comme un seul élément avec l’icône d’Echolot, et un
+double-clic l’ouvre. Pour voir les fichiers à l’intérieur, faites un clic droit dessus et choisissez
+**Afficher le contenu du paquet**, ou utilisez **Afficher dans le Finder** dans le sélecteur d’espace de travail.
+
+Appuyez sur <kbd>Space</kbd> sur un espace de travail dans le Finder pour un [Coup d’œil](/docs/mac/quick-look) : son
+nom, la date de sa dernière modification, et le nombre de requêtes, de dossiers, d’environnements, de variables et de
+vérifications qu’il contient, avec les noms de ses environnements.
+
+Un espace de travail n’a pas besoin de se terminer par `.echolot`. Tout dossier contenant un `workspace.toml` s’ouvre,
+comme la racine d’un dépôt Git.
+
+## Ce qui se trouve où [#what-lives-where]
+
+```
+Alpenglow.echolot/
+  workspace.toml               name, ID, workspace variables, default auth, agent rules, proxy, certificates
+  environments/
+    staging.toml               an environment: its name, whether it is protected, its variables
+    production.toml
+  requests/
+    _folder.toml               the order of the top-level items
+    _folder.pre.js             scripts for every request (and _folder.test.js)
+    auth/
+      _folder.toml             the folder's name, order, docs, auth and variables
+      sign-in.req.toml         an HTTP request
+      sign-in.body.json        its body, beside it
+    catalog/
+      search-products.gql.toml a GraphQL request
+      search-products.graphql  its query
+    inventory/
+      list-warehouses.grpc.toml
+    realtime/
+      order-updates.ws.toml    WebSocket (.sio.toml Socket.IO, .mqtt.toml MQTT)
+    agent-tools/
+      search-catalog.mcp.toml  a saved MCP call
+  mcp-servers/                 MCP servers, one file each
+  specs/                       OpenAPI, GraphQL and .proto files
+  mocks/                       mock servers, one file each, and their scripted routes
+  flows/                       flows (.flow.toml)
+```
+
+Chaque type de requête a son propre suffixe de fichier : `.req.toml` (HTTP), `.gql.toml` (GraphQL), `.grpc.toml`,
+`.ws.toml`, `.sio.toml`, `.mqtt.toml` et `.mcp.toml`. Les scripts se trouvent à côté de leur requête, sous la forme
+`<name>.pre.js` et `<name>.test.js`. Le format complet est décrit dans les
+[fichiers de l’espace de travail](/docs/reference/workspace-files).
+
+Certaines choses n’entrent jamais dans le dossier de l’espace de travail :
+
+- **Les valeurs secrètes.** Les variables secrètes sont écrites par leur nom seulement ; leurs valeurs restent dans le
+  trousseau de votre Mac. Voir [secrets](/docs/workspaces/secrets).
+- **L’historique et les corps de réponse.** Ils vivent dans le stockage propre à Echolot. Voir
+  [stockage et chiffrement](/docs/workspaces/storage-and-encryption).
+- **Vos choix sur ce Mac** : l’environnement actif, la disposition des volets, les scripts auxquels vous avez fait
+  confiance, et les variables globales.
+
+Le dossier de l’espace de travail peut donc être partagé sans risque, et un collègue qui l’ouvre part des mêmes
+requêtes avec ses propres secrets. Voir [Git et équipes](/docs/workspaces/git-and-teams).

@@ -1,0 +1,218 @@
+---
+title: "Flujos"
+description: "Encadena tus solicitudes guardadas, servidores MCP y herramientas de Echolot en pequeños programas sobre un lienzo, y ejecútalos a mano, con una programación, desde un webhook o como herramienta para agentes."
+---
+
+Un flujo es un pequeño programa que dibujas: bloques unidos por enlaces. Cada bloque hace una sola cosa: enviar una
+solicitud guardada, extraer un valor de una respuesta, bifurcar, repetir, preguntarte algo, guardar una variable o
+escribir un archivo. Usa los flujos para las tareas que, si no, haces a mano en varios pasos: iniciar sesión con un
+código de dispositivo, recorrer los resultados página a página, crear y limpiar datos de prueba, comprobar una API cada
+mañana o darle a un agente de IA una única herramienta que hace cinco solicitudes.
+
+Los flujos viven en el espacio de trabajo, un archivo por flujo en la carpeta `flows`, así que los revisas y los
+compartes en Git igual que tus solicitudes. Cada solicitud que envía un flujo sigue el mismo camino que un envío desde
+la página de la solicitud: se aplican las variables, la autenticación, los scripts, las comprobaciones, los proxies y
+el [historial](/docs/workspaces/history).
+
+## La página Flujos [#the-flows-page]
+
+Elige **Flujos** en el selector de módulos de la parte superior de la barra lateral, o pulsa <kbd>⌘</kbd><kbd>5</kbd>.
+La barra lateral muestra los flujos del espacio de trabajo. Bajo cada nombre ves cómo empieza: `manual`,
+`herramienta para agentes`, `cada hora`, `programado` o `webhook`. Una señal de advertencia junto a un flujo significa
+que tiene problemas que corregir antes de poder ejecutarse.
+
+<Shot id="flows-canvas" alt="La página Flujos con el flujo Place a test order abierto: los flujos en la barra lateral, el lienzo con Inicio, dos bloques Solicitud, un bloque Aprobar, un bloque Registro y un bloque Cancel order, y los ajustes del flujo a la derecha" />
+
+La página tiene tres partes:
+
+- **La barra de herramientas** sobre el lienzo: el nombre del flujo (con **Editado** mientras un cambio aún no está
+  guardado), el número de problemas, **Ordenar**, **Ajustar**, el nivel de zoom, **Duplicar**, **Ejecuciones**,
+  **Registro de ejecuciones**, **Bloque**, **Nota** y **Ejecutar**.
+- **El lienzo** en el centro, con un pequeño mapa de todo el flujo en la esquina inferior izquierda. Haz clic en el mapa
+  para llevar la vista hasta ese punto.
+- **El inspector** a la derecha. Sin nada seleccionado, muestra el propio flujo: **Nombre**, **Descripción** y
+  **Entradas**. Con un bloque seleccionado, muestra los ajustes de ese bloque.
+
+Mientras hay un flujo abierto, la barra lateral también muestra **Ejecuciones de** ese flujo (las ejecuciones de esta
+ventana, las más recientes primero) y las **Solicitudes** del espacio de trabajo, listas para arrastrarlas al lienzo.
+
+### Crea un flujo [#create-a-flow]
+
+1. En la barra lateral, haz clic en **+** junto a **Flujos**.
+2. Elige **Flujo vacío** para obtener un bloque Inicio enlazado con un bloque Salida, o escoge una plantilla en
+   **Desde una plantilla** (consulta las [plantillas](/docs/flows/templates)).
+3. El flujo nuevo se abre en el lienzo. Renómbralo en el inspector, en **Nombre**.
+
+Cuando el espacio de trabajo aún no tiene flujos, la página ofrece un botón **Nuevo flujo** en su lugar.
+
+Para eliminar un flujo, selecciónalo y haz clic en **−** junto a **Flujos**, o haz Control-clic en él y elige
+**Eliminar…**. Echolot pregunta antes y traslada el archivo a la papelera. Los flujos que ejecutan el flujo eliminado
+dejan de funcionar.
+
+## Construye en el lienzo [#build-on-the-canvas]
+
+### Añade bloques [#add-blocks]
+
+- Haz clic en **Bloque** en la barra de herramientas, o pulsa <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd>. Se abre el selector
+  de bloques: escribe para buscar y haz clic en un tipo de bloque. Pulsa <kbd>↩</kbd> para añadir la primera
+  coincidencia. El bloque nuevo aparece en el centro de la vista y queda seleccionado.
+- El selector también muestra las solicitudes guardadas del espacio de trabajo bajo **Solicitudes**. Al elegir una, se
+  añade un bloque Solicitud que ya la envía.
+- Arrastra una solicitud desde **Solicitudes** en la barra lateral hasta el lienzo. Se convierte en un bloque Solicitud
+  donde la sueltes. Haz Control-clic en una solicitud y elige **Añadir al flujo** para poner su bloque a la derecha del
+  flujo.
+
+Todos los tipos de bloque, con sus ajustes y puertos, están en [Bloques](/docs/flows/blocks).
+
+<Shot id="flows-block-picker" alt="El selector de bloques abierto sobre el lienzo: un campo de búsqueda, los tipos de bloque agrupados en Activadores, Acciones, Personas, Lógica, Bucles, Datos y Salida, y las solicitudes guardadas al final" />
+
+### Enlaza puertos [#link-ports]
+
+Las entradas están en el borde izquierdo de un bloque y las salidas en el derecho. Un valor sale de una salida, viaja
+por el enlace y llega a una entrada; un bloque se ejecuta cuando todas sus entradas enlazadas tienen un valor.
+
+- Arrastra de una salida a una entrada para enlazarlas. El puerto que queda bajo el puntero se ilumina cuando el
+  enlace se puede conectar. También puedes empezar en una entrada y arrastrar hasta una salida.
+- Una entrada admite un solo enlace. Si enlazas otra salida con ella, sustituye al enlace anterior. Una salida puede
+  alimentar muchas entradas.
+- Si sueltas un enlace nuevo sobre un trozo vacío del lienzo, se abre allí el selector de bloques. Solo muestra los
+  bloques que pueden admitir el enlace, y el bloque que elijas llega ya enlazado.
+- Para mover un enlace, arrástralo desde la entrada en la que termina y suéltalo sobre otra entrada. Suéltalo sobre un
+  trozo vacío del lienzo para cortarlo.
+- Apunta a un enlace para que aparezca en su centro un botón que lo corta.
+
+### Selecciona, mueve y ordena [#select-move-and-arrange]
+
+- Haz clic en un bloque para seleccionarlo. <kbd>⇧</kbd>-clic o <kbd>⌘</kbd>-clic añade bloques a la selección o los
+  quita de ella.
+- Mantén pulsada <kbd>⇧</kbd> o <kbd>⌘</kbd> y arrastra sobre un trozo vacío del lienzo para dibujar un recuadro de
+  selección. Los bloques que toca se suman a la selección.
+- Arrastra un bloque para moverlo. Pulsa <kbd>Esc</kbd> para quitar la selección.
+- Las teclas de flecha seleccionan el bloque más cercano en esa dirección, y la vista lo sigue. Sin nada seleccionado,
+  empiezan en Inicio.
+- **Ordenar** coloca los bloques en columnas, en el orden en que se ejecutan.
+- **Duplicar** (<kbd>⌘</kbd><kbd>D</kbd>) copia los bloques seleccionados con los enlaces que hay entre ellos.
+- <kbd>⌫</kbd> elimina los bloques seleccionados con sus enlaces, o el enlace seleccionado.
+
+El inspector de un bloque seleccionado tiene **Eliminar bloque**. Con varios bloques seleccionados muestra cuántos son y
+**Eliminar bloques**. Un flujo tiene exactamente un bloque Inicio: nunca se copia ni se duplica, no se puede poner en
+pausa y su inspector no tiene **Eliminar bloque**.
+
+### Desplázate y haz zoom [#pan-and-zoom]
+
+- Arrastra sobre un trozo vacío del lienzo, o desplázate con dos dedos o con la rueda del ratón, para moverte por él.
+- Pellizca, o mantén pulsada <kbd>⌘</kbd> y desplázate, para hacer zoom. La vista se amplía del 20 % al 250 %, y la
+  barra de herramientas muestra el nivel.
+- **Ajustar** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd>) muestra todo el flujo. Nunca reduce por debajo del 50 %, para que
+  el texto siga siendo legible; un flujo más grande empieza por su borde izquierdo.
+
+### Copia y pega [#copy-and-paste]
+
+**Editar › Copiar** (<kbd>⌘</kbd><kbd>C</kbd>), **Cortar** (<kbd>⌘</kbd><kbd>X</kbd>) y **Pegar**
+(<kbd>⌘</kbd><kbd>V</kbd>) actúan sobre los bloques seleccionados y los enlaces que hay entre ellos. Los bloques pegados
+reciben ids nuevos y pasan a ser la selección. En el mismo flujo aparecen junto a los originales; en otro flujo, en el
+centro de la vista. También puedes pegar en un flujo de otro espacio de trabajo. Los bloques copiados son texto JSON,
+así que también puedes pegarlos en un mensaje o en una incidencia.
+
+### Notas [#notes]
+
+Haz clic en **Nota** en la barra de herramientas para añadir una nota adhesiva y escribir en ella. Las notas quedan
+detrás de los bloques y no se ejecutan.
+
+- Arrastra una nota para moverla y arrastra el asa de su esquina inferior derecha para cambiar su tamaño.
+- Haz doble clic en una nota, o Control-clic y elige **Editar nota…**, para cambiar el texto.
+- Haz Control-clic y elige **Eliminar nota** para quitarla.
+
+Las plantillas usan notas para indicar qué solicitudes hay que elegir.
+
+### Deshacer y guardar [#undo-and-saving]
+
+Todos los cambios del lienzo y del inspector se pueden deshacer con **Editar › Deshacer** (<kbd>⌘</kbd><kbd>Z</kbd>) y
+**Rehacer** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>): añadir, mover, enlazar, eliminar, ajustes, notas y Ordenar.
+
+Los flujos no se guardan a mano. Echolot escribe el archivo un momento después de tu último cambio; **Editado** aparece
+junto al nombre hasta entonces. Si falla un guardado, Echolot dice por qué y ofrece **Reintentar**,
+**Descartar cambios** (vuelve al archivo del disco) y **Seguir editando**. Tus ediciones se quedan en el lienzo hasta que se
+guardan.
+
+### Problemas [#problems]
+
+Echolot comprueba el flujo mientras lo editas. La barra de herramientas muestra el número de problemas; haz clic en él
+para ver la lista y haz clic en un problema para seleccionar su bloque. Un bloque con un problema muestra una señal de
+advertencia, y su inspector enumera los problemas.
+
+Los errores impiden que el flujo se ejecute: que falte el bloque Inicio, un ajuste obligatorio vacío (como un bloque
+Solicitud sin solicitud), una solicitud o un flujo que no existe, o enlaces que dan vueltas en círculo. Las
+advertencias no lo impiden; por ejemplo, un bloque en el que no entra ningún enlace y que por eso nunca se ejecuta. Para
+repetir algo, usa [Repetir, Para cada o Sondear](/docs/flows/blocks#loops) en lugar de un círculo de enlaces.
+
+## Entradas y salidas [#inputs-and-outputs]
+
+Las **Entradas** son los valores con los que empieza una ejecución. Añádelas en el inspector sin nada seleccionado: haz
+clic en **+** junto a **Entradas**, escribe el nombre y elige su tipo (`any`, `text`, `number`, `bool`, `object`,
+`list` o `secret`). El bloque Inicio recibe una salida por cada entrada, más `run`, que envía todas las entradas como un
+solo objeto.
+
+Las entradas vienen de la hoja **Ejecutar**, de la opción `--input` de `echolot flow run`, de la llamada a una
+herramienta de un agente o de la consulta y el cuerpo JSON de un webhook. El texto se convierte al tipo de la entrada:
+`3` en un número, `true` o `yes` en un booleano, texto JSON en un objeto o una lista. Una entrada `secret` se oculta en
+el registro de ejecución y en lo que ven los agentes.
+
+El valor predeterminado, la descripción y si una entrada es obligatoria se definen en el archivo del flujo (la tabla
+`[[inputs]]`: `default`, `description`, `required`; consulta los [archivos del espacio de
+trabajo](/docs/reference/workspace-files)). La hoja Ejecutar muestra la descripción como texto de ayuda del campo y
+rellena el valor predeterminado.
+
+El bloque **Salida** contiene lo que devuelve la ejecución: al agente que llamó al flujo, a `echolot flow run`, a quien
+llamó al webhook o al bloque Flujo de un flujo padre. Un flujo tiene como máximo un bloque Salida.
+
+## Ejecuta un flujo y síguelo [#run-a-flow-and-watch-it]
+
+Haz clic en **Ejecutar** o pulsa <kbd>⌘</kbd><kbd>R</kbd>. Un flujo con entradas abre primero una hoja para
+rellenarlas; los campos vacíos usan el valor predeterminado de la entrada. El flujo se guarda y luego se ejecuta con el
+entorno activo de la ventana. **Ejecutar** no está disponible mientras el flujo tenga errores.
+
+Durante la ejecución:
+
+- El borde de cada bloque muestra su estado: en ejecución o esperándote, superado (verde) o con error (rojo).
+- El registro de **Ejecutar** se abre bajo el lienzo. Enumera cada bloque cuando termina, con su tiempo, las líneas de
+  registro, los resultados de las pruebas (**Pruebas** 3/3 en la cabecera) y cómo terminó la ejecución. Haz clic en una
+  línea para seleccionar su bloque.
+- Los bloques que te preguntan algo (Preguntar, Mostrar y esperar, Aprobar) abren una hoja. Consulta los
+  [bloques de personas](/docs/flows/blocks#people).
+- **Detener** (<kbd>⌘</kbd><kbd>.</kbd>) sustituye a **Ejecutar** y termina la ejecución. Una pregunta que esté en
+  pantalla desaparece.
+
+Tras la ejecución, selecciona un bloque para ver su **Última ejecución** en el inspector: cuánto tardó y, en
+**Mostrar**, sus valores de **Entrada** y **Salida** por puerto. Úsalo para encontrar la ruta a un valor para un bloque
+Extraer o una plantilla.
+
+<Shot id="flows-run-log" alt="El lienzo tras una ejecución de Place a test order: bloques con bordes verdes, el registro de ejecución bajo el lienzo y el inspector con la salida de la última ejecución de Create order" />
+
+Las ejecuciones anteriores se quedan en la ventana: haz clic en una en **Ejecuciones de** en la barra lateral, o elígela
+en **Ejecuciones** en la barra de herramientas, para volver a mostrarla en el lienzo. **Limpiar el lienzo** en ese menú,
+o **Borrar** en el registro de ejecución, quita los estados de la ejecución. Cuando una ejecución falla y el modelo
+integrado del Mac está disponible, un botón en la cabecera del registro explica el fallo.
+
+Con un [entorno protegido](/docs/workspaces/protected-environments) activo, el botón dice **Ejecutar en Production…** y
+Echolot pregunta una vez antes de que empiece la ejecución.
+
+Más sobre ejecuciones, programaciones, webhooks, agentes y la línea de comandos: [Ejecución y
+activadores](/docs/flows/running-and-triggers). Para un ejemplo guiado, sigue [Automatiza con
+flujos](/docs/tutorials/automate-with-flows).
+
+## Atajos de teclado [#keyboard-shortcuts]
+
+| Atajo | Acción |
+| --- | --- |
+| <kbd>⌘</kbd><kbd>5</kbd> | Mostrar el módulo Flujos |
+| <kbd>⌘</kbd><kbd>R</kbd> | Ejecutar el flujo |
+| <kbd>⌘</kbd><kbd>.</kbd> | Detener la ejecución |
+| <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd> | Añadir un bloque |
+| <kbd>⌘</kbd><kbd>D</kbd> | Duplicar los bloques seleccionados |
+| <kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd> | Ajustar todo el flujo |
+| <kbd>⌘</kbd><kbd>C</kbd>, <kbd>⌘</kbd><kbd>X</kbd>, <kbd>⌘</kbd><kbd>V</kbd> | Copiar, cortar y pegar bloques |
+| <kbd>⌫</kbd> | Eliminar la selección |
+| <kbd>⌘</kbd><kbd>Z</kbd>, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd> | Deshacer, rehacer |
+| Teclas de flecha | Seleccionar el bloque más cercano en esa dirección |
+| <kbd>Esc</kbd> | Quitar la selección |

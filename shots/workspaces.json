@@ -160,5 +160,17 @@
       560,
       424
     ]
+  },
+  {
+    "id": "workspaces-folder-auth-oauth",
+    "page": "requests/auth",
+    "scene": "Alpenglow. Control-click the Orders folder › Folder Settings…, Auth tab: OAuth 2.0, Client Credentials, token URL {{baseURL}}/oauth/token, client ID and secret as variables, scope orders; click Get Token so the token bar shows the token.",
+    "frame": "the folder settings sheet",
+    "crop": [
+      350,
+      126,
+      620,
+      600
+    ]
   }
 ]

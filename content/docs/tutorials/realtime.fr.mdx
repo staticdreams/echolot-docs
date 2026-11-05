@@ -1,0 +1,121 @@
+---
+title: "Temps réel"
+description: "Suivez les événements de commande en direct via WebSocket et Server-Sent Events depuis l’API de démo, puis discutez via Socket.IO et lisez des capteurs via MQTT sur des serveurs de votre Mac."
+---
+
+Les API temps réel gardent une connexion ouverte et envoient des messages dans les deux sens. Dans ce tutoriel, vous
+suivez le flux des commandes de la boutique de démo via un WebSocket et sous forme de Server-Sent Events, puis vous
+parlez au support de la boutique via Socket.IO et lisez les températures des entrepôts via MQTT, côte à côte.
+
+- **Durée :** 20 minutes.
+- **Il vous faut :** l’[espace de travail Alpenglow](/docs/tutorials#the-alpenglow-workspace) avec **Aucun environnement**
+  choisi. Pour Socket.IO et MQTT, les [serveurs locaux](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt) :
+  exécutez `bun run realtime` dans `examples/servers`.
+- **Vous apprenez :** se connecter, les messages enregistrés, le journal en direct, les flux d’événements, les espaces de
+  noms et les accusés de réception, les abonnements, la QoS et les messages retenus.
+
+## 1. WebSocket : le flux des commandes [#1-websocket-the-order-feed]
+
+1. Ouvrez **Realtime › Order updates**. Son URL est `{{wsURL}}/orders`, soit `wss://demo.echolot.dev/v1/orders`.
+2. Cliquez sur **Connecter** (<kbd>⌘</kbd><kbd>R</kbd>). Le bouton devient **Se déconnecter**.
+3. L’onglet **Messages** de la réponse se remplit : une icône de lien pour la connexion ouverte, le `hello` du serveur,
+   puis un événement de commande toutes les 1,5 seconde, comme `{"event": "order.created", "order": "ord_9Tq3Vb", …}`.
+   Les messages envoyés ont une flèche vers le haut, les messages reçus une flèche verte vers le bas. **Plus** déplie un
+   long message JSON.
+4. Dans l’onglet **Messages** de la requête, le message enregistré **Subscribe** contient
+   `{"op":"subscribe","channel":"orders"}`. Cliquez sur son **Envoyer**. Le serveur répond
+   `{"op": "subscribed", "channel": "orders"}`.
+5. Saisissez dans la zone de saisie en bas : `{"id": 42, "text": "hello"}` et cliquez sur **Envoyer**
+   (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>). Le serveur l’acquitte avec `{"op": "ack", "id": 42}`. Cliquez sur **+**
+   pour enregistrer le message pour plus tard.
+6. Réduisez le journal avec **Tout**, **Envoyé** et **Reçu**, ou saisissez `shipped` dans **Filtrer les messages**.
+7. Cliquez sur **Se déconnecter**. Le journal se termine par **Fermé par Echolot**.
+
+La démo ferme une session au bout de trois minutes (`1000 Demo sessions last 3 minutes`), et la ferme avec `1008` si vous
+envoyez plus de 20 messages en dix secondes. Les messages enregistrés dont **Envoyer lors des exécutions** est coché
+sont envoyés dans l’ordre, après la connexion, quand la requête s’exécute dans l’Exécution ou l’outil en ligne de
+commande. Plus de détails dans [WebSocket et SSE](/docs/requests/websocket-and-sse).
+
+<Shot id="tutorials-realtime-websocket" alt="Order updates connecté : les messages enregistrés Subscribe et Ping à gauche, et le journal en direct des messages envoyés et reçus à droite" />
+
+## 2. Server-Sent Events : le même flux sous forme de stream [#2-server-sent-events-the-same-feed-as-a-stream]
+
+1. Ouvrez **Realtime › Order events**. C’est une simple requête HTTP, `GET {{baseURL}}/orders/events`, avec l’en-tête
+   `Accept: text/event-stream`.
+2. Cliquez sur **Envoyer**. La réponse s’ouvre sur son onglet **Événements** : **À l’écoute… Arrêter y met fin.**
+3. Un événement arrive chaque seconde, chacun dans sa propre carte intitulée avec son numéro et son nom, comme
+   **1. order.created**, avec **id 1** en dessous. Après 20 événements, le serveur envoie `end` et ferme le flux.
+4. Pour arrêter plus tôt, cliquez sur **Annuler** (<kbd>⌘</kbd><kbd>.</kbd>).
+
+Pour reprendre après un événement, ajoutez l’en-tête `Last-Event-ID` avec le dernier id que vous avez vu, disons `15`, et
+envoyez de nouveau. Le serveur envoie 16 à 20. Saisir `Last-Event-ID` dans l’onglet **En-têtes** propose
+`{{lastEventId}}` comme valeur ; donnez une valeur à cette variable, ou saisissez le nombre.
+
+## 3. Socket.IO : le support [#3-socketio-the-support-desk]
+
+Démarrez d’abord les serveurs locaux (`bun run realtime`). Ils affichent
+`Alpenglow realtime: Socket.IO on http://localhost:3001/support, MQTT on mqtt://localhost:1883`.
+
+1. Ouvrez **Realtime › Support chat**. Son URL est `{{realtimeURL}}`, `http://localhost:3001`. Dans son onglet
+   **Événements**, **Espace de noms** est `/support` ; le menu de méthode de la barre d’URL définit la version du
+   **Serveur** (Socket.IO 4).
+2. Cliquez sur **Connecter**. Trois événements arrivent : `welcome` avec le nom de l’agent et la file d’attente,
+   `typing`, puis `message` : « Grüezi! How can I help with your order? »
+3. L’événement enregistré **Say hello** émet `message` avec `{"text":"Grüezi!"}`. Cochez sa case **Accusé**, pour que le
+   serveur soit invité à l’acquitter, et cliquez sur **Émettre**.
+4. Le journal montre l’accusé de réception, `{"id": "msg_31", "delivered": true}`, et un instant plus tard la réponse de
+   Heidi : « Your Matterhorn 2P ships tomorrow from Bern. »
+5. Pour émettre un événement que vous n’avez pas enregistré, saisissez son nom dans le champ **événement** de la zone de
+   saisie et ses arguments en JSON, puis cliquez sur **Émettre** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>).
+
+Chaque ligne du journal nomme l’espace de noms, l’événement et le numéro de l’accusé de réception quand il y en a un.
+**Filtrer les événements** réduit le journal. Un serveur qui vous demande d’accuser réception d’un de ses événements
+obtient un bouton **Accuser réception** sur cette ligne. Une charge utile d’authentification, comme
+`{"token": "{{token}}"}`, va dans le champ **Auth** de l’onglet **Événements**. Voir
+[Socket.IO](/docs/requests/socket-io).
+
+## 4. MQTT : les capteurs des entrepôts [#4-mqtt-warehouse-sensors]
+
+Les mêmes serveurs locaux font tourner un broker MQTT sur `localhost:1883` qui publie les températures de trois
+entrepôts toutes les 1,5 seconde.
+
+1. Ouvrez **Realtime › Warehouse sensors**. Son URL est `mqtt://{{mqttHost}}`, et le **Protocole** du menu de méthode est
+   **MQTT 3.1.1**.
+2. Son onglet **S’abonner** a l’abonnement `warehouses/+/temperature` en **QoS 1**, avec **S’abonner à la connexion**
+   coché. `+` correspond à un niveau du topic.
+3. Cliquez sur **Connecter**. Des messages arrivent pour `warehouses/zurich/temperature`,
+   `warehouses/bern/temperature` et `warehouses/chur/temperature`, comme `{"celsius": 6.1, "humidity": 44, …}`.
+4. Utilisez le menu **Tous les topics** pour n’afficher qu’un entrepôt.
+5. Dans la zone de saisie **S’abonner**, saisissez `warehouses/status`, laissez **QoS 0** et cliquez sur **S’abonner**. Un
+   message arrive aussitôt, `{"online": 3}`, marqué retenu : le broker l’a gardé pour quiconque s’abonne plus tard.
+6. Dans l’onglet **Publier**, définissez le topic sur `warehouses/bern/door`, la charge utile sur `{"open": true}`, et
+   cliquez sur **Publier** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>). Abonnez-vous à `warehouses/#` pour le voir revenir :
+   `#` correspond à tous les niveaux en dessous.
+
+L’onglet **Connexion** contient l’**ID client**, le réglage de session vierge, le **Maintien de connexion** et un
+testament. Le nom d’utilisateur et le mot de passe d’un broker vont dans l’onglet **Auth** comme authentification Basic ;
+gardez le mot de passe dans une variable secrète. L’outil en ligne de commande parle aussi MQTT :
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 5
+```
+
+Voir [MQTT](/docs/requests/mqtt) et [`echolot mqtt`](/docs/cli/mqtt).
+
+## 5. Côte à côte [#5-side-by-side]
+
+Chaque requête a son propre onglet. Gardez **Order updates**, **Support chat** et **Warehouse sensors** ouverts dans trois
+onglets et connectez chacun : chaque connexion reste ouverte pendant que vous passez de l’un à l’autre. Quand une session
+se ferme, Echolot la garde dans l’Historique avec tout le journal des messages, pour que vous puissiez la relire plus
+tard (<kbd>⌘</kbd><kbd>Y</kbd>).
+
+Les serveurs locaux servent aussi gRPC : exécutez `bun run grpc` et envoyez les requêtes de **Inventory**. **Watch stock**
+diffuse une douzaine de niveaux de stock puis se termine. Voir [gRPC](/docs/requests/grpc).
+
+## Étapes suivantes [#next-steps]
+
+- [WebSocket et SSE](/docs/requests/websocket-and-sse) : sous-protocoles, messages binaires, vérifications sur les
+  sessions.
+- [Socket.IO](/docs/requests/socket-io) et [MQTT](/docs/requests/mqtt) : tous les réglages.
+- [Tester une API et l’exécuter en CI](/docs/tutorials/test-in-ci) : les sessions s’exécutent aussi dans l’Exécution, en
+  envoyant leurs messages enregistrés.

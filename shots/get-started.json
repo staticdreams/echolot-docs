@@ -70,5 +70,30 @@
       484,
       560
     ]
+  },
+  {
+    "id": "get-started-home",
+    "page": "get-started/home",
+    "scene": "Alpenglow, no environment, launched with -page home -greetingName Heidi. Send a spread of requests first (Run Folder on Catalog and Orders, several times, so Sonar has pings in every zone and a failure or two: the demo API's /echo/status/500). Sonar on 7 d.",
+    "frame": "window"
+  },
+  {
+    "id": "get-started-home-sonar",
+    "page": "get-started/home",
+    "scene": "As get-started-home. Rest the pointer on a ping so its callout shows (time, status, method and name, Click to open its response). tools/scenes.ts has the scene.",
+    "frame": "the Sonar card: header with key and period, the five figures, the chart with its callout, the zone bar",
+    "foreground": true,
+    "crop": [
+      308,
+      288,
+      956,
+      504
+    ]
+  },
+  {
+    "id": "get-started-tour",
+    "page": "get-started/tour",
+    "scene": "Alpenglow, no environment. Launch with -showTour YES, click Show Me Around and Next until Step 4 of 8 (Environments).",
+    "frame": "window"
   }
 ]

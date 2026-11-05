@@ -1,0 +1,261 @@
+---
+title: "Autenticación"
+description: "Firma las solicitudes con Basic, Digest, Bearer, claves de API, OAuth 1.0, OAuth 2.0, AWS Signature, JWT, Hawk, Akamai EdgeGrid o NTLM, y comparte la autenticación a través de carpetas."
+---
+
+La pestaña **Autenticación** indica cómo demuestra una solicitud quién es. Elige un **Tipo**, rellena sus campos y
+Echolot añade las credenciales cada vez que se envía la solicitud. Define la autenticación una vez en una carpeta o en
+el espacio de trabajo y todas las solicitudes que contiene podrán usarla.
+
+<Shot id="requests-http-auth-oauth" alt="La pestaña Autenticación de Orders con OAuth 2: OAuth 2.0 con la concesión Credenciales de cliente, la URL del token, el ID de cliente y el ámbito, y abajo la barra del token con Obtener token" />
+
+## Mantén las credenciales fuera de los archivos [#keep-credentials-out-of-files]
+
+Todos los campos admiten `{{variables}}`. Guarda contraseñas, tokens y claves en [variables secretas](/docs/workspaces/secrets),
+que viven en el llavero, y escribe `{{password}}` en el campo. Así el archivo de la solicitud no contiene ningún secreto
+y puedes subirlo al repositorio.
+
+Cuando escribes un valor literal en un campo de credenciales, aparece un aviso debajo: **Se guarda como texto sin cifrar
+en el archivo del espacio de trabajo.** Haz clic en **Trasladar al llavero** y Echolot guarda el valor como variable
+secreta del espacio de trabajo y escribe `{{name}}` en su lugar.
+
+Las credenciales que añade Echolot aparecen enmascaradas donde la página de la solicitud las muestra: en las cabeceras
+**GENERADAS AUTOMÁTICAMENTE** y en la vista previa de la URL bajo la barra de la URL.
+
+## Heredar de carpetas y del espacio de trabajo [#inherit-from-folders-and-the-workspace]
+
+**Heredar** es la opción predeterminada. Una solicitud que hereda usa la autenticación de la carpeta más cercana por encima
+de ella que defina una y, si no hay ninguna, la del espacio de trabajo. Bajo **Usa**, la pestaña indica cuál se aplica,
+por ejemplo `Folder “Orders”: Bearer Token`, con un botón que la abre: **Editar autenticación de la carpeta…** o
+**Editar autenticación del espacio de trabajo…**. Si ningún nivel superior define autenticación, la solicitud no envía
+ninguna.
+
+<Shot id="requests-http-auth-inherit" alt="La pestaña Autenticación de una solicitud en Heredar: Usa Carpeta “Orders”: Token Bearer, con el botón Editar autenticación de la carpeta…" />
+
+Una solicitud con autenticación propia la conserva, y su pestaña **Autenticación** muestra además una fila
+**Autenticación del espacio de trabajo** con la del espacio de trabajo y un botón para abrirla:
+**Autenticación del espacio de trabajo…**, o **Configurar autenticación del espacio de trabajo…** cuando el espacio de
+trabajo aún no tiene ninguna. **Autenticación del espacio de trabajo…** también está en la paleta de comandos
+(<kbd>⌘</kbd><kbd>K</kbd>).
+
+Para definir la autenticación de muchas solicitudes a la vez:
+
+1. En la barra lateral, haz clic con el botón derecho en una carpeta y elige **Ajustes de la carpeta…**. Para el espacio
+   de trabajo, usa **Autenticación del espacio de trabajo…** desde la pestaña **Autenticación** de una solicitud o desde
+   la paleta de comandos, o haz clic en el selector de espacio de trabajo al pie de la barra lateral y elige
+   **Ajustes del espacio de trabajo…**.
+2. Abre la pestaña **Autenticación** y elige un tipo. Una carpeta también puede heredar; el espacio de trabajo no.
+   Bajo los ajustes, la pestaña indica cuántas solicitudes en **Heredar** usan esta autenticación.
+3. Para OAuth 2.0, inicia sesión ahí mismo: la barra del token de la parte inferior funciona como en una solicitud
+   (consulta [OAuth 2.0](#oauth-20)), y todas las solicitudes que heredan la autenticación usan ese token.
+   **Obtener token** guarda antes la autenticación. La barra solo muestra el token propio de la carpeta o del espacio de
+   trabajo una vez guardada su autenticación, de modo que nunca muestra ni olvida un token que pertenece a la
+   autenticación de un nivel superior.
+4. Haz clic en **OK**.
+
+<Shot id="workspaces-folder-auth-oauth" alt="Ajustes de la carpeta en la pestaña Autenticación con OAuth 2.0 elegido, su URL del token y su cliente, la barra del token con Obtener token y el número de solicitudes que lo heredan" />
+
+En el ejemplo Alpenglow, la carpeta **Orders** define **Token Bearer** con `{{token}}`, y todas las solicitudes de pedidos
+lo heredan. **Auth › Sign in** rellena `{{token}}` a partir de su respuesta con una
+[captura](/docs/requests/captures).
+
+## Elige un tipo [#choose-a-type]
+
+| Tipo | Qué hace Echolot |
+| --- | --- |
+| **Heredar** | Usa la autenticación de la carpeta o del espacio de trabajo. |
+| **Sin autenticación** | No envía credenciales, aunque una carpeta defina alguna. |
+| **Basic** | Añade `Authorization: Basic …` a partir de un nombre de usuario y una contraseña. |
+| **Digest** | Responde al desafío Digest del servidor. |
+| **Token Bearer** | Añade `Authorization: Bearer <token>`. |
+| **Clave de API** | Añade una clave como cabecera o como parámetro de consulta. |
+| **OAuth 1.0** | Firma cada solicitud con OAuth 1.0, usando un token que ya tienes. |
+| **OAuth 2.0** | Obtiene un token de acceso y lo envía como token Bearer o en la dirección. |
+| **AWS Signature** | Firma cada solicitud con AWS Signature Version 4. |
+| **JWT Bearer** | Firma un JSON Web Token nuevo en cada envío. |
+| **Hawk** | Firma cada solicitud con Hawk. |
+| **Akamai EdgeGrid** | Firma cada solicitud con EG1-HMAC-SHA256. |
+| **NTLM** | Responde al desafío NTLM del servidor. |
+
+Una cabecera `Authorization` que añades tú mismo en la pestaña **Cabeceras** se envía en lugar de la que añadiría la
+pestaña **Autenticación**.
+
+### Basic [#basic]
+
+Rellena **Nombre de usuario** y **Contraseña**. Echolot los envía codificados en Base64 en la cabecera `Authorization`.
+Pruébalo con **Echo › Basic auth** en Alpenglow.
+
+### Digest [#digest]
+
+Rellena **Nombre de usuario** y **Contraseña**. El primer envío va sin credenciales; cuando el servidor responde 401 con
+un desafío Digest, Echolot lo contesta una vez con una segunda solicitud. Ambas aparecen en el intercambio como saltos.
+
+### Token Bearer [#bearer-token]
+
+Rellena **Token**, normalmente `{{token}}`. **Prefijo** es `Bearer` de forma predeterminada; cámbialo si el servidor
+espera otra palabra, o bórralo para enviar solo el token.
+
+### Clave de API [#api-key]
+
+Rellena **Clave** (el nombre de la cabecera o del parámetro, `X-API-Key` por defecto) y **Valor**, y elige dónde va en
+**Añadir en**: **Cabecera** o **Consulta**.
+
+### OAuth 2.0 [#oauth-20]
+
+Echolot obtiene el token de acceso por ti y lo añade como `Authorization: Bearer <token>`.
+
+| Campo | Significado |
+| --- | --- |
+| **Concesión** | **Código de autorización**, **Credenciales de cliente**, **Código de dispositivo** o **Contraseña (obsoleta)**. |
+| **URL de autorización** | Dónde inicias sesión (Código de autorización). |
+| **URL del dispositivo** | De dónde viene el código de dispositivo (Código de dispositivo). |
+| **URL del token** | De dónde vienen los tokens. |
+| **Nombre de usuario**, **Contraseña** | El inicio de sesión de la propia persona (Contraseña). La contraseña se puede trasladar al llavero como cualquier otra credencial. |
+| **ID de cliente**, **Secreto de cliente** | Las credenciales del cliente. Los clientes públicos dejan el secreto vacío. |
+| **Ámbito** | Los ámbitos que se piden, separados por espacios, como `read write`. |
+| **Audiencia** | Para los servidores que la piden. |
+| **URI de redirección** | Código de autorización. Vacío significa automático: una dirección de loopback, `http://127.0.0.1:<port>/callback`, en un puerto libre. |
+| **PKCE (S256)** | Código de autorización. Activado de forma predeterminada. |
+| **Autenticación del cliente** | Cómo llegan el ID y el secreto del cliente a la URL del token: **HTTP Basic** (predeterminado) o **En el cuerpo**. |
+| **Añadir token en** | **Cabecera** (predeterminado) o **URL**: el token como parámetro de consulta, con el nombre que indica **Parámetro** (`access_token` por defecto). Las direcciones acaban en registros e historiales, así que usa URL solo para las API que no aceptan otra cosa. |
+| **Prefijo de cabecera** | La palabra que va antes del token en la cabecera, `Bearer` por defecto. |
+
+En la parte inferior de la pestaña, la barra del token indica si hay un token. Haz clic en **Obtener token**:
+
+- **Código de autorización** abre el navegador en la URL de autorización. Inicia sesión allí; Echolot recoge la
+  redirección y muestra **Termina de iniciar sesión en el navegador…** hasta que lo haces.
+- **Código de dispositivo** muestra **Iniciar sesión en otro dispositivo** con un código. Haz clic en **Abrir** (con el
+  nombre de host de la página), introduce allí el código y apruébalo; Echolot espera con **Esperando aprobación…**.
+- **Credenciales de cliente** consulta directamente la URL del token. Con esta concesión no necesitas hacer clic en
+  **Obtener token**: el primer envío obtiene un token por sí solo.
+- **Contraseña (obsoleta)** envía el nombre de usuario y la contraseña a la URL del token, y tampoco necesita clic: el
+  primer envío obtiene un token. Úsala solo con API antiguas que la exigen. La concesión está obsoleta porque la
+  contraseña misma sale de tu Mac, así que prefiere Código de autorización cuando el servidor lo ofrezca.
+
+Echolot no ofrece la concesión implícita, que también está obsoleta. La mayoría de los servidores que aún la ofrecen
+también ofrecen Código de autorización, en lo que se convierte una concesión implícita importada; comprueba que el
+servidor lo acepta.
+
+Cuando hay un token, la barra indica **Token de acceso en el llavero**, con su tipo, cuándo caduca, si **se renueva automáticamente**
+y su ámbito. **Obtener token nuevo** lo sustituye; **Olvidar** lo elimina.
+
+Cómo se guardan y se usan los tokens:
+
+- Los tokens se guardan en el llavero, nunca en los archivos del espacio de trabajo.
+- Un token pertenece a la solicitud, carpeta o espacio de trabajo que define la autenticación, y al entorno y los ajustes
+  para los que se emitió: si cambias de entorno, o cambias la URL del token, el ID de cliente, el ámbito u otro ajuste
+  que decide para quién es el token, se usa u obtiene un token propio y nunca se envía uno emitido para otra cosa. Las
+  solicitudes que heredan OAuth de una carpeta comparten sus tokens. **Olvidar** elimina los tokens de todos los
+  entornos.
+- Cuando un token ha caducado, el siguiente envío lo renueva con su token de renovación. Un token de Credenciales de
+  cliente o de Contraseña se obtiene de nuevo. Si no, el envío se detiene con **Esta solicitud necesita un token OAuth:
+  obtén uno antes en la pestaña Autenticación.** o **El token OAuth ha caducado y no se pudo renovar: obtén uno nuevo en
+  la pestaña Autenticación.**
+
+Para probarlo, envía **Auth › Orders with OAuth 2** en Alpenglow: usa Credenciales de cliente contra la API de demostración.
+
+#### Avanzado [#advanced]
+
+La mayoría de los servidores no necesitan nada de esto, así que está plegado bajo **Avanzado**. Se abre solo cuando algo
+de su interior está definido.
+
+<Shot id="requests-http-auth-oauth-advanced" alt="La sección Avanzado de OAuth 2.0: Renovar automáticamente, la URL de renovación y las tablas de parámetros de Solicitud de autorización, Solicitud de token y Solicitud de renovación" />
+
+- **Renovar automáticamente** está activado de forma predeterminada. Desactívalo para enviar un token caducado tal cual y
+  ver cómo responde la API. Para Credenciales de cliente y Contraseña se sigue obteniendo un primer token.
+- **URL de renovación** es para los servidores cuyo punto de renovación no es la URL del token. Vacía significa la URL del
+  token.
+- **Solicitud de autorización**, **Solicitud de token** y **Solicitud de renovación** añaden parámetros para los
+  servidores que quieren más que los campos estándar: `access_type = offline` de Google (para que entregue un token de
+  renovación), `resource` para Azure AD, un tenant o una versión de la API. Cada fila tiene una clave, un valor (las
+  variables funcionan, así que los secretos pueden quedarse en el llavero) y, en las solicitudes de token y de renovación,
+  el lugar al que va: **Cuerpo**, **Cabecera** o **URL**. Un parámetro con el mismo nombre que uno estándar lo sustituye.
+  Los parámetros de la solicitud de autorización van en la dirección de inicio de sesión, o en la solicitud de
+  autorización del dispositivo para Código de dispositivo. Nunca sustituyen el `state` ni el desafío PKCE.
+
+### OAuth 1.0 [#oauth-10]
+
+Para las API que aún usan OAuth 1.0: NetSuite, Magento y Adobe Commerce, los endpoints v1.1 de X y los enlaces de
+aplicación de Jira o Confluence Server, entre otras. Echolot firma cada solicitud con un token que ya tienes. No ejecuta
+el flujo de tres pasos que lo obtiene, y Postman tampoco.
+
+<Shot id="requests-http-auth-oauth1" alt="La pestaña Autenticación con OAuth 1.0: el método de firma, la clave y el secreto de consumidor, el token de acceso y el secreto del token, y Añadir en Cabecera" />
+
+1. Elige el **Método de firma**: **HMAC-SHA1** (el más habitual), **HMAC-SHA256**, **HMAC-SHA512**, **RSA-SHA1**,
+   **RSA-SHA256**, **RSA-SHA512** o **PLAINTEXT**.
+2. Rellena **Clave de consumidor** y **Secreto de consumidor** o, para RSA, una **Clave privada** (pégala, o haz clic en
+   **Elegir archivo PEM…** para llevarla directamente al llavero).
+3. Rellena **Token de acceso** y, salvo con RSA, **Secreto del token**. Déjalos vacíos para una solicitud que se hace
+   antes de tener un token.
+4. En **Añadir en**, elige **Cabecera** (`Authorization: OAuth …`, el valor predeterminado), **URL** o **Cuerpo**.
+   **Cuerpo** firma dentro de un cuerpo de formulario, o en la dirección si la solicitud no tiene cuerpo.
+5. **Avanzado** incluye **Realm**, **URL de retorno** y **Verificador** (para los pasos del flujo de tres pasos que haces a
+   mano), **Añadir oauth_version="1.0"** (activado de forma predeterminada) e **Incluir el hash del cuerpo en la firma**
+   (`oauth_body_hash`, para cuerpos que no son formularios).
+
+Cada solicitud se firma al enviarla, con una marca de tiempo y un nonce nuevos, sobre el método, la dirección, su consulta
+y los campos de un cuerpo de formulario.
+
+### AWS Signature [#aws-signature]
+
+Rellena **ID de clave de acceso**, **Clave de acceso secreta**, **Región** (`us-east-1` por defecto) y **Servicio**
+(`execute-api` por defecto; `s3`, `lambda`, `es` y así sucesivamente). **Token de sesión** es solo para credenciales
+temporales. Cada solicitud se firma al enviarla, con la hora, el host y el cuerpo con los que sale.
+
+### JWT Bearer [#jwt-bearer]
+
+Echolot firma un token nuevo en cada envío.
+
+1. Elige el **Algoritmo**: **HS256**, **HS384** o **HS512** (HMAC con un secreto), **RS256**, **RS384**, **RS512**,
+   **PS256**, **PS384** o **PS512** (clave privada RSA), o **ES256** o **ES384** (clave privada de curva elíptica).
+2. Para HMAC, rellena **Secreto**; marca **El secreto está en Base64** cuando el proveedor te lo dio así. Para una clave
+   privada, pégala en **Clave privada**, o haz clic en **Elegir archivo PEM…**: la clave va directamente al llavero y el
+   campo se refiere a ella por su nombre. Las claves pueden ser PEM PKCS #8, PKCS #1 o SEC 1.
+3. Escribe los **Claims** como JSON. Pueden contener variables: `{"sub": "{{userID}}"}`.
+4. Añade **Campos de cabecera** como `kid` si el servidor los necesita. `alg` y `typ` los define Echolot.
+5. **Añadir “iat” (fecha de emisión)** está activado de forma predeterminada. **Caduca tras** añade `exp` con esos
+   segundos de adelanto (300 por defecto); 0 no añade ninguno. Los claims que defines tú mismo en el JSON se conservan
+   tal como los escribes.
+6. En **Añadir en**, elige **Cabecera** (con un **Prefijo**, `Bearer` por defecto) o **Consulta** (con un nombre de
+   **Parámetro**, `token` por defecto).
+
+### Hawk [#hawk]
+
+Rellena **ID** y **Clave**, elige el **Algoritmo** (**SHA-256** o **SHA-1**) y añade **Datos de la app (ext)** si el
+servidor los pide. Marca **Incluir el hash del cuerpo en la firma** para incluir el hash del contenido. Cada solicitud se
+firma con la hora, un nonce, el método, la ruta, el host y el puerto.
+
+### Akamai EdgeGrid [#akamai-edgegrid]
+
+Rellena **Token de cliente**, **Secreto de cliente** y **Token de acceso**. **Cabeceras que firmar** es una lista
+separada por comas, normalmente vacía. **Bytes del cuerpo firmados** limita cuánto de un cuerpo POST se calcula en el hash
+(131072 por defecto).
+
+### NTLM [#ntlm]
+
+Rellena **Nombre de usuario** y **Contraseña**, y **Dominio** y **Estación de trabajo** si tu servidor los necesita.
+Echolot habla NTLMv2: responde al desafío del servidor en la misma conexión, y los 401 permanecen en el intercambio como
+saltos.
+
+NTLM autentica una conexión, no una solicitud, así que necesita HTTP/1.1. Con la versión de HTTP en **Automático**,
+Echolot usa HTTP/1.1 para las solicitudes NTLM; si eliges **HTTP/2** o **HTTP/3**, el envío se rechaza. Consulta
+[Ajustes de la solicitud](/docs/requests/settings#http-version).
+
+## Las credenciales se quedan con su origen [#credentials-stay-with-their-origin]
+
+Cuando una redirección lleva a otro origen (otro esquema, host o puerto), Echolot no lleva allí tus credenciales. Descarta:
+
+- las cabeceras `Authorization`, `Proxy-Authorization` y `Cookie`,
+- las cabeceras habituales de clave de API (`X-API-Key`, `Api-Key`, `Apikey`, `X-Auth-Token`, `X-Access-Token`,
+  `Private-Token`, `X-Functions-Key`), la cabecera que usa tu autenticación **Clave de API** y cualquier cabecera cuyo
+  valor contenga una variable secreta,
+- la firma de Digest, AWS Signature, OAuth 1.0, Hawk, EdgeGrid y NTLM, y el certificado de cliente elegido para el primer
+  host.
+
+Los certificados y el proxy del nuevo host se aplican al salto que va hacia allí. Consulta
+[Ajustes de la solicitud](/docs/requests/settings#redirects).
+
+## Entornos protegidos [#protected-environments]
+
+**Obtener token** también envía una solicitud. Cuando el entorno de la ventana está protegido, pide confirmación antes,
+igual que **Enviar**. Consulta [Entornos protegidos](/docs/workspaces/protected-environments).

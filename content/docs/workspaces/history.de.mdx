@@ -1,0 +1,137 @@
+---
+title: "Verlauf"
+description: "Finde jede Antwort, die ein Arbeitsbereich erhalten hat, sieh, wer sie gesendet hat, vergleiche zwei Antworten und lösche, was du nicht mehr brauchst."
+---
+ Echolot behält jeden Austausch eines Arbeitsbereichs: jede gesendete Anfrage und die Antwort darauf, mit dem Absender.
+Deine eigenen, die der Ausführung, die von Flows und die von Agenten landen am selben Ort. Nutze den Verlauf, um zu
+einer früheren Antwort zurückzugehen, um die Anfrage zu finden, die einen Wert zurückgegeben hat, oder um zu sehen, was
+ein Agent getan hat.
+
+## Die Seite „Verlauf“ öffnen [#open-the-history-page]
+
+- **Ansicht › Verlauf** (<kbd>⌘</kbd><kbd>Y</kbd>).
+- **Verlauf** im Seitenkopf. Klicke noch einmal darauf, um zur vorherigen Seite zurückzukehren.
+
+Die Seite listet Austausche nach Tag, die neuesten zuerst. Jede Zeile zeigt den Status (oder **Fehlgeschlagen** bei
+einem Senden ohne Antwort), die Methode, den Namen der Anfrage, ihre Adresse, den Absender und den Zeitpunkt.
+**ungesichert** markiert einen Austausch einer Anfrage, die nie gesichert wurde; **gelöscht** einen, dessen Anfrage
+seither gelöscht wurde.
+
+<Shot id="workspaces-history-page" alt="Die Seite „Verlauf“: die Austausche von heute aus Alpenglow, gesendet von „Du“, der Ausführung und einem Agenten, mit dem Suchfeld und dem Filter „Gesendet von“ darüber" />
+
+## Was aufgezeichnet wird [#what-is-recorded]
+
+- Jedes Senden jeder Anfrageart, von der Anfrageseite, der [Ausführung](/docs/requests/runner), von Flows, vom
+  [Schnellversand](/docs/mac/quick-send), von den [Kurzbefehlen](/docs/mac/shortcuts), vom
+  [Assistenten](/docs/ai/assistant) und von [externen Agenten](/docs/ai/agents).
+- Sendevorgänge, die ohne Antwort fehlgeschlagen sind, mit ihrem Fehler.
+- WebSocket-, Socket.IO- und MQTT-Sitzungen, sobald sie schließen: die Verbindung und das Protokoll jeder Nachricht.
+
+Sendevorgänge, die Echolot für den eigenen Bedarf macht, etwa das Abrufen eines GraphQL-Schemas oder einer Spec, werden
+nicht aufgezeichnet. Das Befehlszeilentool führt keinen Verlauf.
+
+Wer einen Austausch gesendet hat, steht in seiner Zeile:
+
+| Angezeigt | Gesendet von |
+| --- | --- |
+| **Du** | Dir, aus der App. |
+| **Ausführung** | Einem Durchlauf in der Ausführung. |
+| **Flow:** Name | Einem Flow. |
+| **Agent** | Dem eingebauten Assistenten. |
+| Der Name des Clients | Einem externen Agenten über den MCP-Server von Echolot, etwa Claude Code. |
+
+## Suchen und filtern [#search-and-filter]
+
+Tippe in **Namen, URLs, Header und Bodys durchsuchen**. Zwei Zeichen durchsuchen Namen und Adressen; drei oder mehr
+durchsuchen auch Bodys. Treffer werden an beliebiger Stelle im Text gefunden, nicht nur am Anfang eines Wortes.
+
+**Gesendet von** schränkt die Liste ein: **Alle**, **Du**, **Durchläufe** (die Ausführung und Flows) oder **Agenten**
+(der Assistent und externe Agenten). Die Zahl daneben sagt, wie viele Austausche oder Treffer es gibt.
+
+Was die Suche abdeckt:
+
+- Die ersten 256 KB jedes Text-Bodys: JSON, XML, HTML, Text, Formulardaten, Ereignisströme und Ähnliches. Bilder,
+  Archive und andere binäre Bodys werden nicht durchsucht.
+- Gar keinen Body-Text, solange die [Verschlüsselung](/docs/workspaces/storage-and-encryption) an ist: Dann findet die
+  Suche nur Namen, Adressen und Header.
+- Nie geheime Werte: Sie sind in dem, was der Verlauf listet und durchsucht, maskiert, sodass sich die Suche nicht
+  nutzen lässt, um einen zu erraten.
+
+## Einen Austausch ansehen [#look-at-an-exchange]
+
+Klicke auf eine Zeile, um sie auszuwählen; <kbd>↑</kbd> und <kbd>↓</kbd> bewegen sich durch die Liste.
+
+- <kbd>Space</kbd> zeigt die Übersicht: den Status, wann gesendet wurde, wie lange es dauerte, Größe und Typ, wer gesendet
+  hat, die Umgebung und die Anfrage, mit Tasten, um ihn anzuzeigen, seine Adresse zu kopieren oder ihn zu vergleichen.
+- <kbd>↩</kbd> oder ein Doppelklick öffnet ihn. Ein Austausch einer gesicherten Anfrage öffnet sich in dieser Anfrage,
+  bei dieser Antwort. Ein Austausch ohne gesicherte Anfrage öffnet sich in einem Blatt mit seinen Antwort-Headern und dem
+  Body.
+
+Klicke bei gedrückter Control-Taste auf eine Zeile für:
+
+| Befehl | Was er tut |
+| --- | --- |
+| **In Anfrage anzeigen** | Öffnet die Anfrage bei dieser Antwort. |
+| **Austausch anzeigen** | Öffnet den Austausch in einem Blatt. |
+| **Mit vorheriger Antwort vergleichen** | Vergleicht sie mit der Antwort der Anfrage davor. |
+| **Zur OpenAPI-Spec hinzufügen …** | Dokumentiert die Antwort in einer Spec. Siehe [Specs aus Datenverkehr](/docs/specs/specs-from-traffic). |
+| **Als Mock-Beispiel sichern …** | Sichert die Antwort als benanntes Beispiel in der Spec, der ihre Anfrage folgt. Siehe [Mocks](/docs/mocks). |
+| **URL kopieren** | Kopiert die Adresse. |
+| **Löschen** | Entfernt diesen Austausch aus dem Verlauf. |
+
+## Der eigene Verlauf einer Anfrage [#a-requests-own-history]
+
+Auf der Anfrageseite zeigt die Uhr-Taste in der Leiste des Antwortbereichs, wie viele Antworten die Anfrage hat. Klicke
+darauf für die Liste: Status, Zeit, Absender, Dauer und Größe.
+
+- Klicke auf eine Antwort, um sie im Antwortbereich anzuzeigen. Eine Leiste darüber sagt **Frühere Antwort**, wann und
+  wer sie gesendet hat, mit **Mit neuester vergleichen** und **Neueste anzeigen**.
+- Verweile auf einer Zeile und klicke auf die Pfeile, um sie mit der angezeigten Antwort zu vergleichen.
+- **⋯ › Verlauf dieser Anfrage löschen …** fragt zuerst und entfernt dann die früheren Antworten der Anfrage. Die
+  Anfrage bleibt, wie sie ist.
+
+<Shot id="workspaces-request-history" alt="Die Liste des Antwortverlaufs von Catalog › List products, über die Uhr-Taste geöffnet: fünf Antworten mit Status, Zeit, Herkunft, Dauer und Größe" />
+
+## Zwei Antworten vergleichen [#compare-two-responses]
+
+Vergleiche aus dem Verlauf einer Anfrage, über **Mit neuester vergleichen** oder mit
+**Mit vorheriger Antwort vergleichen** auf der Seite „Verlauf“. Das Blatt zeigt oben die beiden Antworten nebeneinander,
+die ältere mit − und die neuere mit + markiert, und darunter die Zeilen, die sich zwischen ihnen geändert haben, mit je
+drei Zeilen Umgebung.
+
+- **Body** vergleicht die Bodys. Es sagt „Die Bodys sind Byte für Byte identisch.“, wenn nichts abweicht, und „Die Bodys
+  unterscheiden sich nur in der Formatierung.“, wenn nur das Layout abweicht.
+- **Status und Header** vergleicht die Statuszeile und die Header.
+
+Die Zahlen unten sagen, wie viele Zeilen hinzugekommen und entfernt worden sind. Bis zu 20.000 geänderte Zeilen werden
+angezeigt.
+
+<Shot id="workspaces-history-compare" alt="„Antworten vergleichen“ für Catalog › List products: die ältere und die neuere Antwort oben, ein geänderter Preis und Lagerbestand im Diff des Bodys" />
+
+## Wie lange der Verlauf aufbewahrt wird [#how-long-history-is-kept]
+
+Der Verlauf behält die neuesten Antworten jeder Anfrage. Wie viele, wählst du unter
+**Einstellungen › Speicher › Verlauf pro Anfrage**: 10, 25, 50 (der Standard), 100 oder 200. Ältere Einträge gehen
+zuerst. Die neueste Antwort jeder Anfrage behält ihren Body und wird daher nach einem Neustart wieder angezeigt.
+
+Bodys werden getrennt gespeichert und haben ein eigenes Größenlimit (**Antwort-Bodys behalten bis**, standardmäßig 5
+GB). Oberhalb davon werden die am längsten nicht benutzten Bodys entfernt, sodass ein alter Eintrag „Dieser Body ist
+nicht mehr gespeichert.“ sagen kann. Siehe [Speicher und Verschlüsselung](/docs/workspaces/storage-and-encryption).
+
+## Verlauf löschen [#clear-history]
+
+- Ein Austausch: **Löschen** in seinem Kontextmenü.
+- Der einer Anfrage: **Verlauf dieser Anfrage löschen …** in ihrer Verlaufsliste.
+- Der ganze eines Arbeitsbereichs: **⋯ › Verlauf löschen …** auf der Seite „Verlauf“. Es fragt zuerst: „Gesamten Verlauf
+  dieses Arbeitsbereichs löschen?“ Anfragen bleiben, wie sie sind; ihre früheren Antworten gehen.
+
+Das Löschen des Verlaufs berührt nie Anfragen oder Dateien des Arbeitsbereichs.
+
+## Wo der Verlauf liegt [#where-history-lives]
+
+Jeder Arbeitsbereich hat seinen eigenen Verlauf, aufbewahrt im Speicher von Echolot auf deinem Mac, nie im Ordner des
+Arbeitsbereichs. Er wird nicht über Git geteilt, und der Verlauf eines Teammitglieds gehört ihm. Agenten lesen den
+Verlauf über Echolot, mit maskierten Anmelde-Headern und Secrets.
+
+Lässt sich der Verlauf nicht öffnen, sagt die Seite „Verlauf nicht verfügbar“ und warum. Das Senden funktioniert weiter;
+nichts wird aufgezeichnet, bis sich die Datei öffnen lässt.

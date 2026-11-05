@@ -1,0 +1,62 @@
+---
+title: ".proto-Dateien"
+description: "Bewahre die .proto-Dateien eines gRPC-Dienstes im Arbeitsbereich auf, bearbeite sie mit einer Live-Gliederung und mache Anfragen aus ihren Methoden."
+---
+
+Eine `.proto`-Datei beschreibt einen gRPC-Dienst: seine Methoden und die Nachrichten, die sie annehmen und zurückgeben.
+Bewahrst du sie im Arbeitsbereich auf, verwenden [gRPC-Anfragen](/docs/requests/grpc) sie, um Nachrichten zu bauen und
+zu lesen, ohne den Server zu fragen. Die Seite „Specs“ zeigt `.proto`-Dateien neben den OpenAPI-Dokumenten, mit einem
+eigenen Editor und einer eigenen Gliederung.
+
+Das Beispiel Alpenglow hat eine, `inventory.proto`, mit dem Service `alpenglow.inventory.v1.Inventory`.
+
+<Shot id="specs-proto" alt="inventory.proto geöffnet auf der Seite „Specs“: links der Quelltext, rechts der Service Inventory mit ListWarehouses, WatchStock und Reserve, jeweils mit einem Plus-Knopf, darunter seine Nachrichten" />
+
+## Datei hinzufügen [#adding-a-file]
+
+Klicke in der Seitenleiste von „Specs“ im Kopf von **Specs** auf **+**:
+
+- **Neue Proto-Datei** beginnt `specs/service.proto` mit einem kleinen Beispieldienst, `Greeter`, den du durch deinen
+  eigenen ersetzt.
+- **Proto-Datei hinzufügen …** kopiert eine `.proto`-Datei von deinem Mac in den Ordner `specs`. Importiert sie andere
+  Dateien, kopiere auch diese nach `specs`. Die bekannten Typen von Google (`google/protobuf/timestamp.proto` und die
+  übrigen) sind eingebaut.
+
+Die Dateien stehen in der Seitenleiste unter **Proto-Dateien**. Klicke eine mit der rechten Maustaste an für
+**Im Finder anzeigen** und **Löschen …**. Löschen fragt zuerst nach und legt die Datei in den Papierkorb;
+gRPC-Anfragen, die sie verwendet haben, brauchen dann eine andere Datei oder die Reflection des Servers.
+
+## Bearbeiten [#editing]
+
+Klicke eine Datei an, um sie zu öffnen. Links steht der Quelltext, mit Hervorhebung. Die Leiste darüber zeigt die Datei,
+**Protocol Buffers** und **Keine Probleme** oder das erste Problem, das der Parser gefunden hat, etwa
+`inventory.proto:12: expected “;”`.
+
+Rechts zeigt die Gliederung, was die Datei deklariert, und folgt dem Editor, während du tippst:
+
+- Jeder **Service** mit seinen Methoden. Jede Methode zeigt ihre Art (`unary`, `server streaming` und so weiter) und ihre
+  Eingabe- und Ausgabenachrichten.
+- **Nachrichten**, mit ihren Feldern und Typen.
+- **Enums**.
+
+Eine Datei, die sich nicht parsen lässt, zeigt **Die Gliederung erscheint, sobald sich die Datei lesen lässt.**
+
+Echolot sichert die Datei kurz nach jeder Änderung und wenn du eine andere Datei öffnest oder die Seite verlässt. Lässt
+sie sich nicht schreiben, bietet **Die Proto-Datei konnte nicht gesichert werden** die Knöpfe **Erneut versuchen**,
+**Kopie sichern …**, **Änderungen verwerfen** und **Weiter bearbeiten** an, wie bei [Specs](/docs/specs/editing#saving);
+deine Änderungen bleiben im Editor, bis sie gesichert sind.
+
+Auf der Seite „Specs“ ist jeweils eine Datei geöffnet: eine `.proto`-Datei oder eine OpenAPI-Spec. Eine zu öffnen sichert
+die andere und verlässt sie.
+
+## Anfragen aus Methoden [#requests-from-methods]
+
+Klicke in der Gliederung auf das **+** neben einer Methode, um eine gRPC-Anfrage dafür zu erstellen. Die Anfrage
+verwendet diese `.proto`-Datei, ruft diesen Service und diese Methode auf und beginnt mit einer Nachricht, in der jedes
+Feld einen Beispielwert hat. Richte ihre URL auf deinen Server und sende sie. [gRPC](/docs/requests/grpc) behandelt das
+Senden, Streaming-Methoden und wie du die Methoden aus der Reflection des Servers statt aus einer Datei nimmst.
+
+## Über die Befehlszeile [#from-the-command-line]
+
+`echolot grpc describe --proto api.proto` listet die Services, Methoden und Felder einer Datei auf, und
+`echolot grpc call` ruft eine Methode auf. Siehe [echolot grpc](/docs/cli/grpc).

@@ -1,0 +1,147 @@
+---
+title: "서버 추가"
+description: "HTTP 또는 로컬 명령으로 MCP 서버를 추가하고, 다른 앱에서 가져오고, OAuth로 로그인합니다."
+---
+
+MCP 서버는 HTTP로 접근할 수 있거나, Echolot이 Mac에서 시작해 stdio로 통신하는 프로그램입니다. 직접 입력할 수도 있고, 다른 앱이 이미
+알고 있는 서버를 가져올 수도 있습니다.
+
+## 서버 추가 [#adding-a-server]
+
+사이드바의 <strong>서버</strong> 헤더에서 <strong>+</strong>를 클릭하고 <strong>MCP 서버 추가…</strong>를 선택합니다. 비어 있는 MCP 서버 페이지에서는 <strong>MCP 서버 추가…</strong>
+버튼이 같은 일을 합니다.
+
+<Shot id="mcp-add-server" alt="GitHub 서버를 위한 MCP 서버 추가 시트. 전송 방식 메뉴가 열려 있어 로컬 명령(stdio)과 HTTP(Streamable HTTP)가 보이고, 그 아래에 인수, 선택 사항인 작업 디렉토리, 환경 섹션이 있습니다" />
+
+서버의 <strong>이름</strong>을 입력하고, <strong>전송 방식</strong>을 선택하고, 아래 필드를 채운 다음 <strong>추가</strong>를 클릭합니다. Echolot이 서버를 저장하고, 선택하고,
+검사합니다. 서버 헤더의 <strong>편집…</strong>(또는 오른쪽 클릭 메뉴)은 같은 시트를 열며, <strong>저장</strong>은 변경 사항을 유지하고 서버를 다시 검사합니다.
+편집은 <strong>편집 › 실행 취소</strong>로 되돌릴 수 있습니다.
+
+### HTTP로 [#over-http]
+
+<strong>HTTP(Streamable HTTP)</strong>를 선택합니다.
+
+| 필드 | 입력할 내용 |
+| --- | --- |
+| <strong>URL</strong> | 서버의 엔드포인트. 예: `https://demo.echolot.dev/mcp`. MCP 엔드포인트는 보통 `/mcp`로 끝납니다. |
+| <strong>헤더</strong> | 모든 메시지와 함께 보내는 헤더. 예: `Authorization`에 `Bearer {{token}}`. <strong>추가</strong>를 클릭하면 행이 생기고, 체크 상자로 행을 삭제하지 않고 끌 수 있습니다. |
+| <strong>OAuth</strong> | OAuth로 로그인하는 서버 중 인증 서버가 Echolot을 스스로 등록할 수 없는 경우에만 사용합니다. [OAuth로 로그인](#signing-in-with-oauth)을 참조하십시오. |
+
+이전 HTTP+SSE 전송을 쓰는 서버에는 별도 설정이 필요하지 않습니다. 여기에 URL을 입력하면 Streamable HTTP가 거부될 때 Echolot이
+HTTP+SSE로 되돌아갑니다. `/sse`로 끝나는 URL은 HTTP+SSE를 먼저 시도합니다.
+
+### 로컬 명령(stdio)으로 [#as-a-local-command-stdio]
+
+<strong>로컬 명령(stdio)</strong>을 선택합니다.
+
+| 필드 | 입력할 내용 |
+| --- | --- |
+| <strong>명령어</strong> | 시작할 프로그램. 예: `npx`, `uvx`, `node` 또는 바이너리의 전체 경로. |
+| <strong>인수</strong> | 프로그램의 인수. 공백으로 구분합니다. 예: `-y @modelcontextprotocol/server-everything`. 공백이 있는 인수는 큰따옴표로 묶습니다. |
+| <strong>작업 디렉토리</strong> | 프로그램이 시작되는 위치. 선택 사항입니다. |
+| <strong>환경</strong> | 프로그램의 환경 변수. 예: `GITHUB_TOKEN`에 `{{github_token}}`. |
+
+Echolot은 로그인 셸의 `PATH`로 프로그램을 시작하므로, Finder나 Dock에서 Echolot을 열었더라도 `npx`, `uvx`와 Homebrew, nvm, mise, Volta로
+설치한 도구를 찾을 수 있습니다. 검사에서 <strong>서버 시작</strong>이 실패하면 명령이 설치되어 있고 `PATH`에 있는지 확인하거나 전체 경로를 지정하라고
+제안합니다. 프로그램의 오류 출력은 <strong>메시지</strong> 카드에 있습니다.
+
+<Edition only="direct">
+  로컬(stdio) 서버는 직접 다운로드 버전에서 실행됩니다. App Store 버전은 프로그램을 시작할 수 없으므로 서버를 작업 공간에 보관하고
+  그 자리에 <strong>로컬 프로그램으로 실행</strong>이라고 표시합니다. 직접 다운로드 버전과 `echolot` 명령줄 도구는 이 서버를 실행합니다. HTTP
+  MCP 서버는 두 버전 모두에서 작동합니다.
+</Edition>
+
+## 실행 전 검토 [#review-before-running]
+
+작업 공간 파일(예: 동료의 커밋)이나 가져오기에서 온 로컬 서버는 이 Mac에서 시작된 적이 없습니다. Echolot은 정확한 <strong>명령어</strong>, <strong>인수</strong>,
+<strong>작업 디렉토리</strong>, 환경과 함께 <strong>실행 전 검토</strong>를 표시하고, <strong>신뢰하고 확인</strong>을 클릭하기 전까지는 아무것도 시작하지 않습니다.
+
+승인은 이 Mac에서 그 정확한 명령에 대해서만 유효하며 작업 공간에는 기록되지 않습니다. 명령, 인수, 환경이 바뀌면 Echolot이 다시 묻습니다.
+직접 추가하거나 편집한 서버는 사용자가 쓴 것이므로 승인된 것으로 취급합니다.
+
+## 값과 비밀 값 [#values-and-secrets]
+
+모든 필드에 `{{variables}}`를 쓸 수 있으며, Echolot이 연결할 때 활성 [환경](/docs/workspaces/environments)에서 해석합니다. 토큰과 키는
+[비밀 변수](/docs/workspaces/secrets)에 보관하고 이름으로 참조하십시오. `Bearer {{token}}`, `{{github_token}}`처럼 씁니다. 비밀 값은
+키체인에 남고 작업 공간에는 기록되지 않으므로 서버의 파일을 커밋해도 안전합니다.
+
+## 다른 앱에서 서버 가져오기 [#importing-servers-from-other-apps]
+
+Echolot은 Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, Codex의 MCP 서버 목록을 읽습니다.
+
+<Edition only="direct">
+  직접 다운로드 버전은 이 파일들을 스스로 찾습니다. 찾으면 사이드바 아래쪽의 <strong>이 Mac에서 발견됨</strong> 상자에 각 앱이 <strong>가져오기</strong> 버튼과
+  함께 나열됩니다. <strong>+</strong> 메뉴의 <strong>가져올 위치</strong>에도 나열되며, <strong>설정 파일 선택…</strong>으로 다른 파일을 선택할 수 있습니다. 상자는 <strong>×</strong>로
+  닫을 수 있고, 가져오기는 <strong>+</strong> 메뉴에 남아 있습니다.
+</Edition>
+
+<Edition only="appstore">
+  App Store 버전은 다른 앱의 파일을 스스로 읽을 수 없습니다. <strong>+</strong> › <strong>가져올 위치</strong>에서 앱을 선택하면(예: <strong>Cursor…</strong>) 그 앱의 폴더에서
+  열기 패널이 시작되고 파일을 고릅니다. <strong>설정 파일 선택…</strong>으로 다른 파일을 선택할 수 있습니다.
+</Edition>
+
+| 앱 | 파일 |
+| --- | --- |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Code | `~/.claude.json` 또는 프로젝트의 `.mcp.json` |
+| Cursor | `~/.cursor/mcp.json` |
+| VS Code | `~/Library/Application Support/Code/User/mcp.json` 또는 프로젝트의 `.vscode/mcp.json` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+| Codex | `~/.codex/config.toml` |
+
+이 파일 중 하나를 윈도우로 드래그하거나 <strong>파일 › 가져오기…</strong>에서 선택할 수도 있습니다. Echolot은 MCP 클라이언트 설정을 다른
+[가져오기](/docs/get-started/importing)와 마찬가지로 인식합니다.
+
+가져오기가 하는 일:
+
+- 파일의 모든 서버가 작업 공간의 서버가 되며, 원본과 같이 로컬이거나 HTTP입니다.
+- 리터럴 비밀 값(`Authorization` 헤더의 토큰, 비밀 값처럼 보이는 환경 변수의 키)은 작업 공간의 비밀 변수로 옮겨지고 서버는 그것을 이름으로
+  참조합니다. 가져오기 보고서에는 그 변수의 이름이 나오고 값은 나오지 않습니다.
+- 플레이스홀더는 Echolot 값이 됩니다. `${env:NAME}`과 `${NAME}`은 Echolot이 연결할 때 환경 변수 `NAME`을 읽고, VS Code의 `${input:id}`는
+  변수 `{{id}}`가 됩니다. 보고서에 추가해야 할 변수가 나옵니다.
+- Codex의 `bearer_token_env_var`는 그 환경 변수를 읽는 `Authorization: Bearer` 헤더가 됩니다.
+- 원본에서 꺼져 있던 서버도 가져오며 보고서에 메모가 남습니다. 명령도 URL도 없는 서버는 건너뜁니다.
+- 가져온 로컬 서버는 [실행 전 검토](#review-before-running)에서 사용자를 기다립니다.
+
+## OAuth로 로그인 [#signing-in-with-oauth]
+
+서버가 OAuth가 필요하다고 응답하면 Echolot은 페이지 맨 위에 <strong>로그인 필요</strong>를 표시하며, <strong>인증 서버</strong>와 Echolot이 클라이언트를 얻는
+방식을 보여 줍니다.
+
+| <strong>클라이언트</strong>의 표시 | 의미 |
+| --- | --- |
+| <strong>Echolot이 직접 등록</strong> | 인증 서버가 새 클라이언트를 스스로 받습니다. 설정할 것이 없습니다. |
+| <strong>서버의 OAuth 설정에서</strong> | 서버의 <strong>OAuth</strong> 섹션에 클라이언트 ID를 입력했습니다. |
+| <strong>클라이언트 ID 필요(편집…)</strong> | 인증 서버가 클라이언트를 등록해 주지 않습니다. 그곳에서 하나를 등록한 다음 <strong>편집…</strong> › <strong>OAuth</strong>에 입력합니다. |
+
+<strong>로그인…</strong>을 클릭합니다. Echolot이 브라우저를 열고, 로그인이 `127.0.0.1`로 돌아오기를 기다린 다음 서버를 다시 검사합니다. 토큰은
+키체인에 저장되며 작업 공간에는 절대 기록되지 않습니다. 그러면 카드에 <strong>로그인됨</strong>이 표시되고, 인증 서버, 범위, 토큰이 만료되는 시점,
+Echolot이 스스로 등록했다면 <strong>Echolot이 등록함</strong>이 함께 표시됩니다. 갱신할 수 있는 만료된 토큰은 다음 호출에서 갱신됩니다.
+
+<strong>로그아웃</strong>은 토큰과 Echolot이 등록한 클라이언트를 잊습니다. 토큰 자체는 만료될 때까지 서버에서 유효합니다.
+
+서버 시트의 <strong>OAuth</strong> 섹션은 검색으로 처리할 수 없는 경우를 위한 것입니다.
+
+| 필드 | 비워 두었을 때의 기본값 |
+| --- | --- |
+| <strong>클라이언트 ID</strong> | 자동으로 등록됩니다. |
+| <strong>클라이언트 비밀</strong> | 없음. `{{client_secret}}` 같은 비밀 변수를 사용하십시오. |
+| <strong>범위</strong> | 서버가 요청하는 대로. |
+| <strong>리디렉션 URI</strong> | `http://127.0.0.1:<any port>/callback`. |
+
+모든 것을 검색하게 하려면 이 섹션을 비워 두십시오. <strong>헤더</strong>의 `Authorization` 헤더가 OAuth보다 우선합니다.
+
+명령줄 도구는 `echolot mcp sign-in`으로 로그인합니다. Mac에서는 키체인 항목을 앱과 공유하고, CI를 위해서는 로그인 정보를 비밀 값으로
+출력할 수도 있습니다. [echolot mcp](/docs/cli/mcp)를 참조하십시오.
+
+## 검사가 실패할 때 [#when-a-check-fails]
+
+<strong>연결 문제</strong> 카드는 실패한 단계를 알려 주고 해결 방법을 제안합니다.
+
+| 단계 | 일반적인 원인 |
+| --- | --- |
+| <strong>서버 시작</strong> | 명령이 설치되어 있지 않거나 `PATH`에 없습니다. 터미널에서 실행해 멈추는 이유를 확인하십시오. 오류 출력은 <strong>메시지</strong>에 있습니다. |
+| <strong>서버 연결 가능</strong> | 해당 호스트와 포트에서 수신 대기하는 것이 없거나, URL의 경로가 잘못되었습니다(MCP 엔드포인트는 보통 `/mcp`입니다). |
+| <strong>권한 부여</strong> | 로그인한 사람이 없거나, 자격 증명이 허용되지 않거나, 서버가 `Authorization` 헤더를 요구합니다. |
+| <strong>응답 확인</strong> | 서버가 `ping`에 응답하지 않았습니다. 바쁘거나 사양을 따르지 않을 수 있습니다. |
+| <strong>도구</strong> | 하나 이상의 도구 정의가 올바르지 않습니다. 이 단계가 해당 도구를 알려 줍니다. |

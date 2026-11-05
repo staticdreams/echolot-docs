@@ -1,0 +1,114 @@
+---
+title: "Git und Teams"
+description: "Teile einen Arbeitsbereich über Git, prüfe Änderungen als kleine Diffs und halte Secrets und persönliche Einstellungen aus dem Repository heraus."
+---
+ Ein Arbeitsbereich ist ein Ordner mit Textdateien, die dafür geschrieben sind, in Git zu liegen: eine Datei pro
+Anfrage, dieselben Bytes für denselben Inhalt, nichts Privates darin. Committe ihn, pushe ihn, und dein Team arbeitet
+mit denselben Anfragen, jede Person mit den eigenen Anmeldedaten.
+
+## Dateien für Diffs gemacht [#files-made-for-diffs]
+
+- **Eine Datei pro Anfrage.** Eine Anfrage zu ändern ändert eine Datei. Eine Anfrage hinzuzufügen fügt eine Datei hinzu.
+- **Deterministisch.** Echolot schreibt denselben Inhalt jedes Mal auf dieselbe Weise: dieselben Schlüssel in derselben
+  Reihenfolge, sodass Sichern ohne Änderung nichts ändert und ein Diff nur zeigt, was du geändert hast.
+- **Lesbar.** Anfragen sind TOML; Bodys liegen als eigene Dateien neben ihrer Anfrage (`create-order.body.json`) und
+  GraphQL-Abfragen als `.graphql`, sodass sie als JSON und GraphQL verglichen werden statt als maskierte Strings.
+- **Reihenfolge in der Ordnerdatei.** Die Reihenfolge der Objekte in einem Ordner ist eine Liste in seiner
+  `_folder.toml` und nicht Teil der Dateinamen, sodass Umsortieren eine Zeile ändert.
+- **Deine Kommentare bleiben.** Kommentare, die du von Hand in eine Datei schreibst (`# why this header`), bleiben
+  erhalten, wenn Echolot sie sichert: der Kommentarblock am Anfang, Kommentare über einem Schlüssel oder einer Tabelle
+  und Kommentare nach einem Wert. Ein Kommentar an einem Schlüssel, den es nicht mehr gibt, entfällt.
+
+Eine Anfrage umzubenennen benennt ihre Datei um, dazu die Body- und Skriptdateien daneben. Eine Umgebung umzubenennen
+lässt ihren Dateinamen unverändert.
+
+## Was du committen solltest [#what-to-commit]
+
+Committe den ganzen Ordner des Arbeitsbereichs. Es gibt darin nichts zu ignorieren: Echolot schreibt nie geheime Werte,
+Verlauf, Antwort-Bodys oder deine persönlichen Einstellungen hinein.
+
+| Im Arbeitsbereich (geteilt) | Nur auf deinem Mac (nicht geteilt) |
+| --- | --- |
+| Anfragen, Ordner, ihre Reihenfolge, Doku, Auth und Skripte | Geheime Werte, im Schlüsselbund |
+| Variablen und ihre Werte, die keine Secrets sind | Globale Variablen |
+| Umgebungen und welche davon geschützt sind | Welche Umgebung aktiv ist |
+| MCP-Server, Specs, Mocks, Flows | Verlauf und Antwort-Bodys |
+| Agentenregeln, Proxy und Zertifikate des Arbeitsbereichs | Anordnung der Bereiche und andere Einstellungen der App |
+| Unterhaltungen mit dem Assistenten, die du teilen wolltest | Welchen Skripten und Agentenregeln du vertraut hast |
+
+Lass die ID des Arbeitsbereichs in `workspace.toml`, wie sie ist. Echolot findet darüber die geheimen Werte jeder
+Person.
+
+<Callout type="warn">
+  Ein Wert, der direkt in ein Feld getippt und nicht über eine Secret-Variable gehalten wird, wird so, wie er ist, in die
+  Datei geschrieben. Echolot warnt unter Auth- und Proxy-Feldern, die einen enthalten
+  (**Als Klartext in der Arbeitsbereichsdatei gespeichert.**); klicke auf **In den Schlüsselbund verschieben**, bevor du
+  committest. Siehe [Secrets](/docs/workspaces/secrets).
+</Callout>
+
+## Mit dem Teilen beginnen [#start-sharing]
+
+1. Lege den Arbeitsbereich in ein Git-Repository: Erstelle das Repository im Ordner `.echolot` oder behalte den
+   Arbeitsbereich als Ordner im Repository deines Projekts. Jeder Ordner mit einer `workspace.toml` öffnet sich in
+   Echolot.
+2. Committe und pushe.
+3. Teammitglieder klonen das Repository und öffnen den Arbeitsbereich mit **Datei › Arbeitsbereich öffnen …**.
+4. Jedes Teammitglied legt die geheimen Werte einmal auf dem eigenen Mac fest: Die Seite
+   [Umgebungen](/docs/workspaces/environments) zeigt bei jedem **Auf diesem Mac nicht festgelegt**.
+
+Das Befehlszeilentool liest dieselben Dateien, sodass CI die Anfragen ausführt, die du committest. Siehe
+[In CI testen](/docs/tutorials/test-in-ci).
+
+## Änderungen aus Git, Editoren und Agenten [#changes-from-git-editors-and-agents]
+
+Echolot beobachtet den Ordner des Arbeitsbereichs. Ändern sich Dateien außerhalb von Echolot (ein `git pull`, ein
+Branch-Wechsel, ein Editor, ein Agent), lädt das Fenster sie neu: Die Seitenleiste, offene Anfragen, Umgebungen, Specs,
+Mocks und Flows folgen sofort.
+
+Eine offene Anfrage ohne nicht gesicherte Änderungen übernimmt die neue Version ohne Rückfrage.
+
+Hat die Anfrage in ihrem Tab nicht gesicherte Änderungen, ergreift Echolot keine Partei. Über der Anfrage erscheint eine
+Leiste: **Diese Anfrage wurde auf dem Datenträger geändert**, „Eine andere App oder Git hat die Datei geändert, während
+du hier nicht gesicherte Änderungen hattest.“
+
+- **Meine behalten** behält die Änderungen im Tab und schreibt sie über die Datei.
+- **Datei verwenden** verwirft die Änderungen im Tab und lädt die Datei vom Datenträger.
+
+Bis du dich entscheidest, sichert Echolot diese Anfrage nicht, sodass die Änderung auf dem Datenträger bleibt, wie sie
+ist.
+
+### Einen Tab bei einem Konflikt schließen [#closing-a-tab-during-a-conflict]
+
+Schließt du den Tab, bevor du dich entschieden hast, fragt Echolot:
+**„Create order“ wurde auf dem Datenträger geändert, während du nicht gesicherte Änderungen hattest.** „Beim Schließen
+des Tabs bleibt nur eine Version.“ Wähle **Meine behalten**, **Datei verwenden** oder **Abbrechen**, um den Tab offen zu
+lassen. Schließt du das Fenster oder beendest du Echolot, während ein Konflikt wartet, sagt es dir, dass sich die
+Änderung nicht sichern lässt, und fragt, bevor es sie verwirft, sodass keine Version ohne dein Zutun verloren geht.
+
+### Merge-Konflikte [#merge-conflicts]
+
+Löse Git-Merge-Konflikte in deinem Editor oder Git-Tool, wie bei jeder Textdatei. Eine Datei, die noch Konfliktmarker
+enthält, ist kein gültiges TOML. Solange sich eine Datei nicht lesen lässt, behält ein offenes Fenster, was es vorher
+gelesen hat, und das Öffnen des Arbeitsbereichs schlägt mit einer Meldung im Willkommensfenster fehl, die die Datei
+nennt: „…“ konnte nicht gelesen werden. Korrigiere die Datei, und der Arbeitsbereich lässt sich wieder lesen.
+
+## Skripte und Agentenregeln aus Git [#scripts-and-agent-rules-from-git]
+
+Skripte können Anfragen senden und die Variablen des Arbeitsbereichs lesen, deshalb führt Echolot ein Skript erst aus,
+wenn du ihm auf deinem Mac vertraust. Skripte, die du in Echolot schreibst, sind vertrauenswürdig. Ein Skript, das über
+Git, einen Import oder einen anderen Editor ankommt oder dessen Code sich dort geändert hat, zeigt
+**Diese Skripte stammen nicht aus Echolot**, bis du es liest und auf **Skripten vertrauen** klickst. Siehe [Skripte und
+Tests](/docs/requests/scripts-and-tests).
+
+Dasselbe gilt für die Agentenregeln des Arbeitsbereichs: Regeln aus der Datei, die einschränken, was Agenten dürfen,
+gelten sofort; Regeln, die es lockern, zählen erst, nachdem du dieser Version auf deinem Mac vertraust. Siehe
+[Externe Agenten](/docs/ai/agents).
+
+## Teilen ohne Git [#sharing-without-git]
+
+Um einen Arbeitsbereich an jemanden zu geben, der Git nicht nutzt, [exportiere](/docs/workspaces/exporting) ihn als
+**Echolot-Arbeitsbereich**. Die Kopie bekommt eine neue ID, sodass ihre Secrets von deinen getrennt sind, und geheime
+Werte werden nie hineingeschrieben.
+
+Einen Arbeitsbereichsordner im Finder zu kopieren behält seine ID. Auf demselben Mac lesen die Kopie und das Original
+dieselben geheimen Werte aus dem Schlüsselbund.

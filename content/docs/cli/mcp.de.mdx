@@ -1,0 +1,253 @@
+---
+title: "echolot mcp"
+description: "Prüfe MCP-Server und wie ein Modell ihre Tools sieht, melde dich bei ihnen an, stelle einen Arbeitsbereich KI-Agenten bereit und richte MCP-Clients ein."
+---
+
+`echolot mcp` arbeitet mit MCP-Servern in zwei Richtungen. `check` und `sign-in` sprechen mit dem Server von jemand
+anderem, wie es die [Seite „MCP-Server“](/docs/mcp-servers) tut. `serve` und `setup` machen deinen Arbeitsbereich zu
+einem MCP-Server, sodass KI-Agenten wie Claude Code oder Cursor seine Anfragen auflisten, senden und testen können;
+siehe [Agenten](/docs/ai/agents).
+
+| Unterbefehl | Was er macht |
+| --- | --- |
+| `echolot mcp check` | Verbindet sich mit einem MCP-Server und listet auf, was er bietet; `--quality` berichtet, wie ein Modell seine Tools sieht. |
+| `echolot mcp sign-in` | Meldet dich bei einem MCP-Server eines Arbeitsbereichs an, der OAuth verlangt. |
+| `echolot mcp sign-out` | Vergisst diese Anmeldung auf diesem Mac. |
+| `echolot mcp serve` | Stellt einen Arbeitsbereich Agenten über MCP bereit. |
+| `echolot mcp setup` | Gibt aus, wie du einen MCP-Client mit einem Arbeitsbereich verbindest. |
+
+## echolot mcp check [#echolot-mcp-check]
+
+```sh
+echolot mcp check [--url <url>] [--header <header> ...] [--env <env> ...] [--verbose] [--timeout <seconds>] [--quality] [--strict] [--as <provider>] -- [<command> ...]
+```
+
+Gib mit `--url` einen Streamable-HTTP-Endpunkt an oder nach `--` den Befehl, der einen stdio-Server startet. Echolot
+findet heraus, ob der Server das zustandslose Protokoll (2026-07-28) spricht oder ein früheres mit Handshake, und listet
+seine Tools, Ressourcen und Prompts auf:
+
+```sh
+echolot mcp check --url https://demo.echolot.dev/mcp
+```
+
+```text
+alpenglow-mcp 1.5.0: MCP 2025-11-25 (session, initialize)
+  connected in 263 ms, round trip 54 ms
+  instructions: The Alpenglow demo shop from docs.echolot.dev. Read-only: search the catalog, look up products and orders.
+3 tools
+  search_catalog: Searches the Alpenglow catalog by text and returns matching products with price and stock.
+  get_product: Returns one product by SKU, with its price, weight, rating and stock per warehouse.
+  order_status: Returns an order's status, total and shipping estimate.
+1 resource
+  alpenglow://catalog/categories  categories
+1 prompt
+  pack_for_a_trip: Suggests gear for a trip.
+```
+
+Ein stdio-Server:
+
+```sh
+echolot mcp check -- npx -y @modelcontextprotocol/server-everything
+echolot mcp check -e API_KEY=demo -- uvx some-mcp-server --flag
+```
+
+### Wie ein Modell die Tools sieht [#how-a-model-sees-the-tools]
+
+`--quality` fügt hinzu, was ein Modell vom Server bekäme: was die Liste der Tools in den Kontext jedes Anbieters bei
+jedem Zug kostet (eine Schätzung), die Tools, die am meisten kosten, und worüber ein Modell stolpern würde, etwa
+Probleme im Schema und unklare oder sich überschneidende Beschreibungen. Es ist derselbe Bericht wie **So sieht ein
+Modell diesen Server** in der App; siehe [Tools und Qualität](/docs/mcp-servers/tools-and-quality).
+
+```sh
+echolot mcp check --url https://demo.echolot.dev/mcp --quality
+```
+
+```text
+How a model sees the tools (estimates)
+  Anthropic      572 tokens a turn, 0.3% of a 200k context
+  OpenAI         166 tokens a turn, 0.1% of a 200k context
+  Google Gemini  225 tokens a turn, 0.1% of a 200k context
+  largest: search_catalog 98, get_product 66, order_status 62
+Nothing a model would stumble over.
+```
+
+`--strict` lässt ein Problem (keine Warnung und keinen Hinweis) mit 1 enden, für CI. `--as anthropic`, `--as openai`
+oder `--as gemini` gibt nur die Liste der Tools aus, wie die API dieses Anbieters sie erhält.
+
+| Option | Bedeutung |
+| --- | --- |
+| `--url <url>` | Der Streamable-HTTP-Endpunkt, etwa `http://127.0.0.1:3000/mcp`. |
+| `-H`, `--header <header>` | Ein HTTP-Header als `'Name: value'`, für `--url`. Wiederholbar. |
+| `-e`, `--env <NAME=value>` | Eine Umgebungsvariable für einen stdio-Server. Wiederholbar. |
+| `-v`, `--verbose` | Jede gesendete und empfangene Nachricht in die Standardfehlerausgabe ausgeben. |
+| `--timeout <seconds>` | Sekunden, die auf jede Antwort gewartet wird. Standard 30. |
+| `--quality` | Berichten, wie ein Modell die Tools sieht: ihre Kosten pro Anbieter, Probleme bei Schema und Beschreibung. |
+| `--strict` | Mit `--quality`: mit 1 enden, wenn es ein Problem gibt. |
+| `--as <provider>` | Nur die Liste der Tools ausgeben, wie die API eines Anbieters sie erhält: `anthropic`, `openai` oder `gemini`. |
+
+## echolot mcp sign-in und sign-out [#echolot-mcp-sign-in-and-sign-out]
+
+```sh
+echolot mcp sign-in <server> [--workspace <workspace>] [--env <env>] [--force] [--print] [--verbose]
+echolot mcp sign-out <server> [--workspace <workspace>]
+```
+
+`<server>` ist der Dateiname des Servers im Ordner `mcp-servers` des Arbeitsbereichs, ohne `.toml`. Die Anmeldung öffnet
+deinen Browser und wartet auf die Weiterleitung an 127.0.0.1:
+
+```sh
+echolot mcp sign-in alpenglow-mcp -w Alpenglow.echolot
+```
+
+- Auf einem Mac geht die Anmeldung in den Schlüsselbund, geteilt mit der App: Die App und `echolot run` auf diesem Mac
+  nutzen sie.
+- Anderswo oder mit `--print` gibt Echolot sie als Zeile `ECHOLOT_SECRET_…='…'` aus. Bewahre diesen Wert als CI-Secret
+  auf und setze die Variable dort, wo Echolot läuft. Er enthält ein Refresh-Token: Behandle ihn wie ein Passwort.
+- `ECHOLOT_BROWSER` nennt einen anderen Befehl, mit dem die Anmeldeseite geöffnet wird.
+
+| Option | Bedeutung |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Der Ordner des Arbeitsbereichs. Standard: der aktuelle Ordner. |
+| `--env <env>` | Die Umgebung, deren Variablen die Einstellungen des Servers auflösen. |
+| `--force` | Erneut anmelden, auch wenn eine funktionierende Anmeldung existiert. |
+| `--print` | Die Anmeldung als Variable `ECHOLOT_SECRET_` ausgeben, für CI. |
+| `-v`, `--verbose` | Jeden Schritt der Anmeldung in die Standardfehlerausgabe ausgeben. |
+
+`sign-out` entfernt die Anmeldung aus dem Schlüsselbund. Ohne Schlüsselbund gibt es nichts zu vergessen: Entferne
+stattdessen die Variable.
+
+## echolot mcp serve [#echolot-mcp-serve]
+
+```sh
+echolot mcp serve [<workspace>] [--env <env>] [--policy <policy>] [--toolsets <toolsets>] [--http <port>] [--verbose] [--headless] [--trust-workspace-policy]
+```
+
+Stellt einen Arbeitsbereich Agenten über MCP bereit. Agenten listen seine Anfragen auf, lesen, senden und führen sie
+aus, fragen Antworten über Handles ab und erstellen oder ändern Anfragen, über dieselben Tools wie die App. Füge ihn
+einem Client als stdio-Server hinzu, dessen Befehl lautet:
+
+```sh
+echolot mcp serve /path/to/Alpenglow.echolot
+```
+
+**Mit geöffneter App.** Hat die App Echolot den Arbeitsbereich geöffnet und lässt Agenten herein (**Einstellungen ›
+Agenten**), wird der Client zur App durchgestellt. Die App fragt dich dann, ob du genehmigst, was eine Genehmigung
+braucht, und du siehst, was der Agent tut. `--headless` stellt trotzdem auf eigene Faust bereit.
+
+**Auf eigene Faust.** Ohne die App kann niemand gefragt werden, daher wird abgelehnt, wonach die Richtlinie fragen
+würde:
+
+| Richtlinie | Was läuft |
+| --- | --- |
+| `standard` (Standard) | Lesezugriffe und sichere Anfragen (etwa `GET`). Andere Anfragen, Hosts, die der Arbeitsbereich nicht kennt, und Änderungen am Arbeitsbereich werden abgelehnt. |
+| `readonly` | Nur Lesezugriffe. |
+| `permissive` | Anfragen und Änderungen am Arbeitsbereich. Löschen wird abgelehnt, ebenso Hosts, die der Arbeitsbereich nicht kennt, und Anfragen in geschützten Umgebungen. |
+
+Secrets werden aus `ECHOLOT_SECRET_`-Variablen und dem Schlüsselbund dieses Macs aufgelöst und erreichen den Agenten
+nie. Headless führt der Server nur die Skripte aus, die der Arbeitsbereich beim Start hatte.
+
+**Die eigenen Regeln des Arbeitsbereichs.** Ein Abschnitt `[agents]` in `workspace.toml` kann Agenten für den
+Arbeitsbereich ausschalten oder die Richtlinie je Art von Aktion verschärfen. Regeln, die die Richtlinie lockern würden,
+zählen nur mit `--trust-workspace-policy`; ohne sagt Echolot, welche es ignoriert hat. Ein neuer Host und eine
+geschützte Umgebung werden nie ohne Weiteres erlaubt. Die Schlüssel stehen in den
+[Dateien des Arbeitsbereichs](/docs/reference/workspace-files#agents).
+
+**Tool-Sets.** `requests` wird immer angeboten. `--toolsets` fügt Gruppen hinzu, durch Kommas getrennt, oder `all`:
+
+| Tool-Set | Tools für |
+| --- | --- |
+| `requests` | Anfragen auflisten, lesen, erstellen und senden; Antworten, Verlauf, GraphQL, laufende Mocks. Immer an. |
+| `flows` | Flows ausführen, die Agenten angeboten werden, und ihre Fragen beantworten. Standardmäßig an. |
+| `workspace` | Ordner und Anfragen anlegen, umbenennen, verschieben, duplizieren und löschen; Auth der Ordner; Variablen des Arbeitsbereichs; gesammelte Daten als Dateien sichern. |
+| `environments` | Umgebungen anlegen, ändern und löschen. |
+| `specs` | OpenAPI-Specs lesen, schreiben und prüfen; Ordner mit ihnen verknüpfen und Änderungen anwenden. |
+| `mocks` | Mock-Server und ihre Routen anlegen, ändern und löschen, mit Beispieldaten; Anfragen aus Routen; Antworten als Beispiele sichern. |
+| `mcp-servers` | MCP-Server hinzufügen, ändern, prüfen und löschen. |
+| `history` | Frühere Austausche öffnen, vergleichen und löschen. |
+| `flow-editing` | Flows lesen, zeichnen und löschen; `try_flow` führt einen einmal aus, nachdem die Person ihn genehmigt hat (headless kann das niemand, daher wird es abgelehnt). |
+
+Die Richtlinie für Agenten, der Proxy, Zertifikate, Auth-Einstellungen und Skripte werden Agenten in keinem Tool-Set je
+angeboten.
+
+**Über HTTP.** `--http <port>` stellt Streamable HTTP auf 127.0.0.1 bereit statt stdio (`0` wählt einen freien Port).
+Weil alles auf diesem Mac einen Loopback-Port erreichen kann, müssen Clients ein Bearer-Token senden, das Echolot
+ausgibt:
+
+```sh
+echolot mcp serve Alpenglow.echolot --http 0 --policy readonly
+```
+
+```text
+Echolot MCP server for Alpenglow at http://127.0.0.1:52817/mcp (policy readonly)
+Clients send the header  Authorization: Bearer 6f1c…
+```
+
+Setze `ECHOLOT_MCP_TOKEN`, um das Token selbst zu wählen.
+
+| Option | Bedeutung |
+| --- | --- |
+| `--env <env>` | Die Umgebung, die Aufrufe nutzen, wenn sie keine nennen. |
+| `--policy <policy>` | `standard`, `readonly` oder `permissive`. Standard `standard`. |
+| `--toolsets <list>` | Die Tool-Gruppen, die angeboten werden, durch Kommas getrennt, oder `all`. Standard `requests,flows`. |
+| `--http <port>` | Streamable HTTP auf 127.0.0.1 an diesem Port bereitstellen (`0` wählt einen) statt stdio. |
+| `-v`, `--verbose` | Jede Nachricht in die Standardfehlerausgabe ausgeben. |
+| `--headless` | Auf eigene Faust bereitstellen, auch wenn die App Echolot diesen Arbeitsbereich geöffnet hat. |
+| `--trust-workspace-policy` | Die `[agents]`-Regeln des Arbeitsbereichs die Richtlinie auch lockern lassen, nicht nur verschärfen. |
+
+## echolot mcp setup [#echolot-mcp-setup]
+
+```sh
+echolot mcp setup <client> [--workspace <workspace>] [--name <name>] [--version <version>]
+```
+
+Gibt aus, was ein Client braucht, um `echolot mcp serve` für einen Arbeitsbereich zu starten. Es ändert nichts; kopiere
+die Ausgabe dorthin, wo der Client sie liest. Der Befehl in der Ausgabe ist der Pfad des `echolot`, das du ausgeführt
+hast.
+
+| Client | Gibt aus |
+| --- | --- |
+| `claude-code` | Einen Befehl `claude mcp add --scope user …`, den du ausführst. |
+| `claude-desktop` | Einen Eintrag `mcpServers` für die Konfiguration von Claude Desktop. |
+| `cursor` | Einen Eintrag `mcpServers` für die `mcp.json` von Cursor. |
+| `vscode` | Einen Eintrag `servers` für die `mcp.json` von VS Code. |
+| `codex` | Eine Tabelle `[mcp_servers.…]` für die `config.toml` von Codex. |
+| `mcpb` | Die `manifest.json` einer Claude-Desktop-Erweiterung, deren `server/echolot` diese Binärdatei ist. Ohne `--workspace` fragt die Erweiterung bei der Installation nach einem. |
+
+```sh
+echolot mcp setup claude-code -w Alpenglow.echolot
+```
+
+```text
+claude mcp add --scope user echolot-alpenglow -- /usr/local/bin/echolot mcp serve /Users/you/Alpenglow.echolot
+```
+
+```sh
+echolot mcp setup cursor -w Alpenglow.echolot
+```
+
+```json
+{
+  "mcpServers" : {
+    "echolot-alpenglow" : {
+      "args" : ["mcp", "serve", "/Users/you/Alpenglow.echolot"],
+      "command" : "/usr/local/bin/echolot"
+    }
+  }
+}
+```
+
+| Option | Bedeutung |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Der Ordner des Arbeitsbereichs; das MCPB fragt danach, wenn er fehlt. |
+| `--name <name>` | Der Name des Servers im Client. Standard `echolot-<workspace>`. |
+| `--version <version>` | Die Version, die in ein MCPB-Manifest geschrieben wird. Standard: die Version dieses Tools. |
+
+**Einstellungen › Agenten** in der App richtet dieselben Clients für dich ein; siehe [Agenten](/docs/ai/agents).
+
+## Exit-Codes [#exit-codes]
+
+| Code | Wann |
+| --- | --- |
+| `0` | Verbunden, angemeldet, bereitgestellt bis zum Stopp oder ausgegeben. |
+| `1` | `check` konnte sich nicht verbinden oder eine Prüfung schlug fehl, `--quality --strict` fand ein Problem, oder `sign-in` schlug fehl oder der Server verlangte kein OAuth. |
+| `64` | Eine falsche Option, eine unbekannte Richtlinie oder ein unbekannter Client, eine unbekannte Umgebung oder ein Arbeitsbereich, dessen Abschnitt `[agents]` Agenten ausschaltet. |

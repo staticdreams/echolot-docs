@@ -9,140 +9,139 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as R404RouteImport } from './routes/404'
-import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
-import { Route as LlmsDottxtRouteImport } from './routes/llms[.]txt'
-import { Route as ApiSearchRouteImport } from './routes/api/search'
-import { Route as DocsSplatRouteImport } from './routes/docs/$'
-import { Route as DocsChar123Char125DotmdRouteImport } from './routes/docs/{$}[.]md'
-import { Route as OgDocsSplatRouteImport } from './routes/og/docs/$'
+import { Route as Char123LangChar125IndexRouteImport } from './routes/{-$lang}/index'
+import { Route as Char123LangChar125LlmsFullDottxtRouteImport } from './routes/{-$lang}/llms-full[.]txt'
+import { Route as Char123LangChar125LlmsDottxtRouteImport } from './routes/{-$lang}/llms[.]txt'
+import { Route as Char123LangChar125ApiSearchRouteImport } from './routes/{-$lang}/api/search'
+import { Route as Char123LangChar125DocsSplatRouteImport } from './routes/{-$lang}/docs/$'
+import { Route as Char123LangChar125DocsChar123Char125DotmdRouteImport } from './routes/{-$lang}/docs/{$}[.]md'
+import { Route as Char123LangChar125OgDocsSplatRouteImport } from './routes/{-$lang}/og/docs/$'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const R404Route = R404RouteImport.update({
   id: '/404',
   path: '/404',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
-  id: '/llms-full.txt',
-  path: '/llms-full.txt',
+const Char123LangChar125IndexRoute = Char123LangChar125IndexRouteImport.update({
+  id: '/{-$lang}/',
+  path: '/{-$lang}/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LlmsDottxtRoute = LlmsDottxtRouteImport.update({
-  id: '/llms.txt',
-  path: '/llms.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiSearchRoute = ApiSearchRouteImport.update({
-  id: '/api/search',
-  path: '/api/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsSplatRoute = DocsSplatRouteImport.update({
-  id: '/docs/$',
-  path: '/docs/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsChar123Char125DotmdRoute = DocsChar123Char125DotmdRouteImport.update({
-  id: '/docs/{$}.md',
-  path: '/docs/{$}.md',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OgDocsSplatRoute = OgDocsSplatRouteImport.update({
-  id: '/og/docs/$',
-  path: '/og/docs/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const Char123LangChar125LlmsFullDottxtRoute =
+  Char123LangChar125LlmsFullDottxtRouteImport.update({
+    id: '/{-$lang}/llms-full.txt',
+    path: '/{-$lang}/llms-full.txt',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char123LangChar125LlmsDottxtRoute =
+  Char123LangChar125LlmsDottxtRouteImport.update({
+    id: '/{-$lang}/llms.txt',
+    path: '/{-$lang}/llms.txt',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char123LangChar125ApiSearchRoute =
+  Char123LangChar125ApiSearchRouteImport.update({
+    id: '/{-$lang}/api/search',
+    path: '/{-$lang}/api/search',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char123LangChar125DocsSplatRoute =
+  Char123LangChar125DocsSplatRouteImport.update({
+    id: '/{-$lang}/docs/$',
+    path: '/{-$lang}/docs/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char123LangChar125DocsChar123Char125DotmdRoute =
+  Char123LangChar125DocsChar123Char125DotmdRouteImport.update({
+    id: '/{-$lang}/docs/{$}.md',
+    path: '/{-$lang}/docs/{$}.md',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char123LangChar125OgDocsSplatRoute =
+  Char123LangChar125OgDocsSplatRouteImport.update({
+    id: '/{-$lang}/og/docs/$',
+    path: '/{-$lang}/og/docs/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
   '/404': typeof R404Route
-  '/llms-full.txt': typeof LlmsFullDottxtRoute
-  '/llms.txt': typeof LlmsDottxtRoute
-  '/api/search': typeof ApiSearchRoute
-  '/docs/$': typeof DocsSplatRoute
-  '/docs/{$}.md': typeof DocsChar123Char125DotmdRoute
-  '/og/docs/$': typeof OgDocsSplatRoute
+  '/{-$lang}/llms-full.txt': typeof Char123LangChar125LlmsFullDottxtRoute
+  '/{-$lang}/llms.txt': typeof Char123LangChar125LlmsDottxtRoute
+  '/{-$lang}/': typeof Char123LangChar125IndexRoute
+  '/{-$lang}/api/search': typeof Char123LangChar125ApiSearchRoute
+  '/{-$lang}/docs/$': typeof Char123LangChar125DocsSplatRoute
+  '/{-$lang}/docs/{$}.md': typeof Char123LangChar125DocsChar123Char125DotmdRoute
+  '/{-$lang}/og/docs/$': typeof Char123LangChar125OgDocsSplatRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/404': typeof R404Route
-  '/llms-full.txt': typeof LlmsFullDottxtRoute
-  '/llms.txt': typeof LlmsDottxtRoute
-  '/api/search': typeof ApiSearchRoute
-  '/docs/$': typeof DocsSplatRoute
-  '/docs/{$}.md': typeof DocsChar123Char125DotmdRoute
-  '/og/docs/$': typeof OgDocsSplatRoute
+  '/{-$lang}/llms-full.txt': typeof Char123LangChar125LlmsFullDottxtRoute
+  '/{-$lang}/llms.txt': typeof Char123LangChar125LlmsDottxtRoute
+  '/{-$lang}': typeof Char123LangChar125IndexRoute
+  '/{-$lang}/api/search': typeof Char123LangChar125ApiSearchRoute
+  '/{-$lang}/docs/$': typeof Char123LangChar125DocsSplatRoute
+  '/{-$lang}/docs/{$}.md': typeof Char123LangChar125DocsChar123Char125DotmdRoute
+  '/{-$lang}/og/docs/$': typeof Char123LangChar125OgDocsSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/404': typeof R404Route
-  '/llms-full.txt': typeof LlmsFullDottxtRoute
-  '/llms.txt': typeof LlmsDottxtRoute
-  '/api/search': typeof ApiSearchRoute
-  '/docs/$': typeof DocsSplatRoute
-  '/docs/{$}.md': typeof DocsChar123Char125DotmdRoute
-  '/og/docs/$': typeof OgDocsSplatRoute
+  '/{-$lang}/llms-full.txt': typeof Char123LangChar125LlmsFullDottxtRoute
+  '/{-$lang}/llms.txt': typeof Char123LangChar125LlmsDottxtRoute
+  '/{-$lang}/': typeof Char123LangChar125IndexRoute
+  '/{-$lang}/api/search': typeof Char123LangChar125ApiSearchRoute
+  '/{-$lang}/docs/$': typeof Char123LangChar125DocsSplatRoute
+  '/{-$lang}/docs/{$}.md': typeof Char123LangChar125DocsChar123Char125DotmdRoute
+  '/{-$lang}/og/docs/$': typeof Char123LangChar125OgDocsSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
     | '/404'
-    | '/llms-full.txt'
-    | '/llms.txt'
-    | '/api/search'
-    | '/docs/$'
-    | '/docs/{$}.md'
-    | '/og/docs/$'
+    | '/{-$lang}/llms-full.txt'
+    | '/{-$lang}/llms.txt'
+    | '/{-$lang}/'
+    | '/{-$lang}/api/search'
+    | '/{-$lang}/docs/$'
+    | '/{-$lang}/docs/{$}.md'
+    | '/{-$lang}/og/docs/$'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
     | '/404'
-    | '/llms-full.txt'
-    | '/llms.txt'
-    | '/api/search'
-    | '/docs/$'
-    | '/docs/{$}.md'
-    | '/og/docs/$'
+    | '/{-$lang}/llms-full.txt'
+    | '/{-$lang}/llms.txt'
+    | '/{-$lang}'
+    | '/{-$lang}/api/search'
+    | '/{-$lang}/docs/$'
+    | '/{-$lang}/docs/{$}.md'
+    | '/{-$lang}/og/docs/$'
   id:
     | '__root__'
-    | '/'
     | '/404'
-    | '/llms-full.txt'
-    | '/llms.txt'
-    | '/api/search'
-    | '/docs/$'
-    | '/docs/{$}.md'
-    | '/og/docs/$'
+    | '/{-$lang}/llms-full.txt'
+    | '/{-$lang}/llms.txt'
+    | '/{-$lang}/'
+    | '/{-$lang}/api/search'
+    | '/{-$lang}/docs/$'
+    | '/{-$lang}/docs/{$}.md'
+    | '/{-$lang}/og/docs/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   R404Route: typeof R404Route
-  LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
-  LlmsDottxtRoute: typeof LlmsDottxtRoute
-  ApiSearchRoute: typeof ApiSearchRoute
-  DocsSplatRoute: typeof DocsSplatRoute
-  DocsChar123Char125DotmdRoute: typeof DocsChar123Char125DotmdRoute
-  OgDocsSplatRoute: typeof OgDocsSplatRoute
+  Char123LangChar125LlmsFullDottxtRoute: typeof Char123LangChar125LlmsFullDottxtRoute
+  Char123LangChar125LlmsDottxtRoute: typeof Char123LangChar125LlmsDottxtRoute
+  Char123LangChar125IndexRoute: typeof Char123LangChar125IndexRoute
+  Char123LangChar125ApiSearchRoute: typeof Char123LangChar125ApiSearchRoute
+  Char123LangChar125DocsSplatRoute: typeof Char123LangChar125DocsSplatRoute
+  Char123LangChar125DocsChar123Char125DotmdRoute: typeof Char123LangChar125DocsChar123Char125DotmdRoute
+  Char123LangChar125OgDocsSplatRoute: typeof Char123LangChar125OgDocsSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/404': {
       id: '/404'
       path: '/404'
@@ -150,60 +149,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof R404RouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/llms-full.txt': {
-      id: '/llms-full.txt'
-      path: '/llms-full.txt'
-      fullPath: '/llms-full.txt'
-      preLoaderRoute: typeof LlmsFullDottxtRouteImport
+    '/{-$lang}/': {
+      id: '/{-$lang}/'
+      path: '/{-$lang}'
+      fullPath: '/{-$lang}/'
+      preLoaderRoute: typeof Char123LangChar125IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/llms.txt': {
-      id: '/llms.txt'
-      path: '/llms.txt'
-      fullPath: '/llms.txt'
-      preLoaderRoute: typeof LlmsDottxtRouteImport
+    '/{-$lang}/llms-full.txt': {
+      id: '/{-$lang}/llms-full.txt'
+      path: '/{-$lang}/llms-full.txt'
+      fullPath: '/{-$lang}/llms-full.txt'
+      preLoaderRoute: typeof Char123LangChar125LlmsFullDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/search': {
-      id: '/api/search'
-      path: '/api/search'
-      fullPath: '/api/search'
-      preLoaderRoute: typeof ApiSearchRouteImport
+    '/{-$lang}/llms.txt': {
+      id: '/{-$lang}/llms.txt'
+      path: '/{-$lang}/llms.txt'
+      fullPath: '/{-$lang}/llms.txt'
+      preLoaderRoute: typeof Char123LangChar125LlmsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docs/$': {
-      id: '/docs/$'
-      path: '/docs/$'
-      fullPath: '/docs/$'
-      preLoaderRoute: typeof DocsSplatRouteImport
+    '/{-$lang}/api/search': {
+      id: '/{-$lang}/api/search'
+      path: '/{-$lang}/api/search'
+      fullPath: '/{-$lang}/api/search'
+      preLoaderRoute: typeof Char123LangChar125ApiSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/docs/{$}.md': {
-      id: '/docs/{$}.md'
-      path: '/docs/{$}.md'
-      fullPath: '/docs/{$}.md'
-      preLoaderRoute: typeof DocsChar123Char125DotmdRouteImport
+    '/{-$lang}/docs/$': {
+      id: '/{-$lang}/docs/$'
+      path: '/{-$lang}/docs/$'
+      fullPath: '/{-$lang}/docs/$'
+      preLoaderRoute: typeof Char123LangChar125DocsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/og/docs/$': {
-      id: '/og/docs/$'
-      path: '/og/docs/$'
-      fullPath: '/og/docs/$'
-      preLoaderRoute: typeof OgDocsSplatRouteImport
+    '/{-$lang}/docs/{$}.md': {
+      id: '/{-$lang}/docs/{$}.md'
+      path: '/{-$lang}/docs/{$}.md'
+      fullPath: '/{-$lang}/docs/{$}.md'
+      preLoaderRoute: typeof Char123LangChar125DocsChar123Char125DotmdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/{-$lang}/og/docs/$': {
+      id: '/{-$lang}/og/docs/$'
+      path: '/{-$lang}/og/docs/$'
+      fullPath: '/{-$lang}/og/docs/$'
+      preLoaderRoute: typeof Char123LangChar125OgDocsSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   R404Route: R404Route,
-  LlmsFullDottxtRoute: LlmsFullDottxtRoute,
-  LlmsDottxtRoute: LlmsDottxtRoute,
-  ApiSearchRoute: ApiSearchRoute,
-  DocsSplatRoute: DocsSplatRoute,
-  DocsChar123Char125DotmdRoute: DocsChar123Char125DotmdRoute,
-  OgDocsSplatRoute: OgDocsSplatRoute,
+  Char123LangChar125LlmsFullDottxtRoute: Char123LangChar125LlmsFullDottxtRoute,
+  Char123LangChar125LlmsDottxtRoute: Char123LangChar125LlmsDottxtRoute,
+  Char123LangChar125IndexRoute: Char123LangChar125IndexRoute,
+  Char123LangChar125ApiSearchRoute: Char123LangChar125ApiSearchRoute,
+  Char123LangChar125DocsSplatRoute: Char123LangChar125DocsSplatRoute,
+  Char123LangChar125DocsChar123Char125DotmdRoute:
+    Char123LangChar125DocsChar123Char125DotmdRoute,
+  Char123LangChar125OgDocsSplatRoute: Char123LangChar125OgDocsSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

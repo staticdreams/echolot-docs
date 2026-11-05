@@ -1,0 +1,105 @@
+---
+title: "Echo"
+description: "Echo, le petit écran d’état de l’en-tête de page qui indique ce qui se passe dans la fenêtre, avec un rapport de la session au clic."
+---
+
+Echo est un minuscule écran au milieu de l’en-tête de page. Il indique au fur et à mesure ce qui se passe dans la
+fenêtre : un envoi et sa durée, une erreur, la progression de l’Exécution, un flux qui vous attend, l’appel d’un agent,
+un passage à un environnement protégé. De temps en temps, il ajoute une blague, autant que vous le souhaitez. Cliquez
+dessus pour obtenir un rapport de la session, blagues mises à part. Echo est activé par défaut, et vous pouvez le
+désactiver.
+
+<Shot id="ai-echo-screen" alt="Echo au milieu de l’en-tête de page, affichant l’état et la durée de la requête qui vient d’être envoyée" />
+
+## Activer ou désactiver Echo [#turn-echo-on-or-off]
+
+Echo est activé par défaut. Ouvrez **Réglages › Général** et, sous **Echo**, utilisez **Afficher l’écran d’état d’Echo
+dans l’en-tête de page**. Toutes les fenêtres d’espace de travail suivent ce réglage. Quand l’en-tête est trop étroit
+pour l’écran à côté du titre et des boutons de la page, Echo s’efface jusqu’à ce qu’il y ait de nouveau de la place.
+
+Pour le masquer de nouveau, désactivez le réglage, ou faites un Ctrl-clic sur l’écran et choisissez **Masquer Echo**.
+
+## Ce qu’Echo indique [#what-echo-tells]
+
+Echo surveille la fenêtre et affiche une courte ligne sur son écran pour :
+
+- **Envois** : la requête en cours d’envoi et le temps écoulé jusqu’ici, puis l’état et la durée de la réponse, les
+  vérifications en échec, ou la raison de l’absence de réponse (un délai d’attente dépassé, rien qui écoute à
+  l’adresse, un nom d’hôte non résolu, une négociation TLS en échec). Un envoi annulé aussi.
+- **Sessions** : une session WebSocket, Socket.IO ou MQTT qui se connecte et se ferme.
+- **Exécution** : la progression pendant qu’elle tourne, puis le nombre de requêtes réussies ou en échec, ou l’endroit
+  où vous l’avez arrêtée.
+- **Flux** : un flux qui s’exécute, qui vous attend, et comment il s’est terminé.
+- **Mocks** : un serveur mock qui démarre et s’arrête, et les requêtes auxquelles il répond.
+- **Environnements** : un changement d’environnement actif, et un avertissement quand il s’agit d’un
+  [environnement protégé](/docs/workspaces/protected-environments).
+- **Agents** : un agent qui se connecte, ses appels, et les approbations qui vous attendent ; l’Assistant qui
+  répond.
+- **Nouveautés** : après une mise à jour, les versions que vous n’avez pas encore lues.
+
+### Le niveau d’humour [#how-much-it-jokes]
+
+Choisissez avec **Humour** dans **Réglages › Général › Echo**, ou faites un Ctrl-clic sur l’écran :
+
+| Humour | Ce que fait Echo |
+| --- | --- |
+| **Faits seulement** | L’état et les détails, sans blagues. |
+| **Un peu** | Une blague de temps en temps. C’est la valeur par défaut. |
+| **Beaucoup** | Une blague à chaque ligne, et davantage de bavardage quand il ne se passe rien. |
+
+## Le rapport [#the-report]
+
+Cliquez sur Echo, ou faites un Ctrl-clic dessus et choisissez **Afficher le rapport d’Echo**. Le **RAPPORT DE SESSION**
+se déroule depuis l’écran avec les faits de la session depuis son début :
+
+<Shot id="ai-echo-report" alt="Le rapport de session d’Echo : envois, échecs, durées moyenne, la plus lente et la plus rapide, exécutions, et un journal des événements de la session" />
+
+| Indicateur | Ce qu’il compte |
+| --- | --- |
+| **ENVOIS**, **ÉCHECS** | Les requêtes envoyées, et combien ont échoué |
+| **MOYENNE**, **PLUS LENT**, **PLUS RAPIDE** | Les durées de réponse ; survolez le plus lent ou le plus rapide pour voir la requête |
+| **EXÉCUTIONS**, **ÉCHECS D’EXÉCUTION** | Les exécutions de l’Exécution, et les requêtes en échec sur l’ensemble des requêtes exécutées |
+| **FLUX** | Les exécutions de flux, et combien ont échoué |
+| **SESSIONS** | Les sessions WebSocket, Socket.IO et MQTT |
+| **APPELS DE MOCKS** | Les requêtes auxquelles vos serveurs mock ont répondu |
+| **APPELS D’AGENTS** | Les appels des agents |
+
+Les indicateurs de ce qui n’a pas eu lieu n’apparaissent pas. En dessous se trouve le journal des événements de la
+session avec leurs heures. **Effacer** repart d’un rapport vierge. Fermez-le avec le bouton de fermeture ou avec
+<kbd>Esc</kbd>.
+
+## Commentaires par IA [#ai-comments]
+
+Echo écrit ses propres lignes. Si vous le souhaitez, un modèle peut écrire certains de ses commentaires à sa place :
+activez **Laisser l’IA écrire certains commentaires d’Echo** dans **Réglages › Général › Echo**. C’est désactivé par
+défaut, et indisponible avec **Faits seulement**.
+
+- Sur un Mac avec Apple Intelligence (macOS 26), le modèle d’Apple sur l’appareil les écrit, et rien ne quitte le Mac.
+- Sinon, c’est le modèle coché dans **Réglages › Assistant** qui les écrit. **Écrit par** indique lequel. La première
+  fois, Echolot demande l’[autorisation unique](/docs/ai/assistant#the-one-time-permission) pour ce fournisseur. Si vous
+  ne l’avez pas accordée, **Écrit par** l’indique avec un bouton **Autoriser…**, et Echo écrit ses propres lignes entre-
+  temps. Une autorisation déjà donnée à l’Assistant vaut aussi pour Echo. Les agents CLI n’écrivent jamais les
+  commentaires d’Echo.
+
+Un modèle écrit au plus un commentaire toutes les 30 secondes, et seulement sur les échecs et les autres moments
+notables : un envoi en échec, très lent (3 secondes ou plus) ou très rapide (moins de 30 ms), une vérification en
+échec, un envoi vers un environnement protégé ou un passage à un tel environnement, une exécution ou un flux terminé,
+un agent qui attend une approbation.
+
+### Ce que le modèle entend [#what-the-model-hears]
+
+Seulement ce qui s’est passé, en une phrase : le genre d’événement, le type et la méthode d’une requête, un code
+d’état, une durée, le nombre de vérifications en échec, la raison pour laquelle un envoi n’a pas reçu de réponse
+(délai d’attente, rien qui écoute, nom d’hôte, TLS), le fait qu’une exécution de tant de requêtes a eu tant d’échecs.
+Par exemple : *« Une requête HTTP POST a reçu l’état 422 en 180 ms. »* ou *« Une exécution de test de 12 requêtes s’est
+terminée avec 2 échecs. »*
+
+Jamais de noms, d’adresses, d’en-têtes, de corps, de variables ni de secrets.
+
+## Accessibilité [#accessibility]
+
+- Avec **Réduire les animations** activé (Réglages Système › Accessibilité › Moniteur), les lignes apparaissent d’un
+  coup au lieu de se taper et de défiler, l’écran ne se redessine que lorsque son texte change ou qu’une horloge
+  avance, et le rapport s’ouvre par un court fondu au lieu de se dérouler.
+- Avec **Augmenter le contraste** activé, l’écran s’affiche avec plus de contraste.
+- VoiceOver lit les lignes actuelles d’Echo ; l’étiquette de l’écran est « Echo ».

@@ -1,0 +1,67 @@
+---
+title: "echolot graphql diff"
+description: "2つのGraphQLスキーマを比較し、破壊的変更があるときにビルドを失敗させます。"
+---
+
+`echolot graphql diff` は、あるGraphQLスキーマから別のスキーマへの変更点を一覧表示し、各変更を評価します。これにより、APIのクライアントを壊す変更が入る前にビルドを止められます。
+
+```sh
+echolot graphql diff <old> <new> [--fail-on <level>] [--json]
+```
+
+`<old>` と `<new>` は、変更前と変更後のスキーマです：SDLファイル（`.graphql`）またはイントロスペクションの結果（JSON）で、どの組み合わせでも構いません。
+
+## 2つのスキーマを比較する [#compare-two-schemas]
+
+```sh
+git show main:specs/shop.graphql > before.graphql
+echolot graphql diff before.graphql Alpenglow.echolot/specs/shop.graphql
+```
+
+```text
+Breaking (1)
+  The field Product.weightGrams was removed
+Dangerous (1)
+  The argument inStock was added to Query.search
+Safe (1)
+  The field Product.colors was added
+```
+
+| 評価 | 意味 |
+| --- | --- |
+| Breaking（破壊的） | 以前は動いていたクエリが失敗する可能性があります：型、フィールド、入力フィールド、引数、列挙値、ディレクティブの削除。必須の引数や入力フィールドの追加。フィールドの型の変更（出力をnon-nullにする場合を除く）。ユニオンのメンバーやインターフェースの削除。 |
+| Dangerous（危険） | クエリは動き続けますが、動作が変わる可能性があります：オプションの引数の追加、デフォルトの変更、列挙値やユニオンのメンバーの追加、新しいインターフェース、非推奨になったもの。 |
+| Safe（安全） | 既存のクエリが気づくことのない変更：型、フィールド、オプションの入力フィールド、ディレクティブの追加。説明の変更。非推奨の解除。 |
+
+`--json` は、変更をJSON配列として出力します。各要素には `severity`、`path`、`message` があります。
+
+```json
+[
+  {
+    "message" : "The field Product.weightGrams was removed",
+    "path" : "Product.weightGrams",
+    "severity" : "breaking"
+  },
+  {
+    "message" : "The argument inStock was added to Query.search",
+    "path" : "Query.search(inStock)",
+    "severity" : "dangerous"
+  }
+]
+```
+
+## オプション [#options]
+
+| オプション | 意味 |
+| --- | --- |
+| `--fail-on <level>` | `breaking`（デフォルト）は破壊的変更で終了コード1。`dangerous` は破壊的変更と危険な変更で終了コード1。`none` は常に0。 |
+| `--json` | 変更をJSONで出力します。 |
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | `--fail-on` のレベル以上の変更はありません。 |
+| `1` | `--fail-on` のレベル以上の変更があるか、スキーマを読み込めませんでした。 |
+
+実行中のサーバからスキーマを取得するには、アプリのGraphQLリクエストでイントロスペクションクエリを送信するか、[GraphQLリクエスト](/docs/requests/graphql)を参照してください。

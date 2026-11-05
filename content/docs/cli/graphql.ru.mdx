@@ -1,0 +1,69 @@
+---
+title: "echolot graphql diff"
+description: "Сравните две схемы GraphQL и останавливайте сборку при несовместимых изменениях."
+---
+
+`echolot graphql diff` перечисляет, что изменилось между двумя схемами GraphQL, и оценивает каждое изменение, чтобы
+сборка могла остановиться раньше, чем изменение сломает клиентов API.
+
+```sh
+echolot graphql diff <old> <new> [--fail-on <level>] [--json]
+```
+
+`<old>` и `<new>` — схема до и после: файлы SDL (`.graphql`) или результаты интроспекции (JSON), в любом сочетании.
+
+## Сравнение двух схем [#compare-two-schemas]
+
+```sh
+git show main:specs/shop.graphql > before.graphql
+echolot graphql diff before.graphql Alpenglow.echolot/specs/shop.graphql
+```
+
+```text
+Breaking (1)
+  The field Product.weightGrams was removed
+Dangerous (1)
+  The argument inStock was added to Query.search
+Safe (1)
+  The field Product.colors was added
+```
+
+| Оценка | Что значит |
+| --- | --- |
+| Breaking | Запросы, которые работали раньше, теперь могут падать: удалён тип, поле, поле ввода, аргумент, значение enum или директива; добавлен обязательный аргумент или поле ввода; изменён тип поля (кроме превращения выходного значения в non-null); убран член union или интерфейс. |
+| Dangerous | Запросы продолжают работать, но могут вести себя иначе: добавлен необязательный аргумент, изменено значение по умолчанию, добавлено значение enum или член union, новый интерфейс, что-то помечено устаревшим. |
+| Safe | Ничего, что мог бы заметить существующий запрос: добавлен тип, поле, необязательное поле ввода или директива, изменено описание, снято устаревание. |
+
+`--json` печатает изменения как массив JSON, у каждого — `severity`, `path` и `message`:
+
+```json
+[
+  {
+    "message" : "The field Product.weightGrams was removed",
+    "path" : "Product.weightGrams",
+    "severity" : "breaking"
+  },
+  {
+    "message" : "The argument inStock was added to Query.search",
+    "path" : "Query.search(inStock)",
+    "severity" : "dangerous"
+  }
+]
+```
+
+## Параметры [#options]
+
+| Параметр | Значение |
+| --- | --- |
+| `--fail-on <level>` | `breaking` (по умолчанию) завершается с кодом 1 при несовместимых изменениях; `dangerous` — при несовместимых и опасных; `none` — никогда. |
+| `--json` | Напечатать изменения в формате JSON. |
+
+## Коды выхода [#exit-codes]
+
+| Код | Когда |
+| --- | --- |
+| `0` | Нет изменений на уровне `--fail-on` и выше. |
+| `1` | Есть изменения на уровне `--fail-on` и выше либо схему не удалось прочитать. |
+
+Чтобы получить схему с работающего сервера, отправьте запрос интроспекции запросом GraphQL в приложении или см.
+[запросы GraphQL](/docs/requests/graphql).

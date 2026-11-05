@@ -1,0 +1,146 @@
+---
+title: "Arbeitsbereiche"
+description: "Was ein Arbeitsbereich ist, wie du Arbeitsbereiche erstellst, öffnest und wechselst und welche Datei was enthält."
+---
+
+Ein Arbeitsbereich enthält alles für eine API oder ein Projekt: ihre Anfragen und Ordner, Umgebungen, MCP-Server, Specs,
+Mocks und Flows. Er ist ein Ordner mit TOML-Dateien in Klartext, eine Datei pro Anfrage, sodass du ihn lesen, prüfen und
+in Git aufbewahren kannst.
+
+## Arbeitsbereich erstellen [#create-a-workspace]
+
+1. Wähle **Datei › Neuer Arbeitsbereich …** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>) oder **Neuer Arbeitsbereich …** im
+   Willkommensfenster.
+2. Wähle einen Ort und einen Namen. Das Namensfeld beginnt mit `My API.echolot`.
+3. Klicke auf **Erstellen**.
+
+Echolot legt den Ordner mit einer `workspace.toml` und einem leeren Ordner `requests` an und öffnet ihn in einem eigenen
+Fenster. Der Name des Arbeitsbereichs ist der Name des Ordners ohne `.echolot`.
+
+Um Echolot auszuprobieren, ohne etwas anzulegen, wähle **Beispiele öffnen** im Willkommensfenster oder im Menü „Datei“:
+ein fertiger Arbeitsbereich mit Anfragen an öffentliche APIs, mit Weiterleitungen und großen Antworten. Die
+[Demo-API](/docs/tutorials/demo-api) hat ein ausführlicheres Beispiel, Alpenglow.
+
+## Arbeitsbereich öffnen [#open-a-workspace]
+
+- **Datei › Arbeitsbereich öffnen …** (<kbd>⌘</kbd><kbd>O</kbd>) oder **Arbeitsbereich öffnen …** im
+  Willkommensfenster. Wähle ein `.echolot`-Paket oder einen einfachen Ordner, der eine `workspace.toml` enthält.
+- Doppelklicke im Finder auf ein `.echolot`-Paket oder ziehe es im Dock auf Echolot.
+- **Datei › Benutzte Dokumente öffnen** listet die letzten zehn Arbeitsbereiche, die du geöffnet hast.
+  **Einträge löschen** vergisst die Liste; die Arbeitsbereiche selbst bleiben, wo sie sind.
+- Im Terminal: `open "My API.echolot"`.
+
+Jeder Arbeitsbereich öffnet sich in einem eigenen Fenster. Öffnest du einen Arbeitsbereich, der schon offen ist, kommt
+sein Fenster nach vorn.
+
+Echolot folgt einem Arbeitsbereich, den du im Finder verschiebst oder umbenennst: Er bleibt in den zuletzt benutzten
+Dokumenten und öffnet sich von seinem neuen Ort.
+
+<Shot id="workspaces-welcome" alt="Das Willkommensfenster: „Neuer Arbeitsbereich“, „Arbeitsbereich öffnen“ und „Beispiele öffnen“ links, die letzten Arbeitsbereiche rechts" />
+
+## Das Willkommensfenster [#the-welcome-window]
+
+Ist kein Arbeitsbereich offen, zeigt Echolot das Willkommensfenster. Links: **Neuer Arbeitsbereich …**,
+**Arbeitsbereich öffnen …** und **Beispiele öffnen**. Rechts: **Letzte Arbeitsbereiche**, jeder mit dem Ordner, in dem
+er liegt. Klicke auf einen, um ihn zu öffnen.
+
+## Zwischen Arbeitsbereichen wechseln [#switch-between-workspaces]
+
+- **Datei › Arbeitsbereich wechseln …** (<kbd>⌘</kbd><kbd>P</kbd>) zeigt eine schwebende Liste der letzten
+  Arbeitsbereiche. Tippe, um sie zu filtern, und drücke dann <kbd>↩</kbd>.
+- Der Arbeitsbereichswechsler am Fuß der Seitenleiste zeigt den Namen des Arbeitsbereichs und ob alles gesichert ist.
+  Klicke darauf für **Letzte Arbeitsbereiche**, **Neuer Arbeitsbereich …**, **Arbeitsbereich öffnen …**,
+  **Arbeitsbereichseinstellungen …** und **Im Finder anzeigen**.
+
+<Shot id="workspaces-switcher" alt="Der geöffnete Arbeitsbereichswechsler am Fuß der Seitenleiste mit den letzten Arbeitsbereichen und den Arbeitsbereichseinstellungen" />
+
+## Sichern [#saving]
+
+Es gibt keinen Befehl „Sichern“. Echolot schreibt jede Änderung einen Moment, nachdem du aufgehört hast zu tippen, in
+ihre Datei. Der Arbeitsbereichswechsler zeigt, wie es steht:
+
+| Angezeigt | Bedeutung |
+| --- | --- |
+| **Alles gesichert** | Jede Änderung steht in den Dateien. |
+| **Wird gesichert …** | Ein Schreibvorgang läuft. |
+| **1 nicht gesicherte Anfrage** (oder mehr) | Änderungen warten darauf, geschrieben zu werden. Ein Punkt neben einer Anfrage in der Seitenleiste markiert sie. |
+| **Sichern fehlgeschlagen** | Ein Schreibvorgang ist fehlgeschlagen. Echolot behält die Änderung und sagt dir, was schiefging. |
+
+Beim Schließen eines Fensters oder Beenden von Echolot wird zuerst geschrieben, was noch aussteht. Lässt sich eine
+Änderung nicht schreiben, fragt Echolot, bevor es sie verwirft.
+
+## Widerrufen und wiederholen [#undo-and-redo]
+
+Jede Änderung lässt sich mit **Bearbeiten › Widerrufen** (<kbd>⌘</kbd><kbd>Z</kbd>) widerrufen und mit
+**Bearbeiten › Wiederholen** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>) wiederholen: Tippen in einer Anfrage, Umbenennen,
+Verschieben und Löschen von Objekten, Variablen, Umgebungen, Ordner- und Arbeitsbereichseinstellungen, Specs, Mocks und
+Flows. Tippen zählt als ein Schritt, bis du eine Pause machst. Das Widerrufen gehört zum Fenster und funktioniert
+deshalb auf jeder Seite gleich.
+
+## Nichts wird gelöscht, ohne zu fragen [#nothing-is-deleted-without-asking]
+
+Jedes Löschen fragt vorher: Anfragen, Ordner, Umgebungen, MCP-Server, Specs und Mocks. Die rote Taste in der Frage hat
+kein Tastenkürzel, deshalb löscht <kbd>↩</kbd> nie; <kbd>Esc</kbd> bricht ab. In der Seitenleiste bietet <kbd>⌫</kbd>
+nur an, eine einzelne Anfrage zu löschen; Ordner und mehrere Objekte löschst du im Kontextmenü.
+
+Was du löschst, kommt in den Papierkorb im Finder, nie direkt von der Festplatte. Um es zurückzuholen, wähle
+**Bearbeiten › Widerrufen** oder verschiebe die Dateien aus dem Papierkorb wieder in den Ordner des Arbeitsbereichs.
+
+## Im Finder [#in-the-finder]
+
+Ein `.echolot`-Arbeitsbereich ist ein Paket: Der Finder zeigt es als ein Objekt mit dem Symbol von Echolot, und ein
+Doppelklick öffnet es. Um die Dateien darin zu sehen, klicke bei gedrückter Control-Taste darauf und wähle
+**Paketinhalt zeigen**, oder nutze **Im Finder anzeigen** im Arbeitsbereichswechsler.
+
+Drücke im Finder <kbd>Space</kbd> auf einem Arbeitsbereich für die [Übersicht](/docs/mac/quick-look): seinen Namen, wann
+er sich geändert hat und wie viele Anfragen, Ordner, Umgebungen, Variablen und Prüfungen er hat, mit den Namen seiner
+Umgebungen.
+
+Ein Arbeitsbereich muss nicht auf `.echolot` enden. Jeder Ordner mit einer `workspace.toml` lässt sich öffnen, etwa die
+Wurzel eines Git-Repositorys.
+
+## Was wo liegt [#what-lives-where]
+
+```
+Alpenglow.echolot/
+  workspace.toml               Name, ID, Variablen des Arbeitsbereichs, Standard-Auth, Agentenregeln, Proxy, Zertifikate
+  environments/
+    staging.toml               eine Umgebung: ihr Name, ob sie geschützt ist, ihre Variablen
+    production.toml
+  requests/
+    _folder.toml               die Reihenfolge der Objekte der obersten Ebene
+    _folder.pre.js             Skripte für jede Anfrage (und _folder.test.js)
+    auth/
+      _folder.toml             Name, Reihenfolge, Doku, Auth und Variablen des Ordners
+      sign-in.req.toml         eine HTTP-Anfrage
+      sign-in.body.json        ihr Body, daneben
+    catalog/
+      search-products.gql.toml eine GraphQL-Anfrage
+      search-products.graphql  ihre Abfrage
+    inventory/
+      list-warehouses.grpc.toml
+    realtime/
+      order-updates.ws.toml    WebSocket (.sio.toml Socket.IO, .mqtt.toml MQTT)
+    agent-tools/
+      search-catalog.mcp.toml  ein gesicherter MCP-Aufruf
+  mcp-servers/                 MCP-Server, je eine Datei
+  specs/                       OpenAPI-, GraphQL- und .proto-Dateien
+  mocks/                       Mock-Server, je eine Datei, und ihre Skript-Routen
+  flows/                       Flows (.flow.toml)
+```
+
+Jede Art von Anfrage hat ihr eigenes Dateisuffix: `.req.toml` (HTTP), `.gql.toml` (GraphQL), `.grpc.toml`, `.ws.toml`,
+`.sio.toml`, `.mqtt.toml` und `.mcp.toml`. Skripte liegen neben ihrer Anfrage als `<name>.pre.js` und `<name>.test.js`.
+Das vollständige Format steht unter [Arbeitsbereichsdateien](/docs/reference/workspace-files).
+
+Manches kommt nie in den Ordner des Arbeitsbereichs:
+
+- **Geheime Werte.** Secret-Variablen werden nur mit ihrem Namen geschrieben; ihre Werte bleiben im Schlüsselbund deines
+  Macs. Siehe [Secrets](/docs/workspaces/secrets).
+- **Verlauf und Antwort-Bodys.** Sie liegen im eigenen Speicher von Echolot. Siehe
+  [Speicher und Verschlüsselung](/docs/workspaces/storage-and-encryption).
+- **Deine Entscheidungen auf diesem Mac**: die aktive Umgebung, die Anordnung der Bereiche, welchen Skripten du
+  vertraut hast, und globale Variablen.
+
+Der Ordner des Arbeitsbereichs lässt sich also gefahrlos teilen, und wer im Team ihn öffnet, beginnt mit denselben
+Anfragen und den eigenen Secrets. Siehe [Git und Teams](/docs/workspaces/git-and-teams).

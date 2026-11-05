@@ -1,0 +1,123 @@
+---
+title: "环境和变量"
+description: "在请求中使用变量，为每台服务器在环境中保存一组值，在环境之间切换，并查看哪个值生效。"
+---
+
+变量是你在很多地方使用的某个值的名称：基础地址、用户名、令牌。在请求的任何字段中把它写成 `{{name}}`，Echolot 会在发送时填入它的值。环境是你要发送到的某个地方（如 Local、Staging 或 Production）的一组值：切换环境，每个请求就会发往那里。
+
+## 使用变量 [#use-a-variable]
+
+在地址、标头、参数、正文、认证字段或设置中输入 `{{name}}`。在 Alpenglow 中，每个地址都以 `{{baseURL}}` 开头：
+
+```
+{{baseURL}}/products/{{productId}}
+```
+
+在字段中输入 `{{`，会列出该请求可以使用的变量，以及[动态值](/docs/requests/dynamic-values)，例如 `{{$uuid}}`、日期、哈希值和来自其他请求响应的值。变量可以包含其他变量：`baseURL` 可以是 `https://{{host}}/v1`。
+
+请求无法解析的名称会在字段中被标出，Echolot 会说明原因，例如 `{{productId}} is not defined` 或 `the secret {{token}} has no value on this Mac`。
+
+## 变量在哪里定义 [#where-variables-are-defined]
+
+变量分五个层级，从最宽到最近：
+
+| 层级 | 在哪里编辑 | 保存在 |
+| --- | --- | --- |
+| **全局** | **环境 › 全局** | 仅这台 Mac，适用于每个工作区。 |
+| **工作区** | **环境 › 工作区**，或**工作区设置… › 变量** | `workspace.toml` |
+| **环境** | **环境 ›** 该环境 | `environments/<name>.toml` |
+| **文件夹** | **文件夹设置… › 变量** | 文件夹的 `_folder.toml` |
+| **请求** | 请求的**变量**标签页 | 请求的文件 |
+
+非机密值会在你输入时写入这些文件。机密值则永远不会：见[机密](/docs/workspaces/secrets)。
+
+## 哪个值生效 [#which-value-wins]
+
+同一个名称在多个层级中定义时，最近的一个生效：
+
+1. 请求自己的变量。
+2. 它所在文件夹的，然后是上层文件夹的，从最近一级向外。
+3. 使用中的环境的。
+4. 工作区的。
+5. 全局的。
+
+因此，工作区保存默认值，环境改变其服务器上不同的部分，文件夹或请求可以覆盖这两者。已关闭的变量（其复选框被取消勾选）会被跳过，改用下一层级的值。
+
+在 Alpenglow 中，工作区里的 `baseURL` 是 `https://demo.echolot.dev/v1`。使用 **Staging** 时，它变成 `https://staging.alpenglow.example/v1`，因为 Staging 也定义了它。选择**无环境**时，请求使用工作区的值，发往演示 API。
+
+脚本在运行时设置的值（用 `pm.environment.set` 等）只在运行它的窗口或命令期间有效，绝不会写入文件。见[脚本和测试](/docs/requests/scripts-and-tests)。
+[响应捕获](/docs/requests/captures)则不同：它们会把取到的值存入工作区变量或环境变量。
+
+## 选择环境 [#choose-an-environment]
+
+环境菜单位于每个页面的页面标题栏中。它显示使用中的环境，并带一个圆点：环境为绿色，[受保护的环境](/docs/workspaces/protected-environments)为红色，**无环境**为灰色。
+
+点按它并选择一个环境，或选择**无环境**以仅使用工作区的值。**管理环境…** 会打开“环境”页面。
+
+<Shot id="workspaces-environment-menu" alt="页面标题栏中已展开的环境菜单：无环境、Local、Staging，以及带盾牌标志的 Production" />
+
+这个选择属于窗口和这台 Mac。它不会写入工作区，因此选择环境不会更改任何文件，每位同事都选各自的环境。Echolot 会为该工作区记住它，并在你下次打开时再次选中。
+
+[运行器](/docs/requests/runner)、流程和[快速发送](/docs/mac/quick-send)也使用窗口当前的环境。在命令行中，用 `--env` 选择：
+
+```sh
+echolot run Alpenglow.echolot --env staging
+```
+
+`--env` 接受不带 `.toml` 的环境文件名，或环境的名称。
+
+## “环境”页面 [#the-environments-page]
+
+用**视图 › 环境**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>）或环境菜单中的**管理环境…** 打开它。左侧是：
+
+- **默认值**：**全局**和**工作区**。
+- **环境**：每个环境一行。**使用中**标记窗口所使用的那一个，盾牌标志标记受保护的环境。
+
+选择一行，即可在右侧编辑它的变量。
+
+<Shot id="workspaces-environments-page" alt="选中了 Staging 的“环境”页面：它的名称、“受保护”开关，以及变量 baseURL、wsURL 和 password" />
+
+### 添加环境 [#add-an-environment]
+
+1. 在“环境”页面中，点按**环境**旁的 **+**（**添加环境**）。
+2. 会打开一个名为 `New Environment` 的新环境。在名称栏中输入它的名称并按 <kbd>↩</kbd>。
+3. 添加在这台服务器上有所不同的变量。
+
+每个环境都是 `environments/` 中的一个文件。页面在变量下方显示它的名称：`File: environments/staging.toml`。
+
+### 编辑变量 [#edit-variables]
+
+每一行有：
+
+| 列 | 作用 |
+| --- | --- |
+| 复选框 | 开启或关闭变量，而不移除它。 |
+| **名称** | 你在 `{{…}}` 中写的名称。 |
+| **值** | 值。对于机密，是把值存入钥匙串的字段。 |
+| **密钥** | 把值保存在这台 Mac 的钥匙串中，绝不写入文件。见[机密](/docs/workspaces/secrets)。 |
+| **−** | 移除变量。 |
+
+点按**添加变量**可新增一行。Echolot 会在你停止输入片刻之后存储该表格，每项更改都可以用**编辑 › 撤销**撤销。
+
+环境只需要包含与工作区不同的变量。其余的一切都来自工作区的默认值。
+
+### 重新命名、保护或删除环境 [#rename-protect-or-delete-an-environment]
+
+在环境的顶部：
+
+- 名称栏用来重新命名它。文件保持原名，因此任何引用该文件的内容仍然能找到它。在此页面中添加的环境起初叫 `New Environment`，所以无论你之后怎么命名，它的文件都是 `new-environment.toml`；`--env` 也接受名称。
+- **受保护**会让每次发送到它之前都先询问。见[受保护的环境](/docs/workspaces/protected-environments)。
+- **删除环境…** 先询问，然后把它的文件移到废纸篓。如果它正在使用，窗口会切换到**无环境**。
+
+### 全局变量 [#global-variables]
+
+**全局**保存这台 Mac 上每个工作区的变量，例如你自己的用户名。它们是最宽的层级：任何同名的工作区、环境、文件夹或请求变量都会覆盖它们。它们不属于任何工作区，因此同事和命令行工具看不到它们。
+
+## 查看值来自哪里 [#see-where-a-value-comes-from]
+
+**视图 › 显示变量**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>V</kbd>）会打开“变量”面板：当前请求能看到的每个变量，按全局、工作区、各个环境、请求所在的文件夹以及请求分列显示。
+正在使用的值会被标出；未使用的环境也会显示出来供比较。机密保持遮盖。点按某一列的标题，可转到编辑它的地方。固定该面板，可让它作为一列保留在页面旁边。
+
+<Shot id="workspaces-variables-panel" alt="Catalog › Get product 上方的“变量”面板：baseURL 和 productId 位于“工作区”“Local”“Staging”和“Production”各列，正在使用的值已标出" />
+
+把指针停在请求字段中的 `{{variable}}` 上可快速查看：它的值、来自哪个层级，以及用来在该处打开面板的**所有变量…**。

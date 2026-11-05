@@ -1,0 +1,107 @@
+---
+title: "명세"
+description: "OpenAPI 문서와 .proto 파일을 작업 공간에 보관하고, 개요와 문제를 읽고, 요청으로 바꿉니다."
+---
+
+명세 페이지는 API의 계약을 설계하고 보관하는 곳입니다. OpenAPI 문서(OpenAPI 3.0, 3.1, Swagger 2.0)와 gRPC 서비스의 `.proto`
+파일을 다룹니다. Echolot은 편집하는 동안 명세를 검사하고, 명세와 보조를 맞추는 요청으로 바꾸며, API가 만들어지기 전에 명세를
+[모의 서버](/docs/mocks)로 제공합니다.
+
+사이드바의 모듈 전환기에서 <strong>명세</strong>를 선택하거나 <kbd>⌘</kbd><kbd>3</kbd>을 눌러 엽니다.
+
+<Shot id="specs-page" alt="alpenglow.yaml이 시각적 편집기에서 열려 있는 명세 페이지: 사이드바에는 명세와 엔드포인트 및 스키마 개요가 나열되고, 페이지에는 개요, 서버, 엔드포인트 카드가 보입니다" />
+
+## 작업 공간의 명세 [#specs-in-the-workspace]
+
+명세는 작업 공간의 `specs` 폴더에 있는 파일이므로 다른 모든 것과 함께 Git에 들어갑니다. Alpenglow 예제에는 `alpenglow.yaml`(쇼핑몰의
+OpenAPI 문서), `shop.graphql`, `inventory.proto` 세 개가 있습니다. 명세 페이지는 OpenAPI 문서를 <strong>명세</strong> 아래에, `.proto` 파일을
+<strong>Proto 파일</strong> 아래에 나열합니다. 폴더에 있는 GraphQL 스키마는 [GraphQL 요청](/docs/requests/graphql)이 사용하며 여기에는 나열되지
+않습니다.
+
+사이드바의 <strong>명세</strong> 헤더에 있는 <strong>+</strong>로 추가합니다.
+
+| 항목 | 하는 일 |
+| --- | --- |
+| <strong>새로운 명세</strong> | 제목이 `New API`인 OpenAPI 3.1 문서를 만들고 시각적 편집기에서 엽니다. |
+| <strong>응답으로 새로운 명세 만들기…</strong> | 보낸 요청과 받은 응답으로 명세를 작성합니다. [응답으로 만드는 명세](/docs/specs/specs-from-traffic)를 참고하세요. |
+| <strong>명세 파일 추가…</strong> | Mac의 OpenAPI 또는 Swagger 문서(YAML 또는 JSON)를 `specs` 폴더로 복사합니다. |
+| <strong>새로운 Proto 파일</strong> | 작은 예제 서비스로 `.proto` 파일을 시작합니다. [.proto 파일](/docs/specs/proto-files)을 참고하세요. |
+| <strong>Proto 파일 추가…</strong> | `.proto` 파일을 `specs` 폴더로 복사합니다. |
+
+<strong>파일 › 가져오기…</strong>로 OpenAPI 문서를 [가져오는 것](/docs/get-started/importing)은 다릅니다. 편집할 명세가 아니라 문서에서 요청을
+만듭니다.
+
+명세를 오른쪽 클릭하면 <strong>요청 생성</strong>, <strong>Finder에서 보기</strong>, <strong>내보내기</strong>(<strong>YAML로…</strong> 또는 <strong>JSON으로…</strong>), <strong>삭제…</strong>가 나타납니다. 삭제하기
+전에 확인을 요청하며 파일을 휴지통으로 이동합니다. 명세가 참조하는 파일과 명세의 모의 서버는 그대로 남습니다.
+
+## 개요 [#the-outline]
+
+명세를 클릭해서 엽니다. 목록 아래 사이드바에 명세의 개요가 표시됩니다.
+
+- <strong>개요</strong>: 제목, 버전, 설명.
+- <strong>엔드포인트</strong>: 메서드와 경로가 있는 모든 작업. 더 이상 사용되지 않는 것은 취소선으로 표시됩니다. 포인터를 올리면 요약이
+  표시됩니다.
+- <strong>스키마</strong>: 재사용할 수 있는 스키마.
+- <strong>파일</strong>: 명세가 다른 파일을 참조할 때([파일로 나눈 명세](#specs-split-across-files) 참고).
+
+항목을 클릭하면 열립니다. 시각적 편집기에서는 해당 카드가 열리고 화면으로 스크롤되며, 코드에서는 편집기가 해당 줄로 이동합니다.
+
+## 시각적 편집과 코드 [#visual-and-code]
+
+페이지 헤더의 <strong>편집기</strong> 스위치로 열려 있는 명세를 보는 방식을 고릅니다.
+
+- <strong>시각적</strong>: 개요, 서버, 엔드포인트, 스키마 카드를 필드와 메뉴로 편집합니다.
+- <strong>코드</strong>: 줄 번호가 있는 YAML 또는 JSON 문서.
+
+두 방식 모두 같은 텍스트를 편집하며, Echolot은 변경할 때마다 잠시 후 저장합니다. 두 방식은 [명세 편집](/docs/specs/editing)에서
+다룹니다.
+
+## 문제 [#problems]
+
+Echolot은 편집하는 동안 명세를 린트합니다. 편집기 위의 막대에 <strong>문제 없음</strong>이나 오류와 경고의 수가 표시됩니다. 사이드바에서 열려 있는
+명세 옆에도 오류 수가 빨간색으로 표시됩니다.
+
+<Shot id="specs-problems" alt="명세 위에 표시된 문제 팝오버: 오류와 경고가 각각 메시지와 줄 번호와 함께 나열됩니다" />
+
+클릭하면 목록이 표시됩니다. 오류가 먼저 나오고 그다음에 경고와 힌트가 줄 번호와 함께 나옵니다. 하나를 선택하면 그 줄로 이동합니다.
+목록이 비어 있으면 문서가 OpenAPI 사양을 따르며 모든 참조가 해결된다고 표시됩니다.
+
+린트가 확인하는 것은 다음과 같습니다.
+
+- Echolot이 읽을 수 있는 `openapi` 버전, 제목과 버전이 있는 `info`, `/`로 시작하는 경로.
+- 경로에 있고 `required: true`로 표시된 경로 매개변수, 그리고 두 번 정의되지 않은 매개변수.
+- 모든 응답의 설명, 한 번만 사용된 작업 ID.
+- 맨 위에 선언된 태그, 정의된 보안 스킴, `items`가 있는 배열, 값이 있는 열거형.
+- 이 파일이나 `specs`의 다른 파일에서 무언가를 가리키는 참조.
+- `servers`가 없는 경우: 명세에서 만든 요청은 직접 설정하는 `{{baseUrl}}`로 시작합니다.
+
+명령줄 도구는 CI에서 같은 린트를 실행합니다. [echolot spec](/docs/cli/spec)을 참고하세요.
+
+## 파일로 나눈 명세 [#specs-split-across-files]
+
+명세는 `$ref: schemas/pet.yaml#/Pet`처럼 `$ref`로 다른 파일의 일부를 가져올 수 있습니다. 파일은 작업 공간의 `specs` 폴더 안에 있어야
+합니다. 사이드바의 <strong>파일</strong> 아래에 나열되며, 클릭하면 <strong>코드</strong>에서 열립니다. 코드 편집기에서 `$ref` 위에 포인터를 올리면 가리키는 대상이
+보이고, <kbd>⌘</kbd>-클릭하면 이 파일이든 다른 파일이든 그곳으로 이동합니다.
+
+Echolot은 린트, 요청 생성, 모의 서버처럼 명세를 사용하는 모든 곳에서 부분들을 함께 읽습니다. 명세를 내보내면 참조하는 파일이 저장하는
+하나의 파일 안에 함께 기록됩니다.
+
+## 내보내기 [#exporting]
+
+편집기 위 막대의 <strong>내보내기</strong>(<strong>YAML로 내보내기…</strong> 또는 <strong>JSON으로 내보내기…</strong>)는 명세를 작업 공간 밖의 파일 하나로 저장하며, 참조하는
+파일이 그 안에 기록됩니다. 저장하지 않은 편집은 먼저 저장되므로 내보내는 내용은 편집기에 표시된 내용과 같습니다.
+
+## 명세를 따르는 요청 [#requests-that-follow-the-spec]
+
+편집기 위 막대의 <strong>요청 생성</strong>은 명세의 이름으로 된 폴더를 만들고 모든 엔드포인트에 대한 요청을 넣은 다음 첫 번째 요청을 엽니다. 폴더는
+명세를 따릅니다. 명세가 바뀌면 요청에서 직접 편집한 내용을 잃지 않고 변경 사항을 요청에 적용할 수 있습니다.
+
+폴더가 명세를 따르게 되면 버튼이 <strong>요청</strong>으로 바뀌며, 명세를 따르는 각 폴더에 대한 <strong>“폴더 이름” 폴더의 변경 사항 확인…</strong>과
+<strong>다른 폴더 생성</strong>이 들어 있는 메뉴가 됩니다. 확인하면 <strong>OpenAPI 동기화</strong>가 열리고 <strong>명세에 새로 추가됨</strong>, <strong>명세에서 변경됨</strong>,
+<strong>명세에서 사라짐</strong>이 나열됩니다. 원하는 변경 사항을 선택하고 <strong>변경 사항 1개 적용</strong>(또는 <strong>변경 사항 3개 적용</strong> 등)을 클릭하세요.
+직접 편집한 내용은 항상 유지되며, 직접 바꾼 것과 명세가 바뀐 것이 같은 항목이면 직접 바꾼 쪽이 유지됩니다. 작업이 사라지면 그 요청은
+휴지통으로 이동합니다. 단, 직접 편집한 요청은 그대로 남고 명세를 따르지 않게 됩니다. <strong>연결 해제</strong>는 폴더가 명세를 따르지 않게 하고
+요청은 그대로 둡니다.
+
+폴더가 작업 공간 밖의 파일이나 URL에 있는 명세를 따르게 할 수도 있습니다. 요청 사이드바에서 폴더를 오른쪽 클릭하고
+<strong>OpenAPI 명세에 연결…</strong>을 선택하세요. 명령줄 도구는 `echolot spec check`와 `echolot spec apply`로 변경 사항을 확인하고 적용합니다.

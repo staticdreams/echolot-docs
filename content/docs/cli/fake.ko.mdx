@@ -1,0 +1,88 @@
+---
+title: "echolot fake"
+description: "터미널에서 템플릿으로 가짜 데이터를 만듭니다. 픽스처, 시드 데이터, 모의 서버 본문에 쓸 수 있으며 모의 서버 경로와 같은 가짜 값을 사용합니다."
+---
+
+`echolot fake`는 템플릿을 가짜 데이터로 채웁니다. 이름, 이메일, 주소, 가격, 날짜, lorem ipsum과 약 120가지 다른 값을 만들 수 있습니다.
+[직접 만든 경로](/docs/mocks/routes#bodies-with-fake-data)의 본문과 같은 템플릿을 사용하므로 본문을 시험해 보거나 테스트용 픽스처와
+시드 데이터를 만들 수 있습니다.
+
+```sh
+echolot fake [<template>] [--file <file>] [--count <count>] [--seed <seed>] [--type <type>]
+echolot fake list
+```
+
+템플릿은 인수, `--file`, 표준 입력 중 하나로 받습니다. 결과는 표준 출력으로 나갑니다.
+
+## 목록 만들기 [#make-a-list]
+
+`--count`는 템플릿을 JSON 목록의 항목 하나로 취급해 여러 개 만듭니다.
+
+```sh
+echolot fake '{"id": {{@number}}, "name": "{{$randomFullName}}", "email": "{{$randomEmail}}"}' --count 3
+```
+
+```json
+[
+{"id": 1, "name": "Henry Adams", "email": "stella.meyer.45@yahoo.com"},
+{"id": 2, "name": "Jack Grant", "email": "bianca.ivanova.11@icloud.com"},
+{"id": 3, "name": "Theo Sato", "email": "samuel.lee.88@yahoo.com"}
+]
+```
+
+`--type xml`이나 `--type text`에서는 항목이 차례로 이어서 나옵니다.
+
+```sh
+echolot fake '<city>{{$randomCity}}</city>' --count 2 --type xml
+```
+
+```xml
+<city>Kyoto</city>
+<city>Athens</city>
+```
+
+템플릿은 `{{#repeat 10}}` … `{{/repeat}}`로 자체 목록을 만들 수 있습니다. [목록](/docs/mocks/routes#lists)을 참조하십시오.
+
+## 같은 데이터를 다시 [#the-same-data-again]
+
+`--seed`는 매번 같은 데이터를 만듭니다. 실행마다 바뀌면 안 되는 픽스처에 사용합니다.
+
+```sh
+echolot fake --file user.json.template --count 50 --seed 7 > users.json
+```
+
+## 이스케이프 [#escaping]
+
+`--type`은 값을 이스케이프하는 방식을 정합니다. `json`(기본값)은 JSON 문자열 안에서 값을 이스케이프하고, `xml`은 XML과 HTML용으로 `&`,
+`<`, `>`와 따옴표를 이스케이프하며, `text`는 아무것도 이스케이프하지 않습니다. [이스케이프](/docs/mocks/routes#escaping)를
+참조하십시오.
+
+## 값 [#the-values]
+
+`echolot fake list`는 모든 값을 그룹별로 인수와 함께 출력합니다.
+
+```text
+COMMON
+  $randomUUID  A random UUID: 3f2c1e0a-…
+  $randomInt(Minimum, Maximum)  A whole number, 0 to 1000 unless bounds are given.
+  $randomFloat(Minimum, Maximum, Decimals)  A decimal number between the bounds (0 to 1000), with 2 decimals unless told otherwise.
+…
+```
+
+[동적 값](/docs/reference/dynamic-values#fake-data)에 전체 목록이 있습니다. `{{request.params.id}}`처럼 요청에 관한 토큰은 모의 서버
+경로에 속하므로 여기서는 쓴 그대로 남습니다.
+
+## 옵션 [#options]
+
+| 옵션 | 의미 |
+| --- | --- |
+| `<template>` | 템플릿, 또는 가짜 값을 나열하는 `list`. |
+| `-f`, `--file <file>` | 파일에서 템플릿을 읽습니다. |
+| `-c`, `--count <count>` | 이 수만큼 항목을 만듭니다(최대 10,000). JSON 목록이 되며, `--type xml`과 `text`에서는 항목이 차례로 이어집니다. |
+| `--seed <seed>` | 매번 같은 데이터를 만듭니다. |
+| `--type <type>` | `json`(기본값), `xml`, `text`. |
+
+## 종료 코드 [#exit-codes]
+
+모든 값을 만들었으면 `0`입니다. `{{$randomInt(9, 1)}}`처럼 값을 만들 수 없으면 `1`이며, 이유는 표준 오류로 나가고 출력에서는 토큰이 쓴
+그대로 남습니다. 잘못된 옵션이면 `64`입니다.

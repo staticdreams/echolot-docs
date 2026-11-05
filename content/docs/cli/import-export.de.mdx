@@ -1,0 +1,122 @@
+---
+title: "echolot import und export"
+description: "Bringe cURL-Befehle, Sammlungen, Specs und HAR-Dateien in einen Arbeitsbereich und schreibe einen Arbeitsbereich für andere Tools aus."
+---
+
+`echolot import` macht aus dem, was du hast, Dateien eines Arbeitsbereichs: einen cURL-Befehl, eine Sammlung von
+Postman, Insomnia, Paw oder Bruno, eine OpenAPI- oder Swagger-Spec, eine HAR-Datei. `echolot export` schreibt einen
+Arbeitsbereich oder einen seiner Ordner als Sammlung für Postman, Insomnia oder Bruno oder als Kopie des
+Arbeitsbereichs von Echolot aus. Sie tun, was **Datei › Importieren …** und **Datei › Arbeitsbereich exportieren …**
+in der App tun; siehe [Importieren](/docs/get-started/importing) und [Exportieren](/docs/workspaces/exporting).
+
+## echolot import [#echolot-import]
+
+```sh
+echolot import <file> [--workspace <workspace>] [--folder <folder>] [--format <format>]
+```
+
+`<file>` ist die Datei, die importiert wird, ein Ordner einer Bruno-Sammlung oder `-`, um die Standardeingabe zu lesen.
+
+Das Format wird am Inhalt erkannt. Eine Sammlung oder eine Spec landet in einem eigenen Ordner; ein cURL-Befehl wird
+eine Anfrage. Die Pfade des Geschriebenen gehen in die Standardausgabe, eine pro Zeile, und eine Zusammenfassung in die
+Standardfehlerausgabe:
+
+```sh
+pbpaste | echolot import - -w Alpenglow.echolot --folder auth
+```
+
+```text
+Imported 1 request from cURL.
+note: 1 credential kept out of the workspace files but not saved, as there is no Keychain here: auth_token_token. Set ECHOLOT_SECRET_AUTH_TOKEN_TOKEN where Echolot sends.
+auth/auth-token
+```
+
+| Was du importierst | Formatname |
+| --- | --- |
+| Ein cURL-Befehl | `curl` |
+| Eine Postman-Sammlung | `postman-collection` |
+| Eine Postman-Umgebung | `postman-environment` |
+| Ein OpenAPI-3-Dokument (YAML oder JSON) | `openapi` |
+| Ein Swagger-2-Dokument | `swagger` |
+| Ein Insomnia-Export | `insomnia` |
+| Eine HAR-Datei | `har` |
+| Eine Paw-Datei | `paw` |
+| Die Konfiguration eines MCP-Clients (seine Server) | `mcp-config` |
+| Eine Bruno-Sammlung | der Ordner selbst, kein Format nötig |
+
+**Zugangsdaten kommen nie in die Dateien.** Passwörter, Tokens, API-Schlüssel und andere geheime Werte, die in
+Auth-Einstellungen und Headern für Zugangsdaten gefunden werden, werden zu geheimen Variablen, benannt nach der Anfrage
+und dem Feld (`me_password`), und die Datei behält `{{me_password}}`. Auf einem Mac gehen sie in den Schlüsselbund. Ohne
+einen (Linux, CI, `ECHOLOT_KEYCHAIN=0`) wird der Wert weggelassen, und Echolot nennt die Variable
+`ECHOLOT_SECRET_<NAME>`, die du setzen musst. Der Bericht nennt die Secrets, nie ihre Werte.
+
+Der Import einer Spec macht einen Ordner, der der Spec folgt. Echolot sagt das (`note: the folder follows …`); halte ihn
+mit [`echolot spec check` und `apply`](/docs/cli/spec) aktuell.
+
+### Optionen [#options]
+
+| Option | Bedeutung |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Der Ordner des Arbeitsbereichs (der mit `workspace.toml`). Standard: der aktuelle Ordner. |
+| `--folder <path>` | In diesen Ordner des Arbeitsbereichs importieren, etwa `users/admin`. |
+| `--format <format>` | Die Erkennung überspringen: `curl`, `postman-collection`, `postman-environment`, `openapi`, `swagger`, `insomnia`, `har`, `paw` oder `mcp-config`. |
+
+## echolot export [#echolot-export]
+
+```sh
+echolot export <output> [--workspace <workspace>] [--folder <folder>] --format <format> [--no-environments] [--force]
+```
+
+`<output>` ist das Ziel: eine Datei für Postman und Insomnia, ein Ordner für Bruno, für einen Arbeitsbereich von Echolot
+und für Postman mit Umgebungen.
+
+```sh
+echolot export /tmp/alpenglow.postman_collection.json -w Alpenglow.echolot --format postman
+```
+
+```text
+Exported 21 requests, 7 folders, 3 environments as Postman Collection v2.1.
+warning: 8 requests left out: Postman Collection v2.1 has no MCP requests. …
+  left out: realtime/order-updates
+  left out: inventory/reserve-stock
+  …
+warning: Response captures (Store in a Variable) are not exported; other tools set variables from scripts.
+warning: 1 password, token or key is written in clear: it is typed into an auth or header field rather than kept in a secret variable. Move it to the Keychain before sharing the file.
+/tmp/alpenglow.postman_collection.json
+```
+
+| Format | Nimmt | Schreibt |
+| --- | --- | --- |
+| `echolot` | Jede Art von Anfrage | Einen neuen Ordner für den Arbeitsbereich mit eigener ID. Der Export eines Ordners behält die Ordner darüber. |
+| `postman` | HTTP und GraphQL | Eine Datei Postman Collection v2.1 oder einen Ordner mit der Sammlung und ihren Umgebungen. |
+| `insomnia` | HTTP, GraphQL, WebSocket, Socket.IO und gRPC | Eine Datei Insomnia v5. |
+| `bruno` | HTTP und GraphQL | Einen Ordner einer Bruno-Sammlung. |
+
+Wofür ein Format keinen Platz hat, wird in der Standardfehlerausgabe genannt: Anfragen, die es nicht aufnehmen kann
+(`left out:`), und Teile, die sich unterwegs ändern, etwa Erfassungen von Antworten oder dynamische Werte, die das
+andere Tool nicht hat.
+
+**Geheime Werte werden nie geschrieben.** Geheime Variablen gehen nur mit Namen hinaus. Echolot warnt vor allen
+Zugangsdaten, die in ein Feld für Auth oder Header getippt statt in einer geheimen Variable gehalten werden, denn sie
+werden so geschrieben, wie sie sind.
+
+Echolot schreibt nie über, in oder um den Arbeitsbereich, aus dem du exportierst, und ersetzt am Zielpfad nie etwas,
+solange du nicht `--force` angibst; was es ersetzt, kommt in den Papierkorb.
+
+### Optionen [#options]
+
+| Option | Bedeutung |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Der Ordner des Arbeitsbereichs. Standard: der aktuelle Ordner. |
+| `--folder <path>` | Nur diesen Ordner des Arbeitsbereichs exportieren, etwa `users/admin`. |
+| `--format <format>` | `echolot`, `postman`, `insomnia` oder `bruno`. Erforderlich. |
+| `--no-environments` | Die Umgebungen weglassen. |
+| `--force` | Ersetzen, was am Zielpfad liegt. |
+
+## Exit-Codes [#exit-codes]
+
+| Code | Wann |
+| --- | --- |
+| `0` | Importiert oder exportiert. Warnungen ändern das nicht. |
+| `1` | Die Datei ließ sich nicht lesen oder schreiben. |
+| `64` | Ein unbekanntes Format oder ein Zielpfad, der ohne `--force` schon existiert. |

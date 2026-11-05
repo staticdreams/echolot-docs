@@ -1,0 +1,174 @@
+---
+title: "Mocks"
+description: "Servidores mock locales hechos con rutas que escribes a mano, con datos falsos, o con una especificación OpenAPI; elige qué responden, comprueba las solicitudes y compártelos en la red."
+---
+
+Un mock es un servidor en un puerto de tu Mac que responde como una API. Los frontends, las apps y las pruebas pueden
+usarlo antes de que exista la API, o mientras la real no funciona. Un mock responde desde dos fuentes, por separado o
+juntas:
+
+- **Rutas que creas a mano**: un método, una ruta y el JSON, XML o texto que responde. Los cuerpos pueden contener
+  datos falsos (`{{$randomFullName}}`, `{{$randomEmail}}`) que cambian en cada solicitud, y partes de la solicitud
+  (`{{request.params.id}}`). No hace falta ninguna especificación. Consulta [rutas y datos falsos](/docs/mocks/routes).
+- **Una especificación OpenAPI**: cada operación responde con las respuestas que documenta la especificación, sus
+  ejemplos o un cuerpo creado a partir de sus esquemas. Las solicitudes que incumplen la especificación reciben un
+  `400` que explica el motivo, así que el mock también te avisa cuando un cliente envía algo incorrecto.
+
+Para respuestas que necesitan código o estado, un mock también puede tener
+[rutas en JavaScript](/docs/mocks/scripted-routes).
+
+Abre la página con **Mocks** en el selector de módulos de la barra lateral, o con <kbd>⌘</kbd><kbd>4</kbd>.
+
+<Shot id="mocks-running" alt="Un mock en marcha de la tienda de demostración Alpenglow: su dirección arriba con Usar en un entorno y Detener, la tarjeta Ajustes con su especificación, la tarjeta Rutas con dos rutas creadas a mano y abajo el registro de las solicitudes respondidas, tanto por las rutas como por la especificación" />
+
+## Crear un mock [#creating-a-mock]
+
+Haz clic en **+** en la cabecera **Mocks** de la barra lateral, o usa los botones de la página vacía:
+
+- **Nuevo mock** crea un mock de rutas. Empieza con una ruta, `GET /users`, que responde con cinco usuarios falsos,
+  para que puedas iniciarlo y ver lo que puede hacer un cuerpo. Cámbiala o añade las tuyas; consulta
+  [rutas y datos falsos](/docs/mocks/routes).
+- **Mock de** una especificación (en el menú **+**, o **Mock de una especificación** en la página vacía) crea un mock de
+  una especificación del espacio de trabajo, como **Mock de Alpenglow demo shop**.
+
+El mock nuevo toma el siguiente puerto libre a partir de `4010`. Sus ajustes y sus rutas son un archivo de la carpeta
+`mocks` del espacio de trabajo, así que un equipo comparte sus mocks mediante Git.
+
+Un mock de rutas también puede servir una especificación, y un mock de una especificación puede tener rutas:
+**Servir una especificación** en la tarjeta **Ajustes** añade una, **Cambiar** › **Dejar de servir la especificación** la
+quita.
+
+## Iniciar y detener [#starting-and-stopping]
+
+Haz clic en **Inicio** (<kbd>⌘</kbd><kbd>R</kbd>). La barra superior muestra la dirección del mock, como
+`http://127.0.0.1:4010`. Cuando el mock sirve una especificación cuya URL de servidor tiene una ruta
+(`https://demo.echolot.dev/v1`), la dirección termina con ella (`http://127.0.0.1:4010/v1`) y el mock responde bajo esa
+ruta; las solicitudes también pueden omitirla. El botón de copiar que hay junto a la dirección la copia.
+
+Pruébalo desde Terminal:
+
+```sh
+curl http://127.0.0.1:4010/users
+```
+
+**Detener** lo detiene. La barra lateral muestra qué mocks están en marcha: un punto verde y el puerto junto al título
+de la especificación o el número de rutas (`Alpenglow demo shop · :4010`, `3 routes · stopped`). Haz clic con el botón
+derecho en un mock para ver **Inicio** o **Detener** y **Eliminar…**. Eliminar pregunta antes; el archivo de ajustes va
+a la papelera y la especificación se queda.
+
+Los mocks se ejecutan mientras su ventana del espacio de trabajo está abierta. Un mock en marcha recoge los cambios de
+sus rutas, su especificación y sus ajustes sin detenerse. No se puede usar un puerto que ya ocupa otro programa:
+Echolot te lo dice; elige otro puerto.
+
+### Enviar solicitudes al mock [#sending-requests-to-the-mock]
+
+- **Crear solicitudes** en la tarjeta **Rutas** crea una carpeta de solicitudes que llaman a las rutas del mock, con
+  `{{baseUrl}}` apuntando a la dirección del mock. Consulta
+  [solicitudes a partir de rutas](/docs/mocks/routes#requests-from-routes).
+- **Usar en un entorno** (mientras el mock está en marcha) crea un entorno llamado `Mock: <name>` cuyo `{{baseUrl}}` es
+  la dirección del mock, y lo activa. Las solicitudes que empiezan por `{{baseUrl}}`, como las que
+  [Generar solicitudes](/docs/specs#requests-that-follow-the-spec) crea a partir de una especificación, van entonces al
+  mock hasta que elijas otro entorno. Consulta [Entornos](/docs/workspaces/environments).
+
+## Ajustes [#settings]
+
+| Ajuste | Qué hace |
+| --- | --- |
+| **Nombre** | El nombre del mock en la barra lateral. |
+| **Especificación** | La especificación que sirve, o **Ninguna: solo responden sus rutas**. **Abrir** abre la especificación en la página Especificaciones; **Servir una especificación** y **Cambiar** eligen una o dejan de servirla. |
+| **Puerto** | El puerto en el que escucha, de 1 a 65535. |
+| **Responder a otros dispositivos de la red** | Escucha en todas las interfaces de red, para probar desde un teléfono o un contenedor. Desactivado: solo este Mac puede acceder a él. |
+| **Retraso** | Milisegundos que espera antes de cada respuesta, hasta 60 000, para probar una API lenta. |
+| **Fallos** | El porcentaje de solicitudes que reciben un `500` inyectado, para probar cómo se las arregla un cliente. |
+| **Comprobaciones** | Con una especificación: **Rechazar solicitudes que incumplan la especificación (400 con los motivos)**. Activado de forma predeterminada. |
+
+## Qué respuesta recibe una solicitud [#which-response-a-request-gets]
+
+Una solicitud va a la primera de estas fuentes que tenga una respuesta para su método y su ruta:
+
+1. Las [rutas en JavaScript](/docs/mocks/scripted-routes) del mock. Una ruta que no fija nada pasa la solicitud a la
+   siguiente.
+2. Sus [rutas creadas a mano](/docs/mocks/routes). Una ruta puede tener varias respuestas; una solicitud puede pedir una
+   por su nombre o su estado, unas reglas sobre la solicitud eligen otras y, si no, responde la predeterminada de la
+   ruta.
+3. Las operaciones de la especificación, como se explica a continuación.
+
+Los segmentos de ruta literales tienen preferencia sobre los parámetros, así que `/pets/mine` se elige antes que
+`/pets/{id}`, tanto en rutas como en operaciones.
+
+Para una operación de la especificación, el mock elige la respuesta en este orden:
+
+1. Lo que pide la solicitud: una cabecera `Prefer: code=404, example=empty`, o las cabeceras `x-mock-response-code` y
+   `x-mock-response-name` de Postman.
+2. La respuesta elegida para la operación en la tarjeta **Respuestas de la especificación**.
+3. La primera respuesta correcta de la operación.
+
+La tarjeta **Respuestas de la especificación** lista todas las operaciones con un menú: **Primera respuesta correcta**
+o uno de los estados documentados y, para un estado con varios ejemplos, el ejemplo. La elección se guarda con el mock.
+
+El cuerpo es el ejemplo con nombre de la respuesta (el que se ha pedido, o el primero), su único `example` o, si no, un
+cuerpo creado a partir de su esquema: datos falsos que se ajustan al tipo, el formato y el nombre de cada campo (una
+dirección de correo para un campo de formato `email`), dentro de los límites del esquema, creados de nuevo en cada
+solicitud. Un campo con el nombre de un parámetro de ruta lo repite. Cuando la especificación documenta varios tipos de
+medio, la cabecera `Accept` de la solicitud elige uno. También se envían las cabeceras y el tipo de contenido
+documentados. Un `204`, un `304` y las respuestas a `HEAD` no tienen cuerpo.
+
+Otras respuestas que da el mock:
+
+| Estado | Cuándo |
+| --- | --- |
+| `400` | El mock sirve una especificación, las comprobaciones están activadas y la solicitud la incumple: falta un parámetro de ruta, de consulta, de cabecera o de cookie, o es de un tipo incorrecto; el tipo de contenido no es el esperado, o el cuerpo no coincide con su JSON Schema. El cuerpo lista todos los motivos. |
+| `404` | Ninguna ruta ni ninguna operación tiene esa ruta. |
+| `405` | La ruta existe, pero no con este método. La cabecera `Allow` lista los métodos que admite, sumando rutas y especificación. |
+| `413` | El cuerpo de la solicitud supera los 32 MB. |
+| `500` | Un fallo inyectado (consulta **Fallos**). |
+| `501` | La operación no documenta ninguna respuesta para el estado pedido. |
+
+Los navegadores pueden llamar al mock desde una página de otro puerto: responde a las solicitudes preliminares
+(preflight) y envía las cabeceras CORS.
+
+## El registro [#the-log]
+
+La parte inferior de la página lista las solicitudes que ha respondido el mock seleccionado, de más reciente a más
+antigua: la hora, el estado, el método y la ruta, la respuesta utilizada (el nombre de la respuesta de una ruta, el
+nombre de un ejemplo de la especificación, o `generated` cuando el cuerpo salió del esquema) y cuánto tardó. Los
+problemas aparecen en las líneas que hay debajo de una solicitud: dónde incumplió la especificación, o un valor falso
+que el cuerpo de una ruta no pudo crear. Sitúa el puntero sobre una solicitud para ver el cuerpo de la respuesta, el
+cuerpo de la solicitud y el tipo de contenido; **Copiar respuesta** copia el cuerpo. **Borrar** vacía el registro.
+
+Donde está disponible el modelo integrado de Apple, el botón que hay junto a **Borrar** resume el registro.
+
+## Guardar ejemplos en la especificación [#saving-examples-into-the-spec]
+
+Para las operaciones de una especificación, la especificación es la única fuente de lo que responde el mock, así que una
+respuesta real que has recibido se guarda allí como ejemplo: en el [Historial](/docs/workspaces/history), haz clic con
+el botón derecho en un intercambio de una solicitud que sigue la especificación y elige
+**Guardar como ejemplo del mock…**. Ponle un nombre, como `two tents`, y haz clic en **Guardar**.
+
+La respuesta pasa a ser un ejemplo con nombre de la respuesta de su operación en la especificación que sigue la
+solicitud. Elígelo en la tarjeta **Respuestas de la especificación**, o pídelo con `Prefer: example=two tents`.
+
+Para una ruta que la especificación no tiene, o para un mock sin especificación, crea una
+[ruta](/docs/mocks/routes) y pega el cuerpo.
+
+## Compartir en la red [#sharing-on-the-network]
+
+Activa **Responder a otros dispositivos de la red** para acceder al mock desde un teléfono, una tableta o un
+contenedor. Los otros dispositivos usan la dirección de tu Mac en la red local, con el puerto del mock.
+
+La primera vez, macOS puede preguntar si Echolot puede encontrar dispositivos de tu red local y conectarse a ellos.
+Permítelo, o los otros dispositivos no podrán acceder al mock. Puedes cambiar la respuesta más tarde en **Ajustes del
+Sistema › Privacidad y seguridad › Red local**.
+
+Cualquier persona de la red puede entonces llamar al mock. Desactiva la compartición cuando no la necesites.
+
+## Desde la línea de comandos [#from-the-command-line]
+
+`echolot mock alpenglow.yaml` sirve un archivo de especificación, y `echolot mock -w <workspace> <mock>` sirve un mock
+de un espacio de trabajo con sus ajustes y sus rutas, con o sin especificación, para CI o un contenedor. Consulta
+[echolot mock](/docs/cli/mock). [`echolot fake`](/docs/cli/fake) crea datos falsos a partir de las mismas plantillas,
+para fixtures y datos iniciales.
+
+Los agentes pueden iniciar mocks y leer sus registros mediante el servidor MCP de Echolot y, cuando el conjunto de
+herramientas **Mocks** está activado, crear mocks, añadir y cambiar rutas, generar datos falsos y crear solicitudes a
+partir de rutas. Consulta [Agentes](/docs/ai/agents).

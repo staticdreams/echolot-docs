@@ -1,0 +1,102 @@
+---
+title: "Captures de réponse"
+description: "Gardez dans des variables des valeurs d’une réponse, comme un jeton ou un ID, après chaque envoi, pour que toutes les autres requêtes lisent la plus récente."
+---
+
+Une capture garde dans une variable une valeur de la réponse d’une requête, après chaque envoi. Capturez le jeton
+d’accès d’une réponse de connexion dans `{{token}}`, et toutes les requêtes qui utilisent `{{token}}` envoient le plus
+récent, sans rien copier. Quand le jeton est renouvelé, elles reçoivent toutes le nouveau.
+
+Les captures sont enregistrées avec la requête : elles fonctionnent donc pour tous ceux qui ont l’espace de travail,
+dans l’Exécution et dans les flux comme quand vous cliquez sur **Envoyer**.
+
+## Stocker une valeur de la réponse [#store-a-value-from-the-response]
+
+Le moyen le plus rapide de créer une capture est de partir de la réponse elle-même :
+
+1. Envoyez la requête. Dans l’exemple Alpenglow, envoyez **Auth › Sign in**.
+2. Dans l’onglet **Corps**, choisissez **Arbre JSON** (ou **Formulaire**, **MessagePack** ou **XML** pour ces corps).
+3. Laissez le pointeur sur la valeur, par exemple `access_token`, et cliquez sur **Stocker dans une variable…**.
+4. Saisissez un **Nom de la variable**, ou gardez celui qui est suggéré à partir du chemin. Les noms déjà utilisés sont
+   proposés pendant la saisie ; en choisir un remplace cette variable (le panneau indique **Remplace token**).
+5. Sous **Enregistrer dans**, choisissez l’environnement de la fenêtre (**Environnement « Staging »**) ou
+   **Espace de travail**.
+6. Cochez **Secret** pour garder la valeur dans le trousseau uniquement, jamais dans des fichiers. La case est cochée
+   d’office pour les noms qui ressemblent à des identifiants (`token`, `secret`, `password`, `apiKey` et similaires).
+7. Laissez **Mettre à jour à chaque envoi** coché pour en faire une capture de la requête, enregistrée avec elle.
+   Décochez-le pour ne stocker la valeur qu’une fois.
+8. Cliquez sur **Stocker**.
+
+<Shot id="requests-http-store-variable" alt="Le panneau Stocker dans une variable sur l’arbre JSON de Sign in : le chemin $.access_token, le nom de variable token, Enregistrer dans Espace de travail, Secret et Mettre à jour à chaque envoi cochés" />
+
+## Modifier les captures [#edit-captures]
+
+Les captures d’une requête se trouvent dans son onglet **Variables**, sous **Depuis la réponse**, sous les variables
+propres à la requête. Chaque ligne est une capture :
+
+| Colonne | Ce qu’elle contient |
+| --- | --- |
+| Case à cocher | Si la capture s’exécute. |
+| **Variable** | Le nom de la variable, sans accolades. |
+| **Source** | L’endroit de la réponse où la valeur est lue. |
+| **Chemin ou nom** | Un JSONPath, un XPath, ou un nom d’en-tête ou de cookie. |
+| **Enregistré dans** | **Environnement** (celui choisi pour la fenêtre à l’envoi de la requête) ou **Espace de travail**. |
+| **Secret** | Gardé dans le trousseau de ce Mac, jamais dans les fichiers de l’espace de travail. Une variable déjà secrète le reste. |
+
+Cliquez sur **Ajouter une valeur** pour une nouvelle ligne, et sur le bouton **−** pour en retirer une. Après un envoi,
+chaque ligne affiche une coche verte quand elle a enregistré sa valeur, ou un avertissement orange avec la raison
+quand elle ne l’a pas fait.
+
+### D’où viennent les valeurs [#where-values-come-from]
+
+| Source | Chemin ou nom | Exemple |
+| --- | --- | --- |
+| **JSON** | Un JSONPath dans un corps JSON. | `$.access_token` |
+| **Formulaire** | Un JSONPath dans un corps encodé URL, lu comme un objet. | `$.access_token` |
+| **MessagePack** | Un JSONPath dans un corps MessagePack, lu comme du JSON. | `$.access_token` |
+| **XML** | Un XPath dans un corps XML. | `/auth/token` |
+| **En-tête** | Un en-tête de réponse, par son nom. | `Location` |
+| **Cookie** | Un cookie défini par la réponse, par son nom. | `session` |
+| **État** | Le code d’état. | |
+| **Corps** | Le corps entier, sous forme de texte. | |
+
+## Environnement ou espace de travail [#environment-or-workspace]
+
+- **Environnement** écrit la variable dans l’environnement choisi pour la fenêtre au moment de l’envoi. Utilisez-le
+  pour des valeurs qui diffèrent d’un serveur à l’autre, comme un jeton de staging et un jeton de production. Sans
+  environnement choisi, rien n’est enregistré et la ligne invite à en choisir un ou à enregistrer dans l’espace de
+  travail.
+- **Espace de travail** écrit une variable d’espace de travail, la même quel que soit l’environnement choisi.
+
+La valeur d’un environnement l’emporte sur celle de l’espace de travail pour le même nom : une capture dans l’espace de
+travail est donc masquée quand l’environnement choisi a une variable de ce nom. Voir
+[Environnements](/docs/workspaces/environments).
+
+## Secrets [#secrets]
+
+Un secret capturé n’est écrit que dans le trousseau. Le fichier de l’espace de travail nomme la variable mais ne
+contient jamais sa valeur : vous pouvez donc le commiter. Activez **Secret** pour chaque jeton, ID de session ou clé que
+vous capturez. Voir [Secrets](/docs/workspaces/secrets).
+
+Dans Alpenglow, **Auth › Sign in** capture `$.access_token` dans le secret d’espace de travail `token`, et le dossier
+**Orders** l’envoie comme jeton Bearer.
+
+## Quand rien n’est capturé [#when-nothing-is-captured]
+
+Une capture laisse sa variable telle qu’elle était, et en donne la raison après l’envoi, quand :
+
+- l’état de la réponse est 400 ou plus : les valeurs ne sont gardées que pour les réponses inférieures à 400, si bien
+  qu’une connexion en échec n’écrase jamais un bon jeton,
+- le chemin ne trouve rien dans la réponse,
+- le corps dépasse 32 Mo,
+- elle enregistre dans l’environnement et aucun environnement n’est choisi,
+- l’écriture n’est pas autorisée : quand un agent IA envoie la requête, ses règles décident s’il peut modifier des
+  variables. Voir [Agents](/docs/ai/agents).
+
+## Captures ou valeurs de réponse [#captures-or-response-values]
+
+Les [valeurs dynamiques](/docs/requests/dynamic-values#values-from-other-requests-responses) comme
+`{{$response('auth/sign-in', '$.access_token')}}` lisent directement la dernière réponse d’une requête, et l’envoient
+d’abord si elle n’en a pas. Une capture copie plutôt la valeur dans une variable, ce qui convient à une valeur que
+beaucoup de requêtes utilisent ou que plusieurs requêtes peuvent renouveler. Les deux lisent les mêmes JSONPath et
+XPath.

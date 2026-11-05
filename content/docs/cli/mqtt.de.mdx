@@ -1,0 +1,105 @@
+---
+title: "echolot mqtt"
+description: "Abonniere Topics und veröffentliche Nachrichten bei MQTT-Brokern, Version 3.1.1 oder 5.0, über TCP, TLS oder WebSocket."
+---
+
+`echolot mqtt` spricht vom Terminal aus mit MQTT-Brokern: `subscribe` gibt Nachrichten aus, sobald sie eintreffen,
+`publish` sendet sie. Beide sprechen standardmäßig MQTT 5.0 und auf Wunsch 3.1.1, über TCP (`mqtt://`), TLS
+(`mqtts://`) oder WebSocket (`ws://`, `wss://`). Dasselbe in der App findest du unter
+[MQTT-Anfragen](/docs/requests/mqtt).
+
+Die Beispiele nutzen einen Broker auf deinem Mac unter `localhost`, wie es die Anfrage **Warehouse sensors** von
+Alpenglow tut. Die Demo-API kann kein MQTT.
+
+## echolot mqtt subscribe [#echolot-mqtt-subscribe]
+
+```sh
+echolot mqtt subscribe [<options>] <broker> <filters> ...
+```
+
+`<broker>` ist `mqtt://host[:1883]`, `mqtts://host[:8883]`, `ws://host/mqtt` oder `wss://host/mqtt`. `<filters>` sind
+ein oder mehrere Topic-Filter: `+` passt auf eine Ebene, `#` auf den Rest.
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/+/temperature' --qos 1
+```
+
+```text
+warehouses/bern/temperature 4.5
+warehouses/zurich/temperature 5.1
+```
+
+Jede Nachricht ist eine Zeile in der Standardausgabe: das Topic, ein Leerzeichen, dann die Nutzlast. Eine Nutzlast, die
+kein UTF-8-Text ist, wird in Base64 ausgegeben. Mit `--json` ist jede Nachricht eine JSON-Zeile mit `topic`, `payload`
+(oder `payload_base64`), `qos` und `retain`, bereit für `jq`:
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 10 --json | jq -r .payload
+```
+
+Das Abonnement läuft, bis du es beendest (<kbd>⌃</kbd><kbd>C</kbd>), bis der Broker die Verbindung trennt, `--listen`
+Sekunden lang oder bis `--count` Nachrichten eingetroffen sind. Ein Filter, den der Broker ablehnt, wird in der
+Standardfehlerausgabe genannt.
+
+| Option | Bedeutung |
+| --- | --- |
+| `--qos <level>` | `0` (höchstens einmal), `1` (mindestens einmal) oder `2` (genau einmal). Standard 0. |
+| `--listen <seconds>` | Sekunden, die zugehört wird; `0` hört zu, bis es beendet wird oder der Broker die Verbindung trennt. Standard 0. |
+| `--count <n>` | Nach so vielen Nachrichten anhalten. |
+| `--json` | Jede Nachricht als JSON-Zeile ausgeben: Topic, Nutzlast, qos, retain; Base64 für binäre Nutzlasten. |
+
+## echolot mqtt publish [#echolot-mqtt-publish]
+
+```sh
+echolot mqtt publish [<options>] <broker> <topic>
+```
+
+`-m` gibt die Nutzlast an. Ohne sie ist jede Zeile der Standardeingabe eine Nachricht:
+
+```sh
+echolot mqtt publish mqtt://localhost warehouses/bern/temperature -m '4.5' --qos 1
+tail -f readings.log | echolot mqtt publish mqtt://localhost warehouses/bern/log
+```
+
+Bei QoS 1 oder 2 wartet Echolot, bis der Broker jede Nachricht bestätigt, und nennt jede, die er ablehnt. Bei QoS 0
+sagt es, wie viele es veröffentlicht hat.
+
+| Option | Bedeutung |
+| --- | --- |
+| `-m`, `--message <payload>` | Die Nutzlast. |
+| `--qos <level>` | `0` (höchstens einmal), `1` (mindestens einmal) oder `2` (genau einmal). Standard 0. |
+| `--retain` | Den Broker bitten, die Nachricht für spätere Abonnenten aufzubewahren. |
+
+## Optionen für beide [#options-of-both]
+
+| Option | Bedeutung |
+| --- | --- |
+| `--mqtt-version <version>` | Die Protokollversion: `5` oder `3.1.1`. Standard 5. |
+| `--client-id <id>` | Die Client-ID. Standard: `echolot-` und ein zufälliges Suffix. |
+| `-u`, `--user <name>` | Der Benutzername. |
+| `--password <password>` | Das Passwort. Besser die Umgebungsvariable `ECHOLOT_MQTT_PASSWORD` nutzen. |
+| `--keep-alive <seconds>` | Sekunden zwischen Pings; `0` für keine. Standard 60. |
+| `--timeout <seconds>` | Sekunden, die auf die Verbindung und die Antwort des Brokers gewartet wird. Standard 30. |
+| `-i`, `--insecure` | Das TLS-Zertifikat des Brokers nicht prüfen. |
+| `-v`, `--verbose` | Die Verbindung und die Antworten des Brokers in die Standardfehlerausgabe ausgeben. |
+| `--proxy <url>` | Über diesen Proxy verbinden: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
+| `--no-proxy` | Direkt verbinden und `HTTP_PROXY` und die anderen ignorieren. |
+| `--cacert <file>` | Zusätzlich den CA-Zertifikaten in dieser PEM-Datei vertrauen. Wiederholbar. |
+| `--cert <file>` | Dieses Client-Zertifikat senden: eine PEM-Datei (mit `--key`) oder eine `.p12`/`.pfx`-Datei. |
+| `--key <file>` | Der private PEM-Schlüssel des Client-Zertifikats, wenn die Zertifikatsdatei keinen enthält. |
+| `--pass <passphrase>` | Die Passphrase des Schlüssels oder der PKCS#12-Datei. Besser `ECHOLOT_CERT_PASSPHRASE` nutzen. |
+
+Beachte: `-i` bedeutet hier `--insecure`, nicht „include“ wie bei `echolot send`.
+
+```sh
+export ECHOLOT_MQTT_PASSWORD='…'
+echolot mqtt publish mqtts://broker.example.com:8883 status/door -m open --retain -u heidi
+```
+
+## Exit-Codes [#exit-codes]
+
+| Code | Wann |
+| --- | --- |
+| `0` | Verbunden, und abonniert oder veröffentlicht. |
+| `1` | `subscribe`: Der Broker lehnte die Verbindung oder jedes Abonnement ab. `publish`: Der Broker lehnte die Verbindung oder eine Nachricht mit QoS 1 oder 2 ab. |
+| `64` | Eine falsche Option oder Adresse des Brokers. |

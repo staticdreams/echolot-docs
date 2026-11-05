@@ -1,0 +1,20 @@
+{
+  "title": "命令行与 CI",
+  "pages": [
+    "index",
+    "send",
+    "run",
+    "validate",
+    "import-export",
+    "mcp",
+    "spec",
+    "graphql",
+    "grpc",
+    "mqtt",
+    "mock",
+    "fake",
+    "flow",
+    "agent",
+    "ci"
+  ]
+}

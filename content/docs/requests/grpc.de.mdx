@@ -1,0 +1,101 @@
+---
+title: "gRPC"
+description: "gRPC-Services aufrufen, die durch eine .proto-Datei oder die Reflection des Servers beschrieben sind, mit Nachrichten als JSON geschrieben und angezeigt."
+---
+
+Eine gRPC-Anfrage ruft eine Methode eines Services auf. Du schreibst die Nachricht als JSON; Echolot codiert sie mit der
+Beschreibung des Services, sendet sie über HTTP/2 und zeigt die Antwort als JSON mit dem Status des Aufrufs.
+
+<Shot id="requests-grpc-message" alt="Inventory › Reserve stock: der Tab „Nachricht“ mit inventory.proto, dem Service Inventory und der Methode Reserve, unary, der JSON-Nachricht und der Antwort mit Status OK und einer Nachricht" />
+
+<Callout title="Mit Alpenglow ausprobieren">
+  Die Anfragen im Ordner **Inventory** rufen einen gRPC-Server auf `localhost:50051` auf. Er liegt im Ordner
+  `examples/servers` des Docs-Repositorys (`bun run grpc`).
+</Callout>
+
+## gRPC-Anfrage erstellen [#create-a-grpc-request]
+
+Wähle **Datei › Neue gRPC-Anfrage** oder **Neue gRPC-Anfrage** im Menü **+** neben **Anfragen** in der Seitenleiste. Die
+Adresse ist der Server, etwa `http://localhost:50051` (in Alpenglow `{{grpcURL}}`), ohne Pfad.
+
+Der Editor hat diese Tabs: **Doku**, **Nachricht**, **Header**, **Auth**, **Variablen**, **Tests**, **Skripte** und
+**Einstellungen**. Die Header sind die Metadaten des Aufrufs. gRPC-Aufrufe sind immer POST, daher zeigt das Badge
+**gRPC** statt einer Methode.
+
+## Den Service beschreiben [#describe-the-service]
+
+Der Tab **Nachricht** beginnt damit, wo die Services beschrieben sind:
+
+- Eine `.proto`-Datei im Ordner `specs/` des Arbeitsbereichs, etwa `specs/inventory.proto`. Ihre Importe werden neben
+  ihr gelesen, und die Well-Known-Typen von `google.protobuf` brauchen keine Datei. `.proto`-Dateien fügst du auf der
+  Seite „Specs“ hinzu und bearbeitest sie dort: siehe [Proto-Dateien](/docs/specs/proto-files).
+- **Server-Reflection**: Echolot fragt den Server nach seinen Services. Der Server muss den Reflection-Service
+  anbieten. Der Reflection-Aufruf geht mit den Headern, der Auth und den Variablen der Anfrage an ihre Adresse.
+
+Wähle **Laden**, um die Services zu lesen. Wähle dann den Service und die Methode. Neben der Methode zeigt Echolot ihre
+Art: **unary**, **server streaming**, **client streaming** oder **bidirectional streaming**.
+
+<Callout>
+  Mit einer `.proto`-Datei auf der Seite „Specs“ zu beginnen ist schneller: Ihre Gliederung listet jede Methode, jeweils
+  mit einem Knopf, der dafür eine gRPC-Anfrage mit einer Beispielnachricht erstellt.
+</Callout>
+
+## Die Nachricht schreiben [#write-the-message]
+
+Die Nachricht ist JSON, im JSON-Mapping von protobuf, mit `{{variables}}`:
+
+```json
+{
+  "sku": "TNT-MH-2P",
+  "quantity": 1,
+  "order_id": "{{orderId}}"
+}
+```
+
+**Beispiel** ersetzt die Nachricht durch jedes Feld der Eingabe der Methode mit einem Beispielwert, verschachtelte
+Nachrichten eingeschlossen, als Ausgangspunkt.
+
+Im JSON-Mapping sind 64-Bit-Ganzzahlen Strings, Bytes sind Base64, Enums sind ihre Namen, Maps sind Objekte, und
+`Timestamp`, `Duration`, `FieldMask`, die Wrapper, `Struct` und `Any` haben ihre üblichen JSON-Formen. Ein Schlüssel, den
+der Nachrichtentyp nicht hat, wird abgelehnt, damit ein Tippfehler nicht unbemerkt bleibt.
+
+## Aufrufarten [#call-kinds]
+
+| Art | Die Nachricht, die du schreibst | Die Antwort |
+| --- | --- | --- |
+| Unary | Ein JSON-Objekt | Ein JSON-Objekt |
+| Server streaming | Ein JSON-Objekt | Ein JSON-Array mit jeder Nachricht, die der Server gesendet hat |
+| Client streaming | Ein JSON-Array mit Nachrichten | Ein JSON-Objekt |
+| Bidirectional streaming | Ein JSON-Array mit Nachrichten | Ein JSON-Array mit jeder Nachricht, die der Server gesendet hat |
+
+Bei **Inventory › Watch stock**, einem Server-Streaming-Aufruf, nennt die Nachricht die zu beobachtenden Produkte, und
+die Antwort ist die Liste der Lagerbestände, die der Server gesendet hat.
+
+## Status, Metadaten und Trailer [#status-metadata-and-trailers]
+
+gRPC meldet den Verlauf eines Aufrufs in seinem Status, der nach den Nachrichten in den Trailern ankommt. Die
+Zusammenfassung der Antwort zeigt ihn: `OK` in Grün oder der Status mit seinem Code in Rot, etwa `NOT_FOUND (5)`, mit
+der Zahl der empfangenen Nachrichten und ihrer Komprimierung. Der Tab **Header** der Antwort zeigt die Antwort-Header.
+
+Um den Status in Tests zu prüfen, füge im Tab **Tests** eine Prüfung **gRPC-Status** hinzu: Sie ist standardmäßig
+`OK` und nimmt Namen (`NOT_FOUND`) oder Codes (`5`). Siehe [Skripte und Tests](/docs/requests/scripts-and-tests).
+
+## Komprimierung und Frist [#compression-and-deadline]
+
+Das Badge **gRPC** vor der Adresse ist ein Menü:
+
+- **Nachrichten komprimieren**: **Ohne**, **gzip** oder **deflate**. Komprimierte Antworten werden immer gelesen, egal
+  was hier steht.
+- **Frist**: **Keine Deadline** oder 500 ms, 1 s, 5 s oder 30 s. Die Frist geht an den Server, und ein Aufruf, der sie
+  überschreitet, endet mit `DEADLINE_EXCEEDED`.
+
+## TLS und Zertifikate [#tls-and-certificates]
+
+Eine `http://`-Adresse ruft den Server über HTTP/2 ohne TLS auf. Eine `https://`-Adresse nutzt TLS mit den
+Zertifikatsregeln des Arbeitsbereichs, sodass eigene CA-Zertifikate und Client-Zertifikate funktionieren. Siehe
+[Anfrageeinstellungen](/docs/requests/settings).
+
+## In der Befehlszeile [#from-the-command-line]
+
+`echolot grpc describe` listet die Services und Methoden eines Servers auf, und `echolot grpc call` führt einen Aufruf aus
+und beendet sich bei einem anderen Status als `OK` mit 1. Siehe [echolot grpc](/docs/cli/grpc).

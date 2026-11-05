@@ -1,0 +1,66 @@
+---
+title: "echolot validate"
+description: "Prüfe einen Arbeitsbereich vor einem Lauf: Jede Datei lässt sich lesen, und jede Anfrage löst sich mit der gewählten Umgebung auf."
+---
+
+`echolot validate` liest jede Datei eines Arbeitsbereichs und löst jede Anfrage auf, ohne etwas zu senden. Führe es in
+CI als Erstes aus oder bevor du committest, um eine kaputte Datei, eine Variable, die in einer Umgebung fehlt, oder
+eine GraphQL-Query zu finden, die nicht mehr zu ihrem Schema passt.
+
+```sh
+echolot validate [<workspace>] [--env <env>]
+```
+
+`<workspace>` ist der Ordner des Arbeitsbereichs; der aktuelle Ordner, wenn du ihn weglässt.
+
+## Einen Arbeitsbereich prüfen [#check-a-workspace]
+
+```sh
+echolot validate Alpenglow.echolot
+```
+
+```text
+auth/who-am-i: note: {{token}} is captured from a response during the run
+auth/client-credentials: note: the OAuth 2.0 token comes from the token URL (client credentials) when the request is sent
+orders/list-orders: note: {{token}} is captured from a response during the run
+orders/create-order: note: {{token}} is captured from a response during the run
+orders/get-order: note: {{token}} is captured from a response during the run
+orders/cancel-order: note: {{token}} is captured from a response during the run
+29 requests, 3 environments: no problems
+```
+
+Jedes Problem ist eine Zeile in der Standardfehlerausgabe und beginnt mit dem Pfad der Anfrage. Was ein Lauf erst beim
+Ausführen erzeugt (Tokens aus OAuth-Client-Credentials, erfasste Variablen, Antworten anderer Anfragen), lässt sich
+vorher nicht wissen, daher wird es nur vermerkt und nie als Problem gezählt. Die letzte Zeile, in der Standardausgabe,
+zählt die Anfragen, die Umgebungen und die Probleme.
+
+Was geprüft wird:
+
+- Jede Datei des Arbeitsbereichs lässt sich lesen: TOML, das sich parsen lässt, Werte, die Echolot kennt (etwa eine
+  Auth-Art), keine Datei, die eine neuere Version von Echolot gesichert hat.
+- Jede Anfrage löst sich mit der Umgebung auf: Jede `{{variable}}` und jeder dynamische Wert bekommt einen Wert.
+- GraphQL-Anfragen, die ein Schema nennen, werden dagegen geprüft, mit Zeile und Spalte jedes Problems. Warnungen,
+  etwa zu veralteten Feldern, lassen nicht fehlschlagen.
+
+## Optionen [#options]
+
+| Option | Bedeutung |
+| --- | --- |
+| `-e`, `--env <env>` | Die Umgebung, mit der aufgelöst wird: ihr Dateiname ohne `.toml` oder ihr Name. |
+
+Prüfe einmal pro Umgebung, mit der du ausführst:
+
+```sh
+echolot validate Alpenglow.echolot --env staging
+```
+
+Geheime Variablen lösen sich wie in einem Lauf auf: aus `ECHOLOT_SECRET_<NAME>`-Variablen und auf einem Mac aus dem
+Schlüsselbund. Siehe [Secrets](/docs/cli#secrets).
+
+## Exit-Codes [#exit-codes]
+
+| Code | Wann |
+| --- | --- |
+| `0` | Keine Probleme. Vermerke zählen nicht. |
+| `1` | Mindestens ein Problem, oder der Arbeitsbereich ließ sich nicht lesen. |
+| `64` | Eine Umgebung, die es nicht gibt. |

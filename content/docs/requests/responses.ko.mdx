@@ -1,0 +1,178 @@
+---
+title: "응답"
+description: "응답의 상태, 소요 시간, 본문, 헤더, 쿠키, 통신 바이트를 읽고, 큰 본문을 검색하며, 응답을 비교하고 저장합니다."
+---
+
+서버가 돌려보내는 모든 것이 응답 패널에 표시됩니다. 알맞은 보기의 본문, 헤더, 쿠키, 도착한 그대로의 메시지, 16진수 바이트, 통신 바이트입니다. 상태와 소요 시간은 URL
+막대 아래 줄에 있습니다. 본문은 도착하는 대로 디스크에 기록되므로 수백 메가바이트의 응답도 작은 응답처럼 빠르게 열립니다.
+
+<Shot id="requests-http-response-tree" alt="JSON 트리 보기의 List products 응답. 값 하나에 포인터를 올려 값 복사와 변수에 저장 버튼이 보임" />
+
+## 상태, 시간, 크기 [#status-time-and-size]
+
+보낸 뒤 URL 막대 아래 줄에는 다음이 표시됩니다.
+
+- <strong>상태</strong>: 분류(2xx, 3xx, 4xx, 5xx)에 따라 색이 달라집니다. 응답을 받지 못한 요청에는 대신 <strong>실패</strong> 또는 <strong>취소됨</strong>이 표시됩니다.
+- 교환의 각 <strong>단계</strong>를 나타내는 막대. 요청이 실행되는 동안 늘어납니다.
+- <strong>총 소요 시간</strong>
+
+줄에 포인터를 올리면 세부 정보가 있는 카드가 열립니다.
+
+| 카드 항목 | 의미 |
+| --- | --- |
+| 상태 | 상태 코드와 사유. |
+| <strong>시간</strong> | 교환의 총 소요 시간. |
+| <strong>크기</strong> | 본문의 크기. 본문이 도착하는 동안에는 전체 중 얼마나 왔는지. |
+| <strong>인코딩</strong> | 압축 방식과 디코딩 전후의 크기(`br, 12 KB → 48 KB` 등), 또는 디코딩할 수 없었다는 내용. |
+| <strong>리디렉션 3회</strong> | 따라간 리디렉션. 클릭하면 각 홉의 상태, 메서드, 주소, 시간이 나옵니다. |
+| 검사 | 요청의 검사 중 통과한 개수. |
+| <strong>재사용된 연결</strong> | 요청이 이전 요청에서 열어 둔 연결로 갔습니다. DNS, 연결, TLS 시간이 없습니다. |
+| TLS | TLS 버전과 프로토콜(`TLS 1.3 · h2` 등). 클릭하면 인증서(주체, <strong>발급자</strong>, <strong>유효 기간</strong>, <strong>이름</strong>)가 나옵니다. 주황색의 열린 자물쇠는 확인이 꺼져 있었다는 뜻입니다. |
+| <strong>HTTP/3 제공됨</strong> | 서버가 `Alt-Svc`로 HTTP/3을 제공했습니다. [HTTP 버전](/docs/requests/settings#http-version)을 참고하십시오. |
+| 주소 | 서버의 IP 주소와 포트. |
+| 타임라인 | <strong>DNS</strong>, <strong>연결</strong>, <strong>TLS</strong>, <strong>대기 중</strong>(응답의 첫 바이트까지), <strong>전송</strong>과 각각의 시간. |
+
+요청이 다시 전송된 경우(새 연결이나 HTTP/1.1로) 카드에 그 이유가 표시됩니다. 요청이 실패한 경우에는 카드에 오류가 표시됩니다.
+
+## 응답 탭 [#the-response-tabs]
+
+| 탭 | 표시 내용 |
+| --- | --- |
+| <strong>본문</strong> | 선택한 보기의 본문. |
+| <strong>이벤트</strong> | Server-Sent Events와 기타 이벤트 스트림. 행마다 이벤트 하나. [WebSocket과 SSE](/docs/requests/websocket-and-sse)를 참고하십시오. |
+| <strong>테스트</strong> | 요청의 검사와 스크립트 테스트 결과. `3/4` 같은 개수가 함께 표시됩니다. |
+| <strong>콘솔</strong> | 요청의 스크립트가 기록한 내용. 스크립트가 실행된 경우에만 표시됩니다. [스크립트와 테스트](/docs/requests/scripts-and-tests)를 참고하십시오. |
+| <strong>헤더</strong> | 응답 헤더와 개수. |
+| <strong>쿠키</strong> | 보낸 쿠키와 설정된 쿠키, 윈도우의 쿠키 저장소. |
+| <strong>원본</strong> | 하나의 HTTP 메시지로 본 응답: 상태 줄, 헤더, 빈 줄, 본문. |
+| <strong>16진수</strong> | 본문의 바이트. |
+| <strong>통신</strong> | 연결을 통해 오간 그대로의, 보낸 바이트와 받은 바이트. |
+
+## 본문 보기 [#body-views]
+
+<strong>본문</strong> 탭 맨 위 줄에서 보기를 선택합니다.
+
+| 보기 | 표시 내용 |
+| --- | --- |
+| <strong>텍스트</strong> | 도착한 그대로의 본문. 콘텐츠 유형에 따라 색이 입혀집니다. |
+| <strong>JSON</strong> | 보기 좋게 정렬된 JSON. |
+| <strong>JSON 트리</strong> | 펼치고 접을 수 있는 트리로 본 JSON. |
+| <strong>XML</strong> | 요소, 속성, 텍스트의 트리로 본 XML. |
+| <strong>양식</strong> | 트리로 읽은 URL 인코딩 본문. |
+| <strong>MessagePack</strong> | 트리로 읽은 MessagePack 본문. |
+| <strong>미리보기</strong> | 이미지, PDF, 오디오, 비디오. 훑어보기를 통해 표시됩니다. |
+
+모든 보기는 모든 본문에 제공되므로, 잘못된 콘텐츠 유형으로 전송된 응답도 실제 형식으로 읽을 수 있습니다. 응답이 처음 열리는 보기는 콘텐츠 유형이 정하며, Echolot은
+본문 종류별로 선택한 보기를 기억합니다. JSON 응답 하나에서 <strong>JSON 트리</strong>를 선택하면 다음 응답들도 트리로 열립니다.
+
+HTML과 스크립트는 실행되거나 렌더링되지 않습니다. <strong>미리보기</strong>와 <strong>기본 앱에서 열기</strong>는 이를 텍스트로 보여 줍니다.
+
+긴 줄은 텍스트 보기에서 옆으로 스크롤됩니다. 줄 바꿈 버튼을 클릭하거나 <strong>보기 › 긴 줄 자동 줄 바꿈</strong>을 선택하면 줄이 바뀝니다. <strong>보기 › 코드 확대</strong>
+(<kbd>⌘</kbd><kbd>+</kbd>), <strong>코드 축소</strong>(<kbd>⌘</kbd><kbd>-</kbd>), <strong>실제 코드 크기</strong>(<kbd>⌘</kbd><kbd>0</kbd>)는 모든 곳의 코드 크기를 바꿉니다.
+
+## JSON 트리와 XML 트리 [#json-and-xml-trees]
+
+트리에는 각 값의 키 또는 인덱스, 타입, 값이 표시되며, 접힌 객체나 배열에는 항목 수가 표시됩니다. 항목이 1,000개를 넘는 배열은 `[0 … 999]` 같은 범위로 나뉘므로 아주 큰
+배열도 즉시 열립니다.
+
+값 위에 포인터를 올리면 버튼이 나타납니다.
+
+- <strong>브라우저에서 열기</strong>: 값이 웹 주소일 때
+- <strong>값 복사</strong>
+- <strong>변수에 저장…</strong>: 값을 변수에 보관하고, 원하면 보낼 때마다 업데이트합니다. [응답 캡처](/docs/requests/captures#store-a-value-from-the-response)를 참고하십시오.
+
+행을 오른쪽 클릭하면 더 많은 항목이 나옵니다.
+
+- JSON 트리: <strong>경로 복사</strong>(`$.items[0].sku` 같은 값까지의 JSONPath), <strong>값 복사</strong>, <strong>검사 추가</strong>. <strong>검사 추가</strong>는 값이 현재 값과 같음을 확인하는 검사를 <strong>테스트</strong> 탭에
+  추가합니다.
+- XML 트리: <strong>XPath 복사</strong>와 <strong>값 복사</strong>.
+
+이미지 주소인 값 위에 포인터를 올리면 옆에 썸네일이 열립니다. 이미지는 브라우저가 그림을 가져오는 방식으로, 즉 쿠키나 자격 증명 없이 최대 10 MB까지 가져오며 기록에는
+남지 않습니다. `data:image/…` 값은 요청 없이 표시됩니다. 날짜처럼 보이는 값(초, 밀리초, 마이크로초, 나노초 단위의 Unix 시간 또는 ISO 8601 타임스탬프) 위에 올리면
+읽기 쉬운 날짜로 표시됩니다.
+
+<strong>XML</strong> 트리는 최대 50 MB의 본문을, <strong>양식</strong>과 <strong>MessagePack</strong>은 최대 64 MB까지 처리합니다. 더 큰 본문은 <strong>텍스트</strong>와 찾기를 사용하십시오.
+
+## 찾기 [#find]
+
+<kbd>⌘</kbd><kbd>F</kbd>(<strong>요청 › 본문에서 찾기</strong>)를 누르거나 돋보기를 클릭합니다.
+
+- <strong>텍스트</strong>와 <strong>JSON</strong>에서는 찾을 내용을 입력합니다. <strong>Aa</strong>는 대소문자를 구분하고 <strong>.\*</strong>는 정규 표현식으로 처리합니다. 막대에 `3 of 1,204`처럼 현재 위치가
+  표시됩니다. 다음 일치 항목은 <kbd>↩</kbd> 또는 <kbd>⌘</kbd><kbd>G</kbd>, 이전 항목은 <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd>를 누릅니다. 일치 항목은
+  최대 10,000개까지 표시되며, 더 있으면 개수에 `+`가 붙습니다.
+- <strong>JSON 트리</strong>, <strong>양식</strong>, <strong>MessagePack</strong>에서는 막대에 `$.items[0]` 같은 JSONPath를 입력하면 해당 값으로 이동합니다. 아무것도 없으면 <strong>찾을 수 없음</strong>이 표시됩니다.
+
+<kbd>Esc</kbd>를 누르면 막대가 닫힙니다.
+
+## 큰 응답 [#large-responses]
+
+Echolot은 본문을 메모리에 담아 두지 않습니다. 도착하는 대로 파일에 스트리밍하고, 뷰어는 화면에 보이는 부분만 읽습니다.
+
+- 나머지가 아직 도착하는 동안에도 처음 몇 줄이 표시됩니다. 본문을 내려받는 동안 세부 정보 카드에 지금까지 받은 양이 표시됩니다.
+- <strong>JSON</strong>은 본문이 시작되자마자 정렬을 시작하고 본문이 커지는 대로 따라갑니다.
+- <strong>JSON 트리</strong>는 펼친 행만 만듭니다.
+- 찾기는 디스크에 있는 본문 전체를 검색합니다.
+
+Alpenglow의 <strong>Catalog › Export the catalog</strong>로 시험해 보십시오. 제품 40,000개, 약 14 MB입니다.
+
+본문은 <strong>설정 › 저장 공간 › 응답 본문 최대 보관 크기</strong>에서 정한 크기까지 디스크에 보관되며, 그 크기를 넘으면 가장 오래 사용하지 않은 것부터 제거됩니다. 탭에서 열려
+있는 본문은 제외됩니다. 본문이 제거된 오래된 응답에는 <strong>이 응답의 본문은 더 이상 저장되어 있지 않습니다.</strong>라고 표시됩니다. [저장 공간과 암호화](/docs/workspaces/storage-and-encryption)를
+참고하십시오.
+
+## 헤더 [#headers]
+
+<strong>헤더</strong> 탭에는 응답 헤더가 도착한 순서대로 나열됩니다. 행에 포인터를 올리거나 행을 선택하고 <kbd>Space</kbd>를 누르면(이동은 <kbd>↑</kbd>와 <kbd>↓</kbd>) 값 전체,
+헤더의 용도, 값의 의미를 볼 수 있습니다. 헤더를 오른쪽 클릭하면 <strong>값 복사</strong>, <strong>헤더 복사</strong>, <strong>검사 추가</strong>가 나옵니다. <strong>검사 추가</strong>는 그 헤더에 대한 검사를 <strong>테스트</strong>
+탭에 추가합니다.
+
+## 쿠키 [#cookies]
+
+<strong>쿠키</strong> 탭은 세 부분으로 나뉩니다.
+
+- <strong>요청과 함께 보냄</strong>: 나간 쿠키와 각 쿠키의 출처.
+- <strong>응답이 설정함</strong>: 각 `Set-Cookie`와 그 속성, 그리고 쿠키 저장소가 거부했을 때의 경고.
+- <strong>이 윈도우에 저장됨</strong>: 윈도우의 쿠키 저장소에 있는 모든 것. 해당 버튼으로 하나를 제거하거나 <strong>모두 지우기</strong>로 전부 제거합니다.
+
+요청에서 <strong>쿠키 보내기 및 저장</strong>이 꺼져 있으면 탭에 그렇게 표시됩니다. [쿠키](/docs/requests/settings#cookies)를 참고하십시오.
+
+## 원본, 16진수, 통신 [#raw-hex-and-wire]
+
+- <strong>원본</strong>은 응답을 하나의 메시지로 보여 줍니다. 상태 줄, 헤더, 빈 줄, 이어서 디코딩된 본문입니다(처음 64 MB까지. 전체는 <strong>본문</strong> 탭에 있습니다).
+- <strong>16진수</strong>는 본문의 바이트를 보여 줍니다. 오프셋, 두 그룹으로 나뉜 행당 16바이트, 그리고 ASCII입니다. 마우스나 화살표 키와 <kbd>⇧</kbd>로 바이트를 선택하며,
+  복사하면 16진수 쌍이 복사되고 ASCII 열에서 선택했다면 텍스트가 복사됩니다.
+- <strong>통신</strong>은 연결을 통해 오간 그대로의 바이트를 보여 줍니다. <strong>보냄</strong> 또는 <strong>받음</strong>을 선택합니다. 프레이밍된 헤더와 디코딩 전의 압축된 본문을 볼 수 있습니다. 방향별로
+  최대 1 MB까지 보관되며, 앞부분만 표시하고 있으면 탭에 그렇게 표시됩니다.
+
+## 저장과 공유 [#save-and-share]
+
+<strong>본문</strong> 탭 오른쪽 위의 저장 버튼을 클릭합니다.
+
+- <strong>본문 저장…</strong>은 본문을 파일로 기록합니다(디코딩된 상태).
+- <strong>기본 앱에서 열기</strong>는 Mac이 그 유형에 쓰는 앱에서 엽니다.
+- <strong>인코딩된 본문 저장…</strong>은 본문을 도착한 그대로, 압축된 채로 기록합니다. 압축된 응답에만 해당합니다.
+- <strong>교환을 HAR로 내보내기…</strong>는 요청과 응답을 HAR 파일로 기록합니다.
+
+응답이 아니라 요청을 공유하려면 <strong>요청 › cURL로 복사</strong>(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd>) 또는 <strong>요청 › 코드 생성…</strong>(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd>)을
+사용하십시오. [HTTP 요청](/docs/requests#send-and-cancel)을 참고하십시오.
+
+## 이전 응답과 비교 [#earlier-responses-and-comparing]
+
+보낸 요청은 모두 기록에 보관됩니다. URL 막대 아래 줄 끝에 있는 개수가 붙은 시계 버튼은 이 요청의 응답을 엽니다. 각 응답에는 상태, 시간, 보낸 주체(본인, 실행, 에이전트),
+소요 시간, 크기가 표시됩니다.
+
+<Shot id="requests-http-response-history" alt="List products의 응답 기록 팝오버: 이전 응답을 상태, 시간, 출처, 소요 시간, 크기와 함께 나열" />
+
+- 응답을 클릭하면 그 응답이 표시됩니다. 응답 패널 위의 막대에 <strong>이전 응답</strong>이라고 표시되며, <strong>최신 항목 보기</strong>로 돌아갑니다.
+- 두 응답을 비교하려면 하나를 표시한 다음 목록에서 다른 응답 위에 포인터를 올려 비교 버튼을 클릭하거나, <strong>이전 응답</strong> 막대에서 <strong>최신 응답과 비교</strong>를 클릭합니다. 비교는
+  추가된 것과 제거된 것을 보여 줍니다.
+- 목록 메뉴의 <strong>이 요청의 기록 지우기…</strong>는 이 요청의 기록을 삭제합니다.
+
+작업 공간 전체의 기록은 [기록](/docs/workspaces/history)을 참고하십시오.
+
+## 요청이 실패할 때 [#when-a-request-fails]
+
+응답이 오지 않으면 패널에 <strong>요청 시간이 초과되었습니다</strong> 같은 오류와 <strong>다시 시도</strong>가 표시됩니다. 버튼이 두 개 더 나타날 수 있습니다.
+
+- <strong>스크립트 검토…</strong>: 요청의 스크립트가 Echolot 외부에서 온 것이어서 실행하기 전에 신뢰 확인이 필요할 때. [스크립트와 테스트](/docs/requests/scripts-and-tests)를
+  참고하십시오.
+- <strong>접근 허용…</strong>: App Store 버전에서 요청이 앱이 아직 읽을 수 없는 파일을 가리킬 때.

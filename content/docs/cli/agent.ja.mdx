@@ -1,0 +1,127 @@
+---
+title: "echolot agent"
+description: "アプリなしで内蔵のエージェントにタスクを実行させます。承認の代わりにポリシーファイルを使うので、スクリプトやCIで使えます。"
+---
+
+`echolot agent` は、内蔵のエージェント（[アシスタント](/docs/ai/assistant)と同じもの）にタスクを渡し、終わるまでワークスペースのツールで作業させます。
+承認する人がいないため、何をしてよいかはポリシーで決まります。CI（「すべてのリクエストをチェックして、失敗したものを報告して」）やスクリプトで使えます。
+
+```sh
+echolot agent [<options>] <task>
+```
+
+`<task>` は、エージェントにしてほしいことを普通の言葉で書いたものです。
+
+## タスクを実行する [#run-a-task]
+
+```sh
+export ANTHROPIC_API_KEY=…
+echolot agent "Check every request of the Catalog folder and report what fails" -w Alpenglow.echolot
+```
+
+モデルの回答は、書かれるそばから標準出力にストリーミングされます。最後に概要が標準エラーに出力されます。
+
+```text
+Agent finished: 9 tool calls, 18234 in, 1210 out.
+```
+
+`-v` を指定すると、すべてのツール呼び出しとその結果も標準エラーに出力されます（`→ send_request …`、`← send_request ok in 82 ms`）。`--json` を指定すると、代わりにセッション全体をJSONで出力します：
+すべてのメッセージ、ツール呼び出しと結果、トークンの使用量、終了の仕方。
+
+## プロバイダとモデル [#providers-and-models]
+
+| `--provider` | キーの取得元 | モデル |
+| --- | --- | --- |
+| `anthropic`（デフォルト） | `ANTHROPIC_API_KEY` | `--model` で指定しない限り `claude-opus-5-5`。 |
+| `openai` | `OPENAI_API_KEY` | `--model` が必須です。 |
+| `gemini` | `GEMINI_API_KEY` | `--model` が必須です。 |
+| `openai-compatible` | 設定されていれば `OPENAI_API_KEY`。なくても構いません | `--model` が必須です。Ollama、LM Studio、OpenRouterなど、OpenAI APIを備えたサーバ用です。`--base-url` でサーバを指定します。デフォルトは、このMac上のOllama（`http://127.0.0.1:11434/v1`）です。 |
+
+`--key-env` で、キーを入れた別の環境変数を指定できます。キーはCIのシークレットに保存するか、コマンド実行時に取得してください。
+
+```sh
+op run --env-file agent-keys.env -- echolot agent "Save every product as CSV" \
+  -w Alpenglow.echolot --provider openai --model gpt-5.5 --policy-file ci-policy.toml --json
+```
+
+自分のMacで無料で実行する例です。
+
+```sh
+echolot agent "List the requests that have no checks" -w Alpenglow.echolot \
+  --provider openai-compatible --model qwen3:4b
+```
+
+## ポリシー [#policies]
+
+エージェントのツールはEcholotのMCPサーバのツールで、安全性も同じです：シークレットの値がモデルに渡ることはなく、モデルに見えるものはすべて同じ伏せ字処理を通ります。
+各種類の操作で何ができるかは、ポリシーで決まります。
+
+| `--policy` | 実行される操作 |
+| --- | --- |
+| `standard`（デフォルト） | 読み取りと安全な送信（`GET` など）。その他の送信、新しいホスト、ワークスペースへの変更は拒否されます。 |
+| `readonly` | 読み取りのみ。 |
+| `permissive` | 送信とワークスペースへの変更。削除、ワークスペースが知らないホスト、保護された環境への送信は拒否されます。 |
+
+人がいない場合、「確認」は「拒否」を意味します。
+
+**ポリシーファイル** は、操作の種類ごとにベースのポリシーを緩めたり厳しくしたりします。ワークスペースの `[agents]` セクションと同じルールを、`[agents]` で囲んでも囲まなくても書けます。
+
+```toml
+# ci-policy.toml: let the agent send anything to the workspace's hosts, but never change the workspace
+[rules]
+unsafe-send = "allow"
+workspace-write = "refuse"
+destructive = "refuse"
+```
+
+| 操作 | 対象 |
+| --- | --- |
+| `read` | リクエスト、レスポンス、環境などの読み取り。 |
+| `safe-send` | `GET` など、何も変更しないリクエストの送信。 |
+| `unsafe-send` | `POST` や `DELETE` など、何かを変更する可能性のあるリクエストの送信。 |
+| `protected-send` | [保護された環境](/docs/workspaces/protected-environments)での送信。 |
+| `new-host` | ワークスペースが知らないホストへの送信。 |
+| `workspace-write` | リクエスト、フォルダ、環境、その他のファイルの作成と変更。 |
+| `destructive` | 削除。 |
+
+それぞれに `allow`、`ask`、`refuse` を指定できます。`protected-send` と `new-host` は厳しくできますが、完全に許可することはできません。
+
+ポリシーファイルはあなた自身のものとして扱われるため、ポリシーを緩められます。ワークスペース自身の `[agents]` ルールは、`--trust-workspace-policy` を指定しない限り、厳しくする方向にしか働きません。
+
+## 制限 [#limits]
+
+`--max-steps` は、モデルのターン数がその回数に達したところで実行を止めます（デフォルトは30）。`--token-budget` は、そのトークン数を使い切ったところで止めます。
+制限に達して止まった実行は、終了コード1で終了します。
+
+## オプション [#options]
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。デフォルトはカレントフォルダ。 |
+| `--env <env>` | 環境を指定しない呼び出しが使う環境：ファイル名から `.toml` を除いたもの。 |
+| `--provider <provider>` | `anthropic`、`openai`、`gemini`、`openai-compatible`。デフォルトは `anthropic`。 |
+| `--model <model>` | モデル。`anthropic` 以外のプロバイダでは必須です。 |
+| `--base-url <url>` | プロバイダのURL。`openai-compatible` サーバ用。デフォルトはOllamaのURL。 |
+| `--key-env <name>` | APIキーを入れた環境変数。プロバイダの通常のものと異なる場合に指定します。 |
+| `--policy <policy>` | ベースのポリシー：`standard`、`readonly`、`permissive`。デフォルトは `standard`。 |
+| `--policy-file <file>` | 操作ごとのルール（`allow`、`ask`、`refuse`）を書いたTOMLファイル。ワークスペースの `[agents]` セクションと同じ形式です。 |
+| `--trust-workspace-policy` | ワークスペースの `[agents]` ルールが、ポリシーを厳しくするだけでなく緩めることも許可します。 |
+| `--toolsets <list>` | 提供するツールグループ（カンマ区切り）、または `all`：`requests`（常時）、`flows`、`workspace`、`environments`、`specs`、`mocks`、`mcp-servers`、`history`、`flow-editing`。デフォルトは `all`。 |
+| `--max-steps <n>` | 実行が止まるまでのモデルのターン数。デフォルトは30。 |
+| `--token-budget <n>` | 実行が止まるまでに使えるトークン数。 |
+| `--json` | 書き起こしの代わりに、セッション全体をJSONで出力します。 |
+| `-v`、`--verbose` | すべてのツール呼び出しとその結果を標準エラーに出力します。 |
+
+ツールセットについては、[`echolot mcp`](/docs/cli/mcp#echolot-mcp-serve)のページで説明しています。
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | モデルがタスクを完了しました。 |
+| `1` | 実行が失敗した、モデルが拒否した、またはステップ数の上限、トークンの予算、出力の上限に達しました。 |
+| `64` | オプションが正しくない、不明なプロバイダまたはポリシー、`--model` がない、APIキーがない、または不明な環境。 |
+
+<Callout>
+  ワークスペースのデータは、選んだモデルプロバイダに送信されます。データをMacの外に出したくない場合は、自分のMac上のサーバで `openai-compatible` を使ってください。
+</Callout>

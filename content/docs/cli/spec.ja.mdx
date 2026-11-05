@@ -1,0 +1,99 @@
+---
+title: "echolot spec"
+description: "CIでOpenAPIドキュメントをリントし、仕様に追従するフォルダを仕様の変更に合わせて最新に保ちます。"
+---
+
+`echolot spec` は、[仕様ページ](/docs/specs)の2つの機能をターミナルに持ち込みます：リンターと、仕様とそこから作成したリクエストのフォルダとの紐づけです。
+
+| サブコマンド | 動作 |
+| --- | --- |
+| `echolot spec lint` | OpenAPIまたはSwaggerのドキュメントをリントします。エラーがある場合（`--strict` では警告も）終了コード1で終了します。 |
+| `echolot spec check` | フォルダが追従している仕様の変更点を一覧表示します。フォルダが最新でない場合は終了コード1で終了します。 |
+| `echolot spec apply` | 仕様の変更をフォルダに適用します。ワークスペースで行った編集は保持されます。 |
+
+## echolot spec lint [#echolot-spec-lint]
+
+```sh
+echolot spec lint <file> [--strict] [--hints]
+```
+
+`<file>` は仕様のYAMLまたはJSONファイルです。`$ref` で参照されるファイルは、その隣から読み込まれます。
+
+```sh
+echolot spec lint Alpenglow.echolot/specs/alpenglow.yaml
+```
+
+```text
+0 errors, 0 warnings.
+```
+
+問題は1つにつき1行で、ファイル、行、列、重大度、メッセージ、角括弧付きのルールとともに標準出力に出力されるため、エディタやCIがその場所を指し示せます。件数は標準エラーに出力されます。
+
+```text
+api.yaml:2:1: error: info needs a version (of the API, such as 1.0.0). [info]
+api.yaml:7:7: error: GET /x documents no responses. [responses]
+api.yaml:6:5: hint: GET /x has no operationId; code generators and agents name it from one. [operation-id]
+2 errors, 0 warnings.
+```
+
+| オプション | 意味 |
+| --- | --- |
+| `--strict` | 警告でも失敗にします。 |
+| `--hints` | ヒントも一覧表示します：operationIdや説明など、よい実践のためのものです。ヒントで失敗になることはありません。 |
+
+ルールは仕様ページと同じです。[仕様の編集](/docs/specs/editing)を参照してください。
+
+## echolot spec check [#echolot-spec-check]
+
+```sh
+echolot spec check [--workspace <workspace>] <folder> [--refresh]
+```
+
+仕様を読み込んで作成したフォルダや、アプリで仕様に紐づけたフォルダは、その仕様に追従します。`check` は、フォルダを現在の仕様と比較し、`added`（追加）、`changed`（変更、フィールド付き）、
+`removed`（削除）されたオペレーションを一覧表示します。ワークスペースで編集した内容に関わる変更には、その旨が表示されます。そうした編集は保持されます。
+
+```sh
+echolot spec check -w Shop.echolot pets
+```
+
+```text
+added    POST /pets
+changed  GET /pets/{id}  (parameters, responses)
+removed  DELETE /pets/{id}
+3 changes, 12 unchanged.
+```
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。デフォルトはカレントフォルダ。 |
+| `--refresh` | 最初に、仕様をそのURLから取得し直します。 |
+
+`<folder>` は、紐づけたフォルダのパス（`pets` など）です。リクエストが仕様に遅れたときにビルドを失敗させるには、CIで `check` を使います。
+
+## echolot spec apply [#echolot-spec-apply]
+
+```sh
+echolot spec apply [--workspace <workspace>] <folder> [--operation <operation> ...]
+```
+
+仕様の変更をフォルダに書き込みます：新しいオペレーションはリクエストになり、変更されたものは更新され、削除されたものは削除されます。リクエストで編集した内容は保持されます。
+編集したリクエストのオペレーションが仕様からなくなっている場合も、そのリクエストは保持され、仕様への追従をやめます。各行には何が行われたかが表示されます。
+
+```text
+added    pets/create-pet
+updated  pets/get-pet  kept edits to headers
+removed  pets/delete-pet
+```
+
+| オプション | 意味 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。デフォルトはカレントフォルダ。 |
+| `--operation <operation>` | このオペレーションだけ（`"GET /pets"` など）。複数回指定できます。省略するとすべての変更が対象です。 |
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | `lint`：エラーなし（`--strict` では警告もなし）。`check`：フォルダは最新です。`apply`：適用しました。 |
+| `1` | `lint`：エラー、または `--strict` での警告。`check`：適用すべき変更があります。 |
+| `64` | オプションが正しくない、または仕様に追従していないフォルダ。 |

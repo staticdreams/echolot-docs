@@ -1,0 +1,113 @@
+---
+title: "MQTT"
+description: "Mit einem MQTT-3.1.1- oder 5.0-Broker verbinden, Topics mit einem QoS abonnieren, Nachrichten veröffentlichen und sie im Log verfolgen."
+---
+
+Eine MQTT-Anfrage verbindet sich mit einem Broker, abonniert Topic-Filter und veröffentlicht Nachrichten. Sie bleibt
+verbunden, während du arbeitest, und das Log zeigt jede Nachricht auf den Topics, denen du folgst. Echolot spricht
+MQTT 3.1.1 und 5.0.
+
+<Shot id="requests-mqtt-log" alt="Realtime › Warehouse sensors, verbunden mit dem lokalen Broker: der Tab „Abonnieren“ mit warehouses/+/temperature bei QoS 1 und das Nachrichtenlog mit Temperaturwerten nach Topic" />
+
+<Callout title="Mit Alpenglow ausprobieren">
+  **Realtime › Warehouse sensors** verbindet sich mit einem lokalen Broker auf `localhost`, aus dem Ordner
+  `examples/servers` des Docs-Repositorys (`bun run realtime`).
+</Callout>
+
+## Verbinden [#connect]
+
+1. Wähle **Datei › Neue MQTT-Anfrage** oder **Neue MQTT-Anfrage** im Menü **+** neben **Anfragen** in der Seitenleiste.
+2. Tippe die Adresse des Brokers.
+3. Wähle das Protokoll im Menü des Badges **MQTT** vor der Adresse: **MQTT 5.0** (Standard) oder **MQTT 3.1.1**.
+4. Wähle **Verbinden** (<kbd>⌘</kbd><kbd>R</kbd>). Solange die Verbindung steht, heißt es **Trennen**.
+
+| Adresse | Verbindet über | Standardport |
+| --- | --- | --- |
+| `mqtt://broker` | TCP | 1883 |
+| `mqtts://broker` | TLS | 8883 |
+| `ws://broker` | WebSocket, Pfad `/mqtt`, sofern die Adresse keinen hat | Wie bei jeder `ws://`-Adresse |
+| `wss://broker` | WebSocket über TLS, Pfad `/mqtt`, sofern die Adresse keinen hat | Wie bei jeder `wss://`-Adresse |
+
+`{{variables}}` funktionieren in der Adresse: Die Sensoranfrage von Alpenglow nutzt `mqtt://{{mqttHost}}`.
+
+Der Editor hat diese Tabs: **Doku**, **Abonnieren**, **Veröffentlichen**, **Verbindung**, **Auth**, **Variablen**,
+**Tests**, **Skripte** und **Einstellungen**. Einstellungen wie TLS-Prüfung, Proxy und Zertifikate gelten wie bei
+[HTTP-Anfragen](/docs/requests/settings).
+
+## Benutzername und Passwort [#user-name-and-password]
+
+Benutzername und Passwort von MQTT sind die **Basic**-Auth der Anfrage, im Tab **Auth**. Lege das Passwort in einer
+[geheimen Variablen](/docs/workspaces/secrets) ab, etwa `{{mqttPassword}}`, damit es im Schlüsselbund bleibt und nicht
+in der Anfragedatei steht. Wie jede Auth lässt sie sich einmal für einen Ordner oder den Arbeitsbereich festlegen.
+Andere Arten von Auth gelten für MQTT nicht.
+
+## Die Verbindung [#the-connection]
+
+Der Tab **Verbindung** enthält den Rest des CONNECT:
+
+| Feld | Was es tut |
+| --- | --- |
+| **Client-ID** | Die ID des Clients, mit `{{variables}}`. Leer nutzt `echolot-` und ein zufälliges Suffix |
+| **Clean Start** (5.0) oder **Clean Session** (3.1.1) | Beginnt ohne die Abonnements und Nachrichten, die der Broker für diese Client-ID behalten hat. Standardmäßig an |
+| **Keep-Alive** | Sekunden zwischen Pings; 0 für keine. Standardmäßig 60 |
+| **Last Will** | **Last Will veröffentlichen, wenn die Verbindung abbricht**, mit **Last-Will-Topic**, **Last-Will-Payload**, QoS und **Retain**: die Nachricht, die der Broker veröffentlicht, wenn dieser Client geht, ohne sich zu verabschieden |
+
+## Abonnieren [#subscribe]
+
+Der Tab **Abonnieren** listet die Topic-Filter auf, die die Anfrage abonniert:
+
+1. Tippe unten im Feld einen Filter, etwa `warehouses/+/temperature`. `+` passt auf eine Ebene und `#` auf den Rest,
+   wie in `logs/#`.
+2. Wähle **QoS 0**, **QoS 1** oder **QoS 2**.
+3. Wähle **Abonnieren**, um einmal zu abonnieren, oder **+**, um den Filter mit der Anfrage zu sichern.
+
+Gesicherte Filter mit angehaktem **Beim Verbinden abonnieren** werden abonniert, sobald die Anfrage sich verbindet: in
+der App, in Durchläufen, in der Befehlszeile und für Agenten. Solange die Verbindung steht, hat jeder gesicherte Filter
+die Knöpfe **Abonnieren** und **Abbestellen**. Mit MQTT 5.0 lässt **No Local** die Nachrichten weg, die dieser Client
+selbst veröffentlicht.
+
+## Veröffentlichen [#publish]
+
+Der Tab **Veröffentlichen** sendet Nachrichten:
+
+1. Tippe das Topic und den Payload. `{{variables}}` funktionieren in beiden.
+2. Wähle das QoS und setze das Häkchen bei **Retain**, damit der Broker die Nachricht für spätere Abonnenten behält.
+3. Wähle **Veröffentlichen**.
+
+Wähle **+**, um die Nachricht mit der Anfrage zu sichern. Gesicherte Nachrichten mit angehaktem
+**In Durchläufen veröffentlichen** werden der Reihe nach veröffentlicht, wenn die Anfrage ohne dich läuft. Die
+[Ausführung](/docs/requests/runner) und die Befehlszeile verbinden sich, abonnieren die aktivierten Filter,
+veröffentlichen die aktivierten Nachrichten, hören 10 Sekunden zu und schließen dann.
+
+## Das Nachrichtenlog [#the-message-log]
+
+Der Tab **Nachrichten** des Antwortbereichs zeigt die Sitzung: empfangene und veröffentlichte Nachrichten,
+Abonnements und die Bestätigungen des Brokers, die neuesten zuletzt, jeweils mit Zeit und Größe.
+
+- Eine Nachricht zeigt ihr Topic, ihr QoS, ob sie retained war, und ihre Paket-ID.
+- **Alle Topics** schränkt das Log auf ein Topic ein.
+- **Alle**, **Gesendet** und **Empfangen** filtern nach Richtung; **Nachrichten filtern** findet Nachrichten anhand
+  ihres Textes.
+- **Mehr** formatiert einen JSON-Payload übersichtlich.
+- Die erste Zeile sagt, welche Client-ID sich mit welchem Protokoll verbunden hat und ob der Broker eine Sitzung von
+  vorher behalten hat. Trennt der Broker die Verbindung, sagt das Log warum, mit dem Grund von MQTT.
+
+Zustellungen mit QoS 1 und 2 werden für dich bestätigt, in beide Richtungen.
+
+Schließt die Verbindung, wird die Sitzung im [Verlauf](/docs/workspaces/history) behalten, mit dem Log als Body der
+Antwort, sodass Prüfungen auf dem **Body** damit funktionieren.
+
+## MQTT 5.0 [#mqtt-50]
+
+Die Reason Codes des Brokers erscheinen im Log und bei einer abgelehnten Verbindung mit ihrem Namen, etwa `Success` oder
+`Not authorized`, in beiden Versionen. Mit gewähltem **MQTT 5.0**:
+
+- **No Local** bei einem Abonnement lässt die eigenen Nachrichten dieses Clients weg.
+- **Clean Start** ersetzt **Clean Session** von 3.1.1.
+- Eine gesicherte Nachricht kann einen Content-Type tragen (`content-type` in der Anfragedatei), der als Eigenschaft
+  Content Type gesendet wird.
+
+## In der Befehlszeile [#from-the-command-line]
+
+`echolot mqtt subscribe` und `echolot mqtt publish` sprechen aus dem Terminal mit einem Broker, mit dem Passwort in
+`ECHOLOT_MQTT_PASSWORD`. Siehe [echolot mqtt](/docs/cli/mqtt).

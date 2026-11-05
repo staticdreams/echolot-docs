@@ -1,0 +1,138 @@
+---
+title: "Historial"
+description: "Encuentra cualquier respuesta que haya recibido un espacio de trabajo, mira quién la envió, compara dos respuestas y borra lo que ya no necesitas."
+---
+
+Echolot guarda cada intercambio que hace un espacio de trabajo: cada solicitud enviada y la respuesta que obtuvo, con
+quién la envió. Las tuyas, las de la página Ejecución, las de los flujos y las de los agentes acaban en el mismo sitio.
+Usa el historial para volver a una respuesta anterior, para encontrar la solicitud que devolvió cierto valor o para ver
+qué hizo un agente.
+
+## Abre la página Historial [#open-the-history-page]
+
+- **Vista › Historial** (<kbd>⌘</kbd><kbd>Y</kbd>).
+- **Historial** en la cabecera de la página. Haz clic de nuevo para volver a la página de la que vienes.
+
+La página enumera los intercambios por día, los más recientes primero. Cada fila muestra el estado (o **Con error** si el
+envío no obtuvo respuesta), el método, el nombre de la solicitud, su dirección, quién la envió y cuándo. **sin guardar**
+marca un intercambio de una solicitud que nunca se guardó; **eliminada**, uno cuya solicitud se ha eliminado desde
+entonces.
+
+<Shot id="workspaces-history-page" alt="La página Historial: los intercambios de hoy de Alpenglow, enviados por Tú, Ejecución y un agente, con el campo de búsqueda y el filtro Enviado por encima" />
+
+## Qué se registra [#what-is-recorded]
+
+- Todos los envíos de todos los tipos de solicitud, desde la página de la solicitud, la página
+  [Ejecución](/docs/requests/runner), los flujos, el [Envío rápido](/docs/mac/quick-send),
+  [Atajos](/docs/mac/shortcuts), el [Asistente](/docs/ai/assistant) y los [agentes externos](/docs/ai/agents).
+- Los envíos que han fallado sin respuesta, con su error.
+- Las sesiones WebSocket, Socket.IO y MQTT, cuando se cierran: la conexión y el registro de cada mensaje.
+
+Los envíos que hace Echolot para uso propio, como descargar un esquema GraphQL o una especificación, no se registran. La
+herramienta de línea de comandos no guarda historial.
+
+Quién envió un intercambio se muestra en su fila:
+
+| Se muestra | Enviado por |
+| --- | --- |
+| **Tú** | Tú, desde la app. |
+| **Ejecución** | Una ejecución de la página Ejecución. |
+| **Flujo:** nombre | Un flujo. |
+| **Agente** | El Asistente integrado. |
+| El nombre del cliente | Un agente externo a través del servidor MCP de Echolot, como Claude Code. |
+
+## Busca y filtra [#search-and-filter]
+
+Escribe en **Buscar nombres, URL, cabeceras y cuerpos**. Dos caracteres buscan en nombres y direcciones; tres o más
+buscan también en los cuerpos. Las coincidencias se encuentran en cualquier parte del texto, no solo al principio de una
+palabra.
+
+**Enviado por** acota la lista: **Todos**, **Tú**, **Ejecuciones** (la página Ejecución y los flujos) o **Agentes** (el
+Asistente y los agentes externos). El número que hay junto a él dice cuántos intercambios, o coincidencias, hay.
+
+Qué cubre la búsqueda:
+
+- Los primeros 256 KB de cada cuerpo de texto: JSON, XML, HTML, texto, datos de formulario, flujos de eventos y
+  similares. Las imágenes, los archivos comprimidos y otros cuerpos binarios no se buscan.
+- Ningún texto de cuerpo mientras el [cifrado](/docs/workspaces/storage-and-encryption) esté activado: entonces la
+  búsqueda solo encuentra nombres, direcciones y cabeceras.
+- Nunca los valores secretos: están enmascarados en lo que el historial enumera y busca, así que la búsqueda no sirve para
+  adivinar uno.
+
+## Mira un intercambio [#look-at-an-exchange]
+
+Haz clic en una fila para seleccionarla; <kbd>↑</kbd> y <kbd>↓</kbd> recorren la lista.
+
+- <kbd>Espacio</kbd> muestra la vista rápida: el estado, cuándo se envió, cuánto tardó, su tamaño y tipo, quién lo envió,
+  el entorno y la solicitud, con botones para mostrarlo, copiar su dirección o compararlo.
+- <kbd>↩</kbd> o un doble clic lo abre. Un intercambio de una solicitud guardada se abre en esa solicitud, en esa
+  respuesta. Un intercambio sin solicitud guardada se abre en una hoja con las cabeceras y el cuerpo de su respuesta.
+
+Haz Control-clic en una fila para ver:
+
+| Comando | Qué hace |
+| --- | --- |
+| **Mostrar en la solicitud** | Abre la solicitud en esta respuesta. |
+| **Mostrar intercambio** | Abre el intercambio en una hoja. |
+| **Comparar con la respuesta anterior** | La compara con la respuesta que tenía antes la solicitud. |
+| **Añadir a la especificación OpenAPI…** | Documenta la respuesta en una especificación. Consulta las [especificaciones a partir del tráfico](/docs/specs/specs-from-traffic). |
+| **Guardar como ejemplo del mock…** | Guarda la respuesta como un ejemplo con nombre en la especificación que sigue su solicitud. Consulta los [mocks](/docs/mocks). |
+| **Copiar URL** | Copia la dirección. |
+| **Eliminar** | Quita este intercambio del historial. |
+
+## El historial propio de una solicitud [#a-requests-own-history]
+
+En la página de la solicitud, el botón del reloj de la franja del panel de respuesta muestra cuántas respuestas tiene la
+solicitud. Haz clic en él para ver la lista: estado, hora, quién la envió, duración y tamaño.
+
+- Haz clic en una respuesta para mostrarla en el panel de respuesta. Una barra encima dice **Respuesta anterior**, cuándo
+  y quién la envió, con **Comparar con la última** y **Mostrar la última**.
+- Deja el puntero sobre una fila y haz clic en las flechas para compararla con la respuesta que se muestra.
+- **⋯ › Borrar el historial de esta solicitud…** pregunta antes y luego quita las respuestas anteriores de la solicitud. La
+  solicitud se queda como está.
+
+<Shot id="workspaces-request-history" alt="La lista del historial de respuestas de Catalog › List products, abierta desde el botón del reloj: cinco respuestas con su estado, hora, origen, duración y tamaño" />
+
+## Compara dos respuestas [#compare-two-responses]
+
+Compara desde la lista del historial de una solicitud, desde **Comparar con la última**, o con
+**Comparar con la respuesta anterior** en la página Historial. La hoja muestra las dos respuestas lado a lado arriba, la
+más antigua marcada con − y la más reciente con +, y las líneas que han cambiado entre ellas con tres líneas alrededor
+de cada cambio.
+
+- **Cuerpo** compara los cuerpos. Dice «Los cuerpos son idénticos, byte a byte.» cuando no hay ninguna diferencia, y «Los
+  cuerpos solo difieren en el formato.» cuando solo cambia la disposición.
+- **Estado y cabeceras** compara la línea de estado y las cabeceras.
+
+Los recuentos del final dicen cuántas líneas se han añadido y quitado. Se muestran hasta 20 000 líneas cambiadas.
+
+<Shot id="workspaces-history-compare" alt="Comparar respuestas de Catalog › List products: la respuesta más antigua y la más reciente arriba, un precio y un stock cambiados en el diff del cuerpo" />
+
+## Cuánto tiempo se conserva el historial [#how-long-history-is-kept]
+
+El historial conserva las respuestas más recientes de cada solicitud. Elige cuántas en
+**Ajustes › Almacenamiento › Historial por solicitud**: 10, 25, 50 (el valor predeterminado), 100 o 200. Las entradas
+más antiguas se van primero. La respuesta más reciente de cada solicitud conserva su cuerpo, así que se vuelve a mostrar
+tras reiniciar.
+
+Los cuerpos se guardan aparte y tienen su propio límite de tamaño (**Conservar cuerpos de respuesta de hasta**, 5 GB de
+forma predeterminada). Por encima de él, se eliminan los cuerpos usados hace más tiempo, así que una entrada antigua puede
+decir «Este cuerpo ya no está guardado.» Consulta [almacenamiento y cifrado](/docs/workspaces/storage-and-encryption).
+
+## Borra el historial [#clear-history]
+
+- Un intercambio: **Eliminar** en su menú contextual.
+- El de una solicitud: **Borrar el historial de esta solicitud…** en su lista del historial.
+- Todo el de un espacio de trabajo: **⋯ › Borrar historial…** en la página Historial. Pregunta antes: «¿Borrar todo el historial de este espacio
+  de trabajo?» Las solicitudes se quedan como están; sus respuestas anteriores se van.
+
+Borrar el historial nunca toca las solicitudes ni los archivos del espacio de trabajo.
+
+## Dónde vive el historial [#where-history-lives]
+
+Cada espacio de trabajo tiene su propio historial, guardado en el almacenamiento de Echolot en tu Mac, nunca en la carpeta
+del espacio de trabajo. No se comparte por Git, y el historial de un compañero es suyo. Los agentes leen el historial a
+través de Echolot, con las cabeceras de credenciales y los secretos enmascarados.
+
+Si no se puede abrir el historial, la página dice «El historial no está disponible» y por qué. Los envíos siguen
+funcionando; no se registra nada hasta que se pueda abrir el archivo.

@@ -1,0 +1,70 @@
+---
+title: "echolot graphql diff"
+description: "Vergleiche zwei GraphQL-Schemas und lass einen Build bei Breaking Changes fehlschlagen."
+---
+
+`echolot graphql diff` listet auf, was sich von einem GraphQL-Schema zum anderen geändert hat, und stuft jede Änderung
+ein, sodass ein Build anhalten kann, bevor eine Änderung die Clients einer API bricht.
+
+```sh
+echolot graphql diff <old> <new> [--fail-on <level>] [--json]
+```
+
+`<old>` und `<new>` sind das Schema davor und danach: SDL-Dateien (`.graphql`) oder Ergebnisse einer Introspektion
+(JSON), beliebig gemischt.
+
+## Zwei Schemas vergleichen [#compare-two-schemas]
+
+```sh
+git show main:specs/shop.graphql > before.graphql
+echolot graphql diff before.graphql Alpenglow.echolot/specs/shop.graphql
+```
+
+```text
+Breaking (1)
+  The field Product.weightGrams was removed
+Dangerous (1)
+  The argument inStock was added to Query.search
+Safe (1)
+  The field Product.colors was added
+```
+
+| Einstufung | Bedeutet |
+| --- | --- |
+| Breaking | Queries, die vorher funktionierten, können jetzt fehlschlagen: ein Typ, Feld, Eingabefeld, Argument, Enum-Wert oder eine Direktive wurde entfernt; ein erforderliches Argument oder Eingabefeld wurde hinzugefügt; der Typ eines Felds wurde geändert (außer dass eine Ausgabe nicht mehr null sein kann); ein Mitglied einer Union oder ein Interface wurde weggenommen. |
+| Dangerous | Queries funktionieren weiter, verhalten sich aber möglicherweise anders: ein optionales Argument wurde hinzugefügt, ein Standardwert geändert, ein Enum-Wert oder Union-Mitglied hinzugefügt, ein neues Interface, etwas als veraltet markiert. |
+| Safe | Nichts, was eine bestehende Query bemerken kann: ein Typ, Feld, optionales Eingabefeld oder eine Direktive wurde hinzugefügt, eine Beschreibung geändert, eine Markierung als veraltet aufgehoben. |
+
+`--json` gibt die Änderungen als JSON-Array aus, jede mit ihrem `severity`, `path` und `message`:
+
+```json
+[
+  {
+    "message" : "The field Product.weightGrams was removed",
+    "path" : "Product.weightGrams",
+    "severity" : "breaking"
+  },
+  {
+    "message" : "The argument inStock was added to Query.search",
+    "path" : "Query.search(inStock)",
+    "severity" : "dangerous"
+  }
+]
+```
+
+## Optionen [#options]
+
+| Option | Bedeutung |
+| --- | --- |
+| `--fail-on <level>` | `breaking` (der Standard) endet bei Breaking Changes mit 1; `dangerous` bei Breaking und Dangerous; `none` nie. |
+| `--json` | Die Änderungen als JSON ausgeben. |
+
+## Exit-Codes [#exit-codes]
+
+| Code | Wann |
+| --- | --- |
+| `0` | Keine Änderung auf der Stufe von `--fail-on` oder darüber. |
+| `1` | Änderungen auf der Stufe von `--fail-on` oder darüber, oder ein Schema, das sich nicht lesen ließ. |
+
+Um ein Schema von einem laufenden Server abzurufen, sende die Introspektions-Query mit der GraphQL-Anfrage der App, oder
+siehe [GraphQL-Anfragen](/docs/requests/graphql).

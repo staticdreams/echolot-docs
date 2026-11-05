@@ -1,0 +1,100 @@
+---
+title: "从 Postman 迁移"
+description: "导入 Postman 集合及其环境，了解各项如何对应，运行它，再导出回 Postman。"
+---
+
+Echolot 会原样读取 Postman 的集合和环境，包括脚本。在本教程中，你会导入一个集合，看看每个部分去了哪里，运行它，并把工作区导出回 Postman。
+
+- **用时：** 15 分钟。
+- **你需要：** 一个 Postman 集合（v2.0 或 v2.1）及其环境，导出为 JSON。手边没有集合？在第 1 步中用 Alpenglow 生成一个。
+- **你将学到：** 导入、各项如何对应、信任导入的脚本、导入或不导入地运行集合，以及导出。
+
+## 1. 获取集合 [#1-get-a-collection]
+
+在 Postman 中：打开集合的 **⋯** 菜单，选取 **Export**，并保持 **Collection v2.1**。用同样的方式从各自的菜单导出每个环境。
+
+若想改用 Alpenglow 练习：
+
+1. 打开 [Alpenglow 工作区](/docs/tutorials#the-alpenglow-workspace)，选取**文件 › 导出工作区…**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd>）。
+2. 选择 **Postman Collection v2.1**。它所在的行会说明 29 个请求中有 21 个适用：Postman 集合没有 WebSocket、Socket.IO、MQTT、gRPC 或 MCP 请求，所以它们会被留下。
+3. 保持开启**包括环境（3 个）**，然后选取**导出…**。包含环境时，导出的是一个文件夹：为它命名，然后选取**导出**。
+
+该文件夹包含 `Alpenglow.postman_collection.json`，以及每个环境一个的 `.postman_environment.json`。报告列出了**未包含**的内容和**导出时有变化**的内容：Echolot 的检查变成了 `pm.test()` 脚本，响应捕获不会导出，机密变量只按名称导出，不含其值。
+
+## 2. 导入 [#2-import-it]
+
+1. 创建新工作区：**文件 › 新建工作区…**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>），命名为 `From Postman`。
+2. 选取**文件 › 导入…**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd>）。同时选中集合文件和环境文件，然后选取**导入**。
+
+   你也可以把文件拖到窗口上，或者拷贝集合的 JSON 并粘贴到边栏（<kbd>⌘</kbd><kbd>V</kbd>）。
+3. 报告<strong>已导入…</strong>列出每个文件及其格式（<strong>Postman collection v2.1</strong>、<strong>Postman environment</strong>）和导入的内容。注释会说明哪些内容无法按原样导入。
+
+对于 Alpenglow 的导出，注释会说明有 19 个测试脚本已导入，信任之后才会运行；还有 2 个机密值存入了钥匙串而不是工作区文件：演示密码和 OAuth 客户端密钥，它们是在集合中直接输入的。请求现在以 `{{password}}` 和 `{{orders_with_oauth_2_clientSecret}}` 引用它们。选取**在边栏中显示**。
+
+<Shot id="tutorials-postman-import-report" alt="导入报告：已导入一个 Postman 集合和一个环境，其中的注释说明了脚本以及存入钥匙串的机密" />
+
+## 3. 熟悉对应关系 [#3-find-your-way-around]
+
+| Postman 中 | Echolot 中 |
+| --- | --- |
+| Collection | 以集合命名的文件夹。它的变量、认证和脚本位于该文件夹的<strong>文件夹设置…</strong>中 |
+| Folder | 文件夹，其描述位于**文档**中，另有自己的变量、认证和脚本 |
+| Request | 请求，存储为单独的文件。raw 正文保持其类型；urlencoded 变成 **URL 编码**，form-data 变成**多部分**；GraphQL 正文变成 GraphQL 请求 |
+| Environment | “环境”页面上的环境（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>）。secret 类型的值存入钥匙串 |
+| Collection variables | 集合文件夹的变量。它们对其中的每个请求生效，并且优先于环境的变量 |
+| Pre-request Script、Tests | **脚本**标签页的**请求前**脚本和**测试**脚本，可用于请求、文件夹或工作区 |
+| `pm.*` | 相同的 API：`pm.test`、`pm.expect`、`pm.response`、`pm.request`、`pm.environment`、`pm.variables`、`pm.collectionVariables`、`pm.globals`、`pm.iterationData`、`pm.sendRequest`、`pm.cookies`、`pm.setNextRequest`、`pm.visualizer`，以及较早的 `postman.*` 和 `tests[…]` |
+| `require()` | `lodash`、`ajv`、`tv4`、`crypto-js`、`uuid`、`atob` 和 `btoa` |
+| Auth | 相同的类型：Basic、Digest、Bearer 令牌、API 密钥、OAuth 1.0、OAuth 2.0（包括高级设置：地址中的令牌、刷新 URL、额外参数）、AWS 签名、JWT Bearer、Hawk、Akamai EdgeGrid、NTLM。ASAP（Atlassian）会变成以同样方式设置的 JWT Bearer。OAuth 2.0 客户端凭据和密码凭据保持不变；隐式授权会变成带 PKCE 的授权码授权，导入报告会说明这一点 |
+| `{{$guid}}`、`{{$timestamp}}`、`{{$randomInt}}`、`{{$randomFirstName}}` 以及其他 `$random…` 值 | 同名的动态值，包括示例数据，另外还有更多 |
+| Collection Runner、Newman | [运行器](/docs/requests/runner)和 [`echolot run`](/docs/cli/run) |
+| Mock servers | Mac 上的[模拟服务器](/docs/mocks)：带示例和示例数据的路由，或 OpenAPI 规范 |
+| Monitors | 按计划运行的[流程](/docs/flows)，或 CI 中的 `echolot run` |
+
+form-data 的文件正文和文件字段不会被导入，因为文件在另一台电脑上：报告会指明每一个，这样你可以在**正文**标签页中重新选择文件。
+
+## 4. 信任脚本 [#4-trust-the-scripts]
+
+脚本能做脚本能做的一切，所以导入的脚本在你同意之前不会运行。
+
+1. 打开一个带有测试脚本的请求，例如 **Catalog › List products**，然后打开它的**脚本**标签页。一条横幅写着**这些脚本来自 Echolot 之外**。
+2. 阅读脚本，然后选取**信任脚本**。如果你先发送，Echolot 会询问，而**信任并发送**会在信任的同时立即发送。
+3. 发送。脚本的 `pm.test()` 结果会出现在响应的**测试**标签页中，位于**脚本**下。
+
+脚本在 Echolot 自己的 JavaScript 沙盒中运行，而不是在 Node 中。参见[脚本与测试](/docs/requests/scripts-and-tests)和[脚本 API](/docs/reference/scripting-api)。
+
+## 5. 运行 [#5-run-it]
+
+1. 在页面标题栏中选择你导入的环境，例如 **Staging**；对于 Alpenglow 的演示 API，则选择**无环境**。
+2. 右键点按集合的文件夹并选取**运行文件夹**。[运行器](/docs/requests/runner)会运行每个请求，包括它的脚本和检查。
+
+命令行工具可以像 Newman 那样不经导入直接运行集合。脚本在那里不经询问就会运行：
+
+```sh
+echolot run Alpenglow.postman_collection.json --folder catalog --reporter console --reporter junit --out results.xml
+```
+
+`--env-file` 接受 Postman 环境文件，`--folder` 接受文件夹名称（小写，用连字符连接，例如 `catalog`、`agent-tools`），`--data users.csv` 会按每一行运行一次。机密值来自 `ECHOLOT_SECRET_<NAME>` 环境变量。
+
+## 6. 有哪些不同 [#6-what-works-differently]
+
+- **一切皆文件。** 工作区是由 TOML 文件组成的文件夹，每个请求一个文件，可直接用于 Git。没有账号，也没有同步服务；团队通过 Git 共享。参见 [Git 与团队](/docs/workspaces/git-and-teams)。
+- **自动存储。** 没有 <kbd>⌘</kbd><kbd>S</kbd>；边栏底部显示**已全部存储**。
+- **机密绝不写入文件。** 机密变量的值保存在这台 Mac 的钥匙串中；文件里只有它的名称。
+- **无需代码的检查。** **测试**标签页无需脚本即可检查状态、标头、JSON 值、耗时、JSON Schema 或 OpenAPI 规范。参见[脚本与测试](/docs/requests/scripts-and-tests)。
+- **无需代码的捕获。** 无需在测试脚本里写 `pm.environment.set("token", …)`，只要在响应中悬停在该值上，然后选取**存入变量…**。参见[串联请求](/docs/tutorials/chain-requests)。
+- **不止 HTTP。** 同一个工作区包含 WebSocket、Socket.IO、MQTT、gRPC 和 MCP 请求、规范、模拟服务器和流程。
+
+## 7. 导出回 Postman [#7-export-back-to-postman]
+
+1. 选取**文件 › 导出工作区…**，或者右键点按文件夹并选取**导出文件夹…**。
+2. 选择 **Postman Collection v2.1**。面板会说明有多少个请求适用；WebSocket 和其他会话类型会被留下。**Insomnia v5** 也能承载 WebSocket、Socket.IO 和 gRPC，**Bruno 集合**则写出一个由 `.bru` 文件组成的文件夹。
+3. 选择是否**包括环境**，然后选取**导出…**。
+
+你在认证或标头字段中输入的凭据会以明文写出，报告会说明有多少个：请先把它们移入机密变量。机密变量只按名称导出，不含其值。参见[导出](/docs/workspaces/exporting)。
+
+## 后续步骤 [#next-steps]
+
+- [你的第一个工作区](/docs/tutorials/first-workspace)：工作区是如何组织的。
+- [导入](/docs/get-started/importing)：还有 Insomnia、OpenAPI、HAR、cURL、Paw 和 Bruno。
+- [测试 API 并在 CI 中运行](/docs/tutorials/test-in-ci)：在流水线中取代 Newman。

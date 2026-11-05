@@ -1,0 +1,62 @@
+---
+title: "Archivos .proto"
+description: "Guarda los archivos .proto de un servicio gRPC en el espacio de trabajo, edítalos con un esquema en vivo y crea solicitudes a partir de sus métodos."
+---
+
+Un archivo `.proto` describe un servicio gRPC: sus métodos y los mensajes que reciben y devuelven. Guárdalo en el
+espacio de trabajo y las [solicitudes gRPC](/docs/requests/grpc) lo usan para crear y leer mensajes, sin preguntar al
+servidor. La página Especificaciones muestra los archivos `.proto` junto a los documentos OpenAPI, con un editor y un
+esquema propios.
+
+El ejemplo Alpenglow tiene uno, `inventory.proto`, con el servicio `alpenglow.inventory.v1.Inventory`.
+
+<Shot id="specs-proto" alt="inventory.proto abierto en la página Especificaciones: el código fuente a la izquierda y, a la derecha, el servicio Inventory con ListWarehouses, WatchStock y Reserve, cada uno con un botón de más, y después sus mensajes" />
+
+## Añadir un archivo [#adding-a-file]
+
+En la barra lateral de Especificaciones, haz clic en **+** en la cabecera **Especificaciones**:
+
+- **Nuevo archivo proto** crea `specs/service.proto` con un pequeño servicio de ejemplo, `Greeter`, que debes sustituir
+  por el tuyo.
+- **Añadir archivo proto…** copia un archivo `.proto` de tu Mac a la carpeta `specs`. Si importa otros archivos,
+  cópialos también en `specs`. Los tipos conocidos de Google (`google/protobuf/timestamp.proto` y los demás) vienen
+  integrados.
+
+Los archivos aparecen en **Archivos proto** en la barra lateral. Haz clic con el botón derecho en uno para ver
+**Mostrar en el Finder** y **Eliminar…**. Eliminar pregunta antes y traslada el archivo a la papelera; las solicitudes
+gRPC que lo usaban necesitan entonces otro archivo o la reflexión del servidor.
+
+## Editar [#editing]
+
+Haz clic en un archivo para abrirlo. El código fuente está a la izquierda, con resaltado. La barra que hay encima
+muestra el archivo, **Protocol Buffers**, y **Sin problemas** o el primer problema que ha encontrado el analizador,
+como `inventory.proto:12: expected “;”`.
+
+A la derecha, el esquema muestra lo que declara el archivo y sigue al editor mientras escribes:
+
+- Cada **Servicio** con sus métodos. Cada método muestra su tipo (`unary`, `server streaming` y así sucesivamente) y sus
+  mensajes de entrada y de salida.
+- **Mensajes**, con sus campos y tipos.
+- **Enumeraciones**.
+
+Un archivo que no se puede analizar muestra **El esquema aparece cuando el archivo se analiza sin errores.**
+
+Echolot guarda el archivo poco después de cada cambio, y cuando abres otro archivo o sales de la página. Si no se puede
+escribir, **No se ha podido guardar el archivo proto** ofrece **Reintentar**, **Guardar una copia…**,
+**Descartar cambios** y **Seguir editando**, como en las [especificaciones](/docs/specs/editing#saving); tus ediciones
+se quedan en el editor hasta que se guarden.
+
+En la página Especificaciones hay un archivo abierto a la vez: un archivo `.proto` o una especificación OpenAPI. Al
+abrir uno se guarda y se deja el otro.
+
+## Solicitudes a partir de métodos [#requests-from-methods]
+
+Haz clic en el **+** que hay junto a un método en el esquema para crear una solicitud gRPC para él. La solicitud usa
+este archivo `.proto`, llama a ese servicio y a ese método, y empieza con un mensaje que tiene todos los campos con un
+valor de ejemplo. Apunta su URL a tu servidor y envíala. [gRPC](/docs/requests/grpc) explica el envío, los métodos con
+streaming y cómo tomar los métodos de la reflexión del servidor en lugar de un archivo.
+
+## Desde la línea de comandos [#from-the-command-line]
+
+`echolot grpc describe --proto api.proto` lista los servicios, los métodos y los campos de un archivo, y
+`echolot grpc call` llama a un método. Consulta [echolot grpc](/docs/cli/grpc).

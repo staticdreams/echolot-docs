@@ -1,0 +1,132 @@
+---
+title: "サーバの追加"
+description: "MCPサーバをHTTPまたはローカルコマンドとして追加し、ほかのアプリから読み込み、OAuthでサインインします。"
+---
+
+MCPサーバは、HTTPで到達できるものか、EcholotがあなたのMacで起動してstdioで通信するプログラムのどちらかです。自分で入力することも、ほかのアプリがすでに把握しているサーバを読み込むこともできます。
+
+## サーバを追加する [#adding-a-server]
+
+サイドバーの<strong>サーバ</strong>ヘッダーで<strong>+</strong>をクリックし、<strong>MCPサーバを追加…</strong>を選びます。MCPサーバのページが空の場合は、<strong>MCPサーバを追加…</strong>ボタンで同じ操作ができます。
+
+<Shot id="mcp-add-server" alt="GitHubサーバ用のMCPサーバを追加シート。トランスポートのメニューが開き、ローカルコマンド（stdio）とHTTP（Streamable HTTP）が表示されている。その下に、引数、省略可能な作業ディレクトリ、環境のセクションがある" />
+
+サーバに<strong>名前</strong>を付け、<strong>トランスポート</strong>を選び、下のフィールドに入力して、<strong>追加</strong>をクリックします。Echolotはサーバを保存し、選択し、チェックします。サーバのヘッダーの<strong>編集…</strong>
+（または右クリックメニュー）で同じシートが開きます。<strong>保存</strong>で変更を保持し、サーバをもう一度チェックします。編集は<strong>編集 › 取り消す</strong>で取り消せます。
+
+### HTTPの場合 [#over-http]
+
+<strong>HTTP（Streamable HTTP）</strong>を選びます。
+
+| フィールド | 入力する内容 |
+| --- | --- |
+| <strong>URL</strong> | サーバのエンドポイント（`https://demo.echolot.dev/mcp` など）。MCPのエンドポイントは `/mcp` で終わることがよくあります。 |
+| <strong>ヘッダー</strong> | すべてのメッセージとともに送信するヘッダー（`Authorization` に `Bearer {{token}}` など）。<strong>追加</strong>をクリックすると行が増えます。チェックボックスをオフにすると、行を削除せずに無効にできます。 |
+| <strong>OAuth</strong> | OAuthでサインインし、かつ認可サーバがEcholotを自動では登録できないサーバ専用です。[OAuthでサインインする](#signing-in-with-oauth)を参照してください。 |
+
+古いHTTP+SSEトランスポートを使うサーバに、専用の設定は不要です。ここにURLを入力すれば、Streamable HTTPが拒否されたときにEcholotがHTTP+SSEに切り替えます。`/sse` で終わるURLは、最初にHTTP+SSEとして試されます。
+
+### ローカルコマンドの場合（stdio） [#as-a-local-command-stdio]
+
+<strong>ローカルコマンド（stdio）</strong>を選びます。
+
+| フィールド | 入力する内容 |
+| --- | --- |
+| <strong>コマンド</strong> | 起動するプログラム（`npx`、`uvx`、`node`、またはバイナリのフルパスなど）。 |
+| <strong>引数</strong> | プログラムの引数をスペースで区切って入力します（`-y @modelcontextprotocol/server-everything` など）。スペースを含む引数は、二重引用符で囲みます。 |
+| <strong>作業ディレクトリ</strong> | プログラムを起動する場所。省略できます。 |
+| <strong>環境</strong> | プログラム用の環境変数（`GITHUB_TOKEN` に `{{github_token}}` など）。 |
+
+Echolotは、ログインシェルが持つ `PATH` でプログラムを起動します。そのため、FinderやDockからEcholotを開いた場合でも、`npx`、`uvx`、Homebrew、nvm、mise、Voltaでインストールしたツールが見つかります。
+チェックで<strong>サーバの起動</strong>が失敗した場合は、コマンドがインストールされて `PATH` にあるかを確認するか、フルパスを指定するよう案内されます。プログラムのエラー出力は<strong>メッセージ</strong>カードに表示されます。
+
+<Edition only="direct">
+  ローカル（stdio）サーバは、直接ダウンロード版で動作します。Mac App Store版はプログラムを起動できないため、サーバはワークスペースに保持されたまま、代わりに<strong>ローカルプログラムとして実行</strong>と表示されます。
+  直接ダウンロード版と `echolot` コマンドラインツールは、これを実行できます。HTTP経由のMCPサーバは、どちらの版でも動作します。
+</Edition>
+
+## 実行前に確認 [#review-before-running]
+
+ワークスペースのファイル（同僚のコミットなど）や読み込みで追加されたローカルサーバは、このMacでは一度も起動されていません。Echolotは<strong>実行前に確認</strong>を表示し、正確な<strong>コマンド</strong>、<strong>引数</strong>、<strong>作業ディレクトリ</strong>、環境を示して、
+<strong>信頼して確認</strong>をクリックするまで何も起動しません。
+
+あなたの承認は、このMac上のその正確なコマンドに対するもので、ワークスペースには書き込まれません。コマンド、引数、環境のいずれかが変わると、Echolotはもう一度確認します。自分で追加または編集したサーバは、自分で書いたものなので承認済みとして扱われます。
+
+## 値とシークレット [#values-and-secrets]
+
+すべてのフィールドで `{{variables}}` が使えます。Echolotが接続するときに、有効な[環境](/docs/workspaces/environments)から解決されます。トークンやキーは[シークレット変数](/docs/workspaces/secrets)に保存し、名前で参照してください：
+`Bearer {{token}}`、`{{github_token}}`。シークレットの値はキーチェーンに保存され、ワークスペースに書き込まれることはないので、サーバのファイルは安全にコミットできます。
+
+## ほかのアプリからサーバを読み込む [#importing-servers-from-other-apps]
+
+Echolotは、Claude Desktop、Claude Code、Cursor、VS Code、Windsurf、CodexのMCPサーバ一覧を読み込めます。
+
+<Edition only="direct">
+  直接ダウンロード版は、これらのファイルを自動で見つけます。見つかった場合、サイドバー下部の<strong>このMacで検出</strong>ボックスに、各アプリが<strong>読み込む</strong>ボタン付きで一覧表示されます。
+  <strong>+</strong>メニューの<strong>読み込み元</strong>にも表示され、<strong>設定ファイルを選択…</strong>でそれ以外のファイルを指定できます。ボックスは<strong>×</strong>で閉じられます。読み込みは<strong>+</strong>メニューからも引き続き行えます。
+</Edition>
+
+<Edition only="appstore">
+  Mac App Store版は、ほかのアプリのファイルを自力では読み込めません。<strong>+</strong> › <strong>読み込み元</strong>でアプリ（たとえば<strong>Cursor…</strong>）を選ぶと、そのアプリのフォルダで開くパネルが表示されるので、ファイルを選んでください。
+  <strong>設定ファイルを選択…</strong>で、それ以外のファイルを指定できます。
+</Edition>
+
+| アプリ | ファイル |
+| --- | --- |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Code | `~/.claude.json`、またはプロジェクトの `.mcp.json` |
+| Cursor | `~/.cursor/mcp.json` |
+| VS Code | `~/Library/Application Support/Code/User/mcp.json`、またはプロジェクトの `.vscode/mcp.json` |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+| Codex | `~/.codex/config.toml` |
+
+これらのファイルをウインドウにドロップするか、<strong>ファイル › 読み込む…</strong>で選ぶこともできます。EcholotはMCPクライアントの設定を、ほかの[読み込み](/docs/get-started/importing)と同じように認識します。
+
+読み込みで行われること：
+
+- ファイル内のすべてのサーバが、元のとおりローカルまたはHTTPのまま、ワークスペースのサーバになります。
+- 直接書かれたシークレット（`Authorization` ヘッダーのトークン、シークレットらしい環境変数のキー）は、ワークスペースのシークレット変数に移され、サーバはそれを名前で参照します。読み込みレポートには変数の名前が記載され、値は記載されません。
+- プレースホルダーはEcholotの値になります：`${env:NAME}` と `${NAME}` は、Echolotが接続するときに環境変数 `NAME` を読み取り、VS Codeの `${input:id}` は変数 `{{id}}` になります。追加すべき変数はレポートに記載されます。
+- Codexの `bearer_token_env_var` は、その環境変数を読み取る `Authorization: Bearer` ヘッダーになります。
+- 元でオフになっていたサーバも読み込まれ、レポートにその旨が記載されます。コマンドもURLもないサーバはスキップされます。
+- 読み込まれたローカルサーバは、[実行前に確認](#review-before-running)で待機します。
+
+## OAuthでサインインする [#signing-in-with-oauth]
+
+サーバがOAuthを必要とすると応答した場合、Echolotはページの上部に<strong>サインインが必要です</strong>を表示し、<strong>認可サーバ</strong>と、Echolotがクライアントを取得する方法を示します。
+
+| <strong>クライアント</strong>の表示 | 意味 |
+| --- | --- |
+| <strong>Echolotが自動で登録</strong> | 認可サーバが新しいクライアントを自動で受け付けます。設定は不要です。 |
+| <strong>サーバのOAuth設定から</strong> | サーバの<strong>OAuth</strong>セクションにクライアントIDを入力しています。 |
+| <strong>クライアントIDが必要です（編集…）</strong> | 認可サーバがクライアントを登録しません。そこで登録してから、<strong>編集…</strong> › <strong>OAuth</strong>に入力してください。 |
+
+<strong>サインイン…</strong>をクリックします。Echolotはブラウザを開き、サインインが `127.0.0.1` に戻ってくるのを待って、サーバをもう一度チェックします。トークンはキーチェーンに保存され、ワークスペースには書き込まれません。
+カードには<strong>サインイン済み</strong>と表示され、認可サーバ、スコープ、トークンの有効期限、Echolot自身が登録した場合は<strong>Echolotが登録</strong>も表示されます。更新できる期限切れのトークンは、次の呼び出しで更新されます。
+
+<strong>サインアウト</strong>は、トークンとEcholotが登録したクライアントを破棄します。トークン自体は、期限が切れるまでサーバ側では有効なままです。
+
+サーバシートの<strong>OAuth</strong>セクションは、ディスカバリーでは対応できない場合のためのものです。
+
+| フィールド | 空の場合のデフォルト |
+| --- | --- |
+| <strong>クライアントID</strong> | 自動で登録されます。 |
+| <strong>クライアントシークレット</strong> | なし。`{{client_secret}}` のようなシークレット変数を使います。 |
+| <strong>スコープ</strong> | サーバが求めるとおり。 |
+| <strong>リダイレクトURI</strong> | `http://127.0.0.1:<any port>/callback`。 |
+
+すべてをディスカバリーに任せるには、このセクションを空のままにします。<strong>ヘッダー</strong>に `Authorization` ヘッダーがある場合は、OAuthより優先されます。
+
+コマンドラインツールは `echolot mcp sign-in` でサインインします。Macではアプリとキーチェーンの項目を共有し、CI向けにはサインインをシークレットとして出力します。[echolot mcp](/docs/cli/mcp)を参照してください。
+
+## チェックが失敗したとき [#when-a-check-fails]
+
+<strong>接続の問題</strong>カードには、失敗した手順と対処方法が表示されます。
+
+| 手順 | よくある原因 |
+| --- | --- |
+| <strong>サーバの起動</strong> | コマンドがインストールされていないか、`PATH` にありません。ターミナルで実行して停止する理由を確認してください。エラー出力は<strong>メッセージ</strong>にあります。 |
+| <strong>サーバに到達可能</strong> | そのホストとポートで待ち受けているものがないか、URLのパスが違います（MCPのエンドポイントは `/mcp` であることが多いです）。 |
+| <strong>認可</strong> | サインインしていない、認証情報が許可されていない、またはサーバが `Authorization` ヘッダーを求めています。 |
+| <strong>死活確認</strong> | サーバが `ping` に応答しませんでした。処理中か、仕様に従っていない可能性があります。 |
+| <strong>ツール</strong> | 1つ以上のツール定義が無効です。その手順に該当のツールが示されます。 |

@@ -1,0 +1,115 @@
+---
+title: "用流程实现自动化"
+description: "在画布上构建一个流程：登录、列出订单、判断并通知你；运行它、设置计划，并由 Webhook 启动。"
+---
+
+流程在画布上把请求和其他步骤串联起来，让原本手动完成的工作可以一键运行、按计划运行，或在其他系统调用时运行。在本教程中，你会构建 **Orders to ship**：它登录演示商店，列出 Heidi 的订单，并在有订单已付款但尚未发货时发送通知。
+
+- **用时：** 20 分钟。
+- **你需要：** 选择了**无环境**的 [Alpenglow 工作区](/docs/tutorials#the-alpenglow-workspace)。它的流程 **Morning stock check** 是同样结构的完整示例。
+- **你将学到：** 块和连线、“如果”块和“通知”块、运行日志、计划、Webhook，以及 `echolot flow run`。
+
+## 1. 创建流程 [#1-make-a-flow]
+
+1. 切换到**流程**（<kbd>⌘</kbd><kbd>5</kbd>）。
+2. 打开边栏的 **+** 菜单（**新流程**），选取**空白流程**。会打开一个名为**新流程**的流程，其中的**开始**块连着一个**输出**块。
+3. 点按画布空白处，使任何块都没有被选中。在检查器中，把**名称**设为 `Orders to ship`，把**描述**设为 `Says when an order is paid but not shipped.`
+
+打开流程时，边栏会列出工作区的**请求**，可以把它们拖到画布上。**+** 菜单的**从模板**部分则从现成的流程开始，例如**分页并导出**；参见[模板](/docs/flows/templates)。
+
+## 2. 添加请求 [#2-add-the-requests]
+
+1. 把指针停在**开始**和**输出**之间的连线上，选取它的**断开此连线**按钮。
+2. 把边栏中的 **Auth › Sign in** 拖到画布上。它会成为一个标题为 **Sign in** 的**请求**块，带有输入 `send` 和输出 `success`、`fail`。
+3. 把 **Orders › List orders** 拖到画布上它的右侧。
+4. 把它们连起来：从**开始**的 `run` 端口拖到 **Sign in** 的 `send` 端口，再从 **Sign in** 的 `success` 端口拖到 **List orders** 的 `send` 端口。
+
+**Sign in** 每次成功都会把令牌存入 `{{token}}`，因此 **List orders** 发送的是新令牌。请求块的 `success` 输出带有响应：`status`、`headers`、`body`、`time` 和 `url`。请求没有收到响应或检查失败时，会触发 `fail`。
+
+## 3. 用“如果”块做判断 [#3-decide-with-an-if-block]
+
+1. 选取工具栏中的**块**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd>），在**搜索块或请求**中输入 `If`，然后按 <kbd>↩</kbd>。
+2. 在检查器中，把**标题**设为 `Waiting to ship?`，把**条件**设为：
+
+   ```js
+   value.body.items.some(o => o.status === 'paid')
+   ```
+
+   条件是 JavaScript。`value` 是传入的内容：这里是 **List orders** 的响应。
+3. 把 **List orders** 的 `success` 连到“如果”块的 `value`。
+
+## 4. 通知你自己 [#4-notify-yourself]
+
+1. 从“如果”块的 `true` 端口拖出，在画布空白处松开。块选择器会在那里打开。选取**通知**：它会自动连到 `true`。
+2. 在块的设置下，把**标题**设为 `Orders to ship`，把**消息**设为：
+
+   ```text
+   {{value.body.total}} orders, at least one paid and waiting.
+   ```
+
+   `{{value…}}` 会填入传入内容的各个部分；工作区变量同样可用。
+3. 同时把 **List orders** 的 `success` 连到**输出**块的 `value`。Webhook 返回的是到达**输出**的内容（第 7 步）。
+
+选取**整理**可按运行顺序排列各个块，选取**适应窗口**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd>）可查看全部。
+
+<Shot id="tutorials-flows-canvas" alt="运行之后画布上的流程：开始、一个请求块、一个“如果”块，以及从其 true 端口连出的“通知”块，每个都标有“完成”" />
+
+## 5. 运行 [#5-run-it]
+
+1. 选取**运行**（<kbd>⌘</kbd><kbd>R</kbd>）。
+2. 每个块在运行时都会显示徽章，然后是**完成**。画布下方的运行日志列出每个块及其耗时。
+3. 一条通知显示 **Orders to ship**：3 个订单，至少一个已付款并在等待。演示中的订单 `ord_8Jm4Qx` 是已付款的。第一次运行时，macOS 会询问 Echolot 是否可以显示通知。
+4. 选中 **List orders**。检查器的**上次运行**显示传入和传出的内容；可在**显示**中切换**输入**和**输出**。
+
+把条件改成 `o.status === 'cancelled'` 再运行：“如果”块会把值送到 `false`，而它没有连到任何地方，所以不会有通知。再把它改回来。
+
+运行失败时，失败的块会显示错误。在 Mac 的设备端模型可用的情况下，运行日志中的**解释失败原因**会说明出了什么问题。之前的运行保留在工具栏的**运行**菜单中。详见[运行与触发器](/docs/flows/running-and-triggers)。
+
+## 6. 按计划运行 [#6-run-it-on-a-schedule]
+
+1. 选中**开始**块。它的检查器中有**触发器**部分。
+2. 开启**计划**。选择**间隔**时，把**每**设为 `60` 分钟；或者选取**设置时间（cron）**，输入一行 cron 表达式（分钟、小时、日、月、星期），例如 `0 7 * * 1-5` 表示工作日早上七点。
+3. 选取**允许**。在没有你参与的情况下由任何东西启动流程之前，Echolot 会要求你允许这个流程，并在流程更改后再次询问（**再次允许**）。**撤销许可**可使其停止。
+
+检查器会显示下一次运行。计划在工作区窗口打开期间运行。要在没有 App 的情况下运行它们，请在一台保持开机的 Mac 或服务器上使用 `echolot flow serve -w Alpenglow.echolot`。
+
+## 7. 由 Webhook 启动 [#7-start-it-from-a-webhook]
+
+1. 在**开始**块的**触发器**中开启 **Webhook**。保持方法为 **POST**，并把路径设为 `/orders-to-ship`。
+2. 选取**允许**。检查器会显示 `127.0.0.1` 上的地址，并提供**拷贝 URL** 和**拷贝令牌**。
+3. 在“终端”中，用该令牌作为 Bearer 令牌来调用它：
+
+   ```sh
+   curl -X POST 'http://127.0.0.1:PORT/orders-to-ship' -H 'Authorization: Bearer TOKEN'
+   ```
+
+   粘贴你拷贝的 URL 和令牌。流程会运行，响应是到达**输出**的内容：订单。
+
+查询字符串和 JSON 正文会填入流程的输入。Webhook 只在这台 Mac 上、窗口打开期间应答；`echolot flow serve` 可在没有 App 的情况下提供 Webhook，默认端口为 4100。Alpenglow 的 **Order status on webhook** 是另一个示例。流程也可以作为工具提供给 AI 智能体（**智能体（MCP 工具）**）；参见[智能体](/docs/ai/agents)。
+
+## 8. 在“终端”中运行 [#8-run-it-from-terminal]
+
+```sh
+echolot flow list -w Alpenglow.echolot
+echolot flow run "Orders to ship" -w Alpenglow.echolot
+```
+
+它会在每个块完成时打印该块及其耗时，然后是通知的文本和结果：
+
+```text
+✓ start  Start  0 ms
+✓ …      Sign in  168 ms
+✓ …      List orders  116 ms
+✓ …      Waiting to ship?  4 ms
+notification: Orders to ship — 3 orders, at least one paid and waiting.
+✓ …      Notify  0 ms
+Orders to ship: passed in 304 ms
+```
+
+在 CI 中，请加上 `--no-input`，这样需要人工参与的流程会失败，而不是一直等待。流程是工作区 `flows` 文件夹中的一个文件，因此会和它用到的请求一起进入 Git。参见 [`echolot flow`](/docs/cli/flow)。
+
+## 后续步骤 [#next-steps]
+
+- [块](/docs/flows/blocks)：批准、询问、遍历、轮询、写入文件等。
+- [模板](/docs/flows/templates)：设备登录、令牌刷新、分页并导出、冒烟监控。
+- [让智能体安全地使用你的工作区](/docs/tutorials/agents-safely)：把流程作为一个工具提供给智能体。

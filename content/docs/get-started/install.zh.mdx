@@ -1,0 +1,131 @@
+---
+title: "安装"
+description: "下载 Echolot，首次打开，保持更新，把命令行工具加入 PATH，以及如何卸载。"
+---
+
+Echolot 可从 [echolot.dev](https://echolot.dev) 直接下载。本页介绍的就是这个版本。Mac App Store 版本由同一份代码构建；
+[版本对比](/docs/get-started/editions)会比较两者。
+
+## 系统要求 [#requirements]
+
+- macOS 15 或更高版本。
+- 搭载 Apple 芯片的 Mac。
+- 部分功能需要更新的 macOS：助手使用 Apple 设备端模型需要 macOS 26，HTTP/3 需要 macOS 27。其余功能在 macOS 15 上都可使用。
+
+## 下载并安装 [#download-and-install]
+
+<Steps>
+<Step>
+
+打开 [echolot.dev](https://echolot.dev)，选择下载。它会指向 [GitHub](https://github.com/staticdreams/echolot-public/releases)
+上的最新发行版，每个发行版的文件都保留在那里：
+
+| 文件 | 说明 |
+| --- | --- |
+| `Echolot-<version>.dmg` | 磁盘映像中的 App。请使用这个文件。 |
+| `Echolot-<version>.zip` | 同一个 App，压缩为 zip。 |
+| `echolot-<version>-macos.zip` | 单独的命令行工具，适用于没有安装 App 的 Mac。 |
+| `Echolot-<version>.mcpb` | 将 Claude Desktop 连接到工作区的扩展。参见[智能体](/docs/ai/agents)。 |
+
+</Step>
+<Step>
+
+打开磁盘映像，把 **Echolot** 拖到旁边的**应用程序**文件夹。
+
+</Step>
+<Step>
+
+从“应用程序”文件夹打开 Echolot。App 已由开发者签名并经 Apple 公证，因此 macOS 只会询问一次，请你确认要打开从互联网下载的 App。
+
+</Step>
+</Steps>
+
+## 首次启动 [#first-launch]
+
+Echolot 启动后会显示欢迎窗口：
+
+<Shot id="get-started-welcome" alt="欢迎窗口，其中有“新建工作区”“打开工作区”和“打开示例”，以及最近使用的工作区列表" />
+
+| 选项 | 作用 |
+| --- | --- |
+| **新建工作区…** | 创建工作区：一个以 `.echolot` 结尾的文件夹（名称初始为 `My API.echolot`），存放位置由你选择。 |
+| **打开工作区…** | 打开已有的 `.echolot` 文件夹。 |
+| **打开示例** | 打开一个现成的示例请求工作区：公共 API、重定向和大负载。Echolot 会在首次打开时于自己的数据文件夹中创建它。 |
+
+打开过的工作区会出现在**最近使用的工作区**下方；点按其中一个即可再次打开。每个工作区在各自的窗口中打开，再次启动 Echolot 时，窗口会连同其工作区一起恢复。
+
+你打开的第一个工作区窗口会提供一段一分钟的[导览](/docs/get-started/tour)；**帮助 › 显示导览**可再次开始。Echolot 会使用 Mac 的语言（如果支持），你可以在[设置](/docs/settings#general)中更改。
+
+接下来，可以[发送第一个请求](/docs/get-started/first-request)，或者[导入](/docs/get-started/importing)你已有的集合。
+
+## 更新 [#updates]
+
+直接下载的版本会自行更新。它每天向 GitHub 查询一次是否有新发行版，并在安装前征求你的同意。更新带有签名：Echolot 只安装由其开发者签名的更新。安装更新会替换整个 App，其中的命令行工具也一并替换。
+
+- **Echolot › 检查更新…** 会立即检查。
+- **设置 › 通用 › 更新**中有以下选项：
+
+| 设置 | 含义 |
+| --- | --- |
+| **自动检查更新** | 每天检查一次。默认开启。 |
+| **自动下载并安装更新** | 不经询问直接安装。需要先开启上面的设置。 |
+| **上次检查** | 上次检查的时间，旁边有**立即检查**。 |
+
+更新后不会自动打开任何内容。窗口右上角的按钮中，第一个会出现**新功能**按钮（闪光图标，带一个圆点）；点按它可阅读发行说明，也可以选择**隐藏至下次更新**。
+**帮助 › Echolot 的新功能**随时显示每个发行版的说明，[新功能](/docs/whats-new)页面也是如此。
+
+<Shot id="get-started-whats-new" alt="页面标题栏中展开的“新功能”按钮，其中是刚安装的发行版的说明" />
+
+<Edition only="appstore">
+  App Store 版本由 App Store 负责更新。它没有<strong>检查更新…</strong>项，“设置 › 通用 › 更新”中也会这样说明。
+</Edition>
+
+## Beta 版会过期 [#beta-builds-expire]
+
+Echolot 处于公开测试阶段，每个发布的 Beta 版在发行 30 天后过期。Echolot 会在此之前自行更新，因此开启自动检查后你不会察觉。开发者也可以提前终止某个版本（例如存在严重错误的版本）或延长其期限，方式是通过一个带签名的状态文件，Echolot 在启动时和每天读取一次。
+
+版本过期后，Echolot 会在打开任何窗口之前显示一条提示：**此 Beta 版已过期**。提示中写明版本和构建号、结束日期，并告知 echolot.dev 上有更新的 Beta 版。点按**好**会退出 Echolot，并在退出前写入所有未存储的编辑。版本在运行期间过期，也会显示同样的提示。请从 [echolot.dev](https://echolot.dev) 下载最新发行版，覆盖安装在旧版本上。
+
+不受影响的内容：
+
+- **你的工作区。** 它们是普通文件，下一个版本会原样打开。
+- **命令行工具**不会过期，无论是 App 内的还是单独下载的，因此 CI 可以继续运行。
+- 访达中工作区的**快速查看**预览仍可使用。
+
+已过期版本的快捷指令动作会因错误而失败，不会发送任何内容。
+
+把 Mac 的时钟往回调并不能让过期的版本恢复。如果时钟比 Echolot 已经见过的日期晚了一天以上还落后，提示会说这台 Mac 的日期似乎不对：请设置日期和时间，或获取更新的版本。
+
+<Edition only="direct">
+  只有直接下载版本的 Beta 版会过期。App Store 版本永远不会：它的 Beta 版通过 TestFlight 分发。
+</Edition>
+
+## 安装命令行工具 [#install-the-command-line-tool]
+
+直接下载的版本在 App 内附带了 `echolot` 命令行工具。要在“终端”中使用它，请把它加入 PATH：
+
+1. 选取 **Echolot › 安装命令行工具…**，或者打开**设置 › 通用**，在**命令行工具**下选取**安装命令行工具…**。
+2. Echolot 会在 `/opt/homebrew/bin` 或 `/usr/local/bin` 中放置一个名为 `echolot` 的链接。如果这两个文件夹都无法写入，macOS 会要求输入管理员密码。
+3. 打开新的“终端”窗口，输入 `echolot --help`。
+
+```sh
+echolot --version
+echolot send https://demo.echolot.dev/v1/products -i
+```
+
+**设置 › 通用 › 命令行工具**显示内置工具的位置以及它是否已在 PATH 中，并提供**重新安装**和**移除**。如果有一个并非 Echolot 放置的 `echolot` 文件挡在那里，Echolot 会先询问再替换，旧文件会移到废纸篓。由于链接指向 App 内部，工具会随 App 一起更新。
+
+工具及其命令的说明见[命令行工具](/docs/cli)。
+
+<Edition only="appstore">
+  App Store 版本的内部没有命令行工具。请从发行版页面单独安装该工具（`echolot-<version>-macos.zip`）；参见[命令行工具](/docs/cli)。
+</Edition>
+
+## 卸载 [#uninstall]
+
+1. 如果安装过命令行工具，请先打开**设置 › 通用**，在**命令行工具**下选取**移除**。
+2. 退出 Echolot，把它从“应用程序”文件夹拖到废纸篓。
+3. 若还要移除 Echolot 自己的数据（已存储的响应、历史记录、崩溃报告和“示例”工作区），请在删除 App 之前，打开**设置 › 关于**，点按**响应和历史记录**旁边的**在访达中显示**，然后删除那个 `Echolot` 文件夹。它位于 `~/Library/Application Support/Echolot`。
+4. 机密、模型密钥和存储密钥位于登录钥匙串中，条目名称以 `Echolot` 开头（`Echolot secret …`、`Echolot model API key`）。要移除它们，请打开“钥匙串访问”并搜索 `Echolot`。只有在没有其他 Echolot 副本或其命令行工具仍需要这些机密时才删除它们。
+
+你的工作区不会受到影响：它们位于你存储它们的位置。

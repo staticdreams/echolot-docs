@@ -1,0 +1,276 @@
+---
+title: "Scripts et tests"
+description: "Vérifiez chaque réponse sans code dans l’onglet Tests, ou avec JavaScript dans des scripts de pré-requête et de test."
+---
+
+Les tests vous disent si une réponse est celle que vous attendez. Echolot propose deux façons de les écrire : des
+vérifications que vous configurez dans l’onglet **Tests** d’une requête, sans code, et des scripts en JavaScript qui
+s’exécutent avant l’envoi d’une requête et après sa réponse. Les deux s’exécutent après chaque envoi, dans l’[Exécution](/docs/requests/runner)
+et en ligne de commande.
+
+## Vérifications dans l’onglet Tests [#checks-in-the-tests-tab]
+
+<Shot id="requests-tests-tab" alt="L’onglet Tests de List products avec quatre vérifications, chacune avec une coche verte : l’état est égal à 200, la valeur JSON $.items.length est supérieure à 0, l’en-tête Content-Type contient json, le temps de réponse est inférieur à 1000" />
+
+1. Ouvrez une requête, par exemple **Catalog › List products** dans l’espace de travail Alpenglow.
+2. Choisissez l’onglet **Tests**.
+3. Choisissez **Ajouter un test** et indiquez ce qu’il faut vérifier.
+4. Choisissez une comparaison dans le menu à côté et saisissez la valeur attendue.
+5. Envoyez la requête. Chaque vérification affiche une coche verte ou une croix rouge, et une vérification en échec en
+   donne la raison en dessous.
+
+Les vérifications sont enregistrées avec la requête et s’exécutent sur chaque réponse à partir de là. La case au début
+d’une ligne désactive une vérification sans la retirer ; le bouton moins la retire. Le badge de l’onglet Tests compte
+les vérifications, et le bas de l’onglet indique combien ont réussi, comme **4 réussis** ou **1 sur 4 en échec**.
+
+La valeur attendue est un modèle : les `{{variables}}` y fonctionnent. **Catalog › Get product** vérifie que `$.sku`
+est égal à `{{productId}}`.
+
+### Ce que vous pouvez vérifier [#what-you-can-check]
+
+| Vérification | Ce qu’elle lit | Comparaisons |
+| --- | --- | --- |
+| **État** | Le code d’état | est égal à, est différent de, est inférieur à, est supérieur à, fait partie de |
+| **En-tête** | Un en-tête de réponse, par son nom | existe, n’existe pas, est égal à, est différent de, contient, ne contient pas, correspond à la regex |
+| **Valeur JSON** | La valeur à un JSONPath dans un corps JSON | existe, n’existe pas, est égal à, est différent de, contient, ne contient pas, est inférieur à, vaut au plus, est supérieur à, vaut au moins, correspond à la regex, est de type, fait partie de |
+| **Corps** | Le corps entier sous forme de texte | contient, ne contient pas, est égal à, correspond à la regex |
+| **Temps de réponse (ms)** | La durée totale de l’échange, en millisecondes | est inférieur à, vaut au plus, est supérieur à, vaut au moins |
+| **Taille (octets)** | La taille du corps en octets | est inférieur à, vaut au plus, est supérieur à, vaut au moins |
+| **JSON Schema** | Le corps, comparé à un JSON Schema que vous collez | correspond |
+| **Erreurs GraphQL** | Le tableau `errors` d’une réponse GraphQL | est égal à, est inférieur à, est supérieur à (leur nombre) ; contient, ne contient pas (leurs messages) |
+| **Erreur MCP** | Si un appel MCP a échoué : `true` ou `false` | est égal à |
+| **Schéma de sortie de l’outil** | Le `structuredContent` du résultat d’un outil MCP, comparé au `outputSchema` de l’outil lui-même | correspond |
+| **Spec OpenAPI** | Le corps, comparé au schéma de la spec OpenAPI liée pour l’état de la réponse | correspond |
+| **État gRPC** | L’état d’un appel gRPC, par son nom ou son code | est égal à, est différent de, fait partie de |
+
+Une nouvelle vérification commence avec une valeur raisonnable : **État** égal à `200`, **Temps de réponse (ms)**
+inférieur à `1000`, **Erreurs GraphQL** égal à `0`, **Erreur MCP** égal à `false`, **État gRPC** égal à `OK`, et
+**JSON Schema** avec `{"type": "object"}`.
+
+### Comment les valeurs se comparent [#how-values-compare]
+
+- **est égal à** compare les nombres comme des nombres : `200` est égal à `200.0`, et ignore les espaces autour de la
+  valeur.
+- **fait partie de** prend une liste séparée par des virgules : `200, 201, 204`.
+- **correspond à la regex** réussit quand l’expression régulière correspond n’importe où dans la valeur.
+- **est de type** prend `object`, `array`, `string`, `number`, `integer`, `boolean` ou `null`.
+- Les comparaisons de nombres exigent des nombres des deux côtés ; tout autre cas échoue avec un message qui l’indique.
+
+### Valeurs JSON [#json-values]
+
+Le chemin est un JSONPath de clés et d’indices, commençant par `$` : `$.items[0].sku`, `$.data.search.totalCount`. Un
+indice négatif compte depuis la fin : `$.items[-1]`. Ajoutez `.length` pour compter les éléments d’un tableau ou les
+clés d’un objet : `$.items.length` est supérieur à `0`. Echolot ne lit que la partie du corps située sur le chemin vers
+la valeur : les vérifications JSON fonctionnent donc sur des corps de n’importe quelle taille.
+
+**Corps** avec **contient** ou **ne contient pas** fonctionne aussi sur des corps de n’importe quelle taille. Les autres
+comparaisons du corps, ainsi que **JSON Schema** et **Erreurs GraphQL**, lisent le corps entier et s’arrêtent à 50 Mo.
+
+### Vérifications pour les autres types de requête [#checks-for-other-kinds-of-request]
+
+- **GraphQL** : les serveurs répondent aux erreurs avec l’état 200 ; ajoutez donc **Erreurs GraphQL** égal à `0` pour
+  les détecter. Utilisez **contient** pour vérifier qu’un message précis revient.
+- **Appels MCP** : **Erreur MCP** égal à `false` réussit quand l’appel a abouti. Elle échoue sur un résultat marqué
+  comme erreur et sur une erreur JSON-RPC, et le message montre ce que le serveur a dit. **Schéma de sortie de l’outil**
+  compare le résultat d’un outil au schéma que l’outil déclare ; elle échoue quand l’outil n’en déclare aucun. Voir
+  [Requêtes MCP](/docs/requests/mcp-requests).
+- **gRPC** : **État gRPC** accepte des noms comme `OK` et `NOT_FOUND` ou des codes de 0 à 16 ; `5`, `not_found` et
+  `NOT_FOUND` sont le même état. Une vérification en échec affiche le message d’état. Voir [gRPC](/docs/requests/grpc).
+- **Spec OpenAPI** : le dossier de la requête (ou un dossier au-dessus) doit être lié à une spec, et la requête doit
+  suivre l’une de ses opérations. La vérification valide alors le corps par rapport au schéma que la spec documente pour
+  l’état reçu. Un état que la spec documente sans corps JSON réussit ; un état non documenté échoue. Voir
+  [Specs](/docs/specs).
+
+### Ajouter des vérifications depuis une réponse [#add-checks-from-a-response]
+
+Vous n’avez pas à taper chaque vérification :
+
+- **Générer à partir de la réponse…** dans l’onglet Tests propose des vérifications d’après la dernière réponse. Les
+  vérifications valables pour toute bonne réponse, comme l’état, le type de contenu et la forme du corps sous forme de
+  JSON Schema, sont déjà cochées. Les valeurs qui changent d’un appel à l’autre, et le temps, sont proposés mais non
+  cochés. Choisissez **le schéma déduit** pour lire un schéma proposé. Choisissez **Ajouter 1 test** (ou
+  **Ajouter N tests**) pour garder ceux qui sont cochés. Envoyez d’abord la requête : le bouton a besoin d’une réponse.
+- Dans le **Corps** de la réponse, en vue Arbre JSON, faites un clic droit sur une valeur et choisissez
+  **Ajouter une vérification** : cela ajoute une vérification **Valeur JSON** que le chemin est égal à cette valeur.
+- Dans les **En-têtes** de la réponse, faites un clic droit sur un en-tête et choisissez **Ajouter une vérification** :
+  cela ajoute une vérification **En-tête** que l’en-tête est égal à cette valeur.
+
+<Shot id="requests-tests-generate" alt="La feuille Générer des tests à partir de la réponse pour List products, avec l’état, le type de contenu et le schéma déduit cochés, et une vérification de valeur proposée mais non cochée" />
+
+### Résultats [#results]
+
+L’onglet **Tests** du volet de réponse liste chaque vérification avec son résultat et la valeur trouvée (`got 200`),
+puis chaque test des scripts. La page **Tests** de la barre latérale (**Affichage › Tests**,
+<kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>) liste toutes les requêtes qui ont des vérifications, avec leur état dans la
+dernière réponse ; cliquez sur l’une d’elles pour ouvrir la requête.
+
+## Scripts [#scripts]
+
+Les scripts sont du JavaScript avec l’API `pm.*` de Postman : la plupart des scripts Postman s’exécutent donc sans
+modification. Une requête peut en avoir deux :
+
+- Un script de **pré-requête** s’exécute avant l’envoi de la requête. Il peut modifier la requête, définir des
+  variables ou ignorer la requête.
+- Un script de **test** s’exécute à l’arrivée de la réponse. Il vérifie la réponse avec `pm.test` et peut garder des
+  valeurs pour les requêtes suivantes.
+
+<Shot id="requests-scripts-tab" alt="L’onglet Scripts de List products sur Tests, avec un pm.test qui vérifie l’état et le nombre d’éléments, et le menu Extraits ouvert" />
+
+1. Ouvrez une requête et choisissez l’onglet **Scripts**.
+2. Choisissez **Pré-requête** ou **Tests** en haut. Un point après le nom, comme **Tests •**, signale un script qui
+   contient du code.
+3. Écrivez le script. L’éditeur colore le JavaScript et complète les chemins `pm.` pendant la saisie. **Extraits**
+   ajoute un script prêt à l’emploi pour les cas courants.
+4. Envoyez la requête.
+
+Par exemple, un script de test pour **Catalog › List products** :
+
+```js
+pm.test("Status code is 200", () => {
+  pm.response.to.have.status(200);
+});
+
+pm.test("Returns tents", () => {
+  const body = pm.response.json();
+  pm.expect(body.items.length).to.be.above(0);
+});
+```
+
+Et un script de pré-requête qui ajoute un en-tête à chaque requête pour laquelle il s’exécute :
+
+```js
+pm.request.headers.add({ key: "X-Request-Id", value: pm.variables.replaceIn("{{$guid}}") });
+```
+
+Chaque `pm.test` apparaît dans l’onglet **Tests** de la réponse sous **Scripts**, après les vérifications de l’onglet
+Tests. Un script qui lève une exception s’affiche comme **Erreur de script** avec son message. Ce que les scripts
+écrivent avec `console.log`, `console.info`, `console.warn` et `console.error` apparaît dans l’onglet **Console** de la
+réponse, marqué `pre` ou `test` ; l’onglet est présent dès que des scripts se sont exécutés.
+
+### Extraits [#snippets]
+
+| Extrait | Pour |
+| --- | --- |
+| **Le code d’état est 200**, **Le temps de réponse est inférieur à 500 ms**, **La valeur JSON existe**, **L’en-tête est présent**, **Le corps contient un texte** | Tests |
+| **Garder une valeur pour les requêtes suivantes** | Tests : `pm.environment.set("token", pm.response.json().token)` |
+| **Exécuter ensuite une autre requête** | Tests : `pm.execution.setNextRequest("Request name")` |
+| **Définir une variable**, **Ajouter un en-tête**, **Signer la requête avec HMAC-SHA256**, **Obtenir d’abord un jeton**, **Ignorer cette requête** | Pré-requête |
+
+### Scripts sur les dossiers et l’espace de travail [#scripts-on-folders-and-the-workspace]
+
+Un dossier et l’espace de travail peuvent aussi avoir des scripts, pour chaque requête qu’ils contiennent. Ouvrez-les
+depuis le menu contextuel du dossier dans la barre latérale (**Réglages du dossier…**) ou depuis
+**Réglages de l’espace de travail…**, dans l’onglet **Scripts**.
+
+Pour chaque requête, Echolot exécute d’abord le script de l’espace de travail, puis celui de chaque dossier de
+l’extérieur vers l’intérieur, puis celui de la requête elle-même. Le même ordre vaut pour les scripts de pré-requête et
+de test. Seules les requêtes enregistrées exécutent des scripts.
+
+Les appels MCP n’ont pas d’onglet Scripts et n’exécutent aucun script. Tous les autres types de requête en ont un.
+
+### L’API `pm` en un coup d’œil [#the-pm-api-at-a-glance]
+
+La liste complète se trouve dans la [référence de l’API de scripts](/docs/reference/scripting-api).
+
+| Objet | Ce qu’il fait |
+| --- | --- |
+| `pm.test(name, fn)`, `pm.expect(value)` | Un test nommé et des assertions à la Chai : `pm.expect(x).to.equal(1)` |
+| `pm.response` | La réponse dans les scripts de test : `code`, `status`, `headers`, `responseTime`, `responseSize`, `json()`, `text()`, et `pm.response.to.have.status(200)`, `.header()`, `.body()`, `.jsonBody()`, `pm.response.to.be.ok`, `.success`, `.json`, `.clientError`, `.serverError`, `.notFound` |
+| `pm.request` | La requête : `url`, `method`, `headers`, `body` ; un script de pré-requête peut ajouter, remplacer et retirer des en-têtes et des paramètres de requête |
+| `pm.variables` | Toutes les portées, de la plus proche à la plus lointaine : `get`, `set`, `has`, `unset`, `replaceIn`, `toObject` |
+| `pm.environment`, `pm.collectionVariables`, `pm.globals` | L’environnement actif, les variables de l’espace de travail et les variables globales |
+| `pm.iterationData` | La ligne de données d’une exécution : `get`, `has`, `toObject` |
+| `pm.info` | `requestName`, `requestId`, `iteration` (à partir de 0), `iterationCount`, `eventName` |
+| `pm.execution` | `setNextRequest(name)` (`null` met fin à l’exécution) et `skipRequest()` |
+| `pm.cookies` | Les cookies de la réponse |
+| `pm.sendRequest` | Envoie une autre requête |
+| `console` | `log`, `info`, `warn`, `error` |
+| `CryptoJS` | `MD5`, `SHA1`, `SHA256`, `SHA512`, `HmacSHA1`, `HmacSHA256`, `HmacSHA512`, et `CryptoJS.enc` (`Hex`, `Base64`, `Utf8`, `Latin1`) |
+
+`require` fournit `lodash`, `ajv`, `tv4`, `crypto-js`, `uuid`, `atob` et `btoa`. `_` (lodash), `tv4`, `btoa`, `atob` et
+`setTimeout` sont aussi disponibles sans lui. Les anciens globaux de Postman (`postman.setEnvironmentVariable`,
+`tests[...]`, `environment`, `globals`, `data`, `iteration`) fonctionnent toujours. Tout autre module échoue avec « The
+module … is not available in Echolot scripts. »
+
+### Variables définies par les scripts [#variables-that-scripts-set]
+
+Ce qu’écrivent `pm.environment.set`, `pm.collectionVariables.set` et `pm.globals.set` est une valeur actuelle : elle vit
+aussi longtemps que la fenêtre, remplace la valeur enregistrée de cette portée quand les requêtes sont résolues, et
+n’est jamais écrite dans les fichiers de l’espace de travail. Un jeton qu’un script enregistre atteint donc les requêtes
+suivantes sans finir dans Git. Pour garder dans l’espace de travail une valeur issue d’une réponse, utilisez plutôt une
+[capture](/docs/requests/captures).
+
+`pm.variables.set` définit une valeur pour l’exécution en cours seulement : une exécution démarre sans les valeurs
+définies de cette façon par les scripts.
+
+### Envoyer une autre requête [#sending-another-request]
+
+`pm.sendRequest` envoie une requête depuis un script, par exemple pour aller chercher d’abord un jeton. Elle accepte une
+URL ou un objet avec `url`, `method`, `header` et `body`, et soit un callback, soit la promesse qu’elle renvoie :
+
+```js
+pm.sendRequest({
+  url: pm.variables.replaceIn("{{baseURL}}/auth/token"),
+  method: "POST",
+  header: { "Content-Type": "application/json" },
+  body: { mode: "raw", raw: JSON.stringify({ email: "heidi@alpenglow.ch", password: "alpenglow" }) },
+}, (error, response) => {
+  if (!error) pm.environment.set("token", response.json().access_token);
+});
+```
+
+La requête part comme n’importe quel autre envoi d’Echolot, avec le même proxy et les mêmes certificats, mais sans
+l’authentification de l’espace de travail ni du dossier. Les scripts attendent les réponses jusqu’à 30 secondes.
+
+### Ignorer des requêtes et choisir la suivante [#skipping-requests-and-choosing-the-next-one]
+
+`pm.execution.skipRequest()` dans un script de pré-requête empêche l’envoi de la requête ; le volet de réponse et
+l’Exécution indiquent qu’elle a été ignorée. `pm.execution.setNextRequest("Get order")` dans une exécution saute
+ensuite à cette requête, et `setNextRequest(null)` met fin à l’exécution. Voir [l’Exécution](/docs/requests/runner).
+
+## Scripts venant de l’extérieur d’Echolot [#scripts-from-outside-echolot]
+
+Les scripts sont du code : Echolot n’exécute donc que ceux auxquels vous faites confiance sur ce Mac. Les scripts que
+vous écrivez dans Echolot sont approuvés dès que vous les enregistrez. Les scripts qui arrivent autrement, par un
+import, par Git ou par une modification dans un autre éditeur, attendent :
+
+- L’onglet Scripts affiche **Ces scripts viennent de l’extérieur d’Echolot**, avec **Faire confiance aux scripts**.
+- L’envoi de la requête s’arrête avec **Examiner les scripts…**. Cela ouvre **Exécuter ces scripts ?**, avec chaque
+  script qui ne s’est pas encore exécuté et sa provenance (la requête, un dossier ou l’espace de travail). Lisez-les,
+  puis choisissez **Faire confiance et envoyer**, ou **Annuler**.
+
+La confiance est conservée sur ce Mac, par espace de travail, pour le code exact : quand le script change hors
+d’Echolot, la question est reposée. La confiance ne voyage jamais avec l’espace de travail : un espace de travail
+partagé ne peut donc pas approuver ses propres scripts.
+
+L’outil en ligne de commande exécute tous les scripts de l’espace de travail que vous lui donnez. `echolot mcp serve`
+n’exécute que les scripts que l’espace de travail avait à son démarrage.
+
+## Le bac à sable et ses limites [#the-sandbox-and-its-limits]
+
+Les scripts s’exécutent dans un bac à sable JavaScript à l’intérieur d’Echolot. Ils n’ont ni système de fichiers, ni
+réseau propre, ni accès au Mac : les seules issues sont `pm.sendRequest`, `console` et les variables. Chaque envoi
+démarre un nouveau bac à sable.
+
+| Limite | Valeur |
+| --- | --- |
+| Temps JavaScript pour tous les scripts d’un même événement (pré-requête ou test) | 5 secondes |
+| Mémoire | 128 Mo |
+| Attente des réponses de `pm.sendRequest` | 30 secondes |
+| Corps de réponse vu par un script | Les 32 premiers Mo |
+
+Un script qui dure trop longtemps échoue avec « the script took longer than 5 s » ; un script qui utilise trop de
+mémoire échoue avec « the script used more memory than allowed ». Les scripts peuvent toujours lire les variables de
+l’espace de travail, secrets compris, et les envoyer avec `pm.sendRequest` : c’est pourquoi les scripts venant de
+l’extérieur attendent votre confiance.
+
+## Dépannage [#troubleshooting]
+
+- **Générer à partir de la réponse… est grisé** : envoyez d’abord la requête. Cela fonctionne pour les requêtes HTTP et
+  GraphQL.
+- **« aucune spec OpenAPI n’est liée au dossier de cette requête »** : liez le dossier à une spec, ou retirez la
+  vérification **Spec OpenAPI**.
+- **« “…” n’est pas un JSONPath que cette version comprend »** : utilisez uniquement des clés et des indices, comme
+  `$.items[0].sku`.
+- **Un script ne s’exécute pas** : vérifiez que la requête est enregistrée, que ce n’est pas un appel MCP, et que le
+  script n’attend pas votre confiance.

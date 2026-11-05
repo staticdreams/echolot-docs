@@ -1,0 +1,181 @@
+---
+title: "echolot run"
+description: "Exécutez un espace de travail, certains de ses dossiers ou requêtes, ou une collection Postman, avec des vérifications, des fichiers de données et des rapports."
+---
+
+`echolot run` envoie les requêtes d’un espace de travail dans leur ordre, exécute leurs scripts et leurs vérifications,
+et indique ce qui a réussi. C’est l’[Exécution](/docs/requests/runner) sans la fenêtre, pensée pour la CI. Il exécute
+aussi une collection Postman telle quelle, sans l’importer.
+
+```sh
+echolot run [<options>] <source>
+```
+
+`<source>` est un dossier d’espace de travail (celui qui contient `workspace.toml`) ou un fichier de collection
+Postman.
+
+## Exécuter un espace de travail [#run-a-workspace]
+
+```sh
+echolot run Alpenglow.echolot --folder auth/sign-in --folder catalog
+```
+
+```text
+catalog, auth/sign-in
+
+✓ POST   auth/sign-in  200 150 ms
+    ✓ Status equals 200
+    ✓ JSON value $.access_token exists
+✓ GET    catalog/list-products  200 74 ms
+    ✓ Status equals 200
+    ✓ JSON value $.items.length is greater than 0
+    ✓ Header Content-Type contains json
+    ✓ Response time (ms) is less than 1000
+✓ GET    catalog/search  200 69 ms
+    ✓ Status equals 200
+✓ GET    catalog/get-product  200 70 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ GET    catalog/categories  200 73 ms
+    ✓ Status equals 200
+✓ GQL    catalog/search-products  200 37 ms
+✓ GET    catalog/export  200 410 ms
+    ✓ Status equals 200
+
+All 7 requests passed  11/11 checks passed · 0.90 s
+```
+
+- Sans `--folder`, tout s’exécute. `--folder` accepte un dossier (`catalog`) ou une requête (`auth/sign-in`), sous forme
+  de chemins de slugs sous `requests/`, et peut être donné plusieurs fois. Les requêtes s’exécutent dans l’ordre de
+  l’espace de travail.
+- `--env` accepte le nom de fichier de l’environnement sans `.toml` (`staging`) ou son nom (`Staging`).
+- Les vérifications de chaque requête et ses résultats `pm.test` comptent. Une requête échoue quand elle ne reçoit
+  aucune réponse ou qu’une vérification échoue ; l’exécution se termine alors avec le code 1.
+- Les réponses capturées dans des variables, les jetons obtenus par les identifiants client OAuth 2 et les valeurs
+  définies par les scripts se transmettent aux requêtes suivantes de l’exécution, comme dans l’app. Les valeurs des
+  scripts ne durent que le temps de l’exécution et ne sont jamais écrites dans des fichiers.
+
+<Callout type="warn">
+  Sans trousseau (en CI, sous Linux, ou avec `ECHOLOT_KEYCHAIN=0`), la capture d’une réponse dans une variable
+  **secrète** n’est pas conservée pour la requête suivante. Dans Alpenglow, **Sign in** capture `{{token}}` comme
+  secret : **Who am I** et le dossier Orders reçoivent donc un 401 dans une telle exécution. Définissez vous-même
+  `ECHOLOT_SECRET_TOKEN`, ou capturez dans une variable qui n’est pas secrète, pour ce genre d’exécutions.
+</Callout>
+
+## Exécutions pilotées par les données [#data-driven-runs]
+
+`--data` exécute tout une fois par ligne d’un fichier de données :
+
+- Un fichier CSV avec une ligne d’en-tête : chaque colonne est une variable pour sa ligne.
+- Un fichier JSON contenant un tableau d’objets : chaque clé est une variable.
+
+```sh
+echolot run Alpenglow.echolot --folder catalog/get-product --data skus.csv
+```
+
+```text
+catalog/get-product · skus.csv, 2 rows
+
+✓ #1 GET    catalog/get-product  200 133 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ #2 GET    catalog/get-product  200 88 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+
+All 2 requests passed  4/4 checks passed · 0.22 s
+```
+
+Les scripts lisent la ligne avec `pm.iterationData`. Sans fichier de données, `--iterations` répète l’exécution.
+`--concurrency` exécute ce nombre d’itérations en parallèle ; ce que définissent les scripts d’une itération lui reste
+propre.
+
+## Rapports [#reports]
+
+`--reporter` choisit un rapport et peut être donné plusieurs fois. `--out` nomme le fichier de chaque rapport autre que
+`console`, dans l’ordre des options `--reporter` ; un rapport sans fichier va sur la sortie standard.
+
+| Rapport | Ce qu’il écrit |
+| --- | --- |
+| `console` | Les lignes ci-dessus, en couleur dans un terminal. La valeur par défaut quand vous ne donnez aucun `--reporter`. |
+| `junit` | Du XML JUnit : une suite de tests par requête, un cas de test par vérification. La plupart des systèmes de CI le lisent. |
+| `json` | L’exécution entière en JSON : chaque requête avec son état, sa durée, sa taille, ses tentatives et le résultat de chaque vérification. |
+| `html` | Un rapport à ouvrir dans un navigateur. |
+| `har` | Chaque échange de l’exécution sous forme d’archive HTTP. |
+
+```sh
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out results.xml \
+  --reporter html --out report.html
+```
+
+Un rapport JUnit d’une exécution avec une vérification en échec :
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Alpenglow" tests="4" failures="1" errors="0" time="0.377" timestamp="2026-11-01T09:23:04Z">
+  <testsuite name="auth/sign-in" tests="2" failures="0" errors="0" skipped="0" time="0.155">
+    <testcase name="Status equals 200" classname="auth.sign-in" time="0"/>
+    <testcase name="JSON value $.access_token exists" classname="auth.sign-in" time="0"/>
+  </testsuite>
+  <testsuite name="auth/who-am-i" tests="1" failures="1" errors="0" skipped="0" time="0.083">
+    <testcase name="Status equals 200" classname="auth.who-am-i" time="0">
+      <failure message="expected “200”, got “401”" type="AssertionFailure"/>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+Chaque rapport masque les valeurs secrètes, dans les URL, les en-têtes, les messages de vérification et les journaux :
+un rapport peut donc être conservé sans risque comme artefact de CI.
+
+## Exécuter une collection Postman [#run-a-postman-collection]
+
+```sh
+echolot run shop.postman_collection.json --env-file staging.postman_environment.json --data users.csv
+```
+
+La collection s’exécute telle quelle : Echolot la lit dans un espace de travail temporaire qui est jeté ensuite, et ses
+identifiants restent en mémoire. Ses scripts de pré-requête et de test s’exécutent, comme dans Newman. `--env-file`
+accepte un fichier d’environnement Postman ; `--env` est pour les espaces de travail. `--folder` peut nommer un dossier
+de la collection sans le dossier racine de la collection.
+
+Pour continuer à travailler avec une collection, [importez-la](/docs/cli/import-export) plutôt.
+
+## Options [#options]
+
+| Option | Signification |
+| --- | --- |
+| `-e`, `--env <env>` | L’environnement : son nom de fichier sans `.toml`, ou son nom. |
+| `--env-file <file>` | Un fichier d’environnement Postman à utiliser avec une collection. |
+| `--folder <path>` | Un dossier ou une requête à exécuter, comme `users` ou `users/list-users`. Répétable ; tout si omis. |
+| `-d`, `--data <file>` | Un fichier CSV avec une ligne d’en-tête ou un tableau JSON d’objets : une itération par ligne. |
+| `-n`, `--iterations <n>` | Combien de fois tout exécuter, sans fichier de données. 1 par défaut. |
+| `--delay <ms>` | Millisecondes d’attente entre les requêtes. 0 par défaut. |
+| `--retries <n>` | Tentatives supplémentaires pour une requête qui échoue. 0 par défaut. |
+| `--bail` | S’arrêter à la première requête en échec. |
+| `--concurrency <n>` | Combien d’itérations s’exécutent en parallèle ; 1 les exécute l’une après l’autre. 1 par défaut. |
+| `--reporter <name>` | `console`, `junit`, `json`, `html` ou `har`. Répétable ; `console` si omis. |
+| `-o`, `--out <file>` | Le fichier de chaque rapport autre que console, dans l’ordre de `--reporter` ; la sortie standard s’il manque. |
+| `--secrets <file>` | Un fichier de lignes `NAME=value` avec des valeurs secrètes, en plus des variables `ECHOLOT_SECRET_<NAME>`. |
+| `-k`, `--insecure` | Ne pas vérifier le certificat TLS. |
+| `--proxy <url>` | Envoyer via ce proxy : `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
+| `--no-proxy` | Se connecter directement, en ignorant `HTTP_PROXY` et les autres. |
+| `--cacert <file>` | Faire aussi confiance aux certificats d’AC de ce fichier PEM. Répétable. |
+| `--cert <file>` | Envoyer ce certificat client : un fichier PEM (avec `--key`) ou un fichier `.p12`/`.pfx`. |
+| `--key <file>` | La clé privée PEM du certificat client, quand le fichier du certificat n’en contient pas. |
+| `--pass <passphrase>` | La phrase secrète de la clé ou du fichier PKCS#12. Préférez `ECHOLOT_CERT_PASSPHRASE`. |
+| `--timeout <seconds>` | Délai d’attente de chaque requête. 60 par défaut. |
+| `--no-color` | Sortie console sans couleur. Aussi quand `NO_COLOR` est défini ou que la sortie n’est pas un terminal. |
+
+## Codes de sortie [#exit-codes]
+
+| Code | Quand |
+| --- | --- |
+| `0` | Chaque requête a reçu une réponse et chaque vérification a réussi. |
+| `1` | Une requête a échoué : pas de réponse, ou une vérification en échec. |
+| `64` | Une option erronée, une source qui n’est ni un espace de travail ni une collection Postman, un environnement inconnu, ou un fichier de données sans ligne. |
+
+Voir [CI](/docs/cli/ci) pour des pipelines complets, et [secrets](/docs/cli#secrets) pour savoir d’où viennent les
+valeurs secrètes.

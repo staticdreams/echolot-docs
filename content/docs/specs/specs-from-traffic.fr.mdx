@@ -1,0 +1,105 @@
+---
+title: "Spec à partir de réponses"
+description: "Écrivez une spec OpenAPI à partir des requêtes que vous avez envoyées et des réponses obtenues."
+---
+
+Vous avez souvent des requêtes avant d’avoir une spec : une collection que quelqu’un a importée, ou des appels essayés en
+explorant une API. **Spec à partir de réponses** les transforme en document OpenAPI. Chaque requête devient une opération,
+documentée d’après la dernière réponse obtenue : son chemin et ses paramètres, le corps envoyé, et la réponse avec un JSON
+Schema de son corps et un exemple. Ajoutez à une spec que vous avez déjà, et elle ne gagne que ce qui lui manque.
+
+## Documenter un dossier [#documenting-a-folder]
+
+<Steps>
+<Step>
+
+Envoyez les requêtes que vous voulez documenter, pour que chacune ait une réponse. Dans Alpenglow, envoyez par exemple les
+requêtes du dossier **Catalog**.
+
+</Step>
+<Step>
+
+Faites un clic droit sur le dossier dans la barre latérale des requêtes et choisissez **Documenter dans une spec
+OpenAPI…**. Pour documenter tout l’espace de travail, choisissez **+** › **Nouvelle spec à partir de réponses…** dans la
+barre latérale Specs, **À partir de réponses…** sur une page Specs vide, ou **Nouvelle spec à partir de réponses…** dans la
+palette de commandes.
+
+</Step>
+<Step>
+
+Dans la feuille **Documenter dans une spec OpenAPI**, vérifiez les choix :
+
+| Choix | Ce qu’il signifie |
+| --- | --- |
+| **Requêtes** | **Tout l’espace de travail**, ou un dossier. Les requêtes de ses sous-dossiers sont incluses. |
+| **Spec** | **Nouvelle spec**, ou une spec de l’espace de travail à laquelle ajouter. Un dossier qui suit déjà une spec ajoute à celle-ci. |
+| **Titre** | Le titre d’une nouvelle spec. Il commence par le nom du dossier, ou de l’espace de travail. |
+| **Lier « dossier » à la spec** | Activé par défaut. Les requêtes du dossier suivent alors les opérations qu’elles sont devenues : les changements ultérieurs de la spec peuvent donc leur être appliqués. |
+
+</Step>
+<Step>
+
+Cliquez sur **Documenter**. La feuille indique ce qui s’est passé, puis **Ouvrir la spec** ouvre le résultat.
+
+</Step>
+</Steps>
+
+<Shot id="specs-from-responses" alt="La feuille Documenter dans une spec OpenAPI après avoir documenté le dossier Catalog : les nouvelles opérations, les requêtes laissées de côté avec leurs raisons, et le bouton Ouvrir la spec" />
+
+## Ce que vous obtenez [#what-you-get]
+
+Le résultat liste :
+
+| Titre | Signification |
+| --- | --- |
+| **Nouvelles opérations** | Des opérations que la spec n’avait pas, par exemple `GET /products/{sku}`. |
+| **Réponse ajoutée** | Des opérations qu’elle avait et qui documentent maintenant une autre réponse, par exemple un `404`. |
+| **Déjà documenté** | Des opérations qu’elle documentait déjà telles qu’elles ont été traitées. Rien n’a changé. |
+| **Non inclus** | Des requêtes qui n’ont pas été documentées, chacune avec la raison. |
+
+Il indique aussi combien de requêtes suivent maintenant leurs opérations, et combien d’erreurs le linter trouve dans le
+résultat, le cas échéant.
+
+Ce qui entre dans chaque opération :
+
+- **Le chemin**, sous forme OpenAPI : les segments de chemin issus de variables deviennent des paramètres de chemin,
+  documentés avec les valeurs envoyées. La partie serveur de l’URL est omise du chemin.
+- **Les paramètres de requête et les en-têtes** que la requête définit.
+- **Le corps de la requête** et **la réponse**, avec un JSON Schema établi à partir du corps et un exemple. Les gros
+  exemples sont omis et le schéma reste ; les longs tableaux gardent quelques éléments dans l’exemple.
+- **Le nom de la requête** comme résumé de l’opération, et **son sous-dossier** comme tag de l’opération.
+- **L’auth de la requête** comme schéma de sécurité. Quand OpenAPI n’a pas de schéma pour elle (OAuth 2 avec le flux
+  device code), une note l’indique.
+
+Les secrets sont masqués : les variables secrètes et les valeurs sous des clés qui ont l’air secrètes (jetons, mots de
+passe, clés) apparaissent sous la forme `••••••` dans les exemples.
+
+## Ajouter à une spec existante [#adding-to-a-spec-you-have]
+
+Choisissez la spec sous **Spec**. Echolot n’ajoute que ce qui manque : les opérations, les réponses, les schémas et les
+schémas de sécurité qu’elle ne nomme pas encore. Ce que la spec dit déjà reste tel qu’il est écrit. On ne peut pas ajouter
+à des specs Swagger 2.0 ; seuls les documents OpenAPI 3 le permettent.
+
+## Documenter des réponses isolées depuis l’historique [#documenting-single-responses-from-history]
+
+Dans l’[historique](/docs/workspaces/history), faites un clic droit sur un échange HTTP qui a obtenu une réponse et
+choisissez **Ajouter à la spec OpenAPI…**. La même feuille s’ouvre, pour cette seule réponse. C’est pratique pour une
+réponse vue une seule fois, comme une erreur.
+
+## Ce qui est laissé de côté [#what-is-left-out]
+
+- Les requêtes qui ne sont pas HTTP (GraphQL, gRPC, WebSocket et les autres) : seules les requêtes HTTP sont documentées
+  dans OpenAPI.
+- Les requêtes sans réponse pour l’instant : envoyez-les d’abord.
+- Les requêtes dont l’envoi a échoué avant toute réponse.
+- Les requêtes d’un sous-dossier qui suit une spec à lui.
+
+## La garder à jour [#keep-it-current]
+
+Dès que le dossier suit la spec, la spec est le contrat. Modifiez-la sur la page Specs, et appliquez ses changements aux
+requêtes avec **Vérifier les changements de « dossier »…**. Voir
+[Des requêtes qui suivent la spec](/docs/specs#requests-that-follow-the-spec). Vous pouvez aussi donner les réponses de la
+spec à un [mock](/docs/mocks), pour que les front-ends puissent travailler avec.
+
+Les agents peuvent faire de même via l’outil `add_to_spec`, quand l’ensemble d’outils **Specs** est activé : voir
+[Agents](/docs/ai/agents).

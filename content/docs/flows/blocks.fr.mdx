@@ -1,0 +1,534 @@
+---
+title: "Blocs"
+description: "Chaque type de bloc qu’un flux peut contenir, avec ses réglages et ses ports, et comment fonctionnent les valeurs, les modèles et les conditions entre eux."
+---
+
+Chaque bloc fait une seule chose. Ses réglages se trouvent dans l’inspecteur quand vous le sélectionnez ; ses ports sont
+sur le canevas, les entrées à gauche et les sorties à droite. Cette page liste chaque type, dans les groupes que
+reprend le sélecteur de blocs, puis explique les valeurs qui circulent entre les blocs, les modèles comme
+`{{body.id}}`, et les conditions.
+
+## Comment avance une exécution [#how-a-run-moves]
+
+- Un bloc s’exécute quand chaque entrée qui a un lien vers lui contient une valeur. Il envoie ensuite des valeurs par
+  certaines de ses sorties, et seuls les blocs reliés à ces sorties s’exécutent ensuite.
+- Démarrer s’exécute en premier. Les blocs Valeur et Lire une variable dans lesquels rien n’est relié s’exécutent aussi
+  au début.
+- Les blocs s’exécutent côte à côte quand ils le peuvent. Un bloc Afficher et attendre peut vous attendre pendant
+  qu’un bloc Interroger continue.
+- Plusieurs blocs peuvent échouer : Requête, Interroger, Outil, Flux, Évaluer et Écrire un fichier ont une sortie
+  `fail`. Quand elle est reliée, l’échec en sort et l’exécution continue. Sinon, toute l’exécution échoue à ce bloc.
+- L’exécution se termine quand plus rien ne tourne.
+
+L’inspecteur de chaque bloc propose aussi **Titre** (affiché sur le bloc ; le nom du type quand il est vide) et
+**En pause (les valeurs passent telles quelles)**. Un bloc en pause est atténué et ignoré : ce qui entre ressort
+directement par sa première sortie.
+
+## Déclencheurs [#triggers]
+
+### Démarrer [#start]
+
+L’endroit où commence une exécution : le bouton **Exécuter**, un agent (quand le flux est un outil), une planification,
+un webhook ou `echolot flow run`. Son inspecteur contient les **Déclencheurs** du flux ; voir
+[Exécution et déclencheurs](/docs/flows/running-and-triggers).
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `run` | sortie | Toutes les entrées du flux en un seul objet. |
+| un par entrée | sortie | La valeur de cette entrée. |
+
+Un flux a exactement un bloc Démarrer. Il ne figure pas dans le sélecteur de blocs.
+
+### Sortie [#output]
+
+Ce que l’exécution renvoie : à l’agent qui a appelé le flux, à la ligne de commande, à l’appelant du webhook ou à un flux
+parent. Un flux en a au plus un.
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `value` | entrée | Le résultat. |
+
+## Actions [#actions]
+
+### Requête [#request]
+
+Envoie une requête enregistrée de l’espace de travail (HTTP, GraphQL ou une requête MCP) avec son auth, ses scripts, ses
+vérifications et l’environnement de l’exécution.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Requête** | La requête enregistrée, choisie dans une liste (obligatoire). |
+| **Variables** | Des noms, séparés par des virgules. Chacun devient une entrée qui renseigne cette `{{variable}}` de la requête. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `send` | entrée | Envoie la requête. Quand un objet arrive, chacune de ses clés devient une variable de cet envoi. |
+| un par nom dans **Variables** | entrée | La valeur de cette variable. |
+| `success` | sortie | La [réponse](#the-response-object), quand la requête a réussi. |
+| `fail` | sortie | La réponse quand elle a répondu hors 2xx ou qu’une vérification a échoué, ou l’erreur quand rien n’est revenu. |
+
+Une requête réussit quand elle répond 2xx et que ses vérifications, les tests de ses scripts et ses scripts passent
+tous, comme dans l’[Exécution](/docs/requests/runner). Les variables qu’un flux transmet l’emportent sur celles de
+l’environnement pour cet envoi seulement.
+
+Dans le flux **Place a test order**, la sortie `success` de **Sign in** est reliée à `send` de **Create order** : la
+commande n’est passée qu’après la réussite de la connexion, et le jeton que Sign in capture est déjà dans `{{token}}`.
+
+### Outil [#tool]
+
+Exécute l’un des outils propres à Echolot, comme démarrer un mock, exécuter un dossier, analyser une spec ou appeler un
+outil d’un serveur MCP, avec les mêmes règles que pour les agents.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Outil** | L’outil, choisi dans une liste (obligatoire). |
+| **Arguments** | Les arguments de l’outil en JSON, par exemple `{ "name": "{{value}}" }`. Les valeurs textuelles peuvent utiliser des modèles. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `run` | entrée | Exécute l’outil. Quand un objet arrive, ses clés sont ajoutées aux arguments. |
+| `result` | sortie | Ce que l’outil a renvoyé. |
+| `fail` | sortie | Pourquoi il a échoué. |
+
+Un bloc Outil ne peut pas exécuter un autre flux ; utilisez pour cela un bloc Flux.
+
+<Edition only="direct">
+  Un bloc Outil qui appelle un serveur MCP exécuté comme programme local (stdio) fonctionne dans le téléchargement direct.
+  Dans l’édition App Store, Echolot ne peut pas lancer ce programme : le bloc affiche un avertissement et échoue à
+  l’exécution.
+</Edition>
+
+### Flux [#flow]
+
+Exécute un autre flux de l’espace de travail et envoie ce que son bloc Sortie a reçu.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Flux** | L’autre flux (obligatoire). Un flux ne peut pas s’exécuter lui-même, et des flux ne peuvent pas s’exécuter les uns les autres en cercle. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `input` | entrée | Un objet avec les entrées de l’autre flux. |
+| `output` | sortie | Ce que l’autre flux a renvoyé. |
+| `fail` | sortie | Pourquoi l’autre flux a échoué. |
+
+Les flux peuvent s’exécuter les uns les autres sur 8 niveaux au plus. Les secrets ne circulent pas comme valeurs entre
+les flux : enregistrez-les plutôt comme variables.
+
+## Personnes [#people]
+
+Les blocs Personnes mettent l’exécution en pause et vous posent une question. Dans l’app, une feuille s’ouvre ; si un
+agent a lancé l’exécution, la question va au client de l’agent ; en ligne de commande, elle est posée dans le terminal.
+Les exécutions lancées par des planifications et des webhooks n’ont personne à qui demander : un bloc Personnes y
+échoue, tout comme `echolot flow run --no-input`.
+
+### Demander [#ask]
+
+Demande des valeurs avec un petit formulaire.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Message** | Ce qu’il faut demander. Les modèles sont autorisés. |
+| **Champs** | Les champs du formulaire (obligatoire). Chacun a un `name` (son port et sa clé), un `label` affiché à côté, un `type` (`text`, `number`, `bool`, `secret` ou `choice`), des `choices` pour un choix, séparés par des virgules, et un `default`. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `run` | entrée | Pose la question. Un objet renseigne les modèles du message. |
+| `answers` | sortie | Toutes les réponses en un seul objet. |
+| un par champ | sortie | La réponse de ce champ. |
+| `cancelled` | sortie | `true` quand la personne a cliqué sur **Annuler**. |
+
+La feuille propose **Annuler** et **Continuer**. Les réponses aux champs `secret` sont masquées dans le journal
+d’exécution.
+
+### Afficher et attendre [#show-and-wait]
+
+Affiche un message, un code à copier et un lien à ouvrir, puis attend **Continuer**, ou qu’une valeur arrive sur
+`until`. Utilisez-le pour les connexions par appareil : affichez le code pendant qu’un bloc Interroger attend
+l’approbation.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Titre** | Le titre de la feuille. |
+| **Message** | Ce qu’il faut afficher (obligatoire). |
+| **Code** | Affiché en grand, avec **Copier le code** (un code d’appareil). |
+| **Lier** | Affiché avec **Ouvrir dans le navigateur**. |
+| **QR** | **Affiche aussi le lien sous forme de code QR.** Désactivé par défaut. |
+
+Les cinq acceptent les modèles.
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `run` | entrée | Affiche la feuille. Un objet renseigne les modèles. |
+| `until` | entrée | Continue de lui-même quand une valeur arrive, comme le `success` d’un bloc Interroger. |
+| `done` | sortie | Ce qui est entré dans `run`. |
+
+Quand `until` est relié, la feuille indique **Le flux reprend de lui-même une fois la tâche terminée.**
+**Ne plus attendre** la ferme et fait échouer le bloc.
+
+### Approuver [#approve]
+
+Vous demande d’approuver avant que le flux continue, avant une action irréversible.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Message** | La question (obligatoire). Les modèles sont autorisés. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `run` | entrée | Pose la question. Un objet renseigne les modèles du message. |
+| `approved` | sortie | Ce qui est entré dans `run`, après **Approuver**. |
+| `declined` | sortie | Ce qui est entré dans `run`, après **Refuser**. |
+
+L’approbation revient toujours à la personne. Quand un agent exécute un flux et répond à un bloc Approuver, Echolot vous
+pose d’abord la question. Dans **Place a test order**, le bloc Approuver **Keep the order?** demande
+`Keep order {{body.id}} for CHF {{body.total.amount}}?` avec la commande que la boutique vient de créer ; **Refuser**
+l’envoie à **Cancel order**.
+
+<Shot id="flows-approve-sheet" alt="La feuille Approuver de Place a test order : Keep the order? avec l’ID de la commande et son total en francs suisses, et les boutons Refuser et Approuver" />
+
+## Logique [#logic]
+
+### Si [#if]
+
+Envoie ce qui est entré vers `true` ou `false` selon une [condition](#conditions).
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Condition** | Une expression JavaScript (obligatoire), comme `value.status == 200`. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `value` | entrée | La valeur à tester. |
+| `true`, `false` | sortie | La même valeur, sortant par l’une des deux. |
+
+**Morning stock check** utilise Si **Running low?** avec `value.body.items.some(p => p.stock.bern < 5)` sur les
+produits que la boutique a renvoyés.
+
+### Selon [#switch]
+
+Envoie ce qui est entré au premier cas dont la condition est remplie, sinon à `default`.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Cas** | Une liste (obligatoire). Chaque cas a un `name` (son port de sortie) et une `condition`. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `value` | entrée | La valeur à tester. |
+| un par cas | sortie | La valeur, quand ce cas est le premier à être rempli. |
+| `default` | sortie | La valeur, quand aucun cas n’est rempli. |
+
+### Évaluer [#evaluate]
+
+Exécute du JavaScript sur ce qui est entré. La dernière expression est le résultat : `({ id: value.body.id })` ou
+`a + b`. Un code avec son propre `return` s’exécute comme le corps d’une fonction, et ce que donne `return` est le
+résultat. Une promesse est attendue. `pm.test` et `pm.expect` fonctionnent comme dans les
+[scripts](/docs/requests/scripts-and-tests), et leurs résultats comptent comme les tests de l’exécution. Les lignes
+`console.log` vont dans le journal d’exécution.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Code** | Le JavaScript (obligatoire). |
+| **Entrées** | Des noms d’entrées, séparés par des virgules ; chacun est une variable dans le code. `value` quand c’est vide. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| un par nom dans **Entrées** | entrée | La valeur de cette variable. |
+| `result` | sortie | Le résultat. |
+| `fail` | sortie | L’erreur, quand le code en a levé une. |
+
+```js
+// Inputs: pages. Joins the lists that Collect gathered.
+return pages.flat();
+```
+
+### Délai [#delay]
+
+Attend, puis transmet la valeur.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Millisecondes** | Combien de temps attendre (obligatoire). Un nombre, ou un modèle comme `{{wait}}`. |
+
+Ports : `value` en entrée, `value` en sortie.
+
+## Boucles [#loops]
+
+### Répéter [#repeat]
+
+Envoie `index` autant de fois que **Nombre**, en comptant à partir de 0, puis `done`.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Nombre** | Combien de fois (obligatoire) : de 0 à 100 000. Un nombre ou un modèle comme `{{pages}}`. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `run` | entrée | Démarre la boucle. |
+| `index` | sortie | 0, 1, 2… une fois par tour. |
+| `done` | sortie | Ce qui est entré dans `run`, après le dernier tour. |
+
+### Pour chaque [#for-each]
+
+Envoie chaque élément d’une liste à tour de rôle, puis `done`. Il n’a aucun réglage.
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `list` | entrée | La liste. Toute autre valeur fait échouer le bloc. |
+| `item` | sortie | Un élément par tour. |
+| `index` | sortie | La position de l’élément, à partir de 0. |
+| `done` | sortie | Toute la liste, après le dernier tour. |
+
+### Collecter [#collect]
+
+Rassemble en une seule liste ce qui arrive pendant une boucle, et l’envoie quand la boucle est terminée. Il n’a aucun
+réglage.
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `item` | entrée | Une valeur par tour. |
+| `list` | sortie | Tout ce qui a été rassemblé, quand la boucle à laquelle il appartient se termine. |
+
+Chaque tour d’une boucle se termine avant que le suivant commence, et les blocs qu’il atteint s’exécutent de nouveau à
+chaque tour. Les valeurs extérieures à la boucle, comme une entrée de Démarrer, restent disponibles à chaque tour.
+
+### Interroger [#poll]
+
+Envoie une requête enregistrée encore et encore jusqu’à ce qu’une condition soit remplie (une connexion approuvée, une
+tâche terminée) ou que l’échéance passe.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Requête** | La requête enregistrée (obligatoire). |
+| **Variables** | Des noms, séparés par des virgules ; chacun devient une entrée qui renseigne cette `{{variable}}`. |
+| **Jusqu’à** | Une [condition](#conditions) sur `response`, la dernière réponse. Par défaut : `response.status >= 200 && response.status < 300`. |
+| **Intervalle** | Secondes entre les envois. 5 par défaut. Un nombre ou un modèle. |
+| **Échéance** | Secondes avant d’abandonner. 300 par défaut. Un nombre ou un modèle. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `send` | entrée | Démarre l’interrogation. Quand un objet arrive, ses clés deviennent des variables. |
+| un par nom dans **Variables** | entrée | La valeur de cette variable. |
+| `success` | sortie | La réponse qui a satisfait la condition. |
+| `timeout` | sortie | La dernière réponse, quand l’échéance est passée. Quand `timeout` n’est pas relié, le bloc échoue à la place. |
+| `fail` | sortie | L’erreur, quand un envoi a échoué. |
+
+Contrairement à Requête, une réponse hors 2xx ne fait pas échouer Interroger : il renvoie jusqu’à ce que **Jusqu’à**
+soit vrai.
+
+## Données [#data]
+
+### Valeur [#value]
+
+Une valeur fixe : du texte, un nombre, `true` ou `false`, une liste ou un objet.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Valeur** | Du texte, un nombre ou du JSON (obligatoire). |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `run` | entrée | Renvoie la valeur chaque fois que quelque chose arrive. |
+| `value` | sortie | La valeur. Quand rien n’est relié à `run`, elle est envoyée une fois au début. |
+
+### Modèle [#template]
+
+Du texte dont les `{{name}}` sont remplis à partir de l’objet entré et des variables de l’exécution.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Texte** | Le texte avec des [modèles](#templates) (obligatoire). |
+
+Ports : `values` en entrée (un objet), `text` en sortie.
+
+### Extraire [#select]
+
+Extrait des valeurs de ce qui est entré selon un chemin, une sortie chacune.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Champs** | Une liste (obligatoire). Chaque champ a un `name` (son port de sortie) et un `path`, comme `$.body.user_code`. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `value` | entrée | La valeur dans laquelle extraire, souvent une réponse. |
+| un par champ | sortie | La valeur à ce chemin, ou `null` quand il n’y a rien. |
+| `all` | sortie | Tous les champs en un seul objet. |
+
+Les chemins sont la partie commune de JSONPath :
+
+| Chemin | Extrait |
+| --- | --- |
+| `$.body.items[0].sku` | Une clé, puis le premier élément d’une liste. |
+| `$.body.items[-1]` | Le dernier élément. |
+| `$.body.items[*].sku` | Le `sku` de chaque élément, sous forme de liste. |
+| `$['content-type']` | Une clé avec des caractères qu’un point ne peut pas contenir. |
+| `body.id` | Sans `$`, le chemin part de la valeur. |
+
+### Définir une variable [#set-variable]
+
+Enregistre des valeurs comme variables, pour que les blocs et requêtes suivants les lisent avec `{{name}}`.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Variables** | Une liste (obligatoire). Chacune a un `name`, un `path` dans ce qui est entré (tout quand il est vide), un `scope` et `secret`. |
+
+| Portée | Où va la valeur |
+| --- | --- |
+| `run` | Cette exécution seulement, et les requêtes qu’elle envoie. |
+| `environment` | L’environnement actif (par défaut). L’exécution échoue ici quand aucun environnement n’est choisi. |
+| `workspace` | Les variables propres à l’espace de travail. |
+| `global` | Non modifiable depuis les flux : l’exécution échoue et vous demande d’enregistrer dans l’environnement ou l’espace de travail. |
+
+Avec `secret` activé, la valeur va dans le trousseau, jamais dans un fichier, et elle est masquée dans le journal
+d’exécution et dans ce que voient les agents dès qu’elle quitte le bloc précédent. Quand `path` ne trouve rien, la
+variable garde son ancienne valeur : une réponse de jeton sans nouveau jeton d’actualisation n’efface donc pas celui
+que vous avez. Voir [secrets](/docs/workspaces/secrets).
+
+Ports : `value` en entrée, `value` en sortie (ce qui est entré, transmis).
+
+### Lire une variable [#get-variable]
+
+Lit une variable comme les requêtes la voient : celle de l’exécution d’abord, puis celle de l’environnement, de
+l’espace de travail et les variables globales.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Nom** | La variable (obligatoire). |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `run` | entrée | La relit chaque fois que quelque chose arrive. |
+| `value` | sortie | Sa valeur, ou `null` quand il n’y en a pas. Quand rien n’est relié à `run`, elle est lue une fois au début. |
+
+## Sortie [#output]
+
+### Afficher [#display]
+
+Transmet tel quel ce qui est entré, pour que vous puissiez le regarder : sélectionnez le bloc après une exécution et
+lisez **Dernière exécution** dans l’inspecteur.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Format** | `auto`, `text`, `json`, `table` ou `image`. `auto` par défaut. |
+
+Ports : `value` en entrée, `value` en sortie.
+
+### Journal [#log]
+
+Écrit une ligne dans le journal d’exécution.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Message** | La ligne, avec des modèles. `{{value}}` est ce qui est entré ; tout quand le message est vide. |
+
+Ports : `value` en entrée, `value` en sortie. Dans **Place a test order**, **Order failed** journalise
+`Create order answered {{status}}` quand la commande ne peut pas être passée.
+
+### Vérifier [#assert]
+
+Vérifie ce qui est entré. Chaque vérification est un résultat de test de l’exécution, et une vérification en échec fait
+échouer `echolot flow run`.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Vérifications** | Une liste (obligatoire). Chaque vérification a un `name` et une `condition` sur `value`. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `value` | entrée | La valeur à vérifier. |
+| `passed` | sortie | La valeur, quand toutes les vérifications sont remplies. |
+| `failed` | sortie | La valeur, quand une vérification échoue. |
+
+```js
+value.status === 200   // Answers 200
+value.time < 2000      // Within two seconds
+```
+
+### Notifier [#notify]
+
+Affiche une notification macOS d’Echolot. macOS demande l’autorisation la première fois. En ligne de commande, la
+notification est imprimée à la place.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Titre** | Le titre de la notification (obligatoire). Les modèles sont autorisés. |
+| **Message** | Son texte. Les modèles sont autorisés. |
+
+Ports : `value` en entrée, `value` en sortie. **Morning stock check** se termine par Notifier **Restock**, intitulé
+`Restock Bern`.
+
+### Écrire un fichier [#write-file]
+
+Écrit ce qui est entré dans un fichier à l’intérieur du dossier de l’espace de travail.
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Chemin** | Relatif au dossier de l’espace de travail, comme `exports/items.json` (obligatoire). Les modèles sont autorisés. |
+| **Format** | `json` (mis en forme), `text` ou `csv`. `json` par défaut. |
+
+| Port | Côté | Ce qu’il transporte |
+| --- | --- | --- |
+| `value` | entrée | Ce qu’il faut écrire. |
+| `path` | sortie | Le chemin du fichier, relatif à l’espace de travail. |
+| `fail` | sortie | Pourquoi il n’a pas pu être écrit. |
+
+Un fichier déjà présent est remplacé. Les fichiers propres à l’espace de travail sont interdits : les dossiers
+`requests`, `flows`, `environments`, `mocks`, `mcp-servers` et `specs`, `workspace.toml` et les fichiers cachés. Pour le
+CSV, une liste d’objets devient une ligne par objet avec une colonne par clé ; tout le reste est écrit à raison d’une
+valeur par ligne.
+
+## Valeurs entre les blocs [#values-between-blocks]
+
+Les valeurs sont du JSON : texte, nombres, `true` et `false`, listes, objets ou `null`.
+
+### L’objet réponse [#the-response-object]
+
+Requête et Interroger envoient une réponse sous forme d’objet :
+
+```json
+{
+  "status": 201,
+  "reason": "Created",
+  "headers": { "content-type": "application/json", "location": "/v1/orders/ord_9Px3Kd" },
+  "body": { "id": "ord_9Px3Kd", "total": { "amount": 449, "currency": "CHF" } },
+  "time": 182.4,
+  "url": "https://demo.echolot.dev/v1/orders"
+}
+```
+
+- `body` est du JSON analysé quand la réponse est du JSON, du texte sinon, et `null` quand elle est vide.
+- Les noms d’en-tête sont en minuscules. Un en-tête envoyé plusieurs fois est joint avec `, `.
+- `time` est la durée de l’échange entier, en millisecondes.
+- Un corps de plus de 8 Mo arrive sous la forme `null` avec `"truncated": true`. La réponse complète reste dans
+  l’[historique](/docs/workspaces/history).
+
+### Modèles [#templates]
+
+Les réglages marqués « modèles autorisés » remplissent `{{name}}` à partir de ce qui est entré dans le bloc :
+
+- `{{status}}`, `{{body.id}}` ou `{{body.items[0].sku}}` : une clé ou un [chemin](#select) dans l’objet entré.
+- `{{value}}` dans Journal, Notifier et Écrire un fichier : toute la valeur entrée.
+- Les variables qu’un bloc Définir une variable a enregistrées avec la portée `run`.
+
+Un nom qui ne correspond à rien reste tel quel : les propres `{{variables}}` d’un bloc Requête se résolvent donc encore
+depuis l’environnement à l’envoi. Les objets et les listes sont écrits sous forme de texte JSON.
+
+### Conditions [#conditions]
+
+Si, Selon, Interroger et Vérifier acceptent une expression JavaScript qui est vraie ou fausse. `value` est ce qui est
+entré ; le **Jusqu’à** d’Interroger le lit sous le nom `response`, qui fonctionne aussi partout.
+
+```js
+value.status == 200
+response.status === 200 && !!(response.body && response.body.access_token)
+value.body.items.length > 0
+```
+
+Une expression qui lève une erreur fait échouer le bloc (dans Vérifier, elle fait échouer cette vérification).
+
+## Limites [#limits]
+
+Pour qu’un mauvais lien ne puisse pas tourner indéfiniment, une exécution s’arrête après 10 000 exécutions de blocs ou
+une heure. Les exécutions lancées par des webhooks s’arrêtent après deux minutes.

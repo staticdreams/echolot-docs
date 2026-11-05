@@ -1,0 +1,83 @@
+---
+title: "echolot fake"
+description: "在终端中根据模板生成示例数据，用于测试固件、种子数据和模拟服务器的正文，示例值与模拟路由相同。"
+---
+
+`echolot fake` 用示例数据填充模板：姓名、电子邮件、地址、价格、日期、Lorem ipsum 以及大约 120 种其他值。它使用与[手工创建的路由](/docs/mocks/routes#bodies-with-fake-data)的正文相同的模板，
+所以你可以试验一个正文，或为测试编写固件和种子数据。
+
+```sh
+echolot fake [<template>] [--file <file>] [--count <count>] [--seed <seed>] [--type <type>]
+echolot fake list
+```
+
+模板来自参数、`--file` 或标准输入。结果输出到标准输出。
+
+## 生成列表 [#make-a-list]
+
+`--count` 将模板作为 JSON 列表的一项：
+
+```sh
+echolot fake '{"id": {{@number}}, "name": "{{$randomFullName}}", "email": "{{$randomEmail}}"}' --count 3
+```
+
+```json
+[
+{"id": 1, "name": "Henry Adams", "email": "stella.meyer.45@yahoo.com"},
+{"id": 2, "name": "Jack Grant", "email": "bianca.ivanova.11@icloud.com"},
+{"id": 3, "name": "Theo Sato", "email": "samuel.lee.88@yahoo.com"}
+]
+```
+
+使用 `--type xml` 或 `--type text` 时，各项会依次排列：
+
+```sh
+echolot fake '<city>{{$randomCity}}</city>' --count 2 --type xml
+```
+
+```xml
+<city>Kyoto</city>
+<city>Athens</city>
+```
+
+模板可以用 `{{#repeat 10}}` … `{{/repeat}}` 自己生成列表；参见[列表](/docs/mocks/routes#lists)。
+
+## 再次得到相同的数据 [#the-same-data-again]
+
+`--seed` 每次都生成相同的数据，用于不应在多次运行之间变化的固件：
+
+```sh
+echolot fake --file user.json.template --count 50 --seed 7 > users.json
+```
+
+## 转义 [#escaping]
+
+`--type` 决定值如何转义：`json`（默认）转义 JSON 字符串中的值，`xml` 为 XML 和 HTML 转义 `&`、`<`、`>` 和引号，`text` 不做任何转义。参见[转义](/docs/mocks/routes#escaping)。
+
+## 值 [#the-values]
+
+`echolot fake list` 按分组打印每个值及其参数：
+
+```text
+COMMON
+  $randomUUID  A random UUID: 3f2c1e0a-…
+  $randomInt(Minimum, Maximum)  A whole number, 0 to 1000 unless bounds are given.
+  $randomFloat(Minimum, Maximum, Decimals)  A decimal number between the bounds (0 to 1000), with 2 decimals unless told otherwise.
+…
+```
+
+[动态值](/docs/reference/dynamic-values#fake-data)列出了全部。与请求有关的记号，例如 `{{request.params.id}}`，属于模拟路由，在这里保持原样。
+
+## 选项 [#options]
+
+| 选项 | 含义 |
+| --- | --- |
+| `<template>` | 模板，或用 `list` 列出示例值。 |
+| `-f`、`--file <file>` | 从文件读取模板。 |
+| `-c`、`--count <count>` | 生成这么多项，最多 10,000：一个 JSON 列表，使用 `--type xml` 和 `text` 时则逐项依次排列。 |
+| `--seed <seed>` | 每次都生成相同的数据。 |
+| `--type <type>` | `json`（默认）、`xml` 或 `text`。 |
+
+## 退出码 [#exit-codes]
+
+每个值都生成成功时为 `0`。某个值无法生成时为 `1`，例如 `{{$randomInt(9, 1)}}`：原因输出到标准错误，该记号在输出中保持原样。选项有误时为 `64`。

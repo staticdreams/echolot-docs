@@ -1,0 +1,152 @@
+---
+title: "Automatiser avec un flux"
+description: "Construisez sur le canevas un flux qui se connecte, liste les commandes, décide et vous notifie ; exécutez-le, planifiez-le et démarrez-le depuis un webhook."
+---
+
+Un flux enchaîne des requêtes et d’autres étapes sur un canevas, de sorte qu’une tâche que vous faites à la main
+s’exécute en un clic, selon une planification, ou quand un autre système l’appelle. Dans ce tutoriel, vous construisez
+**Orders to ship** : il se connecte à la boutique de démo, liste les commandes de Heidi et envoie une notification
+quand l’une est payée mais pas encore expédiée.
+
+- **Durée :** 20 minutes.
+- **Il vous faut :** l’[espace de travail Alpenglow](/docs/tutorials#the-alpenglow-workspace) avec **Aucun environnement**
+  choisi. Son flux **Morning stock check** est un exemple terminé de la même forme.
+- **Vous apprenez :** les blocs et les liens, les blocs Si et Notifier, le journal d’exécution, les planifications, les
+  webhooks et `echolot flow run`.
+
+## 1. Créer un flux [#1-make-a-flow]
+
+1. Passez sur **Flux** (<kbd>⌘</kbd><kbd>5</kbd>).
+2. Ouvrez le menu **+** de la barre latérale (**Nouveau flux**) et choisissez **Flux vide**. Un flux **Nouveau flux**
+   s’ouvre avec un bloc **Démarrer** lié à un bloc **Sortie**.
+3. Cliquez sur le canevas vide pour qu’aucun bloc ne soit sélectionné. Dans l’inspecteur, définissez **Nom** sur
+   `Orders to ship` et **Description** sur `Says when an order is paid but not shipped.`
+
+Quand un flux est ouvert, la barre latérale liste les **Requêtes** de l’espace de travail à faire glisser sur le
+canevas. La section **À partir d’un modèle** du menu **+** part plutôt d’un flux prêt à l’emploi, comme
+**Paginer et exporter** ; voir [modèles](/docs/flows/templates).
+
+## 2. Ajouter les requêtes [#2-add-the-requests]
+
+1. Laissez le pointeur sur le lien entre **Démarrer** et **Sortie** et cliquez sur son bouton **Rompre ce lien**.
+2. Faites glisser **Auth › Sign in** de la barre latérale sur le canevas. Il devient un bloc **Requête** intitulé
+   **Sign in**, avec l’entrée `send` et les sorties `success` et `fail`.
+3. Faites glisser **Orders › List orders** sur le canevas, à droite.
+4. Reliez-les : faites glisser depuis le port `run` de **Démarrer** vers le port `send` de **Sign in**, puis depuis le
+   port `success` de **Sign in** vers le port `send` de **List orders**.
+
+**Sign in** stocke le jeton dans `{{token}}` à chaque réussite, donc **List orders** envoie le nouveau. La sortie
+`success` d’un bloc Requête transporte la réponse : `status`, `headers`, `body`, `time` et `url`. `fail` se déclenche
+quand la requête n’obtient aucune réponse ou qu’une vérification échoue.
+
+## 3. Décider avec un bloc Si [#3-decide-with-an-if-block]
+
+1. Choisissez **Bloc** dans la barre d’outils (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd>), saisissez `If` dans
+   **Rechercher des blocs ou des requêtes** et appuyez sur <kbd>↩</kbd>.
+2. Dans l’inspecteur, définissez **Titre** sur `Waiting to ship?` et **Condition** sur :
+
+   ```js
+   value.body.items.some(o => o.status === 'paid')
+   ```
+
+   La condition est du JavaScript. `value` est ce qui est arrivé : ici, la réponse de **List orders**.
+3. Reliez le `success` de **List orders** au `value` du bloc Si.
+
+## 4. Vous notifier [#4-notify-yourself]
+
+1. Faites glisser depuis le port `true` du bloc Si et relâchez sur le canevas vide. Le sélecteur de blocs s’ouvre à cet
+   endroit. Choisissez **Notifier** : il arrive lié à `true`.
+2. Dans les réglages du bloc, définissez **Titre** sur `Orders to ship` et **Message** sur :
+
+   ```text
+   {{value.body.total}} orders, at least one paid and waiting.
+   ```
+
+   `{{value…}}` renseigne des parties de ce qui est arrivé ; les variables de l’espace de travail fonctionnent aussi.
+3. Reliez aussi le `success` de **List orders** au `value` du bloc **Sortie**. Un webhook répond avec ce qui arrive dans
+   **Sortie** (étape 7).
+
+Cliquez sur **Ranger** pour aligner les blocs dans l’ordre où ils s’exécutent, et sur **Ajuster**
+(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd>) pour les voir tous.
+
+<Shot id="tutorials-flows-canvas" alt="Un flux sur le canevas après une exécution : Démarrer, un bloc Requête, un bloc Si et un bloc Notifier relié depuis son port true, chacun marqué Terminé" />
+
+## 5. L’exécuter [#5-run-it]
+
+1. Cliquez sur **Exécuter** (<kbd>⌘</kbd><kbd>R</kbd>).
+2. Chaque bloc affiche un badge pendant son exécution, puis **Terminé**. Le journal d’exécution sous le canevas liste
+   chaque bloc avec sa durée.
+3. Une notification indique **Orders to ship** : 3 orders, at least one paid and waiting. La commande `ord_8Jm4Qx` de la
+   démo est payée. La première fois, macOS demande si Echolot peut afficher des notifications.
+4. Sélectionnez **List orders**. La **Dernière exécution** de l’inspecteur montre ce qui est entré et sorti ; passez
+   **Afficher** entre **Entrée** et **Sortie**.
+
+Changez la condition en `o.status === 'cancelled'` et exécutez de nouveau : le bloc Si envoie sa valeur vers `false`,
+qui n’est relié à rien, donc aucune notification n’arrive. Remettez-la.
+
+Quand une exécution échoue, le bloc en cause affiche l’erreur. Là où le modèle du Mac sur l’appareil est disponible,
+**Expliquer l’échec** dans le journal d’exécution dit ce qui s’est mal passé. Les exécutions précédentes restent dans le
+menu **Exécutions** de la barre d’outils. Plus de détails dans [exécution et déclencheurs](/docs/flows/running-and-triggers).
+
+## 6. L’exécuter selon une planification [#6-run-it-on-a-schedule]
+
+1. Sélectionnez le bloc **Démarrer**. Son inspecteur a une section **Déclencheurs**.
+2. Activez **Planification**. Avec **Intervalle** choisi, définissez **Toutes les** sur `60` minutes ; ou choisissez
+   **Heures fixes (cron)** et saisissez une ligne cron (minute, heure, jour, mois, jour de la semaine), comme
+   `0 7 * * 1-5` pour sept heures les jours de semaine.
+3. Cliquez sur **Autoriser**. Echolot vous demande d’autoriser un flux avant que quoi que ce soit le démarre sans vous, et
+   le redemande après une modification (**Autoriser à nouveau**). **Révoquer** l’arrête.
+
+L’inspecteur montre la prochaine exécution. Les planifications s’exécutent tant que la fenêtre de l’espace de travail
+est ouverte. Pour les exécuter sans l’app, utilisez `echolot flow serve -w Alpenglow.echolot` sur un Mac ou un serveur
+qui reste allumé.
+
+## 7. Le démarrer depuis un webhook [#7-start-it-from-a-webhook]
+
+1. Dans les **Déclencheurs** du bloc **Démarrer**, activez **Webhook**. Laissez la méthode sur **POST** et définissez le
+   chemin sur `/orders-to-ship`.
+2. Cliquez sur **Autoriser**. L’inspecteur montre l’adresse sur `127.0.0.1` avec **Copier l’URL** et **Copier le jeton**.
+3. Dans Terminal, appelez-le avec le jeton comme jeton Bearer :
+
+   ```sh
+   curl -X POST 'http://127.0.0.1:PORT/orders-to-ship' -H 'Authorization: Bearer TOKEN'
+   ```
+
+   Collez l’URL et le jeton que vous avez copiés. Le flux s’exécute, et la réponse est ce qui est arrivé dans
+   **Sortie** : les commandes.
+
+Une chaîne de requête et un corps JSON renseignent les entrées du flux. Le webhook répond sur ce Mac uniquement, tant
+que la fenêtre est ouverte ; `echolot flow serve` sert les webhooks sans l’app, sur le port 4100 par défaut.
+**Order status on webhook** d’Alpenglow en est un autre exemple. Un flux peut aussi être proposé aux agents IA comme un outil
+(**Agents (un outil MCP)**) ; voir [agents](/docs/ai/agents).
+
+## 8. L’exécuter depuis Terminal [#8-run-it-from-terminal]
+
+```sh
+echolot flow list -w Alpenglow.echolot
+echolot flow run "Orders to ship" -w Alpenglow.echolot
+```
+
+Il affiche chaque bloc à mesure qu’il se termine, avec sa durée, puis le texte de la notification et le résultat :
+
+```text
+✓ start  Start  0 ms
+✓ …      Sign in  168 ms
+✓ …      List orders  116 ms
+✓ …      Waiting to ship?  4 ms
+notification: Orders to ship — 3 orders, at least one paid and waiting.
+✓ …      Notify  0 ms
+Orders to ship: passed in 304 ms
+```
+
+En CI, ajoutez `--no-input` pour qu’un flux qui a besoin d’une personne échoue au lieu d’attendre. Le flux est un fichier
+du dossier `flows` de l’espace de travail, il va donc dans Git avec les requêtes qu’il utilise. Voir
+[`echolot flow`](/docs/cli/flow).
+
+## Étapes suivantes [#next-steps]
+
+- [Blocs](/docs/flows/blocks) : Approuver, Demander, Pour chaque, Interroger, Écrire un fichier et les autres.
+- [Modèles](/docs/flows/templates) : connexion par appareil, renouvellement de jeton, paginer et exporter, un moniteur de
+  smoke test.
+- [Laisser un agent utiliser votre espace de travail en toute sécurité](/docs/tutorials/agents-safely) : proposez un
+  flux à un agent comme un seul outil.

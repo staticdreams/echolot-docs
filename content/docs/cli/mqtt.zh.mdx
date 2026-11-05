@@ -1,0 +1,97 @@
+---
+title: "echolot mqtt"
+description: "在 MQTT Broker（3.1.1 或 5.0 版）上订阅主题并发布消息，支持 TCP、TLS 或 WebSocket。"
+---
+
+`echolot mqtt` 在终端中与 MQTT Broker 通信：`subscribe` 在消息到达时打印它们，`publish` 则发送消息。两者默认使用 MQTT 5.0，需要时可使用 3.1.1，支持 TCP（`mqtt://`）、
+TLS（`mqtts://`）或 WebSocket（`ws://`、`wss://`）。App 中的对应功能参见 [MQTT 请求](/docs/requests/mqtt)。
+
+示例使用你 Mac 上 `localhost` 的 Broker，与 Alpenglow 请求 **Warehouse sensors** 一样。演示 API 无法运行 MQTT。
+
+## echolot mqtt subscribe [#echolot-mqtt-subscribe]
+
+```sh
+echolot mqtt subscribe [<options>] <broker> <filters> ...
+```
+
+`<broker>` 是 `mqtt://host[:1883]`、`mqtts://host[:8883]`、`ws://host/mqtt` 或 `wss://host/mqtt`。`<filters>` 是一个或多个主题过滤器：`+` 匹配一级，`#` 匹配其余部分。
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/+/temperature' --qos 1
+```
+
+```text
+warehouses/bern/temperature 4.5
+warehouses/zurich/temperature 5.1
+```
+
+每条消息占标准输出上的一行：主题，一个空格，然后是负载。不是 UTF-8 文本的负载以 Base64 打印。使用 `--json` 时，每条消息是一行 JSON，包含 `topic`、
+`payload`（或 `payload_base64`）、`qos` 和 `retain`，可直接交给 `jq`：
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 10 --json | jq -r .payload
+```
+
+订阅会一直运行，直到你停止它（<kbd>⌃</kbd><kbd>C</kbd>）、Broker 断开连接、经过 `--listen` 秒，或收到 `--count` 条消息。Broker 拒绝的过滤器会在标准错误中指明。
+
+| 选项 | 含义 |
+| --- | --- |
+| `--qos <level>` | `0`（至多一次）、`1`（至少一次）或 `2`（恰好一次）。默认 0。 |
+| `--listen <seconds>` | 监听的秒数；`0` 表示一直监听到被停止或 Broker 断开连接。默认 0。 |
+| `--count <n>` | 收到这么多条消息后停止。 |
+| `--json` | 将每条消息打印为一行 JSON：主题、负载、qos、retain；二进制负载用 Base64。 |
+
+## echolot mqtt publish [#echolot-mqtt-publish]
+
+```sh
+echolot mqtt publish [<options>] <broker> <topic>
+```
+
+`-m` 给出负载。不带它时，标准输入的每一行是一条消息：
+
+```sh
+echolot mqtt publish mqtt://localhost warehouses/bern/temperature -m '4.5' --qos 1
+tail -f readings.log | echolot mqtt publish mqtt://localhost warehouses/bern/log
+```
+
+使用 QoS 1 或 2 时，Echolot 会等待 Broker 确认每条消息，并指出被拒绝的消息。使用 QoS 0 时，它会说明发布了多少条。
+
+| 选项 | 含义 |
+| --- | --- |
+| `-m`、`--message <payload>` | 负载。 |
+| `--qos <level>` | `0`（至多一次）、`1`（至少一次）或 `2`（恰好一次）。默认 0。 |
+| `--retain` | 要求 Broker 保留该消息，供之后的订阅者接收。 |
+
+## 两者共有的选项 [#options-of-both]
+
+| 选项 | 含义 |
+| --- | --- |
+| `--mqtt-version <version>` | 协议版本：`5` 或 `3.1.1`。默认 5。 |
+| `--client-id <id>` | 客户端 ID。默认：`echolot-` 加一个随机后缀。 |
+| `-u`、`--user <name>` | 用户名。 |
+| `--password <password>` | 密码。建议改用环境变量 `ECHOLOT_MQTT_PASSWORD`。 |
+| `--keep-alive <seconds>` | Ping 的间隔秒数；`0` 表示不发送。默认 60。 |
+| `--timeout <seconds>` | 等待连接和 Broker 应答的秒数。默认 30。 |
+| `-i`、`--insecure` | 不验证 Broker 的 TLS 证书。 |
+| `-v`、`--verbose` | 将连接和 Broker 的应答打印到标准错误。 |
+| `--proxy <url>` | 通过此代理连接：`http://host:port`、`https://…`、`socks5://user:password@host:port`。 |
+| `--no-proxy` | 直接连接，忽略 `HTTP_PROXY` 等变量。 |
+| `--cacert <file>` | 同时信任此 PEM 文件中的 CA 证书。可重复。 |
+| `--cert <file>` | 发送此客户端证书：PEM 文件（配合 `--key`）或 `.p12`/`.pfx` 文件。 |
+| `--key <file>` | 客户端证书的 PEM 私钥，用于证书文件中不含私钥的情况。 |
+| `--pass <passphrase>` | 密钥或 PKCS#12 文件的口令。建议改用 `ECHOLOT_CERT_PASSPHRASE`。 |
+
+请注意，这里的 `-i` 表示 `--insecure`，而不是像 `echolot send` 中那样表示“include”。
+
+```sh
+export ECHOLOT_MQTT_PASSWORD='…'
+echolot mqtt publish mqtts://broker.example.com:8883 status/door -m open --retain -u heidi
+```
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | 已连接，并已订阅或已发布。 |
+| `1` | `subscribe`：Broker 拒绝了连接或每个订阅。`publish`：Broker 拒绝了连接，或拒绝了 QoS 1 或 2 的消息。 |
+| `64` | 选项或 Broker 地址有误。 |

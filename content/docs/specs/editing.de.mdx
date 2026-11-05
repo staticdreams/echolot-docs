@@ -1,0 +1,113 @@
+---
+title: "Eine Spec bearbeiten"
+description: "Entwirf ein OpenAPI-Dokument im visuellen Editor oder als YAML, mit Linter beim Tippen, Sichern und Widerrufen."
+---
+
+Eine Spec bearbeitest du auf zwei Arten und wechselst jederzeit mit **Editor** im Seitenkopf zwischen ihnen: **Visuell**
+für Karten und Felder, **Code** für das YAML oder JSON selbst. Beide ändern denselben Text. Der Text ist das, was Echolot
+aufbewahrt: Eine visuelle Änderung ändert nur die Zeilen des Teils, den du bearbeitet hast, sodass deine Kommentare,
+die Reihenfolge und die Formatierung erhalten bleiben und ein Git-Diff genau zeigt, was sich geändert hat.
+
+Um eine Spec zu beginnen, wähle in der Seitenleiste im Kopf von **Specs** **+** › **Neue Spec**. Echolot schreibt ein
+OpenAPI-3.1-Dokument mit dem Titel `New API` in den Ordner `specs` und öffnet es im visuellen Editor.
+
+## Der visuelle Editor [#the-visual-editor]
+
+<Shot id="specs-visual-endpoint" alt="Der visuelle Editor mit dem geöffneten Endpunkt GET /products der Alpenglow-Spec: Methode und Pfad, Zusammenfassung, Beschreibung, Operations-ID und Tags, darunter die Abschnitte „Parameter“, „Anfrage-Body“ und „Antworten“" />
+
+Felder im visuellen Editor ändern das Dokument, wenn du die Bearbeitung beendest: Drücke <kbd>↩</kbd> oder wechsle in ein
+anderes Feld. Beschreibungsfelder nehmen Markdown an, und <kbd>↩</kbd> beginnt darin eine neue Zeile; der Knopf daneben
+zeigt die Beschreibung so, wie sie sich lesen wird.
+
+Die Seite hat diese Karten:
+
+| Karte | Was du bearbeitest |
+| --- | --- |
+| **Überblick** | **Titel**, **Version** und **Beschreibung** der API. |
+| **Server** | URLs und Beschreibungen der Server. **Server hinzufügen** fügt einen hinzu; das **−** entfernt einen. Ohne Server beginnen Anfragen, die aus der Spec entstehen, mit `{{baseUrl}}`, was du selbst festlegst. |
+| **Kontakt und Lizenz** | **Anzeigen** öffnet Kontaktname, E-Mail und URL, die Lizenz mit ihrer URL und die Nutzungsbedingungen. |
+| **Endpunkte** | Jede Operation. **Gruppieren nach** listet sie nach **Pfade** oder nach **Tags** auf (die ohne Tag unter **Ohne Tag**). Klicke eine an, um sie zu öffnen. |
+| **Schemas** | Die wiederverwendbaren Schemas, auf die Bodys und Antworten mit ihrem Namen verweisen können. Klicke eines an, um es zu öffnen. |
+
+### Endpunkt hinzufügen [#adding-an-endpoint]
+
+Klicke in der Karte **Endpunkte** auf **Endpunkt hinzufügen**. Wähle im Blatt **Neuer Endpunkt** die Methode, tippe den
+Pfad (etwa `/products/{sku}`) und optional eine Zusammenfassung und einen Tag und klicke dann auf **Endpunkt
+hinzufügen**. Echolot definiert die Parameter des Pfads für dich und legt einen Body und eine Erfolgsantwort als
+Ausgangspunkt an. Eine Methode mit einem Pfad, die es schon gibt, wird abgelehnt.
+
+Ein geöffneter Endpunkt hat:
+
+| Teil | Was du bearbeitest |
+| --- | --- |
+| **Endpunkt** | Die Methode und den Pfad. Wenn du sie änderst, wird die Operation verschoben. |
+| **Zusammenfassung**, **Beschreibung** | Einen kurzen Namen, etwa `List products`, und was die Operation tut, braucht und liefert. |
+| **Operations-ID**, **Tags** | Die ID, die Code-Generatoren verwenden, und durch Kommas getrennte Tags. |
+| **Veraltet** | Markiert die Operation als veraltet. |
+| **Parameter** | Name jedes Parameters, wohin er gehört (**In**: `path`, `query`, `header` oder `cookie`), sein Typ, **Erforderlich** und die Beschreibung. **Parameter hinzufügen** fügt einen hinzu. Nennt der Pfad einen Parameter, der nicht definiert ist, definiert ihn ein Knopf wie **{sku} hinzufügen**. Mit **FÜR DEN PFAD** markierte Parameter sind für jede Methode des Pfads definiert. |
+| **Anfrage-Body** | **Body hinzufügen** fügt einen JSON-Body hinzu; jeder Medientyp hat ein Schema, und der Body kann **Erforderlich** sein. **Body entfernen** nimmt ihn heraus. |
+| **Antworten** | Eine Zeile je Statuscode, mit Beschreibung und, nach **Body hinzufügen**, mit Medientypen und Schemas. **Antwort hinzufügen** fügt den nächsten gängigen Code hinzu, der noch nicht verwendet wird (200, 201, 204, 400, 401, 403, 404, 409, 422, 500, dann `default`). Bearbeite den Code, um ihn zu ändern. Eine Operation braucht mindestens eine Antwort. |
+
+Der Typ eines Parameters, eines Bodys oder einer Eigenschaft ist ein Menü: ein wiederverwendbares Schema, `string`,
+`integer`, `number`, `boolean` oder `object`, ein **Array von** einem davon oder **Ohne**. Ein Schema, das das Menü nicht
+ausdrücken kann, wird so gezeigt, wie es geschrieben ist, und bleibt erhalten, bis du etwas anderes wählst.
+
+Unten in einem geöffneten Endpunkt stehen das erste Problem, das der Linter darin gefunden hat (halte den Zeiger darauf
+für alle), und drei Knöpfe: **Anfrage öffnen** (wenn eine Anfrage dieser Operation folgt), **Im Code zeigen** und
+**Endpunkt löschen**.
+
+### Schema hinzufügen [#adding-a-schema]
+
+Klicke in der Karte **Schemas** auf **Schema hinzufügen**, gib ihm einen Namen wie `Product` und klicke auf
+**Hinzufügen**. Ein geöffnetes Schema hat einen **Namen**, eine **Beschreibung** und seine **Eigenschaften**: jede mit
+Namen, Typ, **Erforderlich** und Beschreibung. **Eigenschaft hinzufügen** fügt eine hinzu.
+
+Das Schema sagt, wo es verwendet wird (**Verwendet an 3 Stellen** oder **Noch nicht verwendet**). Benennst du es um,
+ändert sich jede Referenz darauf. **Schema löschen** fragt zuerst nach, wenn das Schema verwendet wird, weil diese
+Referenzen dann auf nichts zeigen würden. Ein Schema, das kein einfaches Objekt ist, wird im Code beschrieben und
+bearbeitet: **Im Code zeigen** bringt dich dorthin.
+
+### Swagger 2.0 [#swagger-20]
+
+Swagger-2.0-Dokumente öffnen sich im visuellen Editor zum Lesen, und du bearbeitest sie in **Code**. Echolot entwirft
+OpenAPI 3.
+
+## Der Code-Editor [#the-code-editor]
+
+Stelle **Editor** auf **Code**, um das YAML oder JSON direkt zu bearbeiten. Der Linter läuft beim Tippen nach einer
+kurzen Pause: Fehler und Warnungen sind in ihrer Zeile unterstrichen, und wenn du den Zeiger auf eine hältst, siehst du
+die Meldung.
+
+Halte den Zeiger auf ein `$ref`, um zu sehen, worauf es zeigt; klicke mit <kbd>⌘</kbd> darauf, um dorthin zu springen.
+Eine Referenz auf eine andere Datei öffnet diese Datei. Dateien, auf die eine Spec verweist, öffnen sich immer im Code.
+
+Lässt sich der Text nicht parsen, sagt der visuelle Editor
+**Der visuelle Editor braucht ein Dokument, das sich parsen lässt.**, mit der Zeile und dem Fehler.
+**Im Code beheben** springt zu dieser Zeile.
+
+## Sichern [#saving]
+
+Du musst nichts von Hand sichern. Echolot schreibt die Spec kurz nach jeder Änderung und wenn du zu einer anderen Spec
+wechselst, die Seite verlässt oder das Fenster schließt. Laufende Mocks der Spec übernehmen die Änderung.
+
+Lässt sich die Datei nicht schreiben (zum Beispiel, weil sie schreibgeschützt wurde), meldet Echolot **Die Spec konnte
+nicht gesichert werden** und behält deine Änderungen im Editor:
+
+| Knopf | Was er tut |
+| --- | --- |
+| **Erneut versuchen** | Versucht, die Datei noch einmal zu schreiben. |
+| **Kopie sichern …** | Schreibt die Änderungen in eine Datei, die du wählst. |
+| **Änderungen verwerfen** | Geht zur Datei zurück, wie sie auf dem Datenträger liegt. |
+| **Weiter bearbeiten** | Schließt die Meldung. Die Änderungen bleiben, und die Seite bleibt bei dieser Spec, bis sie gesichert sind. |
+
+## Widerrufen [#undo]
+
+**Bearbeiten › Widerrufen** (<kbd>⌘</kbd><kbd>Z</kbd>) macht Änderungen in beiden Editoren rückgängig, und **Bearbeiten ›
+Wiederholen** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>) stellt sie wieder her. Jede visuelle Änderung ist ein Schritt; Tippen ist
+ein Schritt, bis du innehältst. Ein Widerruf gehört zu der Spec, die er geändert hat: Sobald du eine andere Datei
+öffnest, reicht er nicht zurück in die vorherige.
+
+## Mit einem Agenten [#with-an-agent]
+
+Externe [Agenten](/docs/ai/agents) können die Specs des Arbeitsbereichs lesen, schreiben und prüfen, wenn du für sie in
+**Einstellungen › Agenten** das Tool-Set **Specs** einschaltest.

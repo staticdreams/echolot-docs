@@ -1,0 +1,218 @@
+---
+title: "認証"
+description: "Basic、Digest、Bearer、APIキー、OAuth 1.0、OAuth 2.0、AWS署名、JWT、Hawk、Akamai EdgeGrid、NTLMでリクエストに認証情報を付け、フォルダ経由で認証を共有します。"
+---
+
+<strong>認証</strong>タブは、リクエストが何者であるかを証明する方法を指定する場所です。<strong>種類</strong>を選んでフィールドを入力すると、
+Echolotはリクエストを送信するたびに認証情報を付けます。
+フォルダまたはワークスペースに一度認証を設定すれば、その中のすべてのリクエストで使えます。
+
+<Shot id="requests-http-auth-oauth" alt="Orders with OAuth 2の認証タブ。OAuth 2.0のClient Credentialsグラント、トークンURL、クライアントID、スコープと、下部に「トークンを取得」があるトークンバー" />
+
+## 認証情報をファイルに残さない [#keep-credentials-out-of-files]
+
+どのフィールドでも`{{variables}}`を使えます。パスワード、トークン、キーは、キーチェーンに保存される[シークレット変数](/docs/workspaces/secrets)に入れ、
+フィールドには`{{password}}`と書きます。こうすればリクエストファイルにシークレットが含まれないので、コミットできます。
+
+認証情報のフィールドに値をそのまま入力すると、フィールドの下に警告が表示されます：<strong>ワークスペースのファイルにプレーンテキストとして保存されます。</strong>
+<strong>キーチェーンに移動</strong>をクリックすると、Echolotはその値をワークスペースのシークレット変数として保存し、元の場所に`{{name}}`を書き込みます。
+
+Echolotが付けた認証情報は、リクエストページに表示される場所ではマスクされます。
+<strong>自動生成</strong>ヘッダーと、URLバーの下のURLプレビューが該当します。
+
+## フォルダとワークスペースから継承する [#inherit-from-folders-and-the-workspace]
+
+<strong>継承</strong>がデフォルトです。継承するリクエストは、自分より上にあって認証を設定している最も近いフォルダの認証を使い、
+フォルダになければワークスペースの認証を使います。<strong>使用</strong>の下には、どの認証が適用されるかがタブに表示され
+（例：`Folder “Orders”: Bearer Token`）、それを開くボタン（<strong>フォルダの認証を編集…</strong>または<strong>ワークスペースの認証を編集…</strong>）が付きます。
+上のどこにも認証が設定されていなければ、リクエストは認証を送りません。
+
+<Shot id="requests-http-auth-inherit" alt="継承に設定したリクエストの認証タブ。使用：Folder “Orders”: Bearer Token と、「フォルダの認証を編集…」ボタン" />
+
+独自の認証を持つリクエストはそれを保持します。その<strong>認証</strong>タブには<strong>ワークスペースの認証</strong>の行も表示され、ワークスペースの認証と、それを開くボタンが付きます。
+ボタンは<strong>ワークスペースの認証…</strong>で、ワークスペースにまだ認証がなければ<strong>ワークスペースの認証を設定…</strong>です。
+<strong>ワークスペースの認証…</strong>はコマンドパレット（<kbd>⌘</kbd><kbd>K</kbd>）からも開けます。
+
+多くのリクエストにまとめて認証を設定するには：
+
+1. サイドバーでフォルダを右クリックし、<strong>フォルダ設定…</strong>を選びます。ワークスペースの場合は、リクエストの<strong>認証</strong>タブかコマンドパレットから<strong>ワークスペースの認証…</strong>を選ぶか、
+   サイドバー下部のワークスペーススイッチャをクリックして<strong>ワークスペース設定…</strong>を選びます。
+2. <strong>認証</strong>タブを開いて種類を選びます。フォルダは継承もできますが、ワークスペースはできません。設定の下には、<strong>継承</strong>に設定されたリクエストのうち、この認証を使うものの数がタブに表示されます。
+3. OAuth 2.0では、その場でサインインできます。下部のトークンバーはリクエストと同じように動作し（[OAuth 2.0](#oauth-20)を参照）、この認証を継承するすべてのリクエストがそのトークンを使います。
+   <strong>トークンを取得</strong>は、先に認証を保存します。トークンバーにフォルダまたはワークスペース自身のトークンが表示されるのは、その認証を保存してからです。
+   そのため、上位の認証に属するトークンが表示されたり、消去されたりすることはありません。
+4. <strong>完了</strong>をクリックします。
+
+<Shot id="workspaces-folder-auth-oauth" alt="認証タブを表示したフォルダ設定。OAuth 2.0を選択し、トークンURLとクライアント、「トークンを取得」があるトークンバー、これを継承するリクエストの数が表示されている" />
+
+Alpenglowの例では、<strong>Orders</strong>フォルダが`{{token}}`を使う<strong>Bearerトークン</strong>を設定していて、注文系のリクエストはすべてそれを継承します。
+<strong>Auth › Sign in</strong>は、[キャプチャ](/docs/requests/captures)でレスポンスから`{{token}}`を埋めます。
+
+## 種類を選ぶ [#choose-a-type]
+
+| 種類 | Echolotの動作 |
+| --- | --- |
+| <strong>継承</strong> | フォルダまたはワークスペースの認証を使います。 |
+| <strong>認証なし</strong> | フォルダが認証情報を設定していても、何も送信しません。 |
+| <strong>Basic</strong> | ユーザー名とパスワードから`Authorization: Basic …`を付けます。 |
+| <strong>Digest</strong> | サーバのDigestチャレンジに応答します。 |
+| <strong>Bearerトークン</strong> | `Authorization: Bearer <token>`を付けます。 |
+| <strong>APIキー</strong> | キーをヘッダーまたはクエリパラメータとして付けます。 |
+| <strong>OAuth 1.0</strong> | すでに持っているトークンを使い、リクエストごとにOAuth 1.0で署名します。 |
+| <strong>OAuth 2.0</strong> | アクセストークンを取得し、Bearerトークンとして、またはアドレスに付けて送ります。 |
+| <strong>AWS署名</strong> | リクエストごとにAWS Signature Version 4で署名します。 |
+| <strong>JWT Bearer</strong> | 送信のたびに新しいJSON Web Tokenに署名します。 |
+| <strong>Hawk</strong> | リクエストごとにHawkで署名します。 |
+| <strong>Akamai EdgeGrid</strong> | リクエストごとにEG1-HMAC-SHA256で署名します。 |
+| <strong>NTLM</strong> | サーバのNTLMチャレンジに応答します。 |
+
+<strong>ヘッダー</strong>タブで自分で追加した`Authorization`ヘッダーは、<strong>認証</strong>タブが付けるものの代わりに送信されます。
+
+### Basic [#basic]
+
+<strong>ユーザー名</strong>と<strong>パスワード</strong>を入力します。Echolotはこれらを`Authorization`ヘッダーにBase64エンコードして送ります。
+Alpenglowの<strong>Echo › Basic auth</strong>で試せます。
+
+### Digest [#digest]
+
+<strong>ユーザー名</strong>と<strong>パスワード</strong>を入力します。最初の送信は認証情報なしで行われ、サーバがDigestチャレンジ付きの401を返すと、
+Echolotは2回目のリクエストで一度だけそれに応答します。どちらもやり取りの中にホップとして表示されます。
+
+### Bearerトークン [#bearer-token]
+
+<strong>トークン</strong>を入力します。通常は`{{token}}`です。<strong>プレフィックス</strong>のデフォルトは`Bearer`で、別の語を求めるサーバでは変更し、トークンだけを送るには空にします。
+
+### APIキー [#api-key]
+
+<strong>キー</strong>（ヘッダーまたはパラメータの名前。デフォルトは`X-API-Key`）と<strong>値</strong>を入力し、<strong>追加先</strong>で送り先を選びます：<strong>ヘッダー</strong>または<strong>クエリ</strong>。
+
+### OAuth 2.0 [#oauth-20]
+
+Echolotがアクセストークンを取得し、`Authorization: Bearer <token>`として付けます。
+
+| フィールド | 意味 |
+| --- | --- |
+| <strong>グラント</strong> | <strong>認可コード</strong>、<strong>クライアントクレデンシャル</strong>、<strong>デバイスコード</strong>、または<strong>パスワード（レガシー）</strong>。 |
+| <strong>認可URL</strong> | サインインする場所（認可コード）。 |
+| <strong>デバイスURL</strong> | デバイスコードを取得する場所（デバイスコード）。 |
+| <strong>トークンURL</strong> | トークンを取得する場所。 |
+| <strong>ユーザー名</strong>、<strong>パスワード</strong> | ユーザー本人のサインイン情報（パスワード）。パスワードは他の認証情報と同様にキーチェーンへ移せます。 |
+| <strong>クライアントID</strong>、<strong>クライアントシークレット</strong> | クライアントの認証情報。パブリッククライアントではシークレットを空にします。 |
+| <strong>スコープ</strong> | 要求するスコープ。スペースで区切ります（例：`read write`）。 |
+| <strong>オーディエンス</strong> | 必要とするサーバ向け。 |
+| <strong>リダイレクトURI</strong> | 認可コード用。空なら自動で、空いているポートのループバックアドレス`http://127.0.0.1:<port>/callback`を使います。 |
+| <strong>PKCE（S256）</strong> | 認可コード用。デフォルトでオンです。 |
+| <strong>クライアント認証</strong> | クライアントIDとシークレットをトークンURLに渡す方法：<strong>HTTP Basic</strong>（デフォルト）または<strong>ボディ内</strong>。 |
+| <strong>トークンの追加先</strong> | <strong>ヘッダー</strong>（デフォルト）または<strong>URL</strong>：トークンをクエリパラメータとして付け、名前は<strong>パラメータ</strong>で指定します（デフォルトは`access_token`）。アドレスはログや履歴に残るので、URLは他の方法を受け付けないAPIにだけ使ってください。 |
+| <strong>ヘッダーのプレフィックス</strong> | ヘッダーでトークンの前に付ける語。デフォルトは`Bearer`です。 |
+
+タブの下部のトークンバーには、トークンがあるかどうかが表示されます。<strong>トークンを取得</strong>をクリックします：
+
+- <strong>認可コード</strong>は、認可URLでブラウザを開きます。そこでサインインしてください。Echolotはリダイレクトを受け取り、完了するまで<strong>ブラウザでサインインを完了してください…</strong>と表示します。
+- <strong>デバイスコード</strong>は、コードとともに<strong>別のデバイスでサインイン</strong>を表示します。<strong>開く</strong>（ページのホスト名付き）をクリックし、そこでコードを入力して承認します。
+  Echolotは<strong>承認を待っています…</strong>と表示して待機します。
+- <strong>クライアントクレデンシャル</strong>は、トークンURLに直接問い合わせます。このグラントでは<strong>トークンを取得</strong>をクリックする必要はありません。最初の送信で自動的にトークンを取得します。
+- <strong>パスワード（レガシー）</strong>は、ユーザー名とパスワードをトークンURLに送ります。これもクリックは不要で、最初の送信でトークンを取得します。
+  これを必要とする古いAPIにだけ使ってください。パスワード自体がMacの外に出るため、このグラントは非推奨です。サーバが対応しているなら認可コードを選んでください。
+
+Echolotは、同じく非推奨のインプリシットグラントには対応していません。インプリシットグラントを提供するサーバの多くは認可コードも提供していて、読み込んだインプリシットグラントは認可コードになります。
+サーバがそれを受け付けるか確認してください。
+
+トークンを取得すると、トークンバーに<strong>キーチェーン内のアクセストークン</strong>と表示され、種類、有効期限、<strong>自動的に更新</strong>されるかどうか、スコープも表示されます。
+<strong>新しいトークンを取得</strong>は置き換え、<strong>消去</strong>は削除します。
+
+トークンの保管と使われ方：
+
+- トークンはキーチェーンに保存され、ワークスペースのファイルには保存されません。
+- トークンは、認証を設定したリクエスト、フォルダ、ワークスペースに属し、さらに発行された環境と設定にも属します。環境を切り替えたり、トークンURL、クライアントID、スコープなど、
+  トークンの対象を決める設定を変更したりすると、別のトークンを使う（または取得する）ので、別の用途で発行されたトークンを送信することはありません。
+  フォルダからOAuthを継承するリクエストは、そのフォルダのトークンを共有します。<strong>消去</strong>は、すべての環境のトークンを削除します。
+- トークンが期限切れの場合、次の送信でリフレッシュトークンを使って更新します。クライアントクレデンシャルまたはパスワードのトークンは、あらためて取得されます。
+  それ以外の場合、送信は<strong>このリクエストにはOAuthトークンが必要です。まず認証タブで取得してください。</strong>または
+  <strong>OAuthトークンの有効期限が切れ、更新できませんでした。認証タブで新しいトークンを取得してください。</strong>というメッセージで止まります。
+
+試すには、Alpenglowの<strong>Auth › Orders with OAuth 2</strong>を送信します。デモAPIに対してクライアントクレデンシャルを使います。
+
+#### 詳細 [#advanced]
+
+ほとんどのサーバでは不要なので、<strong>詳細</strong>の中に折りたたまれています。中に設定があると、自動的に開きます。
+
+<Shot id="requests-http-auth-oauth-advanced" alt="OAuth 2.0の詳細セクション。自動的に更新、更新URL、認可リクエスト・トークンリクエスト・更新リクエストのパラメータ表" />
+
+- <strong>自動的に更新</strong>はデフォルトでオンです。オフにすると、期限切れのトークンをそのまま送信し、APIがどう応答するかを確認できます。クライアントクレデンシャルとパスワードでは、最初のトークンは引き続き取得されます。
+- <strong>更新URL</strong>は、更新用のエンドポイントがトークンURLと異なるサーバ向けです。空ならトークンURLを使います。
+- <strong>認可リクエスト</strong>、<strong>トークンリクエスト</strong>、<strong>更新リクエスト</strong>は、標準のフィールド以上のものを求めるサーバ向けにパラメータを追加します。
+  たとえばGoogleの`access_type = offline`（リフレッシュトークンを返してもらうため）、Azure ADの`resource`、テナントやAPIバージョンなどです。
+  各行にはキー、値（変数が使えるので、シークレットはキーチェーンに置いたままにできます）、そしてトークンリクエストと更新リクエストでは送り先があります：<strong>ボディ</strong>、<strong>ヘッダー</strong>、または<strong>URL</strong>。
+  標準のパラメータと同じ名前のパラメータは、それを置き換えます。認可リクエストのパラメータは、サインイン用のアドレスに入り、デバイスコードでは
+  デバイス認可リクエストに入ります。`state`やPKCEチャレンジを置き換えることはありません。
+
+### OAuth 1.0 [#oauth-10]
+
+いまもOAuth 1.0を使うAPI向けです：NetSuite、MagentoとAdobe Commerce、Xのv1.1エンドポイント、JiraやConfluence Serverのアプリケーションリンクなどです。
+Echolotは、すでに持っているトークンでリクエストごとに署名します。トークンを取得するための3-leggedフローは実行しません。Postmanも同様です。
+
+<Shot id="requests-http-auth-oauth1" alt="OAuth 1.0の認証タブ。署名方式、コンシューマキーとシークレット、アクセストークンとトークンシークレット、追加先がヘッダー" />
+
+1. <strong>署名方式</strong>を選びます：<strong>HMAC-SHA1</strong>（最も一般的）、<strong>HMAC-SHA256</strong>、<strong>HMAC-SHA512</strong>、<strong>RSA-SHA1</strong>、<strong>RSA-SHA256</strong>、<strong>RSA-SHA512</strong>、または<strong>PLAINTEXT</strong>。
+2. <strong>コンシューマキー</strong>を入力し、続いて<strong>コンシューマシークレット</strong>を入力します。RSAの場合は<strong>秘密鍵</strong>を入力します（貼り付けるか、<strong>PEMファイルを選択…</strong>をクリックしてキーチェーンに直接保存します）。
+3. <strong>アクセストークン</strong>を入力し、RSA以外では<strong>トークンシークレット</strong>も入力します。トークンを取得する前のリクエストでは、空のままにします。
+4. <strong>追加先</strong>で、<strong>ヘッダー</strong>（`Authorization: OAuth …`、デフォルト）、<strong>URL</strong>、または<strong>ボディ</strong>を選びます。<strong>ボディ</strong>は、フォームのボディに署名し、ボディのないリクエストではアドレスに署名します。
+5. <strong>詳細</strong>には、<strong>レルム</strong>、<strong>コールバックURL</strong>、<strong>ベリファイア</strong>（3-leggedフローの手順を手作業で行う場合用）、<strong>oauth_version="1.0"を追加</strong>（デフォルトでオン）、
+   <strong>ボディのハッシュを署名に含める</strong>（`oauth_body_hash`。フォームでないボディ向け）があります。
+
+各リクエストは送信時に、新しいタイムスタンプとnonceを使って、メソッド、アドレス、そのクエリ、フォームボディのフィールドを対象に署名されます。
+
+### AWS署名 [#aws-signature]
+
+<strong>アクセスキーID</strong>、<strong>シークレットアクセスキー</strong>、<strong>リージョン</strong>（デフォルトは`us-east-1`）、<strong>サービス</strong>（デフォルトは`execute-api`。`s3`、`lambda`、`es`など）を入力します。
+<strong>セッショントークン</strong>は一時的な認証情報にのみ使います。各リクエストは送信時に、実際に送信する時刻、ホスト、ボディで署名されます。
+
+### JWT Bearer [#jwt-bearer]
+
+Echolotは送信のたびに新しいトークンに署名します。
+
+1. <strong>アルゴリズム</strong>を選びます：<strong>HS256</strong>、<strong>HS384</strong>、<strong>HS512</strong>（シークレットによるHMAC）、<strong>RS256</strong>、<strong>RS384</strong>、<strong>RS512</strong>、<strong>PS256</strong>、<strong>PS384</strong>、<strong>PS512</strong>（RSA秘密鍵）、
+   または<strong>ES256</strong>、<strong>ES384</strong>（楕円曲線の秘密鍵）。
+2. HMACでは<strong>シークレット</strong>を入力します。プロバイダからBase64で渡された場合は<strong>シークレットはBase64</strong>にチェックを入れます。
+   秘密鍵の場合は、<strong>秘密鍵</strong>に貼り付けるか、<strong>PEMファイルを選択…</strong>をクリックします。キーはキーチェーンに直接保存され、フィールドは名前でそれを参照します。
+   キーはPKCS #8、PKCS #1、SEC 1のPEM形式を使えます。
+3. <strong>クレーム</strong>をJSONで書きます。変数を含められます：`{"sub": "{{userID}}"}`。
+4. サーバが必要とするなら、`kid`などの<strong>ヘッダーフィールド</strong>を追加します。`alg`と`typ`は自動で設定されます。
+5. <strong>「iat」（発行日時）を追加</strong>はデフォルトでオンです。<strong>有効期限</strong>は、指定した秒数だけ先の`exp`を追加します（デフォルトは300）。0なら追加しません。
+   JSONで自分で設定したクレームは、書いたとおりに保持されます。
+6. <strong>追加先</strong>で、<strong>ヘッダー</strong>（<strong>プレフィックス</strong>付き。デフォルトは`Bearer`）または<strong>クエリ</strong>（<strong>パラメータ</strong>名付き。デフォルトは`token`）を選びます。
+
+### Hawk [#hawk]
+
+<strong>ID</strong>と<strong>キー</strong>を入力し、<strong>アルゴリズム</strong>（<strong>SHA-256</strong>または<strong>SHA-1</strong>）を選び、サーバが必要とするなら<strong>アプリデータ（ext）</strong>を追加します。
+ペイロードのハッシュを含めるには、<strong>ボディのハッシュを署名に含める</strong>にチェックを入れます。各リクエストは、時刻、nonce、メソッド、パス、ホスト、ポートで署名されます。
+
+### Akamai EdgeGrid [#akamai-edgegrid]
+
+<strong>クライアントトークン</strong>、<strong>クライアントシークレット</strong>、<strong>アクセストークン</strong>を入力します。<strong>署名するヘッダー</strong>はカンマ区切りのリストで、通常は空です。
+<strong>署名するボディのバイト数</strong>は、POSTボディのうちハッシュ化する量を制限します（デフォルトは131072）。
+
+### NTLM [#ntlm]
+
+<strong>ユーザー名</strong>と<strong>パスワード</strong>を入力し、サーバが必要とするなら<strong>ドメイン</strong>と<strong>ワークステーション</strong>も入力します。EcholotはNTLMv2を使います。
+同じ接続でサーバのチャレンジに応答し、401はやり取りの中にホップとして残ります。
+
+NTLMはリクエストではなく接続を認証するので、HTTP/1.1が必要です。HTTPバージョンが<strong>自動</strong>のとき、EcholotはNTLMのリクエストにHTTP/1.1を使います。
+<strong>HTTP/2</strong>または<strong>HTTP/3</strong>を選んでいると、送信は拒否されます。[リクエスト設定](/docs/requests/settings#http-version)を参照してください。
+
+## 認証情報は送信元のオリジンにとどまる [#credentials-stay-with-their-origin]
+
+リダイレクトが別のオリジン（スキーム、ホスト、ポートのいずれかが異なる）に向かう場合、Echolotはそこへ認証情報を持ち込みません。次のものを削除します：
+
+- `Authorization`、`Proxy-Authorization`、`Cookie`ヘッダー
+- 一般的なAPIキーのヘッダー（`X-API-Key`、`Api-Key`、`Apikey`、`X-Auth-Token`、`X-Access-Token`、`Private-Token`、`X-Functions-Key`）、
+  <strong>APIキー</strong>認証が使うヘッダー、およびシークレット変数を値に含むすべてのヘッダー
+- Digest、AWS署名、OAuth 1.0、Hawk、EdgeGrid、NTLMの署名と、最初のホスト用に選んだクライアント証明書
+
+新しいホストの証明書とプロキシは、そこへ向かうホップに適用されます。[リクエスト設定](/docs/requests/settings#redirects)を参照してください。
+
+## 保護された環境 [#protected-environments]
+
+<strong>トークンを取得</strong>もリクエストを送信します。ウインドウの環境が保護されている場合、<strong>送信</strong>と同じように先に確認を求めます。
+[保護された環境](/docs/workspaces/protected-environments)を参照してください。

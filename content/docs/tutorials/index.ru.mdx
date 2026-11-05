@@ -1,0 +1,72 @@
+---
+title: "Руководства"
+description: "Пошаговые уроки на демо-магазине Alpenglow — от первого запроса до агентов и CI."
+---
+
+Каждое руководство разбирает одну задачу от начала до конца. Во всех используется **Alpenglow** — ненастоящий магазин
+outdoor-снаряжения: [демо-API](/docs/tutorials/demo-api) по адресу `https://demo.echolot.dev` и пример рабочего
+пространства, в котором уже есть запрос каждого вида. Вам понадобится Echolot на Mac с macOS 15 или новее и чипом
+Apple. Ничто из отправленного на демо не сохраняется.
+
+## Рабочее пространство Alpenglow [#the-alpenglow-workspace]
+
+В большинстве руководств либо создаётся собственное рабочее пространство, либо берётся за основу Alpenglow. Чтобы
+получить его:
+
+1. Скачайте [Alpenglow.echolot.zip](/examples/Alpenglow.echolot.zip).
+2. Дважды щёлкните zip-архив в Finder, чтобы распаковать его. Получится `Alpenglow.echolot`.
+3. Дважды щёлкните `Alpenglow.echolot`. Echolot откроет его в окне рабочего пространства. Можно также выбрать **Файл › Открыть рабочее пространство…** (<kbd>⌘</kbd><kbd>O</kbd>) и указать его.
+
+Alpenglow работает при выбранном **Без окружения**: переменные его рабочего пространства указывают на демо-API. В нём
+есть:
+
+| Папка | Что внутри |
+| --- | --- |
+| Auth | **Sign in**, который сохраняет токен доступа в секретной переменной `{{token}}`; **Who am I**; **Orders with OAuth 2** |
+| Catalog | **List products**, **Search**, **Get product**, **Categories**, запрос GraphQL **Search products**, **Export the catalog** (14 МБ) |
+| Orders | **List orders**, **Create order**, **Get order**, **Cancel order** — все передают токен через авторизацию Bearer папки |
+| Realtime | **Order updates** (WebSocket), **Order events** (Server-Sent Events), **Support chat** (Socket.IO), **Warehouse sensors** (MQTT) |
+| Inventory | Три вызова gRPC: **List warehouses**, **Watch stock**, **Reserve stock** |
+| Agent tools | Два запроса MCP, **search_catalog** и **order_status**, к серверу **Alpenglow MCP** |
+| Echo | Запросы к эндпоинтам `/echo`: что вы отправили, статус, перенаправления, авторизация Basic, cookie, XML и HTML |
+
+Там же три окружения (**Local**, **Staging** и защищённое **Production**; Staging и Production — вымышленные адреса),
+три сценария (**Place a test order**, **Morning stock check**, **Order status on webhook**), MCP-сервер
+**Alpenglow MCP** и спецификации `alpenglow.yaml`, `shop.graphql` и `inventory.proto`.
+
+<Shot id="tutorials-alpenglow-window" alt="Рабочее пространство Alpenglow: папки в боковой панели и открытый запрос Catalog › List products" />
+
+## Серверы на вашем Mac для gRPC, Socket.IO и MQTT [#servers-on-your-mac-for-grpc-socketio-and-mqtt]
+
+Демо-API не умеет обслуживать gRPC, Socket.IO и MQTT. Небольшие серверы для них лежат в репозитории документации, в
+`examples/servers`. Им нужен [Bun](https://bun.sh), и слушают они только на вашем Mac:
+
+```sh
+git clone https://github.com/staticdreams/echolot-docs.git
+cd echolot-docs/examples/servers
+bun install
+bun run realtime   # Socket.IO on http://localhost:3001 (namespace /support), MQTT on mqtt://localhost:1883
+bun run grpc       # the Inventory service on localhost:50051 (in a second Terminal window)
+```
+
+Запросы **Support chat**, **Warehouse sensors** и **Inventory** в Alpenglow уже указывают на эти адреса. Остановить
+сервер можно клавишами <kbd>Control</kbd>-<kbd>C</kbd>.
+
+## Руководства [#the-tutorials]
+
+| Руководство | Чему вы научитесь | Время |
+| --- | --- | --- |
+| [Ваше первое рабочее пространство](/docs/tutorials/first-workspace) | Создать рабочее пространство с нуля: запросы, папка, окружение, секрет и Git | 15 минут |
+| [Цепочка запросов](/docs/tutorials/chain-requests) | Войти, сохранить токен, передавать его везде через авторизацию папки; динамические значения; `Idempotency-Key` | 15 минут |
+| [Тестирование API и запуск в CI](/docs/tutorials/test-in-ci) | Добавить проверки, запустить рабочее пространство в Прогоне, затем `echolot run` с отчётом JUnit в GitHub Actions | 20 минут |
+| [Спецификация в первую очередь и мок](/docs/tutorials/spec-first) | Взять или спроектировать спецификацию OpenAPI, проверить её линтером, создать по ней мок, отправлять запросы к моку и сверять их со спецификацией | 20 минут |
+| [Автоматизация сценарием](/docs/tutorials/automate-with-flows) | Собрать сценарий на холсте: войти, получить заказы, принять решение, уведомить; запустить его, поставить по расписанию, запустить из вебхука | 20 минут |
+| [Проверка MCP-сервера](/docs/tutorials/inspect-an-mcp-server) | Добавить демо-MCP-сервер, изучить его инструменты, вызвать их, прочитать карточку качества, сохранить вызовы как запросы с проверками | 15 минут |
+| [Безопасная работа агента с вашим рабочим пространством](/docs/tutorials/agents-safely) | Подключить Claude Code или другой клиент, задать, что ему разрешено, одобрять его отправки, защитить окружение; либо использовать встроенного Ассистента | 20 минут |
+| [Реальное время](/docs/tutorials/realtime) | WebSocket и Server-Sent Events на демо-API; Socket.IO и MQTT на локальных серверах | 20 минут |
+| [Переход с Postman](/docs/tutorials/coming-from-postman) | Импортировать коллекцию и её окружения, понять, что чему соответствует, запустить её, экспортировать обратно | 15 минут |
+
+<Callout title="У демо-API есть лимиты">
+  Он принимает 120 запросов в минуту с одного адреса и 10 в минуту для экспорта, WebSocket и Server-Sent Events. При
+  превышении лимита он отвечает `429 Too Many Requests`; подождите минуту и отправьте запрос снова.
+</Callout>

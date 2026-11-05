@@ -1,0 +1,119 @@
+---
+title: "CI"
+description: "在每次推送时运行工作区的检查，带 JUnit 报告、来自你的 CI 的机密，以及规范、Schema 和 MCP 服务器的把关检查。"
+---
+
+工作区是一个文本文件夹，所以它可以和它所测试的 API 放在同一个仓库中。在 CI 中，命令行工具检查工作区，运行它的请求及其检查，并写出一份你的 CI 系统会展示的报告。
+检查失败会让任务失败。
+
+## 任务做什么 [#what-a-job-does]
+
+```sh
+echolot validate Alpenglow.echolot --env staging
+echolot run Alpenglow.echolot --env staging \
+  --reporter console --reporter junit --out echolot-results.xml
+```
+
+1. [`echolot validate`](/docs/cli/validate) 在发送任何内容之前发现损坏的文件或缺失的变量。
+2. [`echolot run`](/docs/cli/run) 发送请求并运行它们的检查和脚本。`console` 在任务日志中打印运行情况；`junit` 写出一个文件，你的 CI 会将它作为测试结果读取。
+3. 请求失败时退出码为 1，所以任务会失败。
+
+加上 `--folder` 运行工作区的一部分，`--data` 进行数据驱动的运行，`--bail` 在第一次失败时停止，`--retries` 应对不稳定的依赖。
+
+## CI 中的机密 [#secrets-in-ci]
+
+工作区文件不含机密值，所以必须由 CI 提供。把每个值存放在你 CI 的机密中，并以名为 `ECHOLOT_SECRET_<NAME>` 的环境变量传入，即变量名的大写形式（参见[机密](/docs/cli#secrets)）：
+
+| 工作区中的机密变量 | CI 中的环境变量 |
+| --- | --- |
+| `password` | `ECHOLOT_SECRET_PASSWORD` |
+| `token` | `ECHOLOT_SECRET_TOKEN` |
+| `api-key` | `ECHOLOT_SECRET_API_KEY` |
+
+或者把它们写入一个文件，并用 `--secrets` 传入；每行一个 `NAME=value`。切勿提交该文件。
+
+大多数 CI 系统都会设置 `CI`，它会关闭钥匙串，所以任务绝不会卡在提示上。报告会遮盖机密值，因此可以放心地作为制品保留。
+
+- **使用 OAuth 的 MCP 服务器：** 在你的 Mac 上用 `echolot mcp sign-in <server> --print` 登录一次，并将打印出的 `ECHOLOT_SECRET_…` 值存为 CI 机密。参见 [`echolot mcp`](/docs/cli/mcp)。
+- **捕获的机密：** 没有钥匙串时，捕获到机密变量中的响应不会保留给本次运行的下一个请求。请从 CI 为这样的变量提供值，或捕获到非机密的变量中。
+
+## GitHub Actions [#github-actions]
+
+在 macOS 运行器上，从发行版下载该工具并运行：
+
+```yaml
+# .github/workflows/api-checks.yml
+name: API checks
+on: [push, pull_request]
+
+jobs:
+  echolot:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Echolot command-line tool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo staticdreams/echolot-public --pattern 'echolot-*-macos.zip'
+          unzip -o echolot-*-macos.zip -d "$RUNNER_TEMP/echolot"
+          echo "$RUNNER_TEMP/echolot" >> "$GITHUB_PATH"
+
+      - name: Check the workspace
+        run: echolot validate Alpenglow.echolot --env staging
+        env:
+          ECHOLOT_SECRET_PASSWORD: ${{ secrets.ALPENGLOW_STAGING_PASSWORD }}
+
+      - name: Run the requests
+        run: |
+          echolot run Alpenglow.echolot --env staging \
+            --reporter console --reporter junit --out echolot-results.xml
+        env:
+          ECHOLOT_SECRET_PASSWORD: ${{ secrets.ALPENGLOW_STAGING_PASSWORD }}
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: echolot-results
+          path: echolot-results.xml
+```
+
+不带标签的 `gh release download` 会获取最新的发行版。给出标签（`gh release download v0.5.0 …`）可以固定版本。
+
+### Linux 运行器 [#linux-runners]
+
+该工具目前运行在 macOS 上：上面的任务使用 macOS 运行器。Linux 构建、Docker 镜像和现成的 GitHub Action 尚未发布；发布后，本页会介绍它们。
+
+## 任何其他 CI [#any-other-ci]
+
+一切都是带退出码的命令，所以任何能运行 shell 命令的 CI 系统都可以使用。适用于 macOS 运行器的脚本：
+
+```sh
+#!/bin/sh
+set -e
+
+echolot validate Alpenglow.echolot --env staging
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out reports/echolot.xml \
+  --reporter html --out reports/echolot.html
+```
+
+`set -e` 会让脚本在第一个失败的命令处停止。请将 CI 的测试报告设置指向 `reports/echolot.xml`，并将 `reports/echolot.html` 作为制品保留，供大家打开查看。
+
+## 更多把关检查 [#more-gates]
+
+| 检查 | 命令 | 何时失败 |
+| --- | --- | --- |
+| OpenAPI 规范没有问题 | `echolot spec lint specs/alpenglow.yaml --strict` | 它有错误或警告。 |
+| 请求跟随规范 | `echolot spec check -w Alpenglow.echolot <folder>` | 规范变了而文件夹没有更新。 |
+| GraphQL Schema 保持兼容 | `echolot graphql diff before.graphql specs/shop.graphql` | 有破坏性更改（用 `--fail-on dangerous` 可以更严格）。 |
+| 模型可以使用某个 MCP 服务器 | `echolot mcp check --url https://demo.echolot.dev/mcp --quality --strict` | 模型会在某个工具上出错。 |
+| 流程仍然可用 | `echolot flow run morning-stock-check -w Alpenglow.echolot --no-input` | 流程或它的某项测试失败。 |
+| 智能体能完成这项工作 | `echolot agent "…" -w Alpenglow.echolot --policy-file ci-policy.toml` | 智能体没有完成。 |
+
+对于 API 需要、而 CI 没有的服务器，请先在后台运行一个[模拟服务器](/docs/cli/mock)。
+
+从空仓库开始的完整演练，参见[在 CI 中测试 API](/docs/tutorials/test-in-ci)。

@@ -1,0 +1,146 @@
+---
+title: "Ejecución"
+description: "Ejecuta una carpeta, unas pocas solicitudes o todo el espacio de trabajo con sus comprobaciones, tantas veces como quieras o una vez por fila de un archivo de datos."
+---
+
+La Ejecución envía solicitudes una tras otra y te dice cuáles se superaron. Una solicitud se supera cuando obtiene una
+respuesta y se cumplen todas las comprobaciones de su [pestaña Pruebas y de sus scripts](/docs/requests/scripts-and-tests).
+Úsala para probar una API entera tras un cambio, para ejecutar las mismas solicitudes con muchas entradas o para generar
+un informe.
+
+<Shot id="requests-runner-results" alt="La página Ejecución tras ejecutar todo el espacio de trabajo Alpenglow: la tarjeta Ejecutar a la izquierda, los recuentos de solicitudes, superadas, con error y comprobaciones con fallos, y la lista de resultados con sus códigos de estado y tiempos" />
+
+## Inicia una ejecución [#start-a-run]
+
+Hay varias formas de entrar:
+
+- Haz clic con el botón derecho en una carpeta de la barra lateral y elige **Ejecutar carpeta**, o en una solicitud y
+  elige **Ejecutar solicitud**. La ejecución empieza enseguida y se abre la página Ejecución.
+- Selecciona varias carpetas o solicitudes en la barra lateral, haz clic con el botón derecho en ellas y elige
+  **Ejecutar N elementos**.
+- Elige **Ejecutar espacio de trabajo** en la paleta de comandos.
+- Abre la página Ejecución, configura la ejecución y elige **Ejecutar**. La Ejecución está en la barra lateral bajo
+  **Pruebas**, o elige **Vista › Ejecución** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd>).
+
+En la página Ejecución, la tarjeta **Ejecutar** contiene los ajustes:
+
+| Ajuste | Qué hace |
+| --- | --- |
+| **Qué** | **Todo el espacio de trabajo**, una carpeta de **Carpetas**, o una sola solicitud de **Una solicitud** |
+| **Entorno** | El entorno con el que se resuelven las solicitudes, como en el resto de la ventana |
+| **Datos** | **Elegir CSV o JSON…** para un archivo de datos: una iteración por fila |
+| **Iteraciones** | Cuántas veces ejecutar todo, de 1 a 1000. Con un archivo de datos dice **Una por fila de datos** |
+| **Retraso** | Una pausa entre solicitudes, de 0 a 60 000 ms en pasos de 100 |
+| **Reintentos** | Intentos adicionales para una solicitud que falla, de 0 a 5 |
+| **A la vez** | Cuántas iteraciones se ejecutan en paralelo, de 1 a 32. Se muestra cuando hay más de una iteración |
+| **Detener en el primer fallo** | Termina la ejecución en la primera solicitud que falla |
+
+Elige **Ejecutar** (<kbd>⌘</kbd><kbd>R</kbd>) para empezar, y **Detener** (<kbd>⌘</kbd><kbd>.</kbd>) para terminar una
+ejecución antes de tiempo. Mientras hay un entorno protegido activo, el botón dice **Ejecutar en Production…** (con el
+nombre de ese entorno), y la ejecución pide confirmación antes de enviar nada. Consulta
+[entornos protegidos](/docs/workspaces/protected-environments).
+
+## Qué se ejecuta, y en qué orden [#what-runs-and-in-which-order]
+
+Las solicitudes se ejecutan en su orden en la barra lateral: las solicitudes de una carpeta de arriba abajo, y las
+carpetas que contiene en su sitio. Cada solicitud se envía exactamente como si la enviaras tú: las mismas variables,
+autenticación, scripts y comprobaciones. Las solicitudes posteriores pueden usar las respuestas de las anteriores en la
+misma ejecución, mediante [valores de respuesta](/docs/requests/dynamic-values) y variables que establecen los scripts o
+las [capturas](/docs/requests/captures). Por ejemplo, una ejecución del espacio de trabajo Alpenglow envía primero
+**Auth › Sign in**, que captura el token que envían las solicitudes de **Orders**.
+
+Se puede ejecutar cualquier tipo de solicitud:
+
+- Las solicitudes HTTP, GraphQL y gRPC y las llamadas MCP se envían y se comprueban como cualquier otra.
+- Las solicitudes WebSocket, Socket.IO y MQTT se conectan, envían sus mensajes, eventos o publicaciones guardados que
+  están activados para las ejecuciones (y MQTT se suscribe a sus filtros activados), escuchan durante 10 segundos y
+  cierran. El registro de mensajes es la respuesta, así que las comprobaciones sobre el **Cuerpo** funcionan con él. Para
+  escuchar durante otro tiempo, define `stream-limit` (en segundos) en el `[settings]` del archivo de la solicitud.
+- Un stream de server-sent events se mantiene durante 10 segundos y después se termina.
+
+Un script previo a la solicitud puede omitir una solicitud con `pm.execution.skipRequest()`; el resultado dice **Omitida
+por un script previo**. Un script también puede saltar con `pm.execution.setNextRequest("Request name")`, y terminar la
+ejecución con `pm.execution.setNextRequest(null)`. Una ejecución que sigue saltando hacia atrás se detiene tras 10 000
+envíos en una iteración.
+
+## Iteraciones y archivos de datos [#iterations-and-data-files]
+
+**Iteraciones** ejecuta todo esa cantidad de veces. Los valores `{{$…}}` como `{{$uuid}}` son nuevos cada vez, y
+`pm.info.iteration` indica qué iteración es (desde 0).
+
+Un archivo de datos hace que la ejecución se guíe por datos: una iteración por fila, y cada columna es una variable que las
+solicitudes usan como cualquier otra, como `{{sku}}`. Los scripts leen la fila con `pm.iterationData.get("sku")`.
+
+- **CSV**: una fila de encabezado con los nombres de las variables y después una fila por iteración. Funcionan las
+  comillas, las comillas dobles y los saltos de línea dentro de comillas.
+- **JSON**: un array de objetos, un objeto por iteración.
+
+Por ejemplo, `skus.csv` para una solicitud a `{{baseURL}}/products/{{sku}}` con una comprobación de que `$.sku` es igual
+a `{{sku}}`:
+
+```csv
+sku,quantity
+TNT-MH-2P,1
+PCK-TIT-30,2
+```
+
+o lo mismo como JSON:
+
+```json
+[
+  { "sku": "TNT-MH-2P", "quantity": 1 },
+  { "sku": "PCK-TIT-30", "quantity": 2 }
+]
+```
+
+El campo **Datos** muestra el nombre del archivo y su número de filas. La cruz a su lado quita el archivo.
+
+## Iteraciones en paralelo [#parallel-iterations]
+
+Con más de una iteración, **A la vez** ejecuta varias iteraciones en paralelo. Las solicitudes de una misma iteración
+siguen en orden, y cada iteración conserva las variables que establecen sus propios scripts, de modo que el token de una
+iteración nunca se filtra a otra. Déjalo en **1 (una tras otra)** cuando las iteraciones dependen unas de otras o el
+servidor limita la rapidez con la que puedes llamarlo.
+
+## Reintentos, retrasos y parada [#retries-delays-and-stopping]
+
+- **Reintentos** vuelve a enviar una solicitud que falla, hasta ese número de veces. Una solicitud falla cuando no
+  obtiene respuesta o falla una comprobación. El resultado muestra cuántos intentos hicieron falta, como **3 intentos**, y
+  conserva el último.
+- **Retraso** espera entre solicitudes, para servidores con límites de frecuencia como la
+  [API de demostración](/docs/tutorials/demo-api).
+- **Detener en el primer fallo** termina la ejecución cuando una solicitud falla, tras sus reintentos. El resumen dice
+  entonces **Detenida en un fallo**.
+
+## Resultados [#results]
+
+Mientras la ejecución avanza, la lista se va rellenando y muestra la solicitud que se está enviando. Encima están los
+recuentos: **Solicitudes**, **Superadas**, **Con error**, **Comprobaciones con fallos** y, al final, **Duración**, con
+**Todas superadas** o **N con error**.
+
+Cada fila muestra el tipo o el método de la solicitud, su nombre y su dirección, el estado y el tiempo. Con varias
+iteraciones, `#2` indica a qué iteración pertenece una fila. Bajo una solicitud fallida están las comprobaciones que
+fallaron, cada una con su mensaje, o el motivo por el que no hubo respuesta. Haz clic en una fila para abrir la solicitud.
+
+La página conserva la última ejecución mientras la ventana está abierta. Todos los intercambios de una ejecución también
+están en el [Historial](/docs/workspaces/history), marcados como procedentes de la Ejecución.
+
+## Informes [#reports]
+
+Tras una ejecución, **Guardar informe** en la tarjeta **Resultados** la guarda como un archivo:
+
+| Formato | Para |
+| --- | --- |
+| **JUnit XML…** | Sistemas de CI y paneles de pruebas |
+| **JSON…** | Tus propias herramientas |
+| **HTML…** | Una página para leer o compartir |
+| **HAR (todos los intercambios)…** | Todas las solicitudes y respuestas de la ejecución, para las herramientas de desarrollo de un navegador u otras herramientas HTTP |
+
+Los informes JUnit, JSON y HTML enmascaran los secretos de las direcciones, los valores y mensajes de las comprobaciones,
+las pruebas de los scripts y los registros que contienen.
+
+## Ejecutar desde la línea de comandos [#run-from-the-command-line]
+
+`echolot run` ejecuta el mismo espacio de trabajo con los mismos ajustes, para CI y el terminal: iteraciones, archivos de
+datos, retrasos, reintentos, iteraciones en paralelo y los mismos formatos de informe. Consulta
+[echolot run](/docs/cli/run) y [ejecutar en CI](/docs/cli/ci).

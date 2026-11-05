@@ -1,0 +1,65 @@
+---
+title: "Socket.IO"
+description: "携带认证载荷加入 Socket.IO 命名空间，发送带参数和确认的事件，并读取事件日志。"
+---
+
+Socket.IO 请求连接到 Socket.IO 服务器，加入一个命名空间并保持连接：你发送事件，并在服务器的事件到达时立即看到。Echolot 通过 WebSocket 支持 Socket.IO 2、3 和 4。
+
+<Shot id="requests-socketio-events" alt="Realtime › Support chat 已连接到本地服务器：事件标签页中有 /support 命名空间、已存储的 Say hello 事件，以及日志中发出的事件和服务器的回复" />
+
+<Callout title="用 Alpenglow 试一试">
+  **Realtime › Support chat** 连接到 `localhost:3001` 上的本地 Socket.IO 服务器，它来自文档仓库的 `examples/servers` 文件夹（`bun run realtime`）。
+</Callout>
+
+## 连接 [#connect]
+
+1. 选取 **文件 › 新建 Socket.IO 请求**，或在边栏中 **请求** 旁边的 **+** 菜单里选取 **新建 Socket.IO 请求**。
+2. 输入服务器的地址，例如 `http://localhost:3001`（在 Alpenglow 中是 `{{realtimeURL}}`）。`http://`、`https://`、`ws://` 和 `wss://` 都可以。
+3. 在地址前面 **SIO** 标记的菜单中选取服务器的版本：**Socket.IO 4**、**Socket.IO 3** 或 **Socket.IO 2**。
+4. 选取 **连接**（<kbd>⌘</kbd><kbd>R</kbd>）。连接期间它显示 **断开连接**。
+
+编辑器有这些标签页：**文档**、**事件**、**标头**、**参数**、**认证**、**变量**、**测试**、**脚本** 和 **设置**。标头、查询参数和认证随 WebSocket 握手一起发送。
+
+## 命名空间、路径和认证 [#namespace-path-and-auth]
+
+**事件** 标签页的顶部设置客户端如何加入：
+
+| 字段 | 含义 |
+| --- | --- |
+| **命名空间** | 要加入的命名空间，例如 `/support`。留空则加入地址的路径，或 `/` |
+| **路径** | 服务器监听的位置。留空表示默认值 `/socket.io/` |
+| **认证** | 认证载荷，一个 JSON 对象，例如 `{"token": "{{token}}"}`。Socket.IO 3 和 4 会在加入命名空间时发送它。留空表示没有 |
+
+把令牌保存在[机密变量](/docs/workspaces/secrets)中，并在载荷里写 `{{token}}`，这样值就不会落入请求文件。拒绝连接的服务器会返回一个错误，日志中以红色显示。
+
+## 发送事件 [#emit-events]
+
+在 **事件** 标签页的底部：
+
+1. 输入事件的名称，例如 `message`。
+2. 以 JSON 输入它的参数，可以使用 `{{variables}}`。数组表示多个参数；其他任何值则是唯一的参数。留空表示没有参数。
+3. 勾选 **确认**，要求服务器确认该事件。
+4. 选取 **发送**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>）。
+
+例如，事件 `message` 带参数 `{"text": "Grüezi!"}` 发送一个对象，而 `["order", {"id": "ord_7Hk2Lw"}]` 发送两个参数。
+
+点按 **+** 可把事件与请求一起存储。每个已存储的事件都有名称、事件、参数、**确认** 和它自己的 **发送** 按钮。它开头的复选框 **在运行中发送**，决定请求在无人操作的情况下运行时是否发送它：
+[运行器](/docs/requests/runner)、命令行和智能体会在加入之后按顺序发送已启用的事件，监听 10 秒，然后关闭。Support chat 有一个已存储的事件，**Say hello**。
+
+## 事件日志 [#the-event-log]
+
+响应窗格的 **消息** 标签页显示会话：双向的每个事件，最新的在最后，附有时间和大小。
+
+- 每一行显示事件的名称和命名空间，以及它要求确认时的确认 ID。确认则显示它所应答的 ID。
+- **全部**、**已发送** 和 **已接收** 按方向过滤；**过滤事件** 按名称或文本查找事件。
+- **更多** 以美化格式显示 JSON 参数。
+- 当服务器发送要求确认的事件时，**确认** 会应答它，不带参数。
+- 随事件到达的二进制附件显示在它下方，每个显示为 **附件 1，Base64：…**。
+
+一个 Socket.IO 数据包最多带 1000 个附件，总共最大 64 MB。
+
+连接关闭时，会话保存在[历史记录](/docs/workspaces/history)中，日志作为响应正文。
+
+## 通过命令行 [#from-the-command-line]
+
+`echolot send --socketio` 在终端中连接：你输入的每一行是一个事件及其 JSON 参数。它还会运行已存储的 `.sio.toml` 请求。见 [echolot send](/docs/cli/send)。

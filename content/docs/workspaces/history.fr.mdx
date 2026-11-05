@@ -1,0 +1,140 @@
+---
+title: "Historique"
+description: "Retrouvez n’importe quelle réponse reçue par un espace de travail, voyez qui l’a envoyée, comparez deux réponses et effacez ce dont vous n’avez plus besoin."
+---
+
+Echolot conserve chaque échange qu’un espace de travail effectue : chaque requête envoyée et la réponse reçue, avec son
+expéditeur. Les vôtres, celles de l’Exécution, des flux et des agents arrivent toutes au même endroit. Utilisez
+l’historique pour revenir à une réponse antérieure, retrouver la requête qui a renvoyé une certaine valeur, ou voir ce
+qu’un agent a fait.
+
+## Ouvrir la page Historique [#open-the-history-page]
+
+- **Affichage › Historique** (<kbd>⌘</kbd><kbd>Y</kbd>).
+- **Historique** dans l’en-tête de page. Cliquez de nouveau dessus pour revenir à la page d’où vous veniez.
+
+La page liste les échanges par jour, du plus récent au plus ancien. Chaque ligne indique l’état (ou **Échec** pour un
+envoi qui n’a reçu aucune réponse), la méthode, le nom de la requête, son adresse, son expéditeur et l’heure.
+**non enregistré** marque un échange d’une requête qui n’a jamais été enregistrée ; **supprimé**, celui d’une requête
+supprimée depuis.
+
+<Shot id="workspaces-history-page" alt="La page Historique : les échanges du jour d’Alpenglow, envoyés par Vous, l’Exécution et un agent, avec le champ de recherche et le filtre Envoyé par au-dessus" />
+
+## Ce qui est enregistré [#what-is-recorded]
+
+- Chaque envoi de chaque type de requête, depuis la page de la requête, l’[Exécution](/docs/requests/runner), les flux,
+  l’[Envoi rapide](/docs/mac/quick-send), [Raccourcis](/docs/mac/shortcuts), l’[Assistant](/docs/ai/assistant) et les
+  [agents externes](/docs/ai/agents).
+- Les envois qui ont échoué sans réponse, avec leur erreur.
+- Les sessions WebSocket, Socket.IO et MQTT, une fois fermées : la connexion et le journal de chaque message.
+
+Les envois qu’Echolot fait pour son propre usage, comme la récupération d’un schéma GraphQL ou d’une spec, ne sont pas
+enregistrés. L’outil en ligne de commande ne conserve aucun historique.
+
+L’expéditeur d’un échange apparaît sur sa ligne :
+
+| Affiché | Envoyé par |
+| --- | --- |
+| **Vous** | Vous, depuis l’app. |
+| **Exécution** | Une exécution dans l’Exécution. |
+| **Flux :** nom | Un flux. |
+| **Agent** | L’Assistant intégré. |
+| Le nom du client | Un agent externe via le serveur MCP d’Echolot, comme Claude Code. |
+
+## Rechercher et filtrer [#search-and-filter]
+
+Saisissez dans **Rechercher dans les noms, URL, en-têtes et corps**. Deux caractères cherchent dans les noms et les
+adresses ; trois ou plus cherchent aussi dans les corps. Les correspondances sont trouvées n’importe où dans le texte,
+pas seulement au début d’un mot.
+
+**Envoyé par** restreint la liste : **Tout**, **Vous**, **Exécutions** (l’Exécution et les flux) ou **Agents**
+(l’Assistant et les agents externes). Le compteur à côté indique combien il y a d’échanges, ou de correspondances.
+
+Ce que couvre la recherche :
+
+- Les 256 premiers Ko de chaque corps texte : JSON, XML, HTML, texte, données de formulaire, flux d’événements et
+  assimilés. Les images, archives et autres corps binaires ne sont pas parcourus.
+- Aucun texte de corps tant que le [chiffrement](/docs/workspaces/storage-and-encryption) est activé : la recherche ne
+  trouve alors que les noms, les adresses et les en-têtes.
+- Jamais les valeurs secrètes : elles sont masquées dans ce que l’historique liste et parcourt, la recherche ne peut donc
+  pas servir à en deviner une.
+
+## Examiner un échange [#look-at-an-exchange]
+
+Cliquez sur une ligne pour la sélectionner ; <kbd>↑</kbd> et <kbd>↓</kbd> parcourent la liste.
+
+- <kbd>Space</kbd> affiche un Coup d’œil : l’état, l’heure d’envoi, la durée, la taille et le type, l’expéditeur,
+  l’environnement et la requête, avec des boutons pour l’afficher, copier son adresse ou la comparer.
+- <kbd>↩</kbd> ou un double-clic l’ouvre. Un échange d’une requête enregistrée s’ouvre dans cette requête, sur cette
+  réponse. Un échange sans requête enregistrée s’ouvre dans une feuille avec les en-têtes et le corps de sa réponse.
+
+Faites un clic droit sur une ligne pour obtenir :
+
+| Commande | Ce qu’elle fait |
+| --- | --- |
+| **Afficher dans la requête** | Ouvre la requête sur cette réponse. |
+| **Afficher l’échange** | Ouvre l’échange dans une feuille. |
+| **Comparer à la réponse précédente** | La compare à la réponse précédente de la requête. |
+| **Ajouter à la spec OpenAPI…** | Documente la réponse dans une spec. Voir [specs à partir du trafic](/docs/specs/specs-from-traffic). |
+| **Enregistrer comme exemple de mock…** | Enregistre la réponse comme exemple nommé dans la spec que suit sa requête. Voir [mocks](/docs/mocks). |
+| **Copier l’URL** | Copie l’adresse. |
+| **Supprimer** | Retire cet échange de l’historique. |
+
+## L’historique d’une requête [#a-requests-own-history]
+
+Sur la page de la requête, le bouton horloge dans la barre du volet de réponse indique combien de réponses la requête
+a. Cliquez dessus pour la liste : état, heure, expéditeur, durée et taille.
+
+- Cliquez sur une réponse pour l’afficher dans le volet de réponse. Une barre au-dessus indique **Réponse passée**,
+  quand, et qui l’a envoyée, avec **Comparer à la dernière** et **Afficher la dernière**.
+- Arrêtez-vous sur une ligne et cliquez sur les flèches pour la comparer à la réponse affichée.
+- **⋯ › Effacer l’historique de cette requête…** demande d’abord confirmation, puis supprime les réponses passées de la
+  requête. La requête reste telle quelle.
+
+<Shot id="workspaces-request-history" alt="La liste de l’historique des réponses de Catalog › List products, ouverte depuis le bouton horloge : cinq réponses avec leur état, heure, origine, durée et taille" />
+
+## Comparer deux réponses [#compare-two-responses]
+
+Comparez depuis la liste de l’historique d’une requête, depuis **Comparer à la dernière**, ou avec
+**Comparer à la réponse précédente** sur la page Historique. La feuille montre les deux réponses côte à côte en haut,
+l’ancienne marquée − et la plus récente +, et les lignes qui ont changé entre elles avec trois lignes de contexte autour
+de chaque changement.
+
+- **Corps** compare les corps. Elle indique « Les corps sont identiques, octet pour octet. » quand rien ne diffère, et
+  « Les corps ne diffèrent que par leur mise en forme. » quand seule la mise en page diffère.
+- **État et en-têtes** compare la ligne d’état et les en-têtes.
+
+Les compteurs en bas indiquent combien de lignes ont été ajoutées et supprimées. Jusqu’à 20 000 lignes modifiées sont
+affichées.
+
+<Shot id="workspaces-history-compare" alt="Comparer les réponses pour Catalog › List products : l’ancienne et la nouvelle réponse en haut, un prix et un stock modifiés dans le diff du corps" />
+
+## Combien de temps l’historique est conservé [#how-long-history-is-kept]
+
+L’historique conserve les réponses les plus récentes de chaque requête. Choisissez combien dans
+**Réglages › Stockage › Historique par requête** : 10, 25, 50 (par défaut), 100 ou 200. Les entrées les plus anciennes
+partent d’abord. La réponse la plus récente de chaque requête garde son corps, et s’affiche donc de nouveau après un
+redémarrage.
+
+Les corps sont stockés séparément et ont leur propre limite de taille (**Conserver les corps de réponse jusqu’à**, 5 Go
+par défaut). Au-delà, les corps utilisés le moins récemment sont supprimés : une ancienne entrée peut donc indiquer « Ce
+corps n’est plus stocké. » Voir [stockage et chiffrement](/docs/workspaces/storage-and-encryption).
+
+## Effacer l’historique [#clear-history]
+
+- Un échange : **Supprimer** dans son menu contextuel.
+- Celui d’une requête : **Effacer l’historique de cette requête…** dans sa liste d’historique.
+- Tout celui d’un espace de travail : **⋯ › Effacer l’historique…** sur la page Historique. Echolot demande d’abord :
+  « Effacer tout l’historique de cet espace de travail ? » Les requêtes restent telles quelles ; leurs réponses passées
+  disparaissent.
+
+Effacer l’historique ne touche jamais aux requêtes ni aux fichiers de l’espace de travail.
+
+## Où vit l’historique [#where-history-lives]
+
+Chaque espace de travail a son propre historique, conservé dans le stockage d’Echolot sur votre Mac, jamais dans le
+dossier de l’espace de travail. Il n’est pas partagé via Git, et l’historique d’un collègue est le sien. Les agents lisent
+l’historique via Echolot, avec les en-têtes d’identification et les secrets masqués.
+
+Si l’historique ne peut pas être ouvert, la page indique « L’historique n’est pas disponible » et pourquoi. Les envois
+fonctionnent toujours ; rien n’est enregistré tant que le fichier ne peut pas être ouvert.

@@ -1,0 +1,125 @@
+---
+title: "模板"
+description: "从现成的模板（设备登录、刷新令牌、分页并导出、冒烟监控、填充与清理）开始创建流程，在 App 中或用 echolot flow new。"
+---
+
+模板是现成的流程，用于大多数 API 都会遇到的工作。模板自带块、块之间的连线，以及画布上的一条备注。
+它不了解你的 API，因此其中的“请求”块和“轮询”块还没有指定请求：在你选好之前，流程会为每个这样的块显示一个问题，备注则会说明该选什么。
+
+## 从模板创建流程 [#create-a-flow-from-a-template]
+
+**在 App 中：**
+
+1. 在“流程”页面中，点按边栏里**流程**旁的 **+**。
+2. 在**从模板**下选择一个模板。指向它即可了解它的作用。
+3. 流程会以模板的名称打开，并适应视图。在检查器的**名称**中为它重新命名。
+4. 阅读备注，然后选择每个“请求”块或“轮询”块，并选好它的**请求**。工具栏中的问题数量消失后，流程就可以运行了。
+
+<Shot id="flows-new-from-template" alt="边栏中“流程”旁 + 按钮的菜单：“空白流程”，然后是“从模板”，其下有“设备登录”“刷新令牌”“分页并导出”“冒烟监控”和“填充与清理”" />
+
+**在命令行中：**
+
+```sh
+# 列出模板
+echolot flow new
+
+# 用其中一个创建流程
+echolot flow new "Export products" --template paginate-and-export -w Alpenglow.echolot
+```
+
+`echolot flow new` 会写入 `flows/export-products.flow.toml` 并打印它的路径。不带 `--template` 时，它会创建一个空流程：一个连到“输出”块的“开始”块。请求可以在 App 中选择，也可以在流程文件中选择。见 [echolot flow](/docs/cli/flow)。
+
+智能体也可以通过 Echolot 的 MCP 服务器用模板创建流程。
+
+## 设备登录 [#device-sign-in]
+
+`device-sign-in`。用 OAuth 2.0 设备授权（RFC 8628）登录：请求设备代码，向你显示代码和链接，轮询令牌端点直到你批准，并把访问令牌和刷新令牌存储为机密变量。
+
+| 块 | 种类 | 作用 |
+| --- | --- | --- |
+| Ask for a device code | 请求 | 发送应答 `device_code`、`user_code`、`verification_uri`、`interval` 和 `expires_in` 的请求。**Pick this request.** |
+| Codes | 提取 | 从正文中取出这五个值（`code` 是 `$.body.device_code`）。 |
+| Show the code | 显示并等待 | 显示 `Open {{verification_uri}} and enter the code. This goes on by itself once you have approved it.`、带**拷贝代码**的用户代码，以及带**在浏览器中打开**和二维码的链接。 |
+| Wait for approval | 轮询 | 每隔 `{{interval}}` 秒发送一次令牌请求，直到它以 200 应答并带有 `access_token`，最长 `{{expires_in}}` 秒。它的变量 `code` 是设备代码。**Pick this request.** |
+| Save the tokens | 设置变量 | 把 `accessToken` 和 `refreshToken` 作为机密存储到环境中。 |
+| Done | 模板 | `Signed in; the tokens are in the Keychain.` |
+| Output | 输出 | 返回这段文本。 |
+
+<Shot id="flows-template-device-sign-in" alt="由“设备登录”模板创建的流程：Start，Ask for a device code，Codes，并排的 Show the code 和 Wait for approval，Save the tokens，Done 和 Output，备注说明应选择哪些请求" />
+
+Show the code 和 Wait for approval 并排运行：“轮询”发送期间面板保持打开，“轮询”成功时面板自动关闭（它的 `success` 接到了面板的 `until`）。
+
+令牌请求发送 `grant_type` `urn:ietf:params:oauth:grant-type:device_code`，以及 `device_code={{code}}`。之后你的其他请求就使用 `{{accessToken}}`。因为令牌存储到了环境中，运行这个流程时请选好环境。
+
+## 刷新令牌 [#refresh-token]
+
+`refresh-token`。用刷新令牌获取新的访问令牌，并把两者都存储为机密变量。在“开始”块上为它设置[计划](/docs/flows/running-and-triggers#schedule)，即可让令牌保持有效。
+
+| 块 | 种类 | 作用 |
+| --- | --- | --- |
+| Refresh the token | 请求 | 发送令牌请求：`grant_type=refresh_token` 加 `refresh_token={{refreshToken}}`。**Pick this request.** |
+| Save the tokens | 设置变量 | 把 `accessToken` 和 `refreshToken` 作为机密存储到环境中。响应中没有新的刷新令牌时，保留旧的。 |
+| Valid for | 提取 | 取出 `$.body.expires_in`。 |
+| Output | 输出 | 返回新令牌的有效秒数。 |
+| Say it failed | 通知 | 请求失败时：`The token could not be refreshed` 和 `The server answered {{status}}. Sign in again.` |
+
+## 分页并导出 [#paginate-and-export]
+
+`paginate-and-export`。每页发送一次请求，把每一页的条目汇集成一个列表，并写入工作区文件夹中的 `exports/items.json`。它的输入 `pages`（数字，默认为 3）决定获取多少页。
+
+| 块 | 种类 | 作用 |
+| --- | --- | --- |
+| Each page | 重复 | 运行 `{{pages}}` 次。 |
+| Page number | 求值 | `return { page: index + 1 };`，所以页码是 1、2、3…… |
+| Fetch the page | 请求 | 发送请求，并设置 `{{page}}`，例如 `?page={{page}}`。**Pick this request.** |
+| Items | 提取 | 取出 `$.body`，即一页上的列表。 |
+| All pages | 收集 | 汇集每一页的列表。 |
+| One list | 求值 | `return pages.flat();` 把它们连接起来。 |
+| Export | 写入文件 | 把 `exports/items.json` 写成 JSON。 |
+| Output | 输出 | 返回文件的路径。 |
+
+列表不是整个正文时，请修改 **Items** 中的路径。对于 Alpenglow 的 **Catalog › List products**，在它的地址后加上 `&page={{page}}`，并把 **Items** 设为 `$.body.items`：演示 API 把商品放在 `items` 下返回。
+
+## 冒烟监控 [#smoke-monitor]
+
+`smoke-monitor`。每小时发送一次请求，检查它是否在两秒内以 200 应答；不满足时会有通知告诉你。计划（每 60 分钟）已经设在“开始”块上：在那里点按**允许**即可启动，也可以用 `echolot flow serve` 运行。
+
+| 块 | 种类 | 作用 |
+| --- | --- | --- |
+| Send | 请求 | 发送要监控的请求。**Pick this request.** |
+| Healthy | 断言 | 检查 **Answers 200**（`value.status === 200`）和 **Within two seconds**（`value.time < 2000`）。 |
+| Output | 输出 | 两项检查都通过时获得响应。 |
+| Unhealthy | 通知 | 有检查失败时：`Smoke check failed` 和 `{{url}} answered {{status}} in {{time}} ms.` |
+| Failed | 通知 | 请求失败时：`Smoke check failed` 和 `The request failed or did not answer with a 2xx status.` |
+
+由于“断言”的检查就是测试，API 不健康时 `echolot flow run` 会失败，这使同一个流程也能作为 CI 检查。
+
+## 填充与清理 [#seed-and-clean-up]
+
+`seed-and-clean-up`。为列表中的每一项创建一条记录，记录创建了什么，然后再逐条删除这些记录。把需要这些数据的检查放在日志所在的位置。
+
+| 块 | 种类 | 作用 |
+| --- | --- | --- |
+| Records | 值 | `[{"title": "First"}, {"title": "Second"}, {"title": "Third"}]`。 |
+| Each record | 遍历 | 依次发送每条记录。 |
+| Create | 请求 | 创建一条记录：每条记录的键是本次发送的变量，因此请求使用 `{{title}}`。**Pick this request.** |
+| Its id | 提取 | 取出 `$.body.id`。 |
+| Made | 收集 | 汇集新建的 id。 |
+| Use the data | 日志 | 记录 `Seeded {{value}}`。把它换成需要这些数据的操作。 |
+| Each id | 遍历 | 依次发送每个 id。 |
+| Delete | 请求 | 删除记录，变量为 `{{id}}`。**Pick this request.** |
+| Deleted | 收集 | 汇集已删除的内容。 |
+| Count | 求值 | `return { deleted: gone.length };` |
+| Output | 输出 | 返回删除了多少条。 |
+
+新的 id 在响应中的其他位置时，请修改 **Its id**。
+
+## Alpenglow 中的流程 [#the-flows-in-alpenglow]
+
+示例工作区有三个流程，可以与模板对照着看：
+
+- **Place a test order**：登录、下单，用“批准”块询问你是否保留订单，你拒绝时则取消订单。它以 `place_test_order` 提供给智能体。
+- **Morning stock check**：每天 6:00 列出商品，并在 Bern 的某款帐篷库存偏低时显示通知。
+- **Order status on webhook**：用一个订单应答 `POST /order-status`。
+
+[用流程实现自动化](/docs/tutorials/automate-with-flows)会一步步搭建其中一个。

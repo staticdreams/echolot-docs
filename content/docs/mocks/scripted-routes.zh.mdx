@@ -1,0 +1,99 @@
+---
+title: "JavaScript 路由"
+description: "用 JavaScript 在模拟服务器的其他路由和规范之前应答请求，状态在模拟服务器运行期间保持。"
+---
+
+[手动创建的路由](/docs/mocks/routes)和规范都用你写下的响应来应答。有时模拟服务器需要做得更多：记住客户端刚下的订单、计算出一个应答，或在第三次调用时失败。**JavaScript 路由**是最先应答模拟服务器请求的小型处理程序。它们的变量在模拟服务器运行期间一直存在，因此可以在请求之间保持状态。路由没有处理的请求，会交给模拟服务器手动创建的路由，再交给它的规范。
+
+## 编写路由 [#writing-routes]
+
+在“模拟服务器”页面中打开一个模拟服务器，滚动到 **JavaScript 路由**卡片。在编辑器中编写路由，然后点按**存储路由**。**复原**会回到已存储的内容。
+
+<Shot id="mocks-routes" alt="一个模拟服务器的 JavaScript 路由卡片：代码把订单保存在列表中；编辑器下方是“Running: POST /orders, GET /orders/:id”一行，日志中标明了应答每个订单请求的脚本路由" />
+
+下面这个示例针对 Alpenglow 规范的模拟服务器，保存客户端下的订单并按 ID 返回：
+
+```js
+let orders = []
+
+mock.post("/orders", (req, res) => {
+  const order = { id: "ord_" + (orders.length + 1), status: "pending", ...req.json() }
+  orders.push(order)
+  res.status(201).header("Location", "/v1/orders/" + order.id).json(order)
+})
+
+mock.get("/orders/:id", (req, res) => {
+  const order = orders.find(o => o.id === req.params.id)
+  return order ?? res.status(404).json({ error: "no such order" })
+})
+```
+
+存储之后，卡片会列出脚本注册的路由（`Running: POST /orders, GET /orders/:id`），或者用橙色显示脚本没有加载的原因。路由保存在模拟服务器设置旁边的 `mocks/<name>.js` 中，因此会随工作区一起进入 Git。
+
+## 路由何时运行 [#when-routes-run]
+
+- JavaScript 路由**最先**应答，早于手动创建的路由和规范。方法和路径匹配的第一个路由负责应答。
+- 当模拟服务器根据规范提供服务时，路径指的是**规范的服务器路径之下**的部分：写 `/orders`，而不是 `/v1/orders`。
+- 什么都不设置也不返回任何内容的路由，会**把请求传给**手动创建的路由和规范，由它们照常应答。可用它只处理部分请求，例如带某个查询参数的请求。
+- 脚本在模拟服务器启动时运行一次。它的顶层变量和 `state` 对象会一直存在，直到模拟服务器停止。
+- <strong>存储会重启路由，并重置状态。</strong>对规范、手动创建的路由或模拟服务器设置的更改则会保留状态。
+- 请求逐个处理，因此状态保持一致。
+
+模拟服务器的[日志](/docs/mocks#the-log)会用路由的名称标记路由处理过的每个请求：将指针停留在其上，可看到**由此路由应答**或**由此路由传递**（传给手动创建的路由或规范）。路由用 `console.log` 写出的内容，会显示在日志中该请求的下方。
+
+## 路由 API [#the-routes-api]
+
+用 `mock` 和一个方法注册路由：
+
+| 函数 | 匹配 |
+| --- | --- |
+| `mock.get(path, handler)` | `GET` |
+| `mock.post`、`mock.put`、`mock.patch`、`mock.delete`、`mock.head`、`mock.options` | 对应的方法 |
+| `mock.any(path, handler)` | 每个方法 |
+
+在路径中，`:name` 匹配一段并把它放入 `req.params.name`；`*` 匹配其余部分。
+
+处理程序会得到 `req` 和 `res`：
+
+| `req` | 它包含什么 |
+| --- | --- |
+| `req.method` | 方法，大写。 |
+| `req.path` | 路径，位于规范的服务器路径之下。 |
+| `req.params` | 路径中的 `:name` 段。 |
+| `req.query` | 查询参数，每个名称取最后一个值。 |
+| `req.headers` | 标头，名称为小写。 |
+| `req.body` | 正文，作为文本。 |
+| `req.json()` | 解析为 JSON 的正文；没有正文时为 `null`。 |
+
+| `res` | 它做什么 |
+| --- | --- |
+| `res.status(code)` | 设置状态。默认为 `200`。 |
+| `res.header(name, value)` | 添加一个标头。 |
+| `res.json(value)` | 把该值作为 JSON 发送，除非你另行设置，否则带有 `Content-Type: application/json`。 |
+| `res.send(text)` | 发送文本，除非你另行设置，否则带有 `Content-Type: text/plain; charset=utf-8`。 |
+
+每个 `res` 函数都返回 `res`，因此可以链式调用：`res.status(201).json(order)`。处理程序返回的值会作为 JSON 发送，所以 `return order` 与 `res.json(order)` 相同。处理程序可以是 `async`。
+
+`state`（也可写作 `mock.state`）是在请求之间保持的对象，用于存放你不想放在自己变量中的内容：
+
+```js
+mock.get("/me", (req, res) => {
+  state.calls = (state.calls ?? 0) + 1
+  if (state.calls % 3 === 0) return res.status(503).json({ error: "try again" })
+  // Nothing set: the routes made by hand or the spec answer this request.
+})
+```
+
+## 限制 [#limits]
+
+路由与[请求脚本](/docs/requests/scripts-and-tests)在同一个沙盒中运行，而不是 Node：没有文件系统，也没有网络。每个请求最多运行 2 秒 JavaScript，脚本启动也有 2 秒。抛出错误的处理程序会以 `500` 加上该错误应答，日志中也会显示。
+
+## 信任路由 [#trusting-routes]
+
+路由是在你的 Mac 上运行的代码，因此遵循与请求脚本相同的规则。你在 Echolot 中编写并存储的路由会运行。来自外部的路由，即通过 Git、导入或其他 App 编辑文件而来的，则不会运行：卡片会显示**这些脚本来自 Echolot 之外**，在你阅读并点按**信任脚本**之前，模拟服务器不会启动。如果它们在 Echolot 之外再次更改，Echolot 会再次询问。
+
+智能体可以读取模拟服务器的路由，但绝不会写入。
+
+## 通过命令行 [#from-the-command-line]
+
+`echolot mock -w <workspace> <mock>` 会运行工作区中的某个模拟服务器及其全部路由；`--routes <file>` 则运行另一个文件中的 JavaScript 路由，也可以配合规范文件使用。参见 [echolot mock](/docs/cli/mock)。

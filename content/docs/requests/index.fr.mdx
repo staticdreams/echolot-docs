@@ -1,0 +1,190 @@
+---
+title: "Requêtes HTTP"
+description: "Créez, envoyez et enregistrez des requêtes HTTP, et repérez-vous sur la page de requête."
+---
+
+Une requête est un appel enregistré vers une API : sa méthode, son URL, ses en-têtes, son corps, son authentification et
+ses réglages, conservés dans un fichier de votre espace de travail. Cette page présente les requêtes HTTP de bout en
+bout. Les autres types de requête (GraphQL, gRPC, WebSocket et SSE, Socket.IO, MQTT et appels MCP) utilisent la même
+page avec d’autres onglets ; voir [les types de requête](#request-kinds) en fin de page.
+
+## Créer une requête [#create-a-request]
+
+- Choisissez **Fichier › Nouvelle requête** (<kbd>⌘</kbd><kbd>N</kbd>). La requête est ajoutée au dossier sélectionné
+  dans la barre latérale, s’appelle **Nouvelle requête** et s’ouvre dans un onglet.
+- Ou cliquez sur le menu **+** à côté de **Requêtes** dans la barre latérale et choisissez **Nouvelle requête**. Le
+  même menu crée les autres types de requête et les dossiers, et importe des fichiers.
+- Ou faites un clic droit sur un dossier dans la barre latérale et choisissez **Nouvelle requête** pour la placer
+  directement dans ce dossier.
+- Pour partir d’une commande cURL, créez une requête et collez la commande dans le champ d’URL. Echolot en reprend la
+  méthode, l’URL, les en-têtes, le corps, l’authentification et les réglages. Les options qu’il ne peut pas reprendre
+  apparaissent sous la barre d’URL en tant que **notes cURL** ; cliquez dessus pour voir ce qui a été laissé de côté.
+
+Renommez une requête avec **Édition › Renommer** ou par un clic droit dans la barre latérale. **Édition › Dupliquer**
+(<kbd>⌘</kbd><kbd>D</kbd>) en crée une copie juste à côté.
+
+## La page de requête [#the-request-page]
+
+<Shot id="requests-http-page" alt="La page de requête de List products : la barre d’URL en haut, les onglets de la requête à gauche et la réponse JSON à droite" />
+
+De haut en bas :
+
+1. **La barre d’URL** : la méthode, l’URL et **Envoyer**.
+2. **La ligne en dessous** : l’URL telle qu’elle sera envoyée, avec chaque variable remplacée par sa valeur dans
+   l’environnement actuel (les secrets restent masqués) et, à droite après un envoi, l’état, une chronologie de
+   l’échange et sa durée.
+3. **Deux volets** : les onglets de la requête d’un côté, la réponse de l’autre.
+
+Les onglets de la requête sont **Docs**, **En-têtes**, **Paramètres**, **Corps**, **Auth**, **Variables**, **Tests**,
+**Scripts** et **Réglages**. Un onglet qui contient quelque chose affiche un point ou un nombre : vous voyez d’un coup
+d’œil qu’une requête a trois en-têtes ou un corps.
+
+Les volets sont côte à côte, ou l’un au-dessus de l’autre. Choisissez **Affichage › Volets** pour passer de **Côte à
+côte** à **Empilé** ; le choix est conservé pour chaque type de requête. Faites glisser le séparateur pour redimensionner
+les volets, et choisissez **Affichage › Volets › Réinitialiser la taille des volets** pour revenir aux tailles par
+défaut. Une fenêtre trop étroite pour afficher les deux volets côte à côte les empile d’elle-même.
+
+## Méthode et URL [#method-and-url]
+
+Cliquez sur le badge de la méthode pour choisir **GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD** ou
+**OPTIONS**.
+
+Saisissez l’URL dans le champ voisin. Utilisez des `{{variables}}` n’importe où dans l’URL, par exemple
+`{{baseURL}}/products`. Quand vous tapez `{{`, une liste s’ouvre avec les variables disponibles et les
+[valeurs dynamiques](/docs/requests/dynamic-values). Une variable s’affiche sous forme de pastille ; laissez le pointeur
+dessus pour voir sa valeur, et double-cliquez pour la modifier. Les variables viennent des
+[environnements, de l’espace de travail et des dossiers](/docs/workspaces/environments).
+
+Si un élément de l’URL ne peut pas être résolu, la ligne sous la barre d’URL indique **1 problème** (ou le nombre
+correspondant). Cliquez dessus pour voir quelles variables manquent. Les jetons non résolus sont envoyés tels quels.
+
+Quand la requête lit la réponse d’une autre requête (par exemple avec `{{$response('auth/sign-in', '$.access_token')}}`)
+et que cette autre requête n’a pas encore de réponse, la ligne indique **Envoie « Sign in » d’abord** : Echolot envoie
+cette requête avant celle-ci.
+
+## Paramètres de requête [#query-parameters]
+
+L’onglet **Paramètres** présente la query string de l’URL sous forme de lignes **CLÉ** et **VALEUR**. Les deux restent
+synchronisées : modifiez une ligne et l’URL change ; tapez `?page=2` dans l’URL et une ligne apparaît.
+
+- Cliquez sur **Ajouter un paramètre** pour en ajouter un.
+- Décochez une ligne pour ne plus l’envoyer. Les paramètres décochés restent dans la requête mais quittent l’URL.
+- Les `&`, `#` et espaces que vous tapez dans un nom ou une valeur sont encodés en pourcentage à votre place.
+
+## En-têtes [#headers]
+
+L’onglet **En-têtes** liste les en-têtes que vous définissez, dans l’ordre où vous les avez définis, avec la casse de
+leurs noms conservée telle que vous l’avez écrite.
+
+- Cliquez sur **Ajouter un en-tête** et saisissez un nom. Echolot complète les noms d’en-tête avec une note sur leur
+  rôle, et propose les valeurs usuelles une fois que vous en avez choisi un.
+- Décochez un en-tête pour le conserver sans l’envoyer.
+- Faites glisser une ligne par sa poignée pour la déplacer, ou faites un clic droit dessus pour **Monter**,
+  **Descendre** et **Retirer**.
+- Cliquez sur **Modifier en bloc** pour modifier tous les en-têtes sous forme de texte, un `Name: value` par ligne. Une
+  ligne qui commence par `//` est un en-tête désactivé.
+
+Sous vos en-têtes, **AUTOMATIQUES** liste ce qu’Echolot ajoute à l’envoi : les en-têtes produits par votre
+authentification, par le type de votre corps et par le jar de cookies, ainsi que ceux dont toute requête HTTP a besoin.
+Ils sont affichés exactement comme ils partent, identifiants masqués. Laissez le pointeur sur l’un d’eux pour voir d’où
+il vient. Pour envoyer votre propre valeur à la place, ajoutez un en-tête du même nom, ou faites un clic droit sur la
+ligne et choisissez **Remplacer par le mien**. Un en-tête `Authorization` que vous écrivez vous-même est envoyé à la
+place de celui que l’onglet **Auth** ajouterait.
+
+Pour qu’Echolot n’ajoute plus d’en-têtes de lui-même, activez **Mode brut** dans
+l’[onglet Réglages](/docs/requests/settings#raw-mode).
+
+## Corps, authentification et réglages [#body-auth-and-settings]
+
+- **Corps** : JSON, formulaires encodés en URL et multipart, GraphQL, texte, XML, HTML ou un fichier. Voir
+  [Corps de la requête](/docs/requests/body).
+- **Auth** : Basic, Bearer, clés d’API, OAuth 2.0, signature AWS et plus encore, ou l’authentification du dossier. Voir
+  [Authentification](/docs/requests/auth).
+- **Réglages** : la version HTTP, les redirections, les cookies, TLS, le délai d’attente et le mode brut. Voir
+  [Réglages de la requête](/docs/requests/settings).
+- **Variables** : les valeurs que seule cette requête utilise, et celles qu’elle garde de sa réponse. Voir
+  [Captures de réponse](/docs/requests/captures).
+- **Tests** et **Scripts** : des vérifications sur la réponse, et du JavaScript avant et après l’envoi. Voir
+  [Scripts et tests](/docs/requests/scripts-and-tests).
+- **Docs** : des notes sur le rôle de la requête, pour vous et votre équipe.
+
+## Envoyer et annuler [#send-and-cancel]
+
+Cliquez sur **Envoyer**, ou appuyez sur <kbd>⌘</kbd><kbd>R</kbd>. Appuyer sur <kbd>↩</kbd> dans le champ d’URL et sur
+<kbd>⌘</kbd><kbd>↩</kbd> envoie aussi. **Requête › Envoyer** fait la même chose depuis la barre des menus.
+
+Pendant l’exécution de la requête, **Envoyer** devient **Annuler** : cliquez dessus ou appuyez sur
+<kbd>⌘</kbd><kbd>.</kbd> pour l’arrêter. La réponse arrive en continu dans le volet de réponse, de sorte que vous pouvez
+lire le début d’un corps volumineux avant que la fin ne soit arrivée.
+
+Quand l’environnement de la fenêtre est protégé, le bouton affiche **Envoyer à Production…** (avec le nom de
+l’environnement) et chaque envoi demande d’abord confirmation. Voir
+[Environnements protégés](/docs/workspaces/protected-environments).
+
+D’autres actions sur la requête en cours se trouvent dans le menu **Requête** :
+
+| Élément de menu | Raccourci | Ce qu’il fait |
+| --- | --- | --- |
+| **Copier en tant que cURL** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> | Copie la requête sous forme de commande `curl`. |
+| **Générer du code…** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> | Affiche la requête sous forme de code : cURL, Swift (URLSession), JavaScript (fetch, axios), TypeScript (fetch), Python (requests, httpx), Go (net/http), Kotlin (OkHttp), Java (HttpClient), C# (HttpClient), PHP (cURL) ou Rust (reqwest). |
+| **Exporter l’échange en HAR…** | | Enregistre le dernier échange dans un fichier HAR. |
+| **Rechercher dans le corps** | <kbd>⌘</kbd><kbd>F</kbd> | Recherche dans le corps de la réponse. |
+
+**Générer du code…** remplace les variables de la requête par leur valeur. Les scripts ne s’exécutent pas et les
+secrets apparaissent tels quels : faites attention à l’endroit où vous collez le code. **Ouvrir le dossier des modèles**
+dans cette feuille montre les modèles dont le code est issu.
+
+## Onglets [#tabs]
+
+Chaque requête que vous ouvrez obtient un onglet au-dessus de l’éditeur.
+
+| Action | Comment |
+| --- | --- |
+| Onglet suivant | **Onglets › Afficher l’onglet suivant**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> |
+| Onglet précédent | **Onglets › Afficher l’onglet précédent**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> |
+| Fermer l’onglet | **Fichier › Fermer l’onglet**, <kbd>⌘</kbd><kbd>W</kbd> |
+| Rouvrir le dernier onglet fermé | **Onglets › Rouvrir l’onglet fermé**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+
+## Enregistrement [#saving]
+
+Il n’y a pas de commande Enregistrer : chaque modification s’enregistre d’elle-même dans le fichier de la requête un
+instant après que vous l’avez faite, et chaque modification peut être annulée avec **Édition › Annuler**
+(<kbd>⌘</kbd><kbd>Z</kbd>). Fermer un onglet ou quitter l’app attend que la dernière modification soit écrite.
+
+Si le fichier change sur le disque alors que vous avez des modifications qu’Echolot n’a pas encore écrites (après un
+`git pull`, par exemple), une barre indique **Cette requête a changé sur le disque**. Choisissez **Garder les miennes**
+pour conserver vos modifications et les écrire par-dessus le fichier, ou **Utiliser la leur** pour abandonner vos
+modifications et charger le fichier. Voir [Git et équipes](/docs/workspaces/git-and-teams).
+
+## La réponse en un coup d’œil [#the-response-at-a-glance]
+
+<Shot id="requests-http-exchange-card" alt="La carte de détails au-dessus de la réponse : état 200, durée, taille, version de TLS et une barre pour chaque phase de l’échange" />
+
+Après un envoi, la ligne sous la barre d’URL affiche l’état (vert pour 2xx, et ainsi de suite), une barre des phases de
+l’échange et la durée totale. Laissez le pointeur sur cette ligne pour les détails : taille, compression, redirections,
+vérifications, TLS, adresse du serveur et durée de chaque phase.
+
+Le volet de réponse présente le corps sous plusieurs vues, les en-têtes, les cookies, le message brut, une vue
+hexadécimale et les octets sur le réseau. Le bouton en forme d’horloge, avec un nombre, au bout de la ligne ouvre les
+réponses précédentes de cette requête. Voir [Réponses](/docs/requests/responses).
+
+Avant le premier envoi, le volet de réponse affiche **Envoyez un ping**.
+
+## Types de requête [#request-kinds]
+
+La même page de requête envoie tous les protocoles qu’Echolot parle. Créez-les depuis **Fichier** ou depuis le menu
+**+** de la barre latérale.
+
+| Type | Élément de menu | Page |
+| --- | --- | --- |
+| HTTP | **Nouvelle requête** | Cette page |
+| GraphQL | **Nouvelle requête GraphQL** | [GraphQL](/docs/requests/graphql) |
+| gRPC | **Nouvelle requête gRPC** | [gRPC](/docs/requests/grpc) |
+| WebSocket | **Nouvelle requête WebSocket** | [WebSocket et SSE](/docs/requests/websocket-and-sse) |
+| Server-Sent Events | **Nouvelle requête** (une requête HTTP dont le serveur diffuse des événements) | [WebSocket et SSE](/docs/requests/websocket-and-sse) |
+| Socket.IO | **Nouvelle requête Socket.IO** | [Socket.IO](/docs/requests/socket-io) |
+| MQTT | **Nouvelle requête MQTT** | [MQTT](/docs/requests/mqtt) |
+| MCP | **Nouvel appel MCP** (menu **+** de la barre latérale) | [Requêtes MCP](/docs/requests/mcp-requests) |
+
+Pour envoyer de nombreuses requêtes à la suite, avec des vérifications et des fichiers de données, utilisez
+l’[Exécution](/docs/requests/runner).

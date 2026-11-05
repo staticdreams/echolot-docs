@@ -1,0 +1,86 @@
+---
+title: "Socket.IO"
+description: "Rejoignez un espace de noms Socket.IO avec une charge d’authentification, émettez des événements avec des arguments et des accusés de réception, et lisez le journal des événements."
+---
+
+Une requête Socket.IO se connecte à un serveur Socket.IO, rejoint un espace de noms et reste connectée : vous émettez
+des événements et voyez ceux du serveur à mesure qu’ils arrivent. Echolot parle Socket.IO 2, 3 et 4 sur WebSocket.
+
+<Shot id="requests-socketio-events" alt="Realtime › Support chat connecté au serveur local : l’onglet Événements avec l’espace de noms /support, l’événement enregistré Say hello, et le journal avec l’événement envoyé et la réponse du serveur" />
+
+<Callout title="Essayer avec Alpenglow">
+  **Realtime › Support chat** se connecte à un serveur Socket.IO local sur `localhost:3001`, issu du dossier
+  `examples/servers` du dépôt de la documentation (`bun run realtime`).
+</Callout>
+
+## Se connecter [#connect]
+
+1. Choisissez **Fichier › Nouvelle requête Socket.IO**, ou **Nouvelle requête Socket.IO** dans le menu **+** à côté de
+   **Requêtes** dans la barre latérale.
+2. Saisissez l’adresse du serveur, comme `http://localhost:3001` (`{{realtimeURL}}` dans Alpenglow). `http://`,
+   `https://`, `ws://` et `wss://` fonctionnent tous.
+3. Choisissez la version du serveur dans le menu du badge **SIO** devant l’adresse : **Socket.IO 4**, **Socket.IO 3**
+   ou **Socket.IO 2**.
+4. Choisissez **Connecter** (<kbd>⌘</kbd><kbd>R</kbd>). Le bouton affiche **Se déconnecter** pendant la connexion.
+
+L’éditeur a ces onglets : **Docs**, **Événements**, **En-têtes**, **Paramètres**, **Auth**, **Variables**, **Tests**,
+**Scripts** et **Réglages**. Les en-têtes, les paramètres de requête et l’authentification accompagnent le handshake
+WebSocket.
+
+## Espace de noms, chemin et authentification [#namespace-path-and-auth]
+
+Le haut de l’onglet **Événements** définit comment le client rejoint le serveur :
+
+| Champ | Ce que c’est |
+| --- | --- |
+| **Espace de noms** | L’espace de noms à rejoindre, comme `/support`. Vide, il rejoint le chemin de l’adresse, ou `/` |
+| **Chemin** | L’endroit où le serveur écoute. Vide, c’est la valeur par défaut, `/socket.io/` |
+| **Auth** | La charge d’authentification, un objet JSON comme `{"token": "{{token}}"}`. Socket.IO 3 et 4 l’envoient en rejoignant l’espace de noms. Vide pour aucune |
+
+Gardez un jeton dans une [variable secrète](/docs/workspaces/secrets) et écrivez `{{token}}` dans la charge, pour que la
+valeur n’atterrisse jamais dans le fichier de la requête. Un serveur qui refuse la connexion répond par une erreur, que
+le journal affiche en rouge.
+
+## Émettre des événements [#emit-events]
+
+En bas de l’onglet **Événements** :
+
+1. Saisissez le nom de l’événement, comme `message`.
+2. Saisissez ses arguments en JSON, avec des `{{variables}}`. Un tableau représente plusieurs arguments ; toute autre
+   valeur est l’unique argument. Laissez vide pour aucun.
+3. Cochez **Accusé** pour demander au serveur d’accuser réception de l’événement.
+4. Choisissez **Émettre** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>).
+
+Par exemple, l’événement `message` avec les arguments `{"text": "Grüezi!"}` envoie un objet, et
+`["order", {"id": "ord_7Hk2Lw"}]` envoie deux arguments.
+
+Choisissez **+** pour enregistrer l’événement avec la requête. Chaque événement enregistré a un nom, l’événement, ses
+arguments, **Accusé** et son propre bouton **Émettre**. **Émettre lors des exécutions**, la case au début, décide s’il
+est émis quand la requête s’exécute sans vous : l’[Exécution](/docs/requests/runner), la ligne de commande et les agents
+émettent les événements activés dans l’ordre après avoir rejoint le serveur, écoutent pendant 10 secondes, puis ferment
+la connexion. Support chat a un événement enregistré, **Say hello**.
+
+## Le journal des événements [#the-event-log]
+
+L’onglet **Messages** du volet de réponse montre la session : chaque événement dans les deux sens, le plus récent en
+dernier, avec son heure et sa taille.
+
+- Chaque ligne affiche le nom de l’événement et son espace de noms, et son id d’accusé de réception quand il en a
+  demandé un. Un accusé de réception affiche l’id auquel il répond.
+- **Tout**, **Envoyé** et **Reçu** filtrent par direction ; **Filtrer les événements** trouve des événements par nom ou
+  par texte.
+- **Plus** met en forme les arguments JSON.
+- Quand le serveur envoie un événement qui demande un accusé de réception, **Accuser réception** y répond, sans
+  arguments.
+- Les pièces jointes binaires qui arrivent avec un événement s’affichent en dessous, chacune sous la forme
+  **Attachment 1, Base64: …**.
+
+Un paquet Socket.IO accepte au plus 1 000 pièces jointes, jusqu’à 64 Mo au total.
+
+Quand la connexion se ferme, la session est conservée dans l’[Historique](/docs/workspaces/history), avec le journal
+comme corps de la réponse.
+
+## Depuis la ligne de commande [#from-the-command-line]
+
+`echolot send --socketio` se connecte depuis le terminal : chaque ligne que vous tapez est un événement et ses arguments
+JSON. Il exécute aussi les requêtes `.sio.toml` enregistrées. Voir [echolot send](/docs/cli/send).

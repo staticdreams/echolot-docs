@@ -1,0 +1,133 @@
+---
+title: "让智能体安全地使用你的工作区"
+description: "把 Claude Code 或其他 MCP 客户端连接到工作区，决定它可以做什么，批准它的发送，保护环境，并让机密远离它。"
+---
+
+Echolot 是你的工作区的 MCP 服务器：Claude Code 之类的 AI 智能体可以列出你的请求、发送它们并读取响应。你来决定它不经询问就能做什么、必须先询问什么，以及绝不能做什么。机密值永远不会到达它。在本教程中，你会把 Claude Code 连接到 Alpenglow，批准并拒绝它的发送，保护一个环境，然后用 Echolot 内置的助手做同样的事。
+
+- **用时：** 20 分钟。
+- **你需要：** [Alpenglow 工作区](/docs/tutorials#the-alpenglow-workspace)，以及一个 MCP 客户端：Claude Code（“终端”中的 `claude`）、Claude Desktop、Cursor、VS Code 或 Codex。最后一部分还需要模型提供商的 API 密钥，或者 Ollama 中的本地模型。
+- **你将学到：** 设置 › 智能体、批准、工作区的智能体规则、受保护的环境，以及智能体看到的是什么而不是机密。
+
+## 1. 开启智能体 [#1-turn-agents-on]
+
+1. 选取 **Echolot › 设置…**（<kbd>⌘</kbd><kbd>,</kbd>）并打开**智能体**。
+2. 在**访问**下，开启**允许智能体使用打开的工作区**。
+3. 在**供智能体使用的工具**下，保持**请求**和**流程**开启。**请求**允许智能体列出、读取、创建和发送请求；**流程**运行你提供给智能体的流程。其他项（**工作区**、**环境**、**规范**、**模拟服务器**、**MCP 服务器**、**历史记录**、**流程编辑**）在你开启之前是关闭的。
+
+有些工具无论你开启什么都不会提供：策略本身、代理、证书、认证设置、脚本，以及启动你未提供的流程。
+
+## 2. 连接 Claude Code [#2-connect-claude-code]
+
+1. 在 Alpenglow 窗口中，选取页面顶部的**智能体**。
+2. 在**连接客户端**下找到 **Claude Code**，选取**拷贝命令**。命令类似这样：
+
+   ```sh
+   claude mcp add --scope user echolot-alpenglow -- /Applications/Echolot.app/Contents/Helpers/echolot mcp serve /Users/you/Projects/Alpenglow.echolot
+   ```
+
+3. 把它粘贴到“终端”中并运行。
+
+其他客户端有各自的按钮：**添加到 Cursor** 和**添加到 VS Code** 会打开安装链接，**拷贝 config.toml 条目**用于 Codex，**拷贝 JSON** 会给出适用于任何其他客户端的 `mcpServers` 块，Claude Desktop 的**添加到 Claude** 则安装一个扩展。每个客户端都运行 `echolot mcp serve`，它把调用交给已打开的窗口，所以你的批准和窗口的环境都会生效。
+
+<Edition only="appstore">
+  App Store 版本不包含命令行工具或 Claude Desktop 扩展。请先单独安装[命令行工具](/docs/cli)；你拷贝的命令和代码片段指向它。
+</Edition>
+
+<Shot id="tutorials-agents-connect" alt="Alpenglow 窗口的“智能体”弹出窗口，其中的“连接客户端”按钮对应 Claude Desktop、Claude Code、Cursor、VS Code 和 Codex" />
+
+## 3. 让它读取和发送 [#3-let-it-read-and-send]
+
+1. 在“终端”中启动 `claude` 并提问：
+
+   > Using echolot-alpenglow, list the requests in the Catalog folder, send List products, and tell me the most
+   > expensive tent in stock.
+
+2. 它会列出请求并发送 **List products**，不会询问你：默认情况下，智能体可以读取工作区并进行安全的发送（`GET`、GraphQL 查询、MCP 读取）。
+3. 在 Echolot 中，**智能体**按钮现在显示为**智能体 · 1**。它的弹出窗口在**最近的调用**下列出该客户端，并带有一个**已允许**开关，可以切断它。
+
+智能体的发送会记录在历史记录中，并标明发送者（<kbd>⌘</kbd><kbd>Y</kbd>）。
+
+## 4. 批准会更改数据的发送 [#4-approve-a-send-that-changes-data]
+
+1. 提问：
+
+   > Place an order for one TNT-MH-2P with Create order.
+
+2. Echolot 会显示一张面板：**Claude Code 想要发送可能更改数据的请求**，其中有请求和即将发出内容的预览。`Authorization` 标头显示为 `Bearer ••••••`。
+3. 选择其一：
+   - **允许一次**（<kbd>↩</kbd>）：仅此一次发送。
+   - **在本次会话中允许**：在窗口关闭之前，允许类似的发送。
+   - **拒绝**（<kbd>Esc</kbd>）：告知智能体你拒绝了。
+4. 选取**允许一次**。商店返回 `201 Created`，智能体会报告新订单。
+
+<Shot id="tutorials-agents-approval" alt="批准面板：Claude Code 想要发送可能更改数据的请求，带有“拒绝”“在本次会话中允许”和“允许一次”" />
+
+## 5. 让机密远离智能体 [#5-keep-secrets-out-of-reach]
+
+向智能体提问：
+
+> What is the value of the token variable?
+
+它无法告诉你。机密变量的值永远不会到达智能体：无论它会出现在请求、响应还是错误的什么位置，智能体看到的都是 `••••••`。这涵盖原样的值，以及 JSON、百分号编码和 Base64 形式。对响应正文的搜索也不会统计或定位到机密上的匹配。
+
+## 6. 设定工作区的规则 [#6-set-the-workspaces-rules]
+
+默认值只是起点。每个工作区都可以设定自己的规则，它们会写入 `workspace.toml`，因此会随工作区一起通过 Git 流转。
+
+1. 打开边栏底部的工作区菜单，选取**工作区设置…**，然后打开**智能体**标签页。
+2. **智能体可以使用此工作区**只为这个工作区关闭智能体。
+3. 在**智能体可以做什么**下，每种动作都有**允许**、**询问**或**拒绝**（或**默认**）：**读取请求和环境**、**安全的发送（GET、GraphQL 查询、MCP 读取）**、**其他发送**、**发送到受保护的环境**、**发送到新主机**、**对工作区的更改**和**删除**。把**其他发送**设为**拒绝**。
+4. 在**主机和限制**下，列出**允许的主机**，并设置**每个会话发送次数**或**每分钟发送次数**。
+5. 选取**完成**，然后让智能体再下一个订单。它会被直接拒绝，不会出现面板。
+
+比默认值更严格的规则会立即生效。会不经询问就放行某些操作的规则，例如在从 Git 拉取的工作区中，则要等你确认：**智能体**弹出窗口会说明它会放行什么，在你信任这些规则之前智能体仍会询问，而**信任这些规则**会在这台 Mac 上接受它们。
+
+**发送到受保护的环境**和**发送到新主机**只提供**询问**或**拒绝**：没有任何规则能让智能体不经询问就发送到那里。智能体发送的请求所遇到的重定向，绝不会把机密标头带到工作区不认识的主机。
+
+## 7. 保护环境 [#7-protect-an-environment]
+
+1. 在页面标题栏的环境菜单中选取 **Production**。它是受保护的，所以带有红色标记和锁图标。
+2. 让智能体再次发送 **List products**。面板显示 **Claude Code 想要发送到受保护的环境**，并且在上面按 <kbd>↩</kbd> 不起作用：你必须做出选择。选取**拒绝**。（Alpenglow 的 Production 是个虚构的地址，所以发送无论如何都会失败。）
+3. 你自己发送 **List products**。按钮显示为**发送到 Production…**，并有一个提示询问**要发送到 Production 吗？**。**取消**是默认选项；**切换环境之前不再询问**会在你选择另一个环境之前不再提问。选取**取消**。
+4. 切换回**无环境**。
+
+用环境页面上的**受保护**开关把环境标记为受保护。参见[受保护的环境](/docs/workspaces/protected-environments)。
+
+## 8. 没有 App 的情况：策略 [#8-without-the-app-policies]
+
+`echolot mcp serve` 也可以独立运行，供服务器上或 CI 中的智能体使用，在那里没有人能够批准任何事。这时由策略决定，任何需要询问的操作都会被拒绝：
+
+```sh
+echolot mcp serve Alpenglow.echolot --policy readonly
+```
+
+| 策略 | 直接运行的 | 需要询问的（无人可问时拒绝） |
+| --- | --- | --- |
+| `standard`（默认） | 读取和安全的发送 | 其他发送和更改 |
+| `readonly` | 读取 | 发送；更改和删除会被拒绝 |
+| `permissive` | 发送和更改 | 删除、受保护的环境、新主机 |
+
+无界面运行时，它只运行工作区在启动时就已有的脚本。详见[智能体](/docs/ai/agents)和 [`echolot mcp`](/docs/cli/mcp)。
+
+## 9. 内置助手 [#9-the-built-in-assistant]
+
+Echolot 自己的助手使用同样的工具和同样的批准流程，在每个页面旁边的面板中工作。
+
+1. 选取 **Echolot › 设置…** › **助手**。在**添加提供商**下，选择一个**提供商**（Anthropic、OpenAI、Google Gemini，或 Ollama 之类兼容 OpenAI 的服务器），输入 **API 密钥**或**地址**，然后选取**添加**。密钥保存在钥匙串中。
+2. 在 Alpenglow 窗口中，按 <kbd>⌘</kbd><kbd>J</kbd>（或选取页面标题栏末端的魔棒）。
+3. 在<strong>询问助手…</strong>中输入：`Send every request in Catalog and tell me which checks fail.`
+4. 在工作区中的任何内容第一次发送给提供商之前，Echolot 会询问**要发送到 Anthropic 吗？**（或你选择的提供商）。**取消**是默认选项；选取**允许**。它对每个提供商只询问一次，而**设置 › 助手**可以收回这个许可。Mac 上或本地服务器上的模型从不询问。
+5. 它的发送会经过同一张面板，上面写着**智能体想要…**。
+
+面板标题栏中的**模型看到的内容**会准确显示发送给模型的是什么。参见[助手](/docs/ai/assistant)。
+
+<Edition only="direct">
+  在直接下载版中，助手也可以使用 Mac 上的命令行智能体（**CLI 智能体（ACP）**：Claude Code、Codex、Gemini CLI）。
+</Edition>
+
+## 后续步骤 [#next-steps]
+
+- [智能体](/docs/ai/agents)：每项设置、工具集和其他客户端。
+- [用流程实现自动化](/docs/tutorials/automate-with-flows)：把流程作为一个工具提供给智能体，并用“批准”块询问真人。
+- [隐私与安全](/docs/privacy-and-security)：什么内容会在何时离开你的 Mac。

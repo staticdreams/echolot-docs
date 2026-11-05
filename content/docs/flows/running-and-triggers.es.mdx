@@ -1,0 +1,235 @@
+---
+title: "Ejecución y activadores"
+description: "Ejecuta un flujo a mano, con una programación, desde un webhook, como herramienta para agentes de IA o desde la línea de comandos, y permite los activadores que inician flujos sin ti."
+---
+
+Un flujo se ejecuta cuando algo lo inicia: tú, con el botón **Ejecutar**; un agente de IA, cuando ofreces el flujo como
+herramienta; una programación; un webhook; o `echolot flow run` en una terminal o en CI. Lo inicie quien lo inicie, cada
+solicitud sigue el mismo camino que un envío desde la página de la solicitud.
+
+## Ejecutar a mano [#run-by-hand]
+
+1. Abre el flujo en la página Flujos.
+2. Haz clic en **Ejecutar** en la barra de herramientas, o pulsa <kbd>⌘</kbd><kbd>R</kbd>.
+3. Cuando el flujo tiene [entradas](/docs/flows#inputs-and-outputs), la hoja **Ejecutar** con el nombre del flujo las
+   pide. Cada campo muestra el nombre de la entrada, su tipo y si es obligatoria, y empieza con su valor
+   predeterminado. Deja un campo vacío para usar el valor predeterminado y luego haz clic en **Ejecutar**.
+
+El flujo se guarda primero, así que la ejecución usa lo que hay en el lienzo. Se ejecuta con el
+[entorno](/docs/workspaces/environments) activo de la ventana. **Ejecutar** no está disponible mientras el flujo tenga
+errores; su ayuda dice «Corrige primero los problemas del flujo».
+
+Cuando hay un [entorno protegido](/docs/workspaces/protected-environments) activo, el botón dice
+**Ejecutar en Production…** (con el nombre de ese entorno) y Echolot pregunta una vez antes de que empiece la ejecución. Las
+solicitudes dentro de la ejecución no vuelven a preguntar.
+
+### La vista de la ejecución [#the-run-view]
+
+Mientras el flujo se ejecuta, sus bloques muestran su estado en el lienzo, y el registro de **Ejecutar** se abre debajo:
+
+| En el lienzo | Significa |
+| --- | --- |
+| Borde en el color de acento | El bloque se está ejecutando o te está esperando. |
+| Borde verde | El bloque ha terminado. |
+| Borde rojo | El bloque ha fallado. |
+
+El registro de ejecución enumera, en orden:
+
+- cada bloque cuando termina, con su tiempo;
+- las líneas de los bloques Registro y de `console.log` en los bloques Evaluar;
+- los resultados de las pruebas de los bloques Comprobar y de `pm.test`, con **Pruebas** superadas/total en la cabecera;
+- los errores, en rojo;
+- cómo ha terminado la ejecución: `Finished in 1.2 s`, `Stopped in …` o `Failed in …` con el motivo.
+
+Haz clic en una línea para seleccionar su bloque. Selecciona cualquier bloque para ver su **Última ejecución** en el
+inspector, con sus valores de **Entrada** y **Salida** por puerto. **Borrar** vacía el registro y los estados del lienzo;
+el botón de cerrar oculta el registro, y **Registro de ejecuciones** en la barra de herramientas lo vuelve a mostrar.
+
+**Detener** (<kbd>⌘</kbd><kbd>.</kbd>) ocupa el lugar de **Ejecutar** mientras hay una ejecución en marcha. Termina la
+ejecución, cierra la solicitud en vuelo y quita cualquier pregunta que haya en pantalla.
+
+Cuando una ejecución falla y el modelo integrado del Mac está disponible, un botón en la cabecera del registro explica
+el fallo a partir del registro.
+
+### Ejecuciones anteriores [#earlier-runs]
+
+La ventana conserva las últimas 20 ejecuciones del flujo abierto, incluidas las que ha iniciado una programación o un
+webhook. Aparecen en **Ejecuciones de** en la barra lateral (con cómo terminó cada una, cuándo empezó y cuánto tardó) y
+en el menú **Ejecuciones** de la barra de herramientas. Haz clic en una para volver a mostrarla en el lienzo: los
+estados de los bloques y la **Última ejecución** de cada bloque. **Limpiar el lienzo** en el menú **Ejecuciones** las
+quita del lienzo.
+
+Los registros de las ejecuciones se quedan en la ventana. Las solicitudes que envía un flujo están en el
+[historial](/docs/workspaces/history) del espacio de trabajo como cualquier otro envío.
+
+## Activadores [#triggers]
+
+Selecciona el bloque **Inicio** para ver los **Activadores** del flujo en el inspector.
+**Botón Ejecutar y `echolot flow run`** está siempre activado. Marca los demás para añadirlos:
+
+- **Agentes (una herramienta MCP)**
+- **Programación**
+- **Webhook**
+
+El bloque Inicio muestra un pequeño icono por cada activador que está activado, y la barra lateral los muestra bajo el
+nombre del flujo.
+
+<Shot id="flows-triggers-start" alt="El inspector del bloque Inicio de Order status on webhook: la sección Activadores con Webhook marcado, el método POST y la ruta /order-status, la dirección local con Copiar URL y Copiar token, y Permitido con Revocar" />
+
+### Permitir un activador [#allow-a-trigger]
+
+Los agentes, las programaciones y los webhooks inician flujos cuando no estás delante del lienzo, así que cada uno
+necesita además tu permiso para este flujo. Bajo cada activador marcado, haz clic en **Permitir**. El activador muestra
+entonces **Permitido** y un botón **Revocar**.
+
+El permiso es para el flujo tal como está ahora: el propio flujo, las solicitudes que envía con las carpetas que tienen
+encima, las variables, la autenticación, el proxy y los certificados del espacio de trabajo, y los flujos que ejecuta.
+Si cambias cualquiera de ellos, ya sea en el lienzo, en Git o por un agente, el activador se detiene hasta que lo
+permitas de nuevo. Entonces dice «El flujo ha cambiado desde que lo permitiste.» y ofrece **Permitir de nuevo**. Un flujo
+no puede permitirse a sí mismo: el permiso se guarda en Echolot, en tu Mac, no en el espacio de trabajo. Un flujo con
+errores nunca se inicia desde un activador.
+
+Los cambios en los valores de un entorno (un token nuevo, por ejemplo) no quitan el permiso.
+
+### Agentes: un flujo como herramienta MCP [#agents-a-flow-as-an-mcp-tool]
+
+Ofrece un flujo a los agentes de IA y se convierte en una herramienta del servidor MCP de Echolot: el agente llama a una
+sola herramienta, el flujo hace las solicitudes y los secretos se quedan en Echolot.
+
+1. Selecciona el bloque Inicio y marca **Agentes (una herramienta MCP)**.
+2. **Nombre de la herramienta** es `flow_` y el nombre de archivo del flujo con guiones bajos
+   (`flow_place_test_order`), salvo que escribas otro: hasta 64 letras, cifras, `_` y `-`.
+3. Escribe **Qué hace la herramienta**, para el modelo. Empieza siendo la descripción del flujo.
+4. Haz clic en **Permitir**.
+5. Activa **Ajustes › Agentes** y conecta tu cliente. Consulta los [agentes de IA](/docs/ai/agents).
+
+Los argumentos de la herramienta son las entradas del flujo, y su resultado es lo que ha recibido el bloque Salida.
+**Place a test order** se ofrece como `place_test_order`. El flujo aparece en la lista de herramientas mientras el
+conjunto de herramientas **Flujos** esté activado (lo está de forma predeterminada). Los agentes solo pueden iniciar
+flujos que se ofrecen y se permiten.
+
+Cuando un agente inicia un flujo, Echolot te pregunta una vez, antes de la ejecución, con lo que hará el flujo: qué
+solicitudes envía a qué direcciones, qué variables y secretos guarda, qué archivos escribe, qué herramientas y flujos
+ejecuta y dónde pregunta a una persona. Dentro de la ejecución, lo que has aprobado se ejecuta sin volver a preguntar;
+los entornos protegidos, los hosts nuevos y los borrados siguen preguntando, y también lo que rechacen las reglas
+propias del agente.
+
+Los bloques de personas de un flujo que ha iniciado un agente van al cliente del agente: muestra el mensaje, el código y
+el enlace, o pide los valores. Un bloque Aprobar es siempre tuyo: cuando el agente responde a uno, Echolot te pregunta
+primero a ti.
+
+El [Asistente](/docs/ai/assistant) ejecuta los flujos de la misma manera.
+
+### Programación [#schedule]
+
+Ejecuta un flujo por sí solo, cada cierto número de minutos o según un calendario.
+
+1. Selecciona el bloque Inicio y marca **Programación**. Empieza en cada 60 minutos.
+2. Elige **Intervalo** y rellena **Cada** … **minutos**, o elige **Horas fijas (cron)** y escribe una línea cron
+   (minuto, hora, día, mes, día de la semana). Una programación es una cosa o la otra, y se ejecuta como máximo una vez
+   por minuto.
+3. Haz clic en **Permitir**.
+
+Una vez permitida, el inspector muestra **Próxima ejecución** con su fecha y hora. Las ejecuciones programadas ocurren
+mientras la ventana del espacio de trabajo está abierta, con el entorno activo de la ventana en el momento de la
+ejecución, y empiezan con los valores predeterminados de las entradas. Una ejecución que se pierde mientras el Mac
+dormía o la ventana estaba cerrada se ejecuta una vez la próxima vez que Echolot mira; un flujo que sigue ejecutándose
+no se vuelve a iniciar. Una ejecución programada que falla muestra una notificación. Para ejecutar programaciones sin la
+app, usa [`echolot flow serve`](#run-from-the-command-line).
+
+Las líneas cron usan cinco campos en la zona horaria de tu Mac: minuto (0–59), hora (0–23), día del mes (1–31), mes
+(1–12 o `jan`–`dec`) y día de la semana (0–7 o `sun`–`sat`; 0 y 7 son domingo). Cada campo admite `*`, números, rangos
+(`1-5`), listas (`1,15`) y pasos (`*/15`, `8-18/2`). Cuando el día y el día de la semana están restringidos, basta con
+que coincida uno de los dos.
+
+| Línea cron | Se ejecuta |
+| --- | --- |
+| `0 6 * * *` | Todos los días a las 6:00 (**Morning stock check**). |
+| `0 7 * * 1-5` | De lunes a viernes a las 7:00. |
+| `*/15 8-18 * * *` | Cada 15 minutos de 8:00 a 18:45. |
+| `0 9 1 * *` | El día 1 de cada mes a las 9:00. |
+
+Los bloques de personas no pueden preguntar a nadie durante una ejecución programada, así que fallan en ella.
+
+### Webhook [#webhook]
+
+Inicia un flujo cuando algo envía una solicitud a una dirección local.
+
+1. Selecciona el bloque Inicio y marca **Webhook**.
+2. Elige el método (`GET`, `POST`, `PUT`, `PATCH` o `DELETE`; `POST` de forma predeterminada) y la ruta, que empieza por
+   `/`. La ruta empieza siendo `/` y el nombre de archivo del flujo.
+3. Haz clic en **Permitir**.
+
+Una vez permitido, el inspector muestra la dirección, como `POST http://127.0.0.1:52817/order-status`, con **Copiar URL**
+y **Copiar token**. Echolot escucha solo en este Mac (127.0.0.1) mientras la ventana está abierta. El puerto se elige
+una vez por espacio de trabajo y se conserva.
+
+Quien llama debe enviar el token del espacio de trabajo, que Echolot crea la primera vez y guarda en el llavero.
+Cualquiera de estas opciones sirve:
+
+- la cabecera `Authorization: Bearer <token>`; - la cabecera `X-Echolot-Token: <token>`; - el parámetro de consulta
+  `?token=<token>`.
+
+```sh
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "Authorization: Bearer <token>"
+```
+
+**Order status on webhook** inicia sesión, obtiene el pedido y responde con él. La consulta y las claves de un cuerpo
+JSON rellenan las entradas del flujo que tienen el mismo nombre; las demás claves se omiten. Una entrada llamada `body`
+recibe el cuerpo entero. Así, un flujo con una entrada `order` acepta `?order=ord_7Hk2Lw` o `{"order": "ord_7Hk2Lw"}`.
+La ejecución usa el entorno activo de la ventana.
+
+| Respuesta | Cuándo |
+| --- | --- |
+| `200` con la salida como JSON | La ejecución se ha superado. El cuerpo es lo que ha recibido el bloque Salida, o `null`. |
+| `401` | Falta el token o es incorrecto. |
+| `404` | Ningún flujo permitido responde a ese método y esa ruta; el error enumera los que sí. |
+| `413` | El cuerpo supera los 8 MB. El flujo no se ejecuta. |
+| `500` | La ejecución ha fallado. El cuerpo tiene `error` y el id de la ejecución. |
+| `503` | La ejecución se ha detenido. |
+
+Una ejecución por webhook se detiene a los dos minutos. Los bloques de personas no pueden preguntar a nadie ahí, así que
+fallan.
+
+## Ejecuciones en segundo plano [#background-runs]
+
+Las ejecuciones que inician las programaciones y los webhooks en la app aparecen en **Ejecuciones de** ese flujo mientras
+está abierto, y una que falla muestra una notificación de macOS con el nombre del flujo y el error. Se ejecutan con tu
+autoridad, como una ejecución que inicias tú, pero solo para los flujos que has permitido.
+
+## Ejecutar desde la línea de comandos [#run-from-the-command-line]
+
+El comando `echolot` ejecuta los mismos flujos sin la app. En CI, así es como un flujo se convierte en una puerta de
+publicación.
+
+```sh
+# Enumera los flujos, sus entradas y sus problemas
+echolot flow list -w Alpenglow.echolot
+
+# Ejecuta uno; termina con un error cuando falla la ejecución o una de sus pruebas
+echolot flow run morning-stock-check -w Alpenglow.echolot --env staging --no-input
+
+# Pasa entradas como nombre=valor (un flujo creado con la plantilla Paginar y exportar)
+echolot flow run export-products -w Alpenglow.echolot --input pages=5
+
+# Ejecuta las programaciones y responde a los webhooks hasta Ctrl-C
+echolot flow serve -w Alpenglow.echolot --port 4100
+```
+
+- `flow run` imprime cada bloque cuando termina y luego la salida. `--json` imprime el registro de la ejecución en su
+  lugar. Los bloques de personas preguntan en la terminal; con `--no-input` hacen fallar la ejecución, que es lo que
+  necesita CI. Los bloques Notificar imprimen su texto.
+- `flow serve` ejecuta los flujos programados cuando les toca y responde a los webhooks en el puerto 4100 (`--port 0`
+  elige uno libre). `--share` escucha en todas las interfaces de red, para contenedores. El token sale de `--token`, si
+  no de `ECHOLOT_WEBHOOK_TOKEN`, si no de uno nuevo que imprime.
+- En la línea de comandos has iniciado tú la ejecución, así que los flujos no necesitan **Permitir**: `flow serve`
+  ejecuta todos los flujos que tienen una programación o un webhook y no tienen errores.
+
+Todas las opciones están en [echolot flow](/docs/cli/flow).
+
+<Edition only="direct">
+  La herramienta de línea de comandos viene dentro de la descarga directa (
+  **Echolot › Instalar herramienta de línea de comandos…**). Con la edición de la App Store, instálala por separado
+  desde el zip de la página de versiones.
+</Edition>

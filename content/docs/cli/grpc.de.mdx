@@ -1,0 +1,91 @@
+---
+title: "echolot grpc"
+description: "Liste die Services und Methoden eines gRPC-Servers auf und rufe sie mit JSON-Nachrichten auf."
+---
+
+`echolot grpc` beschreibt gRPC-Services und ruft ihre Methoden auf, mit Nachrichten als JSON. Die Services lernt es
+über die Reflection des Servers oder aus einer `.proto`-Datei. Dasselbe in der App findest du unter
+[gRPC-Anfragen](/docs/requests/grpc).
+
+| Unterbefehl | Was er macht |
+| --- | --- |
+| `echolot grpc describe` | Listet die Services und Methoden eines Servers oder einer `.proto`-Datei auf, mit den Feldern jeder Methode. |
+| `echolot grpc call` | Ruft eine Methode auf und gibt die Antwort als JSON aus. |
+
+Die Beispiele nutzen den Inventar-Service von Alpenglow, `specs/inventory.proto` im Arbeitsbereich Alpenglow. Er läuft
+auf deinem Mac unter `localhost:50051`; die Demo-API kann kein gRPC.
+
+## echolot grpc describe [#echolot-grpc-describe]
+
+```sh
+echolot grpc describe [<url>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>] [--json]
+```
+
+```sh
+echolot grpc describe --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+```text
+Alpenglow.echolot/specs/inventory.proto: 1 service
+alpenglow.inventory.v1.Inventory
+  ListWarehouses (unary): alpenglow.inventory.v1.ListWarehousesRequest → alpenglow.inventory.v1.ListWarehousesResponse
+  WatchStock (server streaming): alpenglow.inventory.v1.WatchStockRequest → alpenglow.inventory.v1.StockLevel
+    skus: repeated string
+  Reserve (unary): alpenglow.inventory.v1.ReserveRequest → alpenglow.inventory.v1.Reservation
+    sku: string
+    quantity: int32
+    orderId: string
+```
+
+Gib stattdessen einen Server an (`echolot grpc describe http://localhost:50051`), um seinen Reflection-Service zu
+fragen. Jede Methode zeigt, ob sie unär ist, Server-Streaming, Client-Streaming oder bidirektional, ihre Typen für
+Anfrage und Antwort und die Felder ihrer Anfrage.
+
+| Option | Bedeutung |
+| --- | --- |
+| `<url>` | Der Server, `http://host:port` oder `https://host:port`. Mit `--proto` nicht nötig. |
+| `--proto <file>` | Eine `.proto`-Datei, die den Service beschreibt, mit ihren Imports daneben. Ohne sie wird die Reflection des Servers gefragt. |
+| `-H`, `--header <header>` | Metadaten als `'Name: value'`. Wiederholbar. |
+| `-k`, `--insecure` | Die Prüfung des TLS-Zertifikats überspringen. |
+| `--timeout <seconds>` | Sekunden, die auf den ganzen Aufruf gewartet wird. Standard 30. |
+| `--json` | Die Beschreibung als JSON ausgeben. |
+
+## echolot grpc call [#echolot-grpc-call]
+
+```sh
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+```
+
+`<method>` ist `package.Service/Method`. Die Nachricht ist JSON, standardmäßig `{}`; `-d -` liest sie aus der
+Standardeingabe. Gib für eine Methode mit Client-Streaming ein Array an: Jedes Element ist eine Nachricht. Die Antwort
+wird als JSON in die Standardausgabe ausgegeben.
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserve \
+  -d '{"sku": "TNT-MH-2P", "quantity": 1, "orderId": "ord_7Hk2Lw"}' \
+  --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+Der Status, die Zahl der empfangenen Nachrichten und die Zeit gehen in die Standardfehlerausgabe. Ein anderer Status als
+`OK` endet mit 1.
+
+| Option | Bedeutung |
+| --- | --- |
+| `-d`, `--data <json>` | Die Nachricht als JSON; `-` liest sie aus der Standardeingabe. Standard `{}`. |
+| `--deadline <ms>` | Die Deadline in Millisekunden, gesendet als `grpc-timeout`. |
+| `--compress <algorithm>` | Die gesendeten Nachrichten komprimieren: `gzip` oder `deflate`. Komprimierte Antworten werden in jedem Fall gelesen. |
+| `--proto <file>` | Eine `.proto`-Datei, die den Service beschreibt, mit ihren Imports daneben. Ohne sie wird die Reflection des Servers gefragt. |
+| `-H`, `--header <header>` | Metadaten als `'Name: value'`. Wiederholbar. |
+| `-k`, `--insecure` | Die Prüfung des TLS-Zertifikats überspringen. |
+| `--timeout <seconds>` | Sekunden, die auf den ganzen Aufruf gewartet wird. Standard 30. |
+
+`http://` spricht HTTP/2 ohne TLS; `https://` nutzt TLS. Die Well-Known Types (`google.protobuf.Timestamp` und die
+übrigen) sind eingebaut, sodass eine `.proto`-Datei, die sie importiert, nichts daneben braucht.
+
+## Exit-Codes [#exit-codes]
+
+| Code | Wann |
+| --- | --- |
+| `0` | `describe` fand die Services; `call` endete mit dem Status `OK`. |
+| `1` | Der Server ließ sich nicht erreichen oder beschreiben, oder der Status des Aufrufs war nicht `OK`. |
+| `64` | Eine falsche Option. |

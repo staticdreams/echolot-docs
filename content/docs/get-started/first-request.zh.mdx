@@ -1,0 +1,94 @@
+---
+title: "发送第一个请求"
+description: "几分钟内创建工作区，向演示 API 发送请求并读懂它的响应。"
+---
+
+本页带你从空白的 Echolot 开始，发送一个请求并读懂响应。它使用位于 `https://demo.echolot.dev` 的[演示 API](/docs/tutorials/demo-api)，这是一个虚构的户外装备商店，无需任何设置即可应答。
+
+## 1. 创建工作区 [#1-create-a-workspace]
+
+工作区是存放请求的文件夹，每个请求一个文件。请先创建一个。
+
+<Steps>
+<Step>
+
+在欢迎窗口中选取**新建工作区…**（或者**文件 › 新建工作区…**，<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>）。
+
+</Step>
+<Step>
+
+为它命名，例如 `Alpenglow.echolot`，选择存放位置，然后选取**创建**。
+
+</Step>
+</Steps>
+
+工作区会在自己的窗口中打开。它是空的，所以页面上显示**此工作区为空**。
+
+## 2. 创建请求 [#2-make-a-request]
+
+<Steps>
+<Step>
+
+选取页面上的**新建请求**，或按 <kbd>⌘</kbd><kbd>N</kbd>。边栏中会出现一个名为**新建请求**的请求，名称处于选中状态。输入 `List products`，然后按 <kbd>Return</kbd>。
+
+</Step>
+<Step>
+
+点按页面顶部的地址栏（里面显示**输入 URL，可使用 \{\{variables\}\}**），然后输入：
+
+```txt
+https://demo.echolot.dev/v1/products?category=tents&per_page=5
+```
+
+方法是 **GET**，正是你需要的。**参数**标签页现在列出了 `category` 和 `per_page`；你可以在那里编辑它们，也可以在地址中编辑。
+
+</Step>
+</Steps>
+
+不需要存储。你停止输入片刻后，Echolot 会把请求写入工作区文件夹中的 `.req.toml` 文件，边栏底部的工作区名称处会显示**已全部存储**。
+
+<Callout title="已经有 cURL 命令了？">
+  把它粘贴到地址栏。Echolot 会据此填入方法、地址、标头、正文和认证，并在地址栏下方列出它无法使用的内容。
+</Callout>
+
+## 3. 发送 [#3-send-it]
+
+按 <kbd>⌘</kbd><kbd>R</kbd>，或者选取**发送**。<kbd>⌘</kbd><kbd>↩</kbd> 同样可以发送。请求运行期间，**发送**会变成**取消**（<kbd>⌘</kbd><kbd>.</kbd>）。
+
+<Shot id="get-started-first-response" alt="已发送的 List products 请求，响应上方是状态 200，响应窗格中是 JSON 正文" />
+
+## 4. 读懂响应 [#4-read-the-response]
+
+响应窗格位于请求旁边（如果选择堆叠布局，则位于请求下方）。
+
+- **响应上方的那一行**显示状态（`200 OK`）、耗时和大小。把指针停在上面可查看详情：各项大小、各阶段耗时（DNS、连接、TLS、等待、传输）、TLS 连接以及所有重定向。
+- **正文**显示响应正文。上方的**视图**选项用于切换阅读方式：**文本**、**JSON**（已格式化）、**JSON 树**，对于其他内容还有 **XML**、**表单**、**MessagePack** 或**预览**。Echolot 会根据内容类型选出第一个。<kbd>⌘</kbd><kbd>F</kbd> 可在正文中查找文本。
+- **标头**列出响应标头。演示 API 把总数放在 `X-Total-Count` 中，把后续页面放在 `Link` 中。
+- **Cookie** 列出响应设置的 Cookie。
+- **原始**和**十六进制**显示接收到的字节。**传输**显示在网络上往来的完整交换过程，包括发送和接收的内容。
+- **测试**显示请求的检查结果（有检查之后才会有内容）。
+
+每个响应也会保存在该请求的[历史记录](/docs/workspaces/history)中（<kbd>⌘</kbd><kbd>Y</kbd>），你可以回头查看，并与下一个响应比较。
+
+## 5. 添加检查 [#5-add-a-check]
+
+检查在每次发送后运行，在 API 不再按预期应答时提醒你。
+
+1. 打开请求的**测试**标签页。
+2. 选取**从响应生成…**。Echolot 会根据你刚收到的响应提出检查建议：状态、内容类型、JSON 中的值。
+3. 勾选你想要的检查，然后选取**添加 N 个测试**（按钮会统计你勾选的检查数量）。
+4. 再次发送。响应的**测试**标签页会显示每项检查是通过还是失败。
+
+[脚本与测试](/docs/requests/scripts-and-tests)介绍了每一种检查。
+
+## 后续步骤 [#next-steps]
+
+- 发送正文：再创建一个请求，把方法设为 **POST**，地址设为 `https://demo.echolot.dev/echo/anything`，并在**正文**标签页中输入一些 JSON。演示服务会把收到的内容原样返回。
+- 用**请求 › 拷贝为 cURL**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd>）把请求拷贝为 cURL 命令，或者用**请求 › 生成代码…**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd>）为它生成代码。
+- 把服务器地址放入变量并添加环境：[环境](/docs/workspaces/environments)。
+- 熟悉界面：[窗口](/docs/get-started/the-window)。
+- 跟着更完整的演练学习：[你的第一个工作区](/docs/tutorials/first-workspace)。
+
+<Callout type="warn" title="演示 API 是共用的">
+  它对每个地址每分钟接受 120 个请求（大型、缓慢和流式的端点为每分钟 10 个）。超出限制时，它会返回 `429 Too Many Requests` 和 `Retry-After` 标头；等待相应的秒数后再次发送即可。
+</Callout>

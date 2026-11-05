@@ -1,0 +1,85 @@
+---
+title: "echolot fake"
+description: "ターミナルでテンプレートからダミーデータを作成します。フィクスチャ、シードデータ、モックのボディ用で、モックのルートと同じダミーの値を使います。"
+---
+
+`echolot fake` は、テンプレートをダミーデータで埋めます：名前、メールアドレス、住所、価格、日付、ダミーテキスト（lorem ipsum）など、約120種類の値があります。
+[手作りのルート](/docs/mocks/routes#bodies-with-fake-data)のボディと同じテンプレートを使うので、ボディを試したり、テスト用のフィクスチャやシードデータを書き出したりできます。
+
+```sh
+echolot fake [<template>] [--file <file>] [--count <count>] [--seed <seed>] [--type <type>]
+echolot fake list
+```
+
+テンプレートは、引数、`--file`、または標準入力から渡します。結果は標準出力に出力されます。
+
+## リストを作る [#make-a-list]
+
+`--count` を指定すると、テンプレートがJSONリストの1項目になります。
+
+```sh
+echolot fake '{"id": {{@number}}, "name": "{{$randomFullName}}", "email": "{{$randomEmail}}"}' --count 3
+```
+
+```json
+[
+{"id": 1, "name": "Henry Adams", "email": "stella.meyer.45@yahoo.com"},
+{"id": 2, "name": "Jack Grant", "email": "bianca.ivanova.11@icloud.com"},
+{"id": 3, "name": "Theo Sato", "email": "samuel.lee.88@yahoo.com"}
+]
+```
+
+`--type xml` または `--type text` では、項目が続けて出力されます。
+
+```sh
+echolot fake '<city>{{$randomCity}}</city>' --count 2 --type xml
+```
+
+```xml
+<city>Kyoto</city>
+<city>Athens</city>
+```
+
+テンプレート自身が `{{#repeat 10}}` … `{{/repeat}}` でリストを作ることもできます。[リスト](/docs/mocks/routes#lists)を参照してください。
+
+## 同じデータをもう一度 [#the-same-data-again]
+
+`--seed` を指定すると毎回同じデータが作られます。実行のたびに変わってはいけないフィクスチャに使えます。
+
+```sh
+echolot fake --file user.json.template --count 50 --seed 7 > users.json
+```
+
+## エスケープ [#escaping]
+
+`--type` は、値のエスケープ方法を決めます：`json`（デフォルト）はJSON文字列内の値をエスケープし、`xml` はXMLとHTML向けに `&`、`<`、`>`、引用符をエスケープし、`text` は何もエスケープしません。
+[エスケープ](/docs/mocks/routes#escaping)を参照してください。
+
+## 値 [#the-values]
+
+`echolot fake list` は、すべての値をグループごとに、引数とともに出力します。
+
+```text
+COMMON
+  $randomUUID  A random UUID: 3f2c1e0a-…
+  $randomInt(Minimum, Maximum)  A whole number, 0 to 1000 unless bounds are given.
+  $randomFloat(Minimum, Maximum, Decimals)  A decimal number between the bounds (0 to 1000), with 2 decimals unless told otherwise.
+…
+```
+
+すべての値は[動的な値](/docs/reference/dynamic-values#fake-data)にあります。`{{request.params.id}}` のようなリクエストに関するトークンはモックのルート用で、ここでは書かれたままになります。
+
+## オプション [#options]
+
+| オプション | 意味 |
+| --- | --- |
+| `<template>` | テンプレート。ダミーの値を一覧表示するには `list`。 |
+| `-f`、`--file <file>` | テンプレートをファイルから読み込みます。 |
+| `-c`、`--count <count>` | この数の項目を作成します（最大10,000）。JSONリスト、または `--type xml` と `text` では項目が続けて出力されます。 |
+| `--seed <seed>` | 毎回同じデータを作成します。 |
+| `--type <type>` | `json`（デフォルト）、`xml`、`text`。 |
+
+## 終了コード [#exit-codes]
+
+すべての値を作成できた場合は `0` です。`{{$randomInt(9, 1)}}` のように値を作成できなかった場合は `1` で、理由が標準エラーに出力され、トークンは出力内で書かれたままになります。
+オプションが正しくない場合は `64` です。

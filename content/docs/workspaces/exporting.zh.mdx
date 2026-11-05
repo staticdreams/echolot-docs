@@ -1,0 +1,111 @@
+---
+title: "导出"
+description: "把工作区或文件夹导出为 Echolot 工作区、Postman、Insomnia 或 Bruno 集合，并把请求导出为 cURL、代码或 HAR。"
+---
+
+导出工作区或其中的某个文件夹，是为了把它交给使用其他工具的人，或者把副本带到另一台 Mac。Echolot 写出四种格式：Echolot 工作区、Postman Collection v2.1、Insomnia v5 文件和 Bruno 集合。机密值绝不会离开你的钥匙串。
+
+## 导出工作区或文件夹 [#export-a-workspace-or-a-folder]
+
+1. 开始导出：
+   - 整个工作区：**文件 › 导出工作区…**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd>），或边栏中**请求**旁的 **+** 菜单里的**导出工作区…**。
+   - 一个文件夹：按住 Control 键点按它并选择**导出文件夹…**，或选中它并选择**文件 › 导出文件夹…**。
+2. 选择一种格式。每种格式都会说明它能容纳多少个请求。
+3. 保持勾选**包括环境**，会同时导出环境；取消勾选则不导出。
+4. 点按**导出…**，选择位置，然后点按**导出**。
+
+Echolot 会建议一种格式：能容纳所有请求时建议 Postman，否则建议容纳最多的格式；没有其他格式能容纳任何请求时，则建议 Echolot 工作区。一种格式如果一个请求也容纳不了，就无法选择。
+
+<Shot id="workspaces-export-sheet" alt="Alpenglow 的“导出工作区”面板：四种格式，选中了 Postman Collection v2.1，显示每种格式能容纳 29 个请求中的多少个，以及哪些类型不包含在内" />
+
+## 格式 [#the-formats]
+
+| 格式 | 用途 | 能容纳的请求类型 | 写出为 |
+| --- | --- | --- | --- |
+| **Echolot 工作区** | “全部内容，包括各类请求，可用于另一台 Mac 或团队成员。” | 全部 | 工作区文件夹（`.echolot`） |
+| **Postman Collection v2.1** | “大多数 API 工具都能导入的格式：Postman、Insomnia、Bruno、Hoppscotch、Apidog。” | HTTP、GraphQL | 一个 `.postman_collection.json` 文件；带上环境时是一个文件夹 |
+| **Insomnia v5** | “一个适用于 Insomnia 10 及更高版本的 YAML 文件，包含环境。” | HTTP、GraphQL、WebSocket、Socket.IO、gRPC | 一个 `.yaml` 文件 |
+| **Bruno 集合** | “一个由 .bru 文件组成的文件夹，可存入 Git 并在 Bruno 中打开。” | HTTP、GraphQL | 一个文件夹 |
+
+MQTT 请求和已存储的 MCP 调用只会进入 Echolot 工作区。导出之前，每种格式都会显示它不包含的类型。对于 Alpenglow，Postman 显示“29 个请求中的 21 个 · MCP、MQTT、Socket.IO、WebSocket 和 gRPC 不包含在内”。
+
+## 文件夹会带上什么 [#what-a-folder-takes-with-it]
+
+文件夹导出时会带上它所继承的内容：工作区和外层文件夹的变量、认证和脚本。这样，请求在另一个工具中发送的内容，就与在 Echolot 中发送的一致。
+
+## 报告 [#the-report]
+
+导出之后，面板会说明写出了什么，例如“已将 21 个请求、7 个文件夹、3 个环境以 Postman Collection v2.1 格式导出到 …”。有内容要说明时，后面会有两个列表：
+
+- **未包含**：该格式没有位置容纳的每个请求，以及原因（“Postman Collection v2.1 没有 MQTT 请求。”）。
+- **导出时有变化**：每一处导出后变得不同的部分。
+
+<Shot id="workspaces-export-report" alt="把 Alpenglow 导出为 Postman 之后的导出报告：“未包含”列出八个 gRPC、WebSocket、Socket.IO、MQTT 和 MCP 请求；“导出时有变化”列出捕获、一个动态值和一个以明文写入的机密" />
+
+点按**在访达中显示**查看导出结果，或点按**关闭**。
+
+在 Postman、Insomnia 和 Bruno 中通常会有变化的内容：
+
+- **响应捕获**不会导出。其他工具通过脚本设置变量。
+- **各请求的设置**（超时、TLS、重定向、HTTP 版本）不会导出，除非该格式有相同的设置。
+- **检查**会在对方有对应功能的地方变成对方工具的测试。报告会统计没有对应功能的那些，例如 JSON Schema、OpenAPI 和 JSONPath 过滤检查。
+- **脚本**是为 Postman 的 `pm` API 写的。它们原样进入 Postman；Insomnia 的则改写成 `insomnia`；Bruno 的原样带过去，可能需要按 Bruno 的 API 做修改。
+- 对方工具没有对应功能的**动态值**会按原样保留。发送到那里之前请先替换它们。
+- **文件正文**指向文件在你 Mac 上的路径。在打开集合的地方重新选择文件。
+- 对方工具没有的**认证**会被省略或更改，报告会指明。
+- 通过 WebSocket 的 **GraphQL 订阅**会变成普通的 GraphQL 请求，GraphQL 文件上传不会导出。
+
+## 机密留在原处 [#secrets-stay-home]
+
+在每种格式中，机密变量都只导出名称，不带它们的值。打开导出内容的人在自己的工具中设置这些值。
+
+直接输入在认证或标头字段中、而不是保存在机密变量里的密码、令牌或密钥，会以明文写出。报告会统计它们：“有 1 个密码、令牌或密钥以明文写入……”。在 Alpenglow 中，就是 **Auth › Orders with OAuth 2** 的 OAuth 2.0 客户端密钥。分享文件之前，请把这类值移到钥匙串。见[机密](/docs/workspaces/secrets)。
+
+## Echolot 工作区副本 [#an-echolot-workspace-copy]
+
+以 **Echolot 工作区**格式导出的是一个新的工作区，有它自己的 ID，因此不与你的工作区共用任何钥匙串机密。
+
+- 整个工作区会带上一切：请求、环境、MCP 服务器、规范、模拟、流程和共享的助手对话。
+- 文件夹会带上环境、MCP 服务器和规范，并保持自己的位置：上层文件夹随之而来，每个只包含下一层，因此它所继承的内容以及请求之间的引用仍然有效。流程、模拟和共享的助手对话留在工作区中；报告会说明这一点。
+
+Git 自己的文件夹和访达的 `.DS_Store` 文件不会被复制。
+
+## 导出可以放在哪里 [#where-an-export-may-go]
+
+Echolot 绝不会把导出内容写在它所来自的工作区之上、之内或周围。你选择的文件或文件夹已存在时，Echolot 会把旧的移到废纸篓，并在原位置写入导出内容。
+
+## 在命令行中 [#on-the-command-line]
+
+`echolot export` 写出同样的格式：
+
+```sh
+echolot export alpenglow.postman_collection.json -w Alpenglow.echolot --format postman
+echolot export orders-bruno -w Alpenglow.echolot --format bruno --folder orders --no-environments
+```
+
+`--format` 是 `echolot`、`postman`、`insomnia` 或 `bruno`。某种格式没有位置容纳的内容会在标准错误中指明。见[导入和导出](/docs/cli/import-export)。
+
+## 把请求拷贝为代码 [#copy-a-request-as-code]
+
+在请求页面中，针对打开的请求：
+
+- **请求 › 拷贝为 cURL**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd>）会把一条 `curl` 命令放到剪贴板，其中的变量和机密已解析。
+- **请求 › 生成代码…**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd>）会把请求显示为代码，其中的变量已解析。脚本不会运行，机密按原样显示。选择一种语言，然后点按**拷贝**或**存储…**。
+
+“生成代码”支持 cURL、Swift（URLSession）、JavaScript（fetch 和 axios）、TypeScript（fetch）、Python（requests 和 httpx）、Go（net/http）、Kotlin（OkHttp）、Java（HttpClient）、C#（HttpClient）、PHP（cURL）和 Rust（reqwest）。
+
+要添加一种语言，请点按**打开模板文件夹**，并把一个 `.template` 文件放进去。它的第一行以注释形式给出它在列表中的名称：`{{! Ruby · Net::HTTP }}`。与内置模板文件名相同的模板，例如 `python-requests.template`，会取代它。
+
+<Callout type="warn">
+  代码和 cURL 命令中含有请求的机密明文。不要把它们粘贴到别人能看到的地方。
+</Callout>
+
+## 把一次交换导出为 HAR [#export-an-exchange-as-har]
+
+要保留或分享一次交换的原貌，请选择**请求 › 将交换记录导出为 HAR…**，或响应正文上方存储菜单中的**将交换记录导出为 HAR…**。HAR 文件包含请求和响应。
+
+[运行器](/docs/requests/runner)会把一次运行的所有交换导出为一个 HAR 文件，命令行中的 `echolot run --reporter har` 也一样。
+
+响应正文上方的存储菜单中还有**存储正文…**、**在默认 App 中打开**，以及对压缩的或 gRPC 响应提供的**存储编码的正文…**：即到达时的原始字节。
+
+规范从[规范](/docs/specs)页面导出。

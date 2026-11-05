@@ -1,0 +1,69 @@
+---
+title: "echolot graphql diff"
+description: "두 GraphQL 스키마를 비교하고, 호환되지 않는 변경이 있으면 빌드를 실패시킵니다."
+---
+
+`echolot graphql diff`는 한 GraphQL 스키마에서 다른 스키마로 바뀐 내용을 나열하고 변경마다 등급을 매기므로, 변경이 API의 클라이언트를
+깨뜨리기 전에 빌드를 멈출 수 있습니다.
+
+```sh
+echolot graphql diff <old> <new> [--fail-on <level>] [--json]
+```
+
+`<old>`와 `<new>`는 변경 전과 후의 스키마입니다. SDL 파일(`.graphql`)이나 인트로스펙션 결과(JSON)이며, 섞어서 써도 됩니다.
+
+## 두 스키마 비교 [#compare-two-schemas]
+
+```sh
+git show main:specs/shop.graphql > before.graphql
+echolot graphql diff before.graphql Alpenglow.echolot/specs/shop.graphql
+```
+
+```text
+Breaking (1)
+  The field Product.weightGrams was removed
+Dangerous (1)
+  The argument inStock was added to Query.search
+Safe (1)
+  The field Product.colors was added
+```
+
+| 등급 | 의미 |
+| --- | --- |
+| Breaking | 이전에 작동하던 쿼리가 이제 실패할 수 있습니다. 타입, 필드, 입력 필드, 인수, 열거형 값, 지시문의 제거. 필수 인수나 입력 필드의 추가. 필드 타입의 변경(출력을 non-null로 바꾸는 경우 제외). 유니온 멤버나 인터페이스의 제거. |
+| Dangerous | 쿼리는 계속 작동하지만 동작이 달라질 수 있습니다. 선택 인수의 추가, 기본값 변경, 열거형 값이나 유니온 멤버의 추가, 새 인터페이스, 지원 중단 처리. |
+| Safe | 기존 쿼리가 알아챌 수 없는 변경입니다. 타입, 필드, 선택 입력 필드, 지시문의 추가. 설명 변경. 지원 중단 해제. |
+
+`--json`은 변경 사항을 JSON 배열로 출력하며, 각 항목에는 `severity`, `path`, `message`가 있습니다.
+
+```json
+[
+  {
+    "message" : "The field Product.weightGrams was removed",
+    "path" : "Product.weightGrams",
+    "severity" : "breaking"
+  },
+  {
+    "message" : "The argument inStock was added to Query.search",
+    "path" : "Query.search(inStock)",
+    "severity" : "dangerous"
+  }
+]
+```
+
+## 옵션 [#options]
+
+| 옵션 | 의미 |
+| --- | --- |
+| `--fail-on <level>` | `breaking`(기본값)은 호환되지 않는 변경이 있으면 1로 종료합니다. `dangerous`는 호환되지 않는 변경과 위험한 변경이 있으면, `none`은 절대 실패하지 않습니다. |
+| `--json` | 변경 사항을 JSON으로 출력합니다. |
+
+## 종료 코드 [#exit-codes]
+
+| 코드 | 조건 |
+| --- | --- |
+| `0` | `--fail-on` 등급 이상의 변경이 없습니다. |
+| `1` | `--fail-on` 등급 이상의 변경이 있거나, 스키마를 읽을 수 없습니다. |
+
+실행 중인 서버에서 스키마를 가져오려면 앱의 GraphQL 요청으로 인트로스펙션 쿼리를 보내거나 [GraphQL 요청](/docs/requests/graphql)을
+참조하십시오.

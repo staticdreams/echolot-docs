@@ -1,0 +1,103 @@
+---
+title: "echolot mqtt"
+description: "Подписывайтесь на топики и публикуйте сообщения на брокерах MQTT версии 3.1.1 или 5.0 по TCP, TLS или WebSocket."
+---
+
+`echolot mqtt` обращается к брокерам MQTT из терминала: `subscribe` печатает сообщения по мере их прихода, `publish`
+отправляет их. Обе команды по умолчанию говорят на MQTT 5.0, а на 3.1.1 — если вы попросите, по TCP (`mqtt://`), TLS
+(`mqtts://`) или WebSocket (`ws://`, `wss://`). То же самое в приложении см. в [запросах MQTT](/docs/requests/mqtt).
+
+В примерах используется брокер на вашем Mac по адресу `localhost`, как в запросе Alpenglow **Warehouse sensors**.
+Демо-API не умеет работать с MQTT.
+
+## echolot mqtt subscribe [#echolot-mqtt-subscribe]
+
+```sh
+echolot mqtt subscribe [<options>] <broker> <filters> ...
+```
+
+`<broker>` — это `mqtt://host[:1883]`, `mqtts://host[:8883]`, `ws://host/mqtt` или `wss://host/mqtt`. `<filters>` — один
+или несколько фильтров топиков: `+` соответствует одному уровню, `#` — всему остальному.
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/+/temperature' --qos 1
+```
+
+```text
+warehouses/bern/temperature 4.5
+warehouses/zurich/temperature 5.1
+```
+
+Каждое сообщение — строка в стандартном выводе: топик, пробел, затем полезная нагрузка. Нагрузка, которая не является
+текстом UTF-8, печатается в Base64. С `--json` каждое сообщение — строка JSON с `topic`, `payload` (или
+`payload_base64`), `qos` и `retain`, готовая для `jq`:
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 10 --json | jq -r .payload
+```
+
+Подписка работает, пока вы её не остановите (<kbd>⌃</kbd><kbd>C</kbd>), пока брокер не отключится, `--listen` секунд
+или пока не придёт `--count` сообщений. Фильтр, который брокер отклонил, называется в стандартном потоке ошибок.
+
+| Параметр | Значение |
+| --- | --- |
+| `--qos <level>` | `0` (не более одного раза), `1` (не менее одного раза) или `2` (ровно один раз). По умолчанию 0. |
+| `--listen <seconds>` | Сколько секунд слушать; `0` — пока не остановят или пока брокер не отключится. По умолчанию 0. |
+| `--count <n>` | Остановиться после стольких сообщений. |
+| `--json` | Печатать каждое сообщение строкой JSON: topic, payload, qos, retain; для двоичных данных — Base64. |
+
+## echolot mqtt publish [#echolot-mqtt-publish]
+
+```sh
+echolot mqtt publish [<options>] <broker> <topic>
+```
+
+`-m` задаёт нагрузку. Без него каждая строка стандартного ввода — это сообщение:
+
+```sh
+echolot mqtt publish mqtt://localhost warehouses/bern/temperature -m '4.5' --qos 1
+tail -f readings.log | echolot mqtt publish mqtt://localhost warehouses/bern/log
+```
+
+С QoS 1 или 2 Echolot ждёт, пока брокер подтвердит каждое сообщение, и называет те, которые он отклонил. При QoS 0 он
+сообщает, сколько опубликовал.
+
+| Параметр | Значение |
+| --- | --- |
+| `-m`, `--message <payload>` | Нагрузка. |
+| `--qos <level>` | `0` (не более одного раза), `1` (не менее одного раза) или `2` (ровно один раз). По умолчанию 0. |
+| `--retain` | Попросить брокера сохранить сообщение для будущих подписчиков. |
+
+## Параметры обеих команд [#options-of-both]
+
+| Параметр | Значение |
+| --- | --- |
+| `--mqtt-version <version>` | Версия протокола: `5` или `3.1.1`. По умолчанию 5. |
+| `--client-id <id>` | Идентификатор клиента. По умолчанию — `echolot-` и случайный суффикс. |
+| `-u`, `--user <name>` | Имя пользователя. |
+| `--password <password>` | Пароль. Лучше использовать переменную окружения `ECHOLOT_MQTT_PASSWORD`. |
+| `--keep-alive <seconds>` | Секунд между пингами; `0` — без них. По умолчанию 60. |
+| `--timeout <seconds>` | Сколько секунд ждать подключения и ответа брокера. По умолчанию 30. |
+| `-i`, `--insecure` | Не проверять сертификат TLS брокера. |
+| `-v`, `--verbose` | Печатать подключение и ответы брокера в стандартный поток ошибок. |
+| `--proxy <url>` | Подключаться через этот прокси: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
+| `--no-proxy` | Подключаться напрямую, игнорируя `HTTP_PROXY` и остальные. |
+| `--cacert <file>` | Дополнительно доверять сертификатам ЦС из этого файла PEM. Можно повторять. |
+| `--cert <file>` | Отправлять этот клиентский сертификат: файл PEM (вместе с `--key`) или файл `.p12`/`.pfx`. |
+| `--key <file>` | Закрытый ключ клиентского сертификата в PEM, когда в файле сертификата его нет. |
+| `--pass <passphrase>` | Парольная фраза ключа или файла PKCS#12. Лучше использовать `ECHOLOT_CERT_PASSPHRASE`. |
+
+Обратите внимание: `-i` здесь означает `--insecure`, а не «include», как в `echolot send`.
+
+```sh
+export ECHOLOT_MQTT_PASSWORD='…'
+echolot mqtt publish mqtts://broker.example.com:8883 status/door -m open --retain -u heidi
+```
+
+## Коды выхода [#exit-codes]
+
+| Код | Когда |
+| --- | --- |
+| `0` | Подключились, и подписались или опубликовали. |
+| `1` | `subscribe`: брокер отклонил подключение или все подписки. `publish`: брокер отклонил подключение или сообщение с QoS 1 или 2. |
+| `64` | Неверный параметр или адрес брокера. |

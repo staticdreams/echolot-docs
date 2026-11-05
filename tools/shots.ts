@@ -4,14 +4,22 @@
 //
 //   bun tools/shots.ts            every capture that has both appearances
 //   bun tools/shots.ts <id> …     only these
+//   bun tools/shots.ts --lang de [<id> …]   a language's captures (.work/captures/de/, from tools/drive.ts) into
+//                                 public/shots/de/ and src/lib/shots.l10n.json
 //
 // A shot request may carry "crop": [x, y, width, height] in points of the window (the capture is 2x).
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import sharp from 'sharp'
 
 const root = new URL('..', import.meta.url).pathname
-const captures = `${root}.work/captures`
-const manifestPath = `${root}src/lib/shots.json`
+const argv = process.argv.slice(2)
+const langAt = argv.indexOf('--lang')
+const lang = langAt >= 0 ? argv[langAt + 1] : undefined
+if (langAt >= 0) argv.splice(langAt, 2)
+const captures = `${root}.work/captures${lang ? `/${lang}` : ''}`
+const outDir = `${root}public/shots${lang ? `/${lang}` : ''}`
+mkdirSync(outDir, { recursive: true })
+const manifestPath = `${root}src/lib/shots${lang ? '.l10n' : ''}.json`
 
 type Request = { id: string; crop?: [number, number, number, number]; cropPx?: [number, number, number, number] }
 const requests = new Map<string, Request>()
@@ -19,8 +27,11 @@ for (const file of readdirSync(`${root}shots`).filter((f) => f.endsWith('.json')
   for (const r of JSON.parse(readFileSync(`${root}shots/${file}`, 'utf8')) as Request[]) requests.set(r.id, r)
 }
 
-const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, { width: number; height: number }>
-const wanted = process.argv.slice(2)
+type Sizes = Record<string, { width: number; height: number }>
+const whole = JSON.parse(readFileSync(manifestPath, 'utf8')) as Sizes | Record<string, Sizes>
+// English: id → size. Another language: language → id → size.
+const manifest = (lang ? ((whole as Record<string, Sizes>)[lang] ??= {}) : whole) as Sizes
+const wanted = argv
 const ids = wanted.length
   ? wanted
   : [...new Set(readdirSync(captures).filter((f) => f.endsWith('-light.png')).map((f) => f.replace(/-light\.png$/, '')))]
@@ -62,7 +73,7 @@ for (const id of ids) {
     const meta = await sharp(buffer).metadata()
     const width = Math.min(meta.width ?? MAX_WIDTH, MAX_WIDTH)
     const out = sharp(buffer).resize({ width, withoutEnlargement: true }).webp({ quality: 82, effort: 5 })
-    const info = await out.toFile(`${root}public/shots/${id}-${mode}.webp`)
+    const info = await out.toFile(`${outDir}/${id}-${mode}.webp`)
     // Shown at the size in points it covers (a region capture has fewer pixels per point than 2x).
     size = { width: Math.round(info.width / scale), height: Math.round(info.height / scale) }
   }
@@ -70,4 +81,6 @@ for (const id of ids) {
   console.log(`${id}: ${size.width}×${size.height} pt`)
 }
 
-writeFileSync(manifestPath, `${JSON.stringify(Object.fromEntries(Object.entries(manifest).sort()), null, 2)}\n`)
+const sorted = (m: Sizes) => Object.fromEntries(Object.entries(m).sort())
+const result = lang ? Object.fromEntries(Object.entries(whole as Record<string, Sizes>).sort().map(([k, v]) => [k, sorted(v)])) : sorted(manifest)
+writeFileSync(manifestPath, `${JSON.stringify(result, null, 2)}\n`)

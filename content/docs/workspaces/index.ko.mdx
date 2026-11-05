@@ -1,0 +1,127 @@
+---
+title: "작업 공간"
+description: "작업 공간이 무엇인지, 작업 공간을 만들고, 열고, 전환하는 방법과 어떤 파일에 무엇이 들어 있는지 설명합니다."
+---
+
+작업 공간에는 하나의 API 또는 프로젝트에 필요한 모든 것이 들어 있습니다. 요청과 폴더, 환경, MCP 서버, 명세, 모의 서버, 플로입니다. 작업 공간은
+요청마다 파일 하나씩인 일반 TOML 파일의 폴더이므로 직접 읽고, 검토하고, Git으로 관리할 수 있습니다.
+
+## 작업 공간 만들기 [#create-a-workspace]
+
+1. <strong>파일 › 새로운 작업 공간…</strong>(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>)을 선택하거나, 환영 윈도우에서 <strong>새로운 작업 공간…</strong>을 선택합니다.
+2. 위치와 이름을 정합니다. 이름 필드에는 처음에 `My API.echolot`가 들어 있습니다.
+3. **생성**을 클릭합니다.
+
+Echolot이 `workspace.toml`과 빈 `requests` 폴더가 있는 폴더를 만들고 별도의 윈도우에서 엽니다. 작업 공간의 이름은 `.echolot`를 뺀 폴더 이름입니다.
+
+아무것도 만들지 않고 Echolot을 써 보려면 환영 윈도우 또는 파일 메뉴에서 **예제 열기**를 선택하세요. 공개 API, 리디렉션, 큰 응답에 대한 요청이 들어
+있는 기성 작업 공간이 열립니다. [데모 API](/docs/tutorials/demo-api)에는 더 충실한 예제인 Alpenglow가 있습니다.
+
+## 작업 공간 열기 [#open-a-workspace]
+
+- <strong>파일 › 작업 공간 열기…</strong>(<kbd>⌘</kbd><kbd>O</kbd>) 또는 환영 윈도우의 <strong>작업 공간 열기…</strong>를 선택합니다. `.echolot` 패키지나 `workspace.toml`이 들어
+  있는 일반 폴더를 고릅니다.
+- Finder에서 `.echolot` 패키지를 더블 클릭하거나 Dock의 Echolot 위로 끌어다 놓습니다.
+- **파일 › 최근 사용 항목 열기**에는 마지막으로 연 작업 공간 열 개가 나열됩니다. **메뉴 지우기**는 목록만 지우며, 작업 공간 자체는 그대로 있습니다.
+- 터미널에서: `open "My API.echolot"`.
+
+작업 공간은 각각 별도의 윈도우에서 열립니다. 이미 열려 있는 작업 공간을 열면 그 윈도우가 맨 앞으로 나옵니다.
+
+Finder에서 작업 공간을 옮기거나 이름을 바꾸면 Echolot이 따라갑니다. 최근 사용 항목에 그대로 남아 있고 새 위치에서 다시 열립니다.
+
+<Shot id="workspaces-welcome" alt="환영 윈도우: 왼쪽에 새로운 작업 공간, 작업 공간 열기, 예제 열기, 오른쪽에 최근 작업 공간" />
+
+## 환영 윈도우 [#the-welcome-window]
+
+열려 있는 작업 공간이 없으면 Echolot이 환영 윈도우를 표시합니다. 왼쪽에는 **새로운 작업 공간…**, **작업 공간 열기…**, **예제 열기**가 있습니다.
+오른쪽에는 **최근 작업 공간**이 각각 위치한 폴더와 함께 표시됩니다. 하나를 클릭하면 열립니다.
+
+## 작업 공간 전환 [#switch-between-workspaces]
+
+- **파일 › 작업 공간 전환…**(<kbd>⌘</kbd><kbd>P</kbd>)은 최근 작업 공간의 떠 있는 목록을 보여 줍니다. 입력해서 걸러 낸 다음
+  <kbd>↩</kbd>를 누릅니다.
+- 사이드바 하단의 작업 공간 전환기에는 작업 공간의 이름과 모든 내용이 저장되었는지가 표시됩니다. 클릭하면 **최근 작업 공간**, **새로운 작업 공간…**,
+  **작업 공간 열기…**, **작업 공간 설정…**, **Finder에서 보기**가 나옵니다.
+
+<Shot id="workspaces-switcher" alt="사이드바 하단에 열려 있는 작업 공간 전환기: 최근 작업 공간과 작업 공간 설정" />
+
+## 저장 [#saving]
+
+저장 명령은 없습니다. Echolot은 입력을 멈춘 직후 잠시 뒤에 각 변경 사항을 해당 파일에 기록합니다. 작업 공간 전환기에 현재 상태가 표시됩니다.
+
+| 표시 | 의미 |
+| --- | --- |
+| **모두 저장됨** | 모든 편집이 파일에 있습니다. |
+| **저장 중…** | 기록이 진행 중입니다. |
+| **저장되지 않은 요청 1개**(또는 그 이상) | 편집이 기록을 기다리고 있습니다. 사이드바에서는 요청 옆의 점으로 표시됩니다. |
+| **저장할 수 없음** | 기록이 실패했습니다. Echolot이 편집 내용을 유지하고 무엇이 잘못되었는지 알려 줍니다. |
+
+윈도우를 닫거나 Echolot을 종료하면 남은 내용을 먼저 기록합니다. 편집 내용을 기록할 수 없으면 Echolot이 버리기 전에 먼저 묻습니다.
+
+## 실행 취소와 실행 복귀 [#undo-and-redo]
+
+모든 편집은 **편집 › 실행 취소**(<kbd>⌘</kbd><kbd>Z</kbd>)로 되돌리고 **편집 › 실행 복귀**(<kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd>)로 다시 적용할
+수 있습니다. 요청에 입력하기, 이름 바꾸기, 항목 이동과 삭제, 변수, 환경, 폴더와 작업 공간 설정, 명세, 모의 서버, 플로가 모두 해당됩니다. 입력은
+잠시 멈출 때까지 한 단계로 계산됩니다. 실행 취소는 윈도우에 속하므로 모든 페이지에서 똑같이 작동합니다.
+
+## 묻지 않고 삭제되는 것은 없습니다 [#nothing-is-deleted-without-asking]
+
+요청, 폴더, 환경, MCP 서버, 명세, 모의 서버의 모든 삭제는 먼저 묻습니다. 질문의 빨간색 버튼에는 키보드 단축키가 없으므로 <kbd>↩</kbd>로는 절대
+삭제되지 않으며, <kbd>Esc</kbd>는 취소합니다. 사이드바에서 <kbd>⌫</kbd>는 요청 하나만 삭제하도록 제안하며, 폴더와 여러 항목은 컨텍스트 메뉴에서
+삭제합니다.
+
+삭제한 항목은 디스크에서 바로 사라지지 않고 Finder의 휴지통으로 이동합니다. 되돌리려면 **편집 › 실행 취소**를 선택하거나, 휴지통의 파일을 작업 공간
+폴더로 다시 옮기세요.
+
+## Finder에서 [#in-the-finder]
+
+`.echolot` 작업 공간은 패키지입니다. Finder에서 Echolot 아이콘이 붙은 항목 하나로 보이며, 더블 클릭하면 열립니다. 안에 있는 파일을 보려면 Control 키를
+누른 채 클릭하고 **패키지 내용 보기**를 선택하거나, 작업 공간 전환기의 **Finder에서 보기**를 사용하세요.
+
+Finder에서 작업 공간을 선택하고 <kbd>Space</kbd>를 누르면 [훑어보기](/docs/mac/quick-look)가 열립니다. 이름, 변경 시점, 요청, 폴더, 환경, 변수,
+검사의 개수와 환경의 이름이 표시됩니다.
+
+작업 공간이 반드시 `.echolot`로 끝날 필요는 없습니다. Git 저장소의 루트처럼 `workspace.toml`이 있는 폴더는 모두 열립니다.
+
+## 무엇이 어디에 있는지 [#what-lives-where]
+
+```
+Alpenglow.echolot/
+  workspace.toml               name, ID, workspace variables, default auth, agent rules, proxy, certificates
+  environments/
+    staging.toml               an environment: its name, whether it is protected, its variables
+    production.toml
+  requests/
+    _folder.toml               the order of the top-level items
+    _folder.pre.js             scripts for every request (and _folder.test.js)
+    auth/
+      _folder.toml             the folder's name, order, docs, auth and variables
+      sign-in.req.toml         an HTTP request
+      sign-in.body.json        its body, beside it
+    catalog/
+      search-products.gql.toml a GraphQL request
+      search-products.graphql  its query
+    inventory/
+      list-warehouses.grpc.toml
+    realtime/
+      order-updates.ws.toml    WebSocket (.sio.toml Socket.IO, .mqtt.toml MQTT)
+    agent-tools/
+      search-catalog.mcp.toml  a saved MCP call
+  mcp-servers/                 MCP servers, one file each
+  specs/                       OpenAPI, GraphQL and .proto files
+  mocks/                       mock servers, one file each, and their scripted routes
+  flows/                       flows (.flow.toml)
+```
+
+요청 종류마다 고유한 파일 접미사가 있습니다. `.req.toml`(HTTP), `.gql.toml`(GraphQL), `.grpc.toml`, `.ws.toml`, `.sio.toml`, `.mqtt.toml`,
+`.mcp.toml`입니다. 스크립트는 요청 옆에 `<name>.pre.js`와 `<name>.test.js`로 놓입니다. 전체 형식은
+[작업 공간 파일](/docs/reference/workspace-files)에 있습니다.
+
+작업 공간 폴더에 절대 들어가지 않는 것도 있습니다.
+
+- **비밀 값.** 비밀 변수는 이름만 기록되며 값은 사용자의 Mac의 키체인에 남습니다. [비밀 값](/docs/workspaces/secrets)을 참조하세요.
+- **기록과 응답 본문.** Echolot 자체의 저장 공간에 있습니다. [저장 공간과 암호화](/docs/workspaces/storage-and-encryption)를 참조하세요.
+- **이 Mac에서의 사용자의 선택**: 활성 환경, 패널 레이아웃, 신뢰한 스크립트, 전역 변수.
+
+그래서 작업 공간 폴더는 안전하게 공유할 수 있으며, 폴더를 연 팀원은 같은 요청에서 자신의 비밀 값으로 시작합니다. [Git과 팀](/docs/workspaces/git-and-teams)을
+참조하세요.

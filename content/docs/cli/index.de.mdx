@@ -1,0 +1,153 @@
+---
+title: "Befehlszeilentool"
+description: "Installiere den Befehl echolot und lerne, was alle Befehle gemeinsam haben: Secrets, Umgebungsvariablen und Exit-Codes."
+---
+
+`echolot` führt aus einem Terminal oder einem CI-Job aus, was du in der App baust: Es sendet Anfragen, führt einen
+Arbeitsbereich mit seinen Prüfungen aus und schreibt Berichte, importiert und exportiert Sammlungen, prüft Specs,
+stellt Mocks bereit, führt Flows aus und stellt einen Arbeitsbereich KI-Agenten über MCP bereit. Es liest dieselben
+Dateien des Arbeitsbereichs wie die App, nichts muss konvertiert werden.
+
+## Das Befehlszeilentool laden [#get-the-command-line-tool]
+
+<Tabs items={["In der App", "Zip von den Releases"]}>
+  <Tab value="In der App">
+    Der Direkt-Download bringt das Tool in der App mit. So legst du es in deinen `PATH`:
+
+    1. Wähle **Echolot › Befehlszeilentool installieren …** oder öffne **Einstellungen › Allgemein** und klicke unter
+       **Befehlszeilentool** auf **Befehlszeilentool installieren …**.
+    2. Echolot legt einen Link `echolot` auf das Tool in der App in `/opt/homebrew/bin` oder `/usr/local/bin` an. Ist
+       keiner der beiden Ordner beschreibbar, fragt macOS nach dem Passwort eines Administrators.
+    3. Öffne ein neues Terminalfenster und tippe `echolot --help`.
+
+    **Einstellungen › Allgemein › Befehlszeilentool** zeigt, wo das mitgelieferte Tool liegt und wo der Link in deinem
+    `PATH`. Nutze **Neu installieren**, nachdem du die App verschoben hast, und **Entfernen**, um den Link zu entfernen.
+    Steht eine Datei namens `echolot`, die Echolot nicht dorthin gelegt hat, im Weg, fragt Echolot, bevor es sie
+    ersetzt, und die Datei kommt in den Papierkorb.
+
+    Weil der Link in die App zeigt, wird das Tool mit der App aktualisiert.
+
+    <Shot id="cli-settings-command-line-tool" alt="Die Einstellungen, Bereich „Allgemein“, der Abschnitt „Befehlszeilentool“ mit dem Pfad des mitgelieferten Tools und dem Link in deinem PATH" />
+  </Tab>
+  <Tab value="Zip von den Releases">
+    Jedes Release hat das Tool auch einzeln, `echolot-<version>-macos.zip`, auf
+    [der Seite der Releases](https://github.com/staticdreams/echolot-public/releases). Es enthält eine Datei, `echolot`,
+    signiert und notarisiert wie die App. Entpacke es und verschiebe es in einen Ordner in deinem `PATH`:
+
+    ```sh
+    unzip echolot-0.5.0-macos.zip
+    sudo mv echolot /usr/local/bin/
+    echolot --version
+    ```
+
+    Nutze das Zip auf einem Mac ohne die App, auf einem CI-Runner oder mit der Version aus dem App Store.
+  </Tab>
+</Tabs>
+
+<Edition only="appstore">
+  Die Version aus dem App Store hat kein Tool in sich und keinen Menübefehl **Befehlszeilentool installieren …**.
+  Installiere das Tool stattdessen aus dem Zip auf der Seite der Releases. Es arbeitet mit denselben Arbeitsbereichen.
+</Edition>
+
+Das Befehlszeilentool läuft nie ab, auch nicht in Beta-Builds der App. Es braucht macOS 15 oder neuer auf einem Mac.
+
+## Befehle [#commands]
+
+| Befehl | Was er macht |
+| --- | --- |
+| [`echolot send`](/docs/cli/send) | Sendet eine Anfrage, eine URL oder eine gesicherte Anfragedatei, und schreibt den Body in die Standardausgabe. |
+| [`echolot run`](/docs/cli/run) | Führt einen Arbeitsbereich, einige seiner Ordner oder Anfragen oder eine Postman-Sammlung aus, mit Prüfungen und Berichten. |
+| [`echolot validate`](/docs/cli/validate) | Prüft, dass jede Datei eines Arbeitsbereichs lesbar ist und jede Anfrage sich auflöst. |
+| [`echolot import`, `echolot export`](/docs/cli/import-export) | Bringt Sammlungen in einen Arbeitsbereich und schreibt einen Arbeitsbereich als Postman, Insomnia, Bruno oder Echolot aus. |
+| [`echolot mcp`](/docs/cli/mcp) | Prüft MCP-Server, meldet sich bei ihnen an, stellt einen Arbeitsbereich Agenten bereit und gibt Setups für Clients aus. |
+| [`echolot spec`](/docs/cli/spec) | Prüft OpenAPI-Dokumente und prüft und wendet Änderungen der Spec auf den Ordner an, der der Spec folgt. |
+| [`echolot graphql diff`](/docs/cli/graphql) | Vergleicht zwei GraphQL-Schemas und stuft jede Änderung ein. |
+| [`echolot grpc`](/docs/cli/grpc) | Beschreibt gRPC-Services und ruft ihre Methoden auf. |
+| [`echolot mqtt`](/docs/cli/mqtt) | Abonniert bei MQTT-Brokern und veröffentlicht dort. |
+| [`echolot mock`](/docs/cli/mock) | Stellt einen Mock bereit: die Routen eines Mocks des Arbeitsbereichs oder ein OpenAPI-Dokument. |
+| [`echolot fake`](/docs/cli/fake) | Erzeugt Beispieldaten aus einer Vorlage, für Fixtures und Seed-Daten. |
+| [`echolot flow`](/docs/cli/flow) | Listet die Flows eines Arbeitsbereichs auf, führt sie aus, erstellt sie und stellt sie bereit. |
+| [`echolot agent`](/docs/cli/agent) | Führt den eingebauten Agenten mit einer Aufgabe aus, mit einer Richtlinie statt Genehmigungen. |
+
+`echolot help <command>` und `echolot <command> --help` geben alle Optionen eines Befehls aus. Befehle mit
+Unterbefehlen nehmen sie genauso: `echolot mcp serve --help`.
+
+## Optionen, die jeder Befehl hat [#options-every-command-has]
+
+| Option | Bedeutung |
+| --- | --- |
+| `--version` | Gibt die Version und den Build aus, etwa `0.5.0 (8)`. |
+| `-h`, `--help` | Gibt die Optionen des Befehls aus. |
+
+## Arbeitsbereiche und Umgebungen [#workspaces-and-environments]
+
+Befehle, die an einem Arbeitsbereich arbeiten, nehmen seinen Ordner, den mit `workspace.toml` darin. Einige nehmen ihn
+als Argument (`echolot run Alpenglow.echolot`), andere mit `-w` oder `--workspace`
+(`echolot flow list -w Alpenglow.echolot`); die Seite jedes Befehls sagt, wie. Wo er optional ist, wird der aktuelle
+Ordner genutzt.
+
+`--env` wählt eine Umgebung nach ihrem Dateinamen ohne `.toml` (`staging`). `run`, `validate` und `flow` nehmen auch
+ihren Namen (`Staging`). Ohne `--env` lösen sich Anfragen mit den eigenen Variablen des Arbeitsbereichs auf. Siehe
+[Umgebungen](/docs/workspaces/environments).
+
+## Secrets [#secrets]
+
+Geheime Werte liegen nie in den Dateien des Arbeitsbereichs: Eine Datei nennt die geheime Variable und sonst nichts.
+Das Befehlszeilentool findet jeden Wert in dieser Reihenfolge:
+
+1. Eine Umgebungsvariable `ECHOLOT_SECRET_<NAME>`. Der Name ist der Name der Variable in Großbuchstaben, wobei jedes
+   Zeichen, das kein Buchstabe oder keine Ziffer ist, zu `_` wird: `token` ist `ECHOLOT_SECRET_TOKEN`, `me_password`
+   ist `ECHOLOT_SECRET_ME_PASSWORD`.
+2. Bei `echolot run` eine Datei, die mit `--secrets` angegeben wird: ein `NAME=value` pro Zeile, `#` für Kommentare,
+   Anführungszeichen um einen Wert werden entfernt. `NAME` ist der Name der Variable (`token=…`) oder der ganze Name
+   der Umgebungsvariable (`ECHOLOT_SECRET_TOKEN=…`). Werte in der Datei haben Vorrang vor Umgebungsvariablen.
+3. Auf einem Mac die Einträge im Schlüsselbund, die die App führt. Ein Secret, das du in der App festlegst, oder ein
+   MCP-Server, bei dem du dich angemeldet hast, funktioniert auch im Terminal.
+
+```sh
+export ECHOLOT_SECRET_PASSWORD="$(op read 'op://Shop/Alpenglow staging/password')"
+echolot run Alpenglow.echolot --env staging
+```
+
+Der Schlüsselbund wird nie genutzt, wenn `CI` gesetzt ist (auf irgendetwas außer leer, `0` oder `false`) oder wenn
+`ECHOLOT_KEYCHAIN=0` gilt. So wartet ein CI-Job nie auf eine Abfrage des Schlüsselbunds. Siehe
+[Secrets](/docs/workspaces/secrets).
+
+## Umgebungsvariablen [#environment-variables]
+
+| Variable | Genutzt von | Bedeutung |
+| --- | --- | --- |
+| `ECHOLOT_SECRET_<NAME>` | Jeder Befehl, der Anfragen auflöst | Der Wert der geheimen Variable `<NAME>`. |
+| `ECHOLOT_KEYCHAIN=0` | Jeder Befehl | Den Schlüsselbund weder lesen noch beschreiben. |
+| `CI` | Jeder Befehl | Ist sie gesetzt, ist der Schlüsselbund aus, wie mit `ECHOLOT_KEYCHAIN=0`. |
+| `HTTPS_PROXY`, `HTTP_PROXY`, `ALL_PROXY`, `NO_PROXY` | `send`, `run`, `mqtt` und andere | Proxys, gelesen wie curl sie liest. `--proxy` und `--no-proxy` überschreiben sie; die eigene Proxy-Einstellung eines Arbeitsbereichs hat Vorrang. |
+| `ECHOLOT_CERT_PASSPHRASE` | `send`, `run`, `mqtt` | Die Passphrase des Schlüssels oder der PKCS#12-Datei, die mit `--cert` oder `--key` angegeben wird. |
+| `ECHOLOT_MQTT_PASSWORD` | `mqtt` | Das Passwort für den Broker. |
+| `ECHOLOT_MCP_TOKEN` | `mcp serve --http` | Das Bearer-Token, das Clients senden; sonst ein zufälliges. |
+| `ECHOLOT_WEBHOOK_TOKEN` | `flow serve` | Das Token, das Aufrufer des Webhooks senden; sonst ein zufälliges. |
+| `ECHOLOT_BROWSER` | `mcp sign-in` | Der Befehl, der die Anmeldeseite statt im Standardbrowser öffnet. |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | `agent` | Der API-Schlüssel des Modellanbieters. |
+| `NO_COLOR` | `run` | Einfache Ausgabe in der Konsole. |
+
+## Ausgabe und Exit-Codes [#output-and-exit-codes]
+
+Ergebnisse gehen in die Standardausgabe: der Body einer Antwort, ein Bericht, die Zeilen, die ein Abonnement ausgibt.
+Fortschritt, Warnungen, Testergebnisse und Zeiten gehen in die Standardfehlerausgabe, sodass du die Ausgabe
+weiterreichen kannst:
+
+```sh
+echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
+```
+
+| Exit-Code | Bedeutung |
+| --- | --- |
+| `0` | Alles hat funktioniert, und jede Prüfung bestand. |
+| `1` | Etwas ist fehlgeschlagen: keine Antwort, eine fehlgeschlagene Prüfung oder ein fehlgeschlagener Test, gefundene Probleme (`validate`, `spec lint`), Breaking Changes (`graphql diff`), ein anderer gRPC-Status als OK, eine abgelehnte MQTT-Verbindung, ein Agent, der nicht fertig wurde. |
+| `22` | Nur `echolot send`: Der Status der Antwort war 400 oder höher, wie bei `curl --fail`. |
+| `64` | Die Befehlszeile selbst war falsch: eine unbekannte Option, eine fehlende Datei, eine Umgebung, die es nicht gibt. Der Grund wird ausgegeben. |
+
+## Weiter [#next]
+
+- [Einen Arbeitsbereich ausführen](/docs/cli/run) und [in CI ausführen](/docs/cli/ci).
+- [Einen Arbeitsbereich Agenten bereitstellen](/docs/cli/mcp).
+- [Eine API in CI testen](/docs/tutorials/test-in-ci), ein Tutorial.

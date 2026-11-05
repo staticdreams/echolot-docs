@@ -1,0 +1,92 @@
+---
+title: "请求正文"
+description: "把 JSON、表单、多部分上传、GraphQL、文本、XML、HTML 或整个文件作为 HTTP 请求的正文发送。"
+---
+
+**正文** 标签页设置请求在标头之后发送的内容。在标签页顶部那一行选择类型；下方的编辑器会随之变化。请求带有正文时，标签页会显示一个圆点。
+
+<Shot id="requests-http-body-json" alt="Create order 的正文标签页：选中 JSON，编辑器中是订单行，右侧是美化按钮" />
+
+## 正文类型 [#body-types]
+
+| 类型 | 发送的内容 | Echolot 添加的 Content-Type |
+| --- | --- | --- |
+| **无** | 没有正文。 | 无 |
+| **JSON** | 编辑器中的文本。 | `application/json` |
+| **URL 编码** | 名称和值的配对，就像网页表单提交的那样。 | `application/x-www-form-urlencoded` |
+| **多部分** | 文本字段和文件，就像带文件上传的网页表单提交的那样。 | `multipart/form-data`，带其边界 |
+| **GraphQL** | 原样的查询文本。 | `application/graphql` |
+| **原始** | 文本、XML 或 HTML，在第二行芯片中选择。 | `text/plain`、`application/xml` 或 `text/html` |
+| **二进制** | 一个文件，逐字节发送。 | 无 |
+
+Content-Type 显示在 **标头** 标签页的 **自动生成** 下。要发送另一个值，请添加你自己的 `Content-Type` 标头；它会取代 Echolot 的那个。
+长度和分帧标头在发送请求时计算。
+
+每个文本正文都可以包含 `{{variables}}` 和[动态值](/docs/requests/dynamic-values)，它们在发送时填入：
+
+```json
+{
+  "lines": [{ "sku": "{{productId}}", "quantity": 1 }],
+  "note": "Sent at {{$isoTimestamp}}"
+}
+```
+
+## JSON [#json]
+
+在编辑器中输入或粘贴 JSON。编辑器有行号、语法着色，以及用于变量的 `{{` 列表。
+
+点按 **美化** 为 JSON 添加缩进。变量保持原样，所以字符串中或作为单独值的 `{{productId}}` 不会被改动。在较窄的窗格中，按钮只显示魔杖图标。
+
+要试一试，请在 Alpenglow 示例中打开 **Orders › Create order** 并查看它的正文，或者发送 **Echo › Echo anything**，它会返回收到的正文。
+
+## URL 编码 [#url-encoded]
+
+字段排列在 **键** 和 **值** 的表格中，和标头一样：
+
+- 点按 **添加字段** 添加一个。勾选的字段会发送；取消勾选的字段会保留但不发送。
+- 点按 **批量编辑**，以文本形式编辑所有字段，每行一个 `Name: value`；已关闭的字段前面加 `//`。
+
+Echolot 在发送时对名称和值编码，变量插入的内容也会编码，所以值中的 `+`、`&` 或空格会如实到达。
+
+## 多部分 [#multipart]
+
+每一行是表单的一个部分：
+
+1. 勾选复选框以发送该字段。
+2. 输入它的 **名称**。
+3. 选择 **文本** 或 **文件**。
+   - 选择 **文本** 时，输入 **值**。其中可以包含 `{{variables}}`。
+   - 选择 **文件** 时，点按 **选取…** 并选取文件。没有名称的字段会采用文件名（不含扩展名）。该部分的 filename 取自文件名。
+4. 也可以为该部分输入内容 **类型**，例如 `image/png`。留空（`type (auto)`）时，文件会根据扩展名得到一个类型（`.json`、`.png`、`.pdf` 等，
+   否则为 `application/octet-stream`），文本字段则没有类型。
+
+点按 **添加字段** 添加一行，点按 **−** 按钮移除一行。文件在发送请求时从磁盘流式读取，所以再大的上传也不必整个装进内存。
+
+## GraphQL [#graphql]
+
+**GraphQL** 把查询文本作为正文，以 `Content-Type: application/graphql` 发送，适用于以这种方式接收查询的服务器。要使用完整的 GraphQL 客户端
+（带变量、基于 Schema 的补全、Schema 浏览器和订阅），请改为创建 **新建 GraphQL 请求**。见 [GraphQL](/docs/requests/graphql)。
+
+## 原始：文本、XML 和 HTML [#raw-text-xml-and-html]
+
+选取 **原始**，然后在旁边那一行中选取 **文本**、**XML** 或 **HTML**。编辑器会为 XML 和 HTML 着色，Content-Type 随你的选择而定。
+
+## 二进制：文件 [#binary-a-file]
+
+选取 **二进制**，再选取 **选取文件…**，然后选取要发送的文件。标签页会显示它的名称、大小和路径；**选取其他文件…** 可以替换它。
+每次发送请求时都会从磁盘读取该文件，不论大小，所以请求总是发送文件当前的样子。在你选取文件之前，不会发送任何内容。
+
+<Edition only="appstore">
+  App Store 版本只能读取你选取过的文件。你在 **正文** 标签页中选取的文件，在之后的发送中仍可读取。当请求指向一个应用从未获得的文件
+  （例如队友在他的 Mac 上选取的文件）时，发送会停止，响应窗格会提供 **允许访问…**：选取该文件，请求便会再次发送。
+</Edition>
+
+## 正文的存储位置 [#where-bodies-are-saved]
+
+输入的正文存储在请求旁边它自己的文件中，例如 `create-order.req.toml` 旁边的 `create-order.body.json`，这样在 Git 中读起来很清楚。二进制正文则存储为文件的路径。
+见[工作区文件](/docs/reference/workspace-files)。
+
+## 大正文 [#large-bodies]
+
+二进制和多部分文件在请求发出时从磁盘流式读取，所以任意大小的上传都能发送，而不会被载入内存。响应则是另一回事：它们在到达时写入磁盘，
+即使有数百 MB，在各个查看器中也依然流畅。见[响应](/docs/requests/responses#large-responses)。

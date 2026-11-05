@@ -1,0 +1,90 @@
+---
+title: "echolot grpc"
+description: "Перечислите сервисы и методы сервера gRPC и вызывайте их с сообщениями в формате JSON."
+---
+
+`echolot grpc` описывает сервисы gRPC и вызывает их методы, а сообщения записываются как JSON. Сервисы он узнаёт через
+рефлексию сервера или из файла `.proto`. То же самое в приложении см. в [запросах gRPC](/docs/requests/grpc).
+
+| Подкоманда | Что делает |
+| --- | --- |
+| `echolot grpc describe` | Перечисляет сервисы и методы сервера или файла `.proto` вместе с полями каждого метода. |
+| `echolot grpc call` | Вызывает метод и печатает ответ как JSON. |
+
+В примерах используется сервис инвентаря Alpenglow, `specs/inventory.proto` в рабочем пространстве Alpenglow. Он
+работает на вашем Mac по адресу `localhost:50051`; демо-API gRPC обслуживать не может.
+
+## echolot grpc describe [#echolot-grpc-describe]
+
+```sh
+echolot grpc describe [<url>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>] [--json]
+```
+
+```sh
+echolot grpc describe --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+```text
+Alpenglow.echolot/specs/inventory.proto: 1 service
+alpenglow.inventory.v1.Inventory
+  ListWarehouses (unary): alpenglow.inventory.v1.ListWarehousesRequest → alpenglow.inventory.v1.ListWarehousesResponse
+  WatchStock (server streaming): alpenglow.inventory.v1.WatchStockRequest → alpenglow.inventory.v1.StockLevel
+    skus: repeated string
+  Reserve (unary): alpenglow.inventory.v1.ReserveRequest → alpenglow.inventory.v1.Reservation
+    sku: string
+    quantity: int32
+    orderId: string
+```
+
+Передайте вместо этого сервер (`echolot grpc describe http://localhost:50051`), чтобы спросить его сервис рефлексии.
+Для каждого метода показано, унарный он, с потоком от сервера, с потоком от клиента или двунаправленный, его типы
+запроса и ответа и поля его запроса.
+
+| Параметр | Значение |
+| --- | --- |
+| `<url>` | Сервер, `http://host:port` или `https://host:port`. С `--proto` не нужен. |
+| `--proto <file>` | Файл `.proto`, описывающий сервис, с его импортами рядом. Без него спрашивается рефлексия сервера. |
+| `-H`, `--header <header>` | Метаданные в виде `'Name: value'`. Можно повторять. |
+| `-k`, `--insecure` | Пропустить проверку сертификата TLS. |
+| `--timeout <seconds>` | Сколько секунд ждать весь вызов. По умолчанию 30. |
+| `--json` | Напечатать описание как JSON. |
+
+## echolot grpc call [#echolot-grpc-call]
+
+```sh
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+```
+
+`<method>` — это `package.Service/Method`. Сообщение — JSON, по умолчанию `{}`; `-d -` читает его из стандартного
+ввода. Для метода с потоком от клиента передайте массив: каждый элемент — одно сообщение. Ответ печатается как JSON в
+стандартный вывод.
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserve \
+  -d '{"sku": "TNT-MH-2P", "quantity": 1, "orderId": "ord_7Hk2Lw"}' \
+  --proto Alpenglow.echolot/specs/inventory.proto
+```
+
+Статус, число полученных сообщений и время идут в стандартный поток ошибок. Статус, отличный от `OK`, завершает команду
+с кодом 1.
+
+| Параметр | Значение |
+| --- | --- |
+| `-d`, `--data <json>` | Сообщение в формате JSON; `-` читает его из стандартного ввода. По умолчанию `{}`. |
+| `--deadline <ms>` | Срок в миллисекундах, отправляется как `grpc-timeout`. |
+| `--compress <algorithm>` | Сжимать отправляемые сообщения: `gzip` или `deflate`. Сжатые ответы читаются в любом случае. |
+| `--proto <file>` | Файл `.proto`, описывающий сервис, с его импортами рядом. Без него спрашивается рефлексия сервера. |
+| `-H`, `--header <header>` | Метаданные в виде `'Name: value'`. Можно повторять. |
+| `-k`, `--insecure` | Пропустить проверку сертификата TLS. |
+| `--timeout <seconds>` | Сколько секунд ждать весь вызов. По умолчанию 30. |
+
+`http://` говорит на HTTP/2 без TLS; `https://` использует TLS. Общеизвестные типы (`google.protobuf.Timestamp` и
+остальные) встроены, так что файлу `.proto`, который их импортирует, рядом ничего не нужно.
+
+## Коды выхода [#exit-codes]
+
+| Код | Когда |
+| --- | --- |
+| `0` | `describe` нашёл сервисы; `call` завершился со статусом `OK`. |
+| `1` | Сервер не удалось достичь или описать либо статус вызова не `OK`. |
+| `64` | Неверный параметр. |

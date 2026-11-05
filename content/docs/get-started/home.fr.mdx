@@ -1,0 +1,84 @@
+---
+title: "Accueil et Sonar"
+description: "L’Accueil est la vue d’ensemble d’un espace de travail ; sa carte Sonar trace chaque envoi de la dernière heure, du dernier jour, de la dernière semaine ou du dernier mois selon le temps de réponse."
+---
+
+**Accueil** est la page sur laquelle s’ouvre une fenêtre d’espace de travail. Elle vous dit ce que contient l’espace de
+travail, ce qui demande un coup d’œil et comment vos requêtes ont répondu. Ouvrez-la avec le bouton **Accueil** de la
+barre latérale ou avec <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd>.
+
+<Shot id="get-started-home" alt="L’Accueil : le message de bienvenue, les compteurs de l’espace de travail, la carte Sonar avec ses pings et ses chiffres, et les cartes des requêtes récentes, des dernières réponses, des tests et des environnements" />
+
+## Ce qu’affiche l’Accueil [#what-home-shows]
+
+De haut en bas :
+
+- **Un message de bienvenue et une phrase d’actualité.** Elle indique combien de vérifications sont en échec ou combien
+  de requêtes ont des modifications non enregistrées, et sinon **Rien ne vous attend.** Un nouvel espace de travail sans
+  requête vous invite à importer une collection ou à créer la première requête.
+- **L’espace de travail** : son nom et son dossier, avec les compteurs de **Requêtes**, **Dossiers**,
+  **Environnements**, **Variables** et **Vérifications**.
+- **Sonar**, ci-dessous.
+- **Requêtes récentes**, avec **Nouvelle requête** ; **Dernières réponses** ; **Tests**, avec le nombre de requêtes qui
+  ont des vérifications et celles qui échouent, et **Tout afficher** ; et **Environnements**, avec **Gérer** et un
+  repère sur les environnements protégés.
+
+Cliquez sur une requête ou une réponse dans une carte pour l’ouvrir.
+
+## Sonar [#sonar]
+
+Sonar dessine chaque envoi d’une période sous forme de ping, comme un sonar dessine des échos. Le temps s’écoule de
+gauche à droite, du début de la période à gauche jusqu’à **maintenant** à droite. La profondeur est le temps qu’a pris la
+réponse : une réponse rapide reste près de la surface, une réponse lente s’enfonce. Un coup d’œil suffit pour savoir si
+l’API a été rapide, où elle a ralenti et si quelque chose a échoué.
+
+<Shot id="get-started-home-sonar" alt="La carte Sonar : des pings colorés selon l’état, les zones surface, mi-eau et profond, le fond marin sous les réponses les plus lentes et cinq chiffres en dessous" />
+
+### Lire le graphique [#reading-the-chart]
+
+- **Les zones.** L’échelle de profondeur est logarithmique, de sorte que les extrémités rapide et lente restent
+  lisibles. **SURFACE** correspond à tout ce qui est sous 250 ms, **MI-EAU** va de 250 ms à 1 s et **PROFOND** dépasse
+  1 s.
+- **La couleur d’un ping** est la classe de son état. La légende dans l’en-tête de la carte les nomme : **2xx**, **3xx**,
+  **4xx** et **5xx · échec**, qui désigne aussi un envoi n’ayant reçu aucune réponse.
+- **Le fond marin** est le sol ombré sous les réponses les plus lentes de chaque tranche de temps. Il monte et descend
+  avec elles.
+- **La ligne à droite** marque le moment présent. Quand un envoi se termine pendant que l’Accueil est affiché, une
+  ondulation part de son ping (pas si **Réduire les animations** est activé).
+- **La barre sous le graphique** montre comment les envois de la période se répartissent entre les zones, en
+  pourcentage.
+
+Pointez un ping pour voir sa requête : quand elle a été envoyée, son état et sa durée, sa méthode et son nom. Cliquez
+dessus pour ouvrir la requête avec cette réponse affichée. Quand il n’y a rien à ouvrir (la requête a été supprimée ou
+n’a jamais été enregistrée, ou l’envoi n’a reçu aucune réponse), l’infobulle indique
+**Cliquez pour le trouver dans l’Historique**, et le clic ouvre l’[Historique](/docs/workspaces/history) en recherchant le nom de la requête.
+
+### Choisir la période [#choosing-the-period]
+
+Le sélecteur dans l’en-tête de la carte propose **1 h**, **24 h**, **7 j** (par défaut) ou **30 j**. Le graphique et
+les chiffres le suivent. Une période sans envoi indique que l’écho d’une requête apparaît ici dès que vous en envoyez
+une.
+
+### Les chiffres [#the-figures]
+
+Cinq chiffres se trouvent au-dessus du graphique, chacun à côté de la même période précédente (« +12 % par rapport à la
+semaine précédente ») :
+
+| Chiffre | Ce qu’il compte |
+| --- | --- |
+| **Envois** | Les requêtes envoyées pendant la période. |
+| **Réponse OK** | La part des envois ayant reçu un état inférieur à 400, avec l’évolution en points de pourcentage. |
+| **Temps médian** | Le temps de réponse du milieu, avec le **p95** : 95 envois sur 100 ont été plus rapides. |
+| **Moins de 250 ms** | La part des envois à la surface. |
+| **Au-delà de 1 s** | Le nombre d’envois profonds, et combien d’entre eux ont échoué. |
+
+Dans une carte étroite, seuls les trois premiers s’affichent.
+
+### Ce que compte Sonar [#what-sonar-counts]
+
+- Les chiffres comptent tous les envois encore présents dans l’[historique](/docs/workspaces/history) de l’espace de
+  travail. Les envois que vous avez effacés, ou que les limites de l’historique ont supprimés, ne comptent plus. Le
+  graphique dessine les plus récents.
+- Sonar compte les requêtes HTTP, GraphQL, gRPC et MCP, quel que soit celui qui les a envoyées : vous, l’Exécution, un
+  flux ou un agent. Les sessions WebSocket, Socket.IO et MQTT restent ouvertes aussi longtemps que vous le voulez ; elles
+  n’ont donc pas de temps de réponse et ne sont pas dessinées.

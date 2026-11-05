@@ -1,0 +1,114 @@
+---
+title: "Git y equipos"
+description: "Comparte un espacio de trabajo con Git, revisa los cambios como pequeños diffs y mantén los secretos y los ajustes personales fuera del repositorio."
+---
+
+Un espacio de trabajo es una carpeta de archivos de texto escritos para mantenerlos en Git: un archivo por solicitud, los
+mismos bytes para el mismo contenido y nada privado dentro. Confírmalo, súbelo, y tu equipo trabaja con las mismas
+solicitudes, cada persona con sus propias credenciales.
+
+## Archivos pensados para los diffs [#files-made-for-diffs]
+
+- **Un archivo por solicitud.** Cambiar una solicitud cambia un archivo. Añadir una solicitud añade un archivo.
+- **Deterministas.** Echolot escribe el mismo contenido de la misma manera siempre: las mismas claves en el mismo orden,
+  así que guardar sin cambios no cambia nada, y un diff muestra solo lo que has cambiado.
+- **Legibles.** Las solicitudes son TOML; los cuerpos están junto a su solicitud como archivos propios
+  (`create-order.body.json`), y las consultas GraphQL como `.graphql`, así que se comparan como JSON y GraphQL y no como
+  cadenas con escapes.
+- **El orden, en el archivo de la carpeta.** El orden de los elementos de una carpeta es una lista en su `_folder.toml`,
+  no parte de los nombres de archivo, así que reordenar cambia una línea.
+- **Tus comentarios se quedan.** Los comentarios que escribes a mano en un archivo (`# why this header`) se conservan
+  cuando Echolot lo guarda: el bloque de comentarios del principio, los comentarios sobre una clave o una tabla y los
+  comentarios tras un valor. Un comentario sobre una clave que ya no existe se descarta.
+
+Renombrar una solicitud renombra su archivo y los archivos de cuerpo y de script que tiene al lado. Renombrar un entorno
+conserva el nombre de su archivo.
+
+## Qué confirmar [#what-to-commit]
+
+Confirma toda la carpeta del espacio de trabajo. No hay nada que ignorar dentro: Echolot nunca escribe en ella valores
+secretos, historial, cuerpos de respuesta ni tus ajustes personales.
+
+| En el espacio de trabajo (compartido) | Solo en tu Mac (no compartido) |
+| --- | --- |
+| Solicitudes, carpetas, su orden, documentación, autenticación y scripts | Los valores secretos, en el llavero |
+| Variables y sus valores no secretos | Variables globales |
+| Entornos, y cuáles están protegidos | Qué entorno está activo |
+| Servidores MCP, especificaciones, mocks, flujos | Historial y cuerpos de respuesta |
+| Las reglas de los agentes, el proxy y los certificados del espacio de trabajo | Disposición de los paneles y otros ajustes de la app |
+| Conversaciones del Asistente que has elegido compartir | Qué scripts y reglas de agentes has aprobado |
+
+Deja el ID del espacio de trabajo en `workspace.toml` tal como está. Echolot encuentra con él los valores secretos de cada
+persona.
+
+<Callout type="warn">
+  Un valor escrito directamente en un campo, sin pasar por una variable secreta, se escribe en el archivo tal cual.
+  Echolot avisa bajo los campos de autenticación y de proxy que contienen uno (
+  **Se guarda como texto sin cifrar en el archivo del espacio de trabajo.**); haz clic en **Trasladar al llavero** antes
+  de confirmar. Consulta los [secretos](/docs/workspaces/secrets).
+</Callout>
+
+## Empieza a compartir [#start-sharing]
+
+1. Pon el espacio de trabajo en un repositorio de Git: crea el repositorio en la carpeta `.echolot`, o mantén el espacio
+   de trabajo como una carpeta dentro del repositorio de tu proyecto. Echolot abre cualquier carpeta con un
+   `workspace.toml`.
+2. Confirma y sube.
+3. Tus compañeros clonan el repositorio y abren el espacio de trabajo con **Archivo › Abrir espacio de trabajo…**.
+4. Cada compañero define los valores secretos una vez en su Mac: la página [Entornos](/docs/workspaces/environments)
+   muestra **Sin definir en este Mac** para cada uno.
+
+La herramienta de línea de comandos lee los mismos archivos, así que CI ejecuta las solicitudes que confirmas. Consulta
+[Prueba en CI](/docs/tutorials/test-in-ci).
+
+## Cambios desde Git, editores y agentes [#changes-from-git-editors-and-agents]
+
+Echolot vigila la carpeta del espacio de trabajo. Cuando los archivos cambian fuera de Echolot (un `git pull`, un cambio
+de rama, un editor, un agente), la ventana los vuelve a cargar: la barra lateral, las solicitudes abiertas, los
+entornos, las especificaciones, los mocks y los flujos los siguen al instante.
+
+Una solicitud abierta sin ediciones sin guardar toma la versión nueva sin preguntar.
+
+Cuando la solicitud tiene ediciones sin guardar en su pestaña, Echolot no elige bando. Aparece una barra sobre la
+solicitud: **Esta solicitud ha cambiado en el disco**, «Otra app o Git ha cambiado el archivo mientras tenías ediciones sin
+guardar aquí.»
+
+- **Conservar los míos** conserva las ediciones de la pestaña y las escribe sobre el archivo.
+- **Usar los suyos** descarta las ediciones de la pestaña y carga el archivo del disco.
+
+Hasta que elijas, Echolot no guarda esa solicitud, así que el cambio del disco se queda como está.
+
+### Cerrar una pestaña durante un conflicto [#closing-a-tab-during-a-conflict]
+
+Si cierras la pestaña antes de elegir, Echolot pregunta:
+**“Create order” ha cambiado en el disco mientras tenías cambios sin guardar.** «Al cerrar la pestaña solo se conserva
+una versión.» Elige **Conservar los míos**, **Usar los suyos** o **Cancelar** para mantener la pestaña abierta. Si
+cierras la ventana o sales de la app mientras hay un conflicto pendiente, te dice que la edición no se puede guardar y
+pregunta antes de dejarla perder, así que ninguna de las dos versiones se pierde sin que tú lo decidas.
+
+### Conflictos de fusión [#merge-conflicts]
+
+Resuelve los conflictos de fusión de Git en tu editor o en tu herramienta de Git, como con cualquier archivo de texto. Un
+archivo que aún contiene marcas de conflicto no es TOML válido. Mientras no se puede leer un archivo, una ventana abierta
+conserva lo que leyó antes, y abrir el espacio de trabajo falla con un mensaje en la ventana de bienvenida que nombra el
+archivo: no se ha podido leer “…”. Corrige el archivo y el espacio de trabajo vuelve a leerse.
+
+## Scripts y reglas de agentes desde Git [#scripts-and-agent-rules-from-git]
+
+Los scripts pueden enviar solicitudes y leer las variables del espacio de trabajo, así que Echolot ejecuta un script solo
+cuando confías en él en tu Mac. Los scripts que escribes en Echolot son de confianza. Un script que llega por Git, una
+importación u otro editor, o cuyo código ha cambiado allí, muestra **Estos scripts vienen de fuera de Echolot** hasta que
+lo lees y haces clic en **Confiar en los scripts**. Consulta [scripts y pruebas](/docs/requests/scripts-and-tests).
+
+Lo mismo vale para las reglas de los agentes del espacio de trabajo: las reglas del archivo que restringen lo que pueden
+hacer los agentes se aplican al instante; las que lo amplían solo cuentan después de que confíes en esa versión en tu Mac.
+Consulta los [agentes](/docs/ai/agents).
+
+## Compartir sin Git [#sharing-without-git]
+
+Para entregar un espacio de trabajo a alguien que no usa Git, [expórtalo](/docs/workspaces/exporting) como
+**Espacio de trabajo de Echolot**. La copia recibe un ID nuevo, así que sus secretos están separados de los tuyos, y los
+valores secretos nunca se escriben en ella.
+
+Copiar una carpeta de espacio de trabajo en el Finder conserva su ID. En el mismo Mac, la copia y el original leen los
+mismos valores secretos del llavero.

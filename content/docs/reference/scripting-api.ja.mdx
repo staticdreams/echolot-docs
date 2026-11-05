@@ -1,0 +1,318 @@
+---
+title: "スクリプトAPI"
+description: "リクエスト前スクリプトとテストスクリプトで使えるすべてのもの。pmオブジェクト、expect、JSON Schemaヘルパー、ライブラリ、そして使えないもの。"
+---
+
+スクリプトは、リクエストの送信前（リクエスト前）またはレスポンスの到着後（テスト）に実行されるJavaScriptです。
+PostmanのAPIである`pm`を使うので、Postmanコレクションのスクリプトはそのまま動作します。このページでは、そのすべてを一覧にしています。
+アプリでの書き方と結果の読み方は、[スクリプトとテスト](/docs/requests/scripts-and-tests)を参照してください。
+
+## スクリプトが実行される場所 [#where-scripts-run]
+
+- リクエストのスクリプトは<strong>スクリプト</strong>タブにあり、リクエストの横に`<slug>.pre.js`と`<slug>.test.js`として保存されます。フォルダとワークスペースにもスクリプトがあります（`_folder.pre.js`、`_folder.test.js`）。[ワークスペースのファイル](/docs/reference/workspace-files#_foldertoml)を参照してください。
+- 各リクエストでは、最初にワークスペースのスクリプトが、次に外側から順に各フォルダのスクリプトが、最後にリクエスト自身のスクリプトが実行されます。1つのイベントのすべてのスクリプトは、1つのサンドボックスを共有します。
+- MCPの呼び出しにはスクリプトがありません。
+- Echolotの外部（読み込み、Git、別のエディタ）から来たスクリプトは、<strong>スクリプトを確認…</strong>で読んでから<strong>スクリプトを信頼</strong>した場合にだけ実行されます。
+- コマンドラインツールも、[`echolot run`](/docs/cli/run)と[`echolot send`](/docs/cli/send)でスクリプトを実行します。
+
+## サンドボックス [#the-sandbox]
+
+スクリプトは、Echolot内のサンドボックス化されたJavaScriptエンジン（QuickJS）で実行されます。ファイルシステムも、独自のネットワークも、Node.jsモジュールもありません。外に出る唯一の方法は、Echolotを通じて送信する`pm.sendRequest`です。
+
+| 制限 | 値 |
+| --- | --- |
+| 1つのイベントのすべてのスクリプトに許されるJavaScriptの実行時間 | 5秒 |
+| メモリ | 128 MB |
+| すべての`pm.sendRequest`の応答を待つ時間 | 30秒 |
+| スクリプトから見えるレスポンスボディ | 最初の32 MB |
+
+例外を投げたり制限を超えたりしたスクリプトは、スクリプトエラーとして報告され、失敗したテストとして数えられます。
+
+## pm.test [#pmtest]
+
+```js
+pm.test("Status is 200", () => {
+  pm.response.to.have.status(200);
+});
+
+pm.test("Has products", () => {
+  const body = pm.response.json();
+  pm.expect(body.items).to.be.an("array").that.is.not.empty;
+});
+```
+
+| 形式 | 意味 |
+| --- | --- |
+| `pm.test(name, fn)` | 名前付きのテスト。`fn`が例外を投げずに戻れば成功します。 |
+| `pm.test(name, async () => { … })` | Promiseを返すテストは、Promiseが解決されれば成功します。 |
+| `pm.test(name, done => { … })` | 引数を取るテストは、`done()`を呼べば成功し、`done(error)`を呼ぶか、一度も呼ばなければ失敗します。 |
+| `pm.test.skip(name, fn)` | スキップされるテスト。一覧には表示されますが、数には入りません。 |
+| `tests[name] = condition` | 古い形式。条件が真なら成功します。 |
+
+リクエスト前スクリプトのテストも数えられます。
+
+## pm.expect [#pmexpect]
+
+`pm.expect(value)`（または`expect(value)`）は、Chai形式のアサーションです。失敗は、Chaiと同じ形で表示されます：`expected 401 to equal 200`。
+
+<strong>チェーンワード</strong>は、読みやすくするためのもので、何もしません：`to`、`be`、`been`、`is`、`that`、`which`、`and`、`has`、`have`、`with`、`at`、`of`、`same`、`but`、`does`、`still`、`also`。
+
+<strong>フラグ：</strong>`not`（否定）、`deep`（値で比較）、`nested`（`property`でのドット区切りのパス）、`own`、`any`、`all`、`ordered`。
+
+| アサーション | 成功する条件 |
+| --- | --- |
+| `.equal(x)`、`.equals`、`.eq` | 値が`x`である（`===`。`deep`では値で比較）。 |
+| `.eql(x)`、`.eqls` | 値が`x`と深く等しい。 |
+| `.above(n)`、`.gt`、`.greaterThan` | 値が`n`より大きい。 |
+| `.least(n)`、`.gte`、`.greaterThanOrEqual` | 値が`n`以上である。 |
+| `.below(n)`、`.lt`、`.lessThan` | 値が`n`より小さい。 |
+| `.most(n)`、`.lte`、`.lessThanOrEqual` | 値が`n`以下である。 |
+| `.within(a, b)` | 値が`a`と`b`の間（両端を含む）にある。 |
+| `.closeTo(x, delta)`、`.approximately` | 値が`x`から`delta`以内にある。 |
+| `.a(type)`、`.an(type)` | 値の型が`type`である：`string`、`number`、`boolean`、`object`、`array`、`null`、`undefined`、`regexp`、`date`、`error`、`function`。 |
+| `.instanceof(C)`、`.instanceOf` | 値が`C`のインスタンスである。 |
+| `.include(x)`、`.includes`、`.contain`、`.contains` | 文字列が`x`を含む、配列が`x`を持つ、オブジェクトが`x`のキーと値を持つ。 |
+| `.ok` | 値が真と評価される。 |
+| `.true`、`.false`、`.null`、`.undefined`、`.NaN` | 値がまさにそれである。 |
+| `.exist`、`.exists` | 値が`null`でも`undefined`でもない。 |
+| `.empty` | 文字列や配列に項目がない、オブジェクトにキーがない、MapやSetにエントリがない。 |
+| `.finite` | 値が有限の数である。 |
+| `.property(name)`、`.property(name, value)` | オブジェクトがそのプロパティを持つ（値が指定されていれば、その値も）。プロパティの値に続けて評価します。`.ownProperty`、`.haveOwnProperty`も同じです。 |
+| `.lengthOf(n)`、`.length(n)` | 値の`length`（またはMapやSetのサイズ）が`n`である。 |
+| `.match(regex)`、`.matches` | 文字列が正規表現に一致する。 |
+| `.string(s)` | 文字列が`s`を含む。 |
+| `.keys(…)`、`.key` | オブジェクトがこれらのキーだけを持つ（`any`ではそのうちの1つ、`include`の後では少なくともこれら）。 |
+| `.members(array)` | 配列が同じメンバーを持つ（`include`では少なくともこれら、`ordered`ではこの順序で）。 |
+| `.oneOf(array)` | 値が配列の項目のいずれかである。 |
+| `.satisfy(fn)`、`.satisfies` | `fn(value)`が真を返す。 |
+| `.throw()`、`.throws`、`.Throw` | 関数が例外を投げる（指定があれば、文字列を含む、または正規表現に一致するメッセージ、またはそのクラスの例外）。 |
+| `.jsonSchema(schema)` | 値がJSON Schemaに一致する。[JSON Schema](#json-schema)を参照してください。 |
+
+レスポンスに対しては、`expect`はPostmanのレスポンスのアサーションも取れます：`pm.expect(pm.response).to.have.status(200)`、`.header(name)`、`.jsonBody(…)`、`.body(…)`、`.responseTime(…)`、および`pm.expect(pm.response).to.be.ok`、`.success`、`.json`、以下のその他のものです。
+
+## pm.response [#pmresponse]
+
+テストスクリプトでの、レスポンスです。
+
+| メンバー | 意味 |
+| --- | --- |
+| `code` | ステータスコード：`200`。 |
+| `status` | 理由フレーズ：`"OK"`。`reason()`も同じです。 |
+| `headers` | ヘッダー（[リスト](#lists)）。`pm.response.headers.get("Content-Type")`。 |
+| `responseTime` | ミリ秒単位の時間。 |
+| `responseSize` | ボディのバイト数。`size()`も同じで、`{ body, header, total }`を返します。 |
+| `text()` | テキストとしてのボディ。 |
+| `json(reviver)` | JSONとして解析したボディ。JSONでなければ例外を投げます。 |
+
+<strong>レスポンスのアサーション：</strong>`pm.response.to.have.…`と`pm.response.to.not.have.…`：
+
+| アサーション | 成功する条件 |
+| --- | --- |
+| `status(200)`、`status("OK")` | コードが200、または理由がOK。`statusCode(n)`、`statusReason(text)`も使えます。 |
+| `header(name)`、`header(name, value)` | ヘッダーがある（値が指定されていれば、その値も）。 |
+| `body()`、`body(text)`、`body(regex)`、`body(object)` | ボディが空でない、そのテキストである、一致する、またはそのJSONである。 |
+| `jsonBody()`、`jsonBody(path)`、`jsonBody(path, value)`、`jsonBody(object)` | ボディがJSONである、ドット区切りのパスがある、その値を持つ、またはオブジェクトと等しい。 |
+| `responseTime(ms)` | レスポンスにかかった時間が`ms`以下。 |
+
+`pm.response.to.be.…`：
+
+| プロパティ | 成功するコード |
+| --- | --- |
+| `info` | 100〜199 |
+| `success` | 200〜299 |
+| `ok` | 200 |
+| `accepted` | 202 |
+| `redirection` | 300〜399 |
+| `clientError` | 400〜499 |
+| `serverError` | 500以上 |
+| `error` | 400以上 |
+| `badRequest`、`unauthorized`（または`unauthorised`）、`forbidden`、`notFound`、`rateLimited` | 400、401、403、404、429 |
+| `json`、`html`、`xml`、`text` | （`Content-Type`にその語が含まれる） |
+| `withBody` | （ボディが空でない） |
+
+## pm.request [#pmrequest]
+
+リクエストです。リクエスト前スクリプトでは、これに加えた変更が送信される内容になります。
+
+| メンバー | 意味 |
+| --- | --- |
+| `url` | オブジェクトとしてのURL。下記を参照してください。`String(pm.request.url)`がテキストです。 |
+| `method` | メソッド。変更できます。 |
+| `headers` | ヘッダー（[リスト](#lists)）。 |
+| `body` | ボディ：`{ mode: "raw", raw: "…" }`、または`undefined`。 |
+| `name`、`id` | リクエストの名前と、ワークスペース内でのパス。 |
+| `addHeader(item)`、`removeHeader(name)`、`upsertHeader(item)` | ヘッダーを変更します。項目は`{ key, value }`または`"Name: value"`です。 |
+| `addQueryParams(params)`、`removeQueryParams(names)` | クエリを変更します：`"a=1&b=2"`、`{ key, value }`、またはその配列。 |
+| `to.have.header(name, value)` | リクエストのヘッダーに対するアサーション。 |
+
+```js
+pm.request.headers.upsert({ key: "X-Request-Id", value: pm.variables.replaceIn("{{$guid}}") });
+pm.request.url.addQueryParams("per_page=50");
+```
+
+`url`オブジェクトには、`protocol`、`host`（ラベルの配列）、`port`、`path`（セグメントの配列）、`query`（リスト）、`hash`、そして`getHost()`、`getPath()`、`getQueryString()`、`getPathWithQuery()`、`getRemote()`、`update(text)`、`addQueryParams(…)`、`removeQueryParams(…)`、`toString()`があります。
+変更しなかったURLは、`{{variables}}`を含め、正確なテキストを保ちます。Echolotは、スクリプトの後でそれらを解決します。
+
+## 変数 [#variables]
+
+| スコープ | 内容 |
+| --- | --- |
+| `pm.environment` | 有効な環境の変数。`pm.environment.name`はその名前です。 |
+| `pm.collectionVariables` | ワークスペースの変数。 |
+| `pm.globals` | グローバル変数。 |
+| `pm.iterationData` | データ駆動の実行の現在の行。読み取り専用。 |
+| `pm.variables` | すべてのスコープをまとめて、近いものから順に。`set`と`unset`が変更するのはローカルの値だけです。 |
+
+各スコープには、`get(name)`、`has(name)`、`set(name, value)`、`unset(name)`、`clear()`、`toObject()`、`replaceIn(text)`があります。`set`はオブジェクトをJSONテキストにします。
+
+`pm.variables.get`は、次の順序で探します：ローカルの値、データの行、フォルダとリクエストの変数、環境、ワークスペース、グローバル。
+
+```js
+// Pre-request: sign the body
+const signature = CryptoJS.HmacSHA256(pm.request.body.raw, pm.environment.get("apiSecret")).toString();
+pm.request.headers.upsert({ key: "X-Signature", value: signature });
+
+// Test: keep the new order's ID for the next requests
+pm.collectionVariables.set("orderId", pm.response.json().id);
+```
+
+<strong>`set`が保持するもの。</strong>スクリプトが設定した値は、Postmanの「現在の値」です。アプリではウインドウが開いている間、コマンドラインではそのコマンドの間だけ保持され、リクエストを解決するときは、そのスコープの保存済みの値より優先されます。
+ワークスペースのファイルには書き込まれません。レスポンスの値を保存するには、[レスポンスのキャプチャ](/docs/requests/captures)を使います。`pm.variables.set`によるローカルの値は、実行の開始時に忘れられます。
+
+`replaceIn(text)`は、上記のスコープから`{{variables}}`を埋め込みます。動的な値のうち、`{{$guid}}`、`{{$randomUUID}}`、`{{$timestamp}}`、`{{$isoTimestamp}}`、`{{$randomInt}}`は認識します。それ以外の`{{$…}}`はそのまま残され、Echolotがリクエストを送信するときに解決されます。
+
+## pm.info [#pminfo]
+
+| メンバー | 意味 |
+| --- | --- |
+| `eventName` | `"prerequest"`または`"test"`。 |
+| `iteration` | 実行の反復。0から数えます。 |
+| `iterationCount` | 実行の反復の総数。 |
+| `requestName` | リクエストの名前。 |
+| `requestId` | ワークスペース内でのリクエストのパス。 |
+
+## pm.sendRequest [#pmsendrequest]
+
+スクリプトから、Echolotを通じて別のリクエストを送信します。ほかのリクエストと同じように、プロキシ、証明書、Cookieが適用されます。
+
+```js
+pm.sendRequest("https://demo.echolot.dev/v1/categories", (error, response) => {
+  if (error) { console.error(error); return; }
+  pm.collectionVariables.set("firstCategory", response.json().items[0].id);
+});
+
+// or with a promise
+pm.sendRequest({
+  url: pm.variables.replaceIn("{{baseURL}}/auth/token"),
+  method: "POST",
+  header: { "Content-Type": "application/json" },
+  body: { mode: "raw", raw: JSON.stringify({ email: "heidi@alpenglow.ch", password: pm.environment.get("password") }) }
+}).then(response => {
+  pm.environment.set("token", response.json().access_token);
+});
+```
+
+- 最初の引数は、URL、または`url`、`method`（デフォルトは`GET`）、`header`（`{ key, value }`の配列、オブジェクト、またはリスト）、`body`を持つオブジェクトです。
+- `body`は、文字列、`{ mode: "raw", raw }`、`{ mode: "urlencoded", urlencoded: [{ key, value }] }`、または`{ mode: "graphql", graphql: { query, variables } }`です。後ろの2つは、指定がなければ`Content-Type`が設定されます。
+- URL内の`{{variables}}`は、リクエストの環境で埋め込まれます。
+- コールバックは`(error, response)`を受け取ります。`response`は`pm.response`と同様です。コールバックがない場合は、Promiseを返します。
+- このリクエストには独自の認証がなく（ワークスペースの認証は適用されません）、スクリプトも実行されません。
+- エージェントの`pm.sendRequest`は、ほかの送信と同じように、エージェントの承認を通ります。
+
+## 実行の制御 [#controlling-a-run]
+
+| 呼び出し | 動作 |
+| --- | --- |
+| `pm.execution.setNextRequest(name)` | 実行中に、次にそのリクエストへ進みます。`null`で実行を終了します。`pm.setNextRequest`、`postman.setNextRequest`も同じです。 |
+| `pm.execution.skipRequest()` | リクエスト前スクリプトで、このリクエストを送信しません。 |
+
+## pm.cookies [#pmcookies]
+
+このやり取りのCookie。リクエストが送信したものと、レスポンスが設定したものです。[リスト](#lists)で、`pm.cookies.get(name)`、`has(name)`、`toObject()`、そして`{ name, key, value }`を返す`one(name)`があります。
+
+## リスト [#lists]
+
+ヘッダー、クエリパラメータ、Cookieは、Postmanのプロパティリストです。
+
+| メソッド | 動作 |
+| --- | --- |
+| `get(key)` | 値。キーは大文字と小文字を区別しません。 |
+| `one(key)` | 項目全体、`{ key, value, disabled }`。 |
+| `has(key)`、`has(key, value)` | あるかどうか（その値で）。 |
+| `add(item)`、`append(item)`、`upsert(item)` | 項目を追加する、または追加か置換をする。 |
+| `remove(key)`、`remove(fn)`、`clear()` | 項目を削除します。 |
+| `toObject()`、`all()`、`count()`、`idx(i)` | 項目をオブジェクトで、配列で、個数で、インデックスの位置のものを取得します。 |
+| `each(fn)`、`map(fn)`、`filter(fn)`、`find(fn)` | 項目を順に処理します。 |
+| `toString()` | `Name: value`の行。 |
+
+## console [#console]
+
+`console.log`、`info`、`warn`、`error`、`debug`、`trace`は、リクエストの<strong>コンソール</strong>に書き出され、コマンドラインでは`── console ──`の下に書き出されます。オブジェクトはJSONで書き出されます。
+
+## タイマー [#timers]
+
+`setTimeout`、`setInterval`、`setImmediate`は、スクリプトの後に、遅延の順序で関数を実行します。実際に待つことはありません。`setInterval`は一度だけ実行されます。`clearTimeout`などで取り消せます。
+
+## JSON Schema [#json-schema]
+
+方法は3つあり、すべてEcholot独自のJSON Schemaバリデータを使います。
+
+```js
+const schema = {
+  type: "object",
+  required: ["sku", "price"],
+  properties: { sku: { type: "string" }, price: { type: "object" } }
+};
+
+// Chai
+pm.expect(pm.response.json()).to.have.jsonSchema(schema);
+
+// ajv
+const Ajv = require("ajv");
+const validate = new Ajv().compile(schema);
+pm.test("Matches the schema", () => pm.expect(validate(pm.response.json()), JSON.stringify(validate.errors)).to.be.true);
+
+// tv4
+pm.test("Matches the schema", () => pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true);
+```
+
+| ヘルパー | 内容 |
+| --- | --- |
+| `require("ajv")` | クラス：`new Ajv(options)`、`validate(schema, data)`、`compile(schema)`（`.errors`を持つ関数）、`addSchema(schema, key)`、`getSchema(key)`、`errorsText(errors)`、`errors`。`addFormat`と`addKeyword`は受け付けられますが、何もしません。 |
+| `tv4`（`require("tv4")`も同じ） | `validate(data, schema)`と`tv4.error`、`validateResult(data, schema)`、`validateMultiple(data, schema)`。 |
+| `.jsonSchema(schema)` | 上記のChaiのアサーション。 |
+
+JSON Schemaのチェックは、スクリプトなしでも行えます。<strong>テスト</strong>タブの<strong>JSON Schema</strong>チェックです。
+
+## ライブラリ [#libraries]
+
+| 名前 | 内容 |
+| --- | --- |
+| `CryptoJS`（`require("crypto-js")`も同じ） | `MD5`、`SHA1`、`SHA256`、`SHA384`、`SHA512`、`HmacMD5`、`HmacSHA1`、`HmacSHA256`、`HmacSHA384`、`HmacSHA512`。`enc.Hex`、`enc.Utf8`、`enc.Base64`、`enc.Latin1`。`lib.WordArray.create(bytes)`と`lib.WordArray.random(n)`。結果には`toString(encoder)`があります。 |
+| `_`（`require("lodash")`も同じ） | コレクションで使うlodashの関数：`each`/`forEach`、`map`、`filter`、`reject`、`find`、`findIndex`、`some`、`every`、`reduce`、`includes`/`contains`、`get`、`has`、`set`、`keys`、`values`、`size`、`is…`の判定（`isArray`、`isString`、`isEmpty`、`isEqual`など）、`startsWith`、`endsWith`、`trim`、`toLower`、`toUpper`、`capitalize`、`parseInt`、`toNumber`、`toString`、`first`/`head`、`last`、`tail`、`initial`、`uniq`、`flatten`、`compact`、`concat`、`range`、`times`、`sortBy`、`groupBy`、`keyBy`、`countBy`、`pick`、`omit`、`assign`/`extend`、`clone`、`cloneDeep`、`merge`、`random`、`sample`、`sum`、`max`、`min`、`noop`、`identity`、`now`、`uniqueId`。 |
+| `require("uuid")` | `v4()`：ランダムなUUID。 |
+| `btoa`、`atob`（`require("btoa")`、`require("atob")`も同じ） | Latin-1テキストのBase64と、その逆変換。 |
+
+## 古いPostmanのグローバル [#the-old-postman-globals]
+
+古いコレクションのスクリプトはこれらを使い、そのまま動作します。
+
+| グローバル | 内容 |
+| --- | --- |
+| `tests["name"] = condition` | テスト。 |
+| `responseBody`、`responseCode`（`code`、`name`、`detail`）、`responseHeaders`、`responseTime` | レスポンス。 |
+| `request`（`url`、`method`、`headers`、`data`、`name`、`description`） | リクエスト。 |
+| `environment`、`globals`、`data`、`iteration` | オブジェクトとしての変数、データの行、反復。 |
+| `postman.setEnvironmentVariable`、`getEnvironmentVariable`、`clearEnvironmentVariable`、`clearEnvironmentVariables` | 環境。 |
+| `postman.setGlobalVariable`、`getGlobalVariable`、`clearGlobalVariable`、`clearGlobalVariables` | グローバル。 |
+| `postman.getResponseHeader(name)`、`postman.getResponseCookie(name)`、`postman.setNextRequest(name)` | レスポンスと実行。 |
+| `"text".has("x")` | 文字列が別の文字列を含むかどうか。 |
+
+## 使えないもの [#what-is-not-there]
+
+- ほかのモジュール：上記にないものの`require`（`cheerio`、`xml2js`、`moment`、Node自身のモジュール）は、「The module … is not available in Echolot scripts.」という例外を投げます。
+- 実際の待機：タイマーは遅延なしで実行され、`fetch`も`XMLHttpRequest`もありません。`pm.sendRequest`を使ってください。
+- ファイルとプロセス：スクリプトはファイルの読み書きもプログラムの起動もできません。
+- `pm.visualizer.set`は受け付けられるため、それを使うスクリプトは動作しますが、Echolotは可視化を表示しません。
+- `xml2Json`、`pm.require`とPostmanのパッケージライブラリ、`pm.vault`。
+- ファイル内のシークレット：スクリプトはシークレットの変数をほかの変数と同じように読み取りますが、`set`した内容がワークスペースのファイルに書き込まれることはありません。

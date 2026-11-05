@@ -1,0 +1,151 @@
+---
+title: "Novedades"
+description: "Las notas de versión de cada versión de Echolot, la más reciente primero."
+---
+
+Estas son las notas que Echolot muestra en **Ayuda › Novedades de Echolot**, la versión más reciente primero. Cada versión y sus descargas están también en la [página de versiones](https://github.com/staticdreams/echolot-public/releases).
+
+## 0.8.0
+
+*4 de noviembre de 2026 · compilación 12*
+
+**Novedades**
+
+- Echolot ya habla francés, alemán, español, japonés, coreano, ruso y chino simplificado. Sigue el idioma del sistema,
+  o elige uno en Ajustes › General › Idioma.
+- Un recorrido guiado en el primer arranque, que puedes repetir desde Ayuda › Mostrar el recorrido.
+- El panel del Asistente cambia de tamaño: arrastra su borde (con doble clic vuelve al tamaño predeterminado).
+- Los mocks responden a las operaciones de la especificación que no tienen ejemplo con datos falsos nuevos que se
+  ajustan a cada campo.
+
+**Mejoras**
+
+- Echo, la pantalla de estado de la cabecera de la página, está activado por omisión.
+- En la hoja de aprobación del Asistente, Permitir en esta sesión cubre ahora todos los cambios en el espacio de
+  trabajo a la vez; eliminar sigue preguntando.
+- La ventana de bienvenida tiene un ping de sonar detrás del icono de la app.
+
+**Correcciones**
+
+- El editor de solicitudes ya no se dibuja encima de la respuesta.
+- Inicio cabe en una ventana estrecha, así que un Asistente ancho ya no lo empuja por encima de la barra lateral.
+- El saludo de Echo ya no sale apretado, y el título del Asistente se mantiene en una línea en todos los idiomas.
+- Quitar una prueba con su botón de menos ya no hace que Echolot se cierre inesperadamente, ni tampoco quitar una
+  suscripción o un mensaje MQTT, un mensaje WebSocket o una emisión Socket.IO. Gracias a Amit por avisar.
+- El botón de menos de la lista de Flujos elimina el flujo seleccionado; antes solo respondía a los clics en su línea
+  fina.
+
+## 0.7.1
+
+*3 de noviembre de 2026 · compilación 11*
+
+**Novedades**
+
+- La tarjeta Sonar de Inicio muestra cada envío de la última hora, las últimas 24 horas o los últimos 7 o 30 días
+  según el tiempo de respuesta, con los envíos, las respuestas correctas, la mediana y el p95 frente al periodo
+  anterior.
+- Marine, un segundo aspecto oscuro en azules de aguas profundas (Ajustes › General › Aspecto).
+- La autenticación del espacio de trabajo desde cualquier solicitud: la pestaña Autenticación abre la autenticación de
+  la carpeta o del espacio de trabajo que hereda la solicitud (Autenticación del espacio de trabajo… si tiene la suya),
+  y los ajustes de la carpeta y del espacio de trabajo inician sesión con OAuth 2.0 una vez para todas las solicitudes
+  que la heredan.
+- Más autenticación: OAuth 1.0, la concesión por contraseña de OAuth 2.0 y sus ajustes avanzados, y la autenticación
+  ASAP de Postman importada como JWT Bearer.
+- Los agentes y el Asistente pueden dar a las solicitudes autenticación y capturas (credenciales solo como
+  `{{variables}}`), configurar la autenticación de una carpeta y probar un flujo una vez cuando lo apruebes; Ajustes ›
+  Asistente › Preguntar antes puede limitar las preguntas a eliminar, hosts nuevos y entornos protegidos.
+- Las solicitudes cuya última llamada falló muestran un aviso en la lista de solicitudes, con lo que salió mal.
+
+**Mejoras**
+
+- Las respuestas del Asistente se muestran como Markdown y siguen fluidas mientras llegan.
+- Las tarjetas de los flujos muestran lo que hacen, las condiciones se editan como reglas y la última expresión de un
+  bloque Evaluar es su resultado.
+- Ajustes › Almacenamiento muestra cuánto espacio ocupan los cuerpos de respuesta, y Eliminar cuerpos guardados… lo
+  libera.
+- En pantallas más pequeñas, el Asistente y las variables fijadas ya no hacen que la ventana se salga de la pantalla:
+  en su lugar, las variables flotan.
+
+**Correcciones**
+
+- Correcciones de seguridad de dos auditorías: los tokens OAuth se guardan por entorno y ajustes y nunca van a otro
+  host; los agentes no pueden escribir credenciales en archivos ni enviar secretos a hosts nuevos sin preguntar; los
+  servidores mock, MCP y de webhooks detenidos cierran todas las conexiones.
+- Corregidos: un cierre inesperado con números muy grandes en los valores, los proxies HTTPS que fallaban con
+  servidores HTTP/2, el texto que terminaba en `"""` y cambiaba al guardarse, y los traslados o cambios de nombre que
+  borraban el historial de deshacer de las pestañas abiertas.
+- Con el cifrado en reposo activado, el historial ya no guarda los cuerpos de las solicitudes en texto sin cifrar.
+- Los ajustes del espacio de trabajo y de la carpeta siguen tu aspecto, Marine incluido, y mantienen el mismo tamaño
+  al cambiar de pestaña.
+- La barra de llamada gRPC cabe en su panel: los nombres largos de proto, servicio y método se acortan en lugar de
+  invadir la respuesta.
+
+## 0.6.0
+
+*2 de noviembre de 2026 · compilación 9*
+
+**Novedades**
+
+- Los mocks ya no necesitan una especificación: crea rutas a mano (método, ruta con `{id}`, estado, cabeceras, cuerpo
+  y reglas sobre la solicitud), con datos falsos en sus cuerpos: `{{$randomFullName}}`, `{{request.params.id}}`,
+  `{{#repeat 10}}`…`{{/repeat}}`. Crear solicitudes convierte las rutas de un mock en solicitudes.
+- Los mismos valores falsos funcionan en las solicitudes, y echolot fake genera datos falsos a partir de una plantilla
+  en la línea de comandos.
+- Selecciona varias solicitudes en la barra lateral para ponerlas en una carpeta nueva (Nueva carpeta con N elementos)
+  o cambiar a la vez sus cabeceras, parámetros de consulta y autenticación (Editar N solicitudes…).
+- Echo, una pantalla de estado opcional en la cabecera de la página (Ajustes › General › Echo), cuenta lo que pasa en
+  la ventana, y con un clic despliega un informe de la sesión.
+- Ayuda › Documentación de Echolot (⌘?) abre la nueva documentación en docs.echolot.dev, y Ayuda › Ayuda para esta
+  página, la página sobre lo que estás viendo.
+
+**Mejoras**
+
+- Echolot pregunta una vez por proveedor de modelos antes de enviarle nada; Ajustes › Asistente muestra lo que has
+  permitido, con Revocar. El modelo en el dispositivo de Apple y los servidores de tu Mac nunca preguntan.
+- Tras una actualización no se abre nada por sí solo: un botón Novedades en la cabecera de la página muestra las notas
+  nuevas.
+- La paleta de comandos ofrece solo lo que tiene sentido en la página que se muestra.
+- Las respuestas JSON muestran los escapes \u como los caracteres que representan.
+- El resaltado de la barra lateral se desliza de fila en fila, y el selector de módulos salta con un rebote al módulo
+  que eliges.
+
+**Correcciones**
+
+- Añadir regla y Añadir cabecera conservan la fila que añaden y ponen el cursor en ella.
+- Los botones de semáforo de la ventana ya no quedan cortados cuando otra ventana pasa al frente.
+
+## 0.5.0
+
+*31 de octubre de 2026 · compilación 7*
+
+**Mejoras**
+
+- Los entornos protegidos preguntan antes de más cosas: llamadas, comprobaciones y observaciones de MCP, Obtener
+  token, descargas de esquemas, reflexión gRPC y mensajes enviados en una sesión abierta después de cambiar de entorno.
+- Una contraseña de proxy o una frase de contraseña de certificado guardada como texto sin cifrar muestra ahora un
+  aviso, con Trasladar al llavero al lado; borrar el historial de una solicitud pregunta antes.
+- Al escribir `{{` vuelven a aparecer las variables de la solicitud en la barra de URL, y en sus ajustes, las
+  variables con las que se resuelve la autenticación de una carpeta o del espacio de trabajo.
+- El árbol JSON abre antes las respuestas grandes, y el lienzo de flujos se desplaza con más suavidad.
+
+**Correcciones**
+
+- Los secretos se quedan donde están: las cabeceras de clave de API y las que contienen un secreto ya no siguen una
+  redirección a otro origen, el historial ya no guarda secretos de Hawk, EdgeGrid, NTLM, proxy o certificados, y con el
+  almacenamiento cifrado el texto de una respuesta queda fuera del índice de búsqueda.
+- Los agentes leen el historial con las credenciales enmascaradas, y una coincidencia de búsqueda que toca un secreto
+  ni se cuenta ni se muestra; los límites de un agente también se aplican dentro de los flujos que ejecuta.
+- El inicio de sesión NTLM funciona por HTTP/1.1 sin que otra solicitud tome prestada su conexión, y un servidor que
+  exige HTTP/1.1 lo obtiene. HTTP/3 prueba todas las direcciones de un host a la vez, como hace TCP.
+- Las respuestas que se expanden de forma desmesurada (más de 100 a 1 por encima de 256 MB), y los mensajes WebSocket
+  y Socket.IO formados por fragmentos enormes, se cortan en lugar de llenar la memoria.
+- Exportar nunca escribe encima, dentro ni alrededor del espacio de trabajo de origen, envía a la Papelera lo que
+  reemplaza e indica cuántas credenciales se han escrito sin cifrar.
+- Las ediciones ya no se pierden: los ajustes de la carpeta y del espacio de trabajo, las rutas de los mocks y una
+  pestaña que se cierra justo antes de salir se guardan siempre, y un guardado fallido conserva tu texto.
+- Cerrar una ventana detiene sus ejecuciones y envíos. Las ejecuciones con iteraciones en paralelo mantienen sus
+  propios valores de $response, y los archivos de datos de hasta 100 MB se cargan sin bloquear la ventana.
+- Un flujo cuyo script de solicitud falla ahora toma la rama de error, y los servicios en segundo plano respetan la
+  elección de no usar ningún entorno.
+
+Las notas de las versiones anteriores están en la [versión en inglés](/docs/whats-new).

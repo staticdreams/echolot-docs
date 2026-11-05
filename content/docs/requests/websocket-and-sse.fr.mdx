@@ -1,0 +1,103 @@
+---
+title: "WebSocket et SSE"
+description: "Connectez-vous à des serveurs WebSocket, envoyez des messages enregistrés ou ponctuels et suivez les flux de server-sent events à mesure qu’ils arrivent."
+---
+
+Les requêtes WebSocket ouvrent une connexion qui reste active : vous envoyez des messages et voyez ceux du serveur à
+mesure qu’ils arrivent. Les server-sent events (SSE) sont des requêtes HTTP ordinaires dont la réponse continue d’arriver
+en flux ; Echolot affiche chaque événement dès qu’il arrive.
+
+## Requêtes WebSocket [#websocket-requests]
+
+<Shot id="requests-websocket-log" alt="Realtime › Order updates connecté à l’API de démo : l’onglet Messages avec les messages enregistrés Subscribe et Ping, et le journal des messages du volet de réponse avec des événements de commande envoyés et reçus" />
+
+### Se connecter [#connect]
+
+1. Choisissez **Fichier › Nouvelle requête WebSocket**, ou **Nouvelle requête WebSocket** dans le menu **+** à côté de
+   **Requêtes** dans la barre latérale.
+2. Saisissez l’adresse, qui commence par `ws://` ou `wss://`. **Realtime › Order updates** d’Alpenglow utilise
+   `{{wsURL}}/orders`, c’est-à-dire `wss://demo.echolot.dev/v1/orders`.
+3. Choisissez **Connecter** (<kbd>⌘</kbd><kbd>R</kbd>).
+
+Tant que la connexion est ouverte, le bouton affiche **Se déconnecter** (<kbd>⌘</kbd><kbd>R</kbd> de nouveau). Avec un
+environnement protégé actif, il affiche **Se connecter à Production…** (avec le nom de cet environnement) et demande
+d’abord confirmation. Voir [environnements protégés](/docs/workspaces/protected-environments).
+
+L’éditeur a ces onglets : **Docs**, **Messages**, **En-têtes**, **Paramètres**, **Auth**, **Variables**, **Tests**,
+**Scripts** et **Réglages**. Les en-têtes, les paramètres de requête et l’authentification accompagnent le handshake
+d’ouverture (la mise à niveau HTTP) : un serveur qui veut un jeton dans un en-tête ou dans l’adresse l’y trouve. Les
+réglages comme la vérification TLS, le proxy et les certificats s’appliquent comme pour les
+[requêtes HTTP](/docs/requests/settings).
+
+### Sous-protocoles [#subprotocols]
+
+En haut de l’onglet **Messages**, **Sous-protocoles** liste les protocoles à proposer au serveur, séparés par des
+virgules, comme `graphql-ws, chat.v2`. Laissez vide pour aucun.
+
+### Envoyer des messages [#send-messages]
+
+En bas de l’onglet **Messages**, saisissez un message et choisissez **Envoyer** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>).
+Les `{{variables}}` fonctionnent dedans. Le champ affiche **Connectez-vous pour envoyer des messages** tant que la
+connexion n’est pas ouverte.
+
+Les messages que vous envoyez souvent peuvent être enregistrés avec la requête. Choisissez **+** à côté du champ pour
+enregistrer ce que vous avez tapé. Chaque message enregistré a un nom, son texte et son propre bouton **Envoyer**.
+Order updates en a deux :
+
+```json
+{"op":"subscribe","channel":"orders"}
+```
+
+```json
+{"op":"ping"}
+```
+
+La case au début d’un message enregistré, **Envoyer lors des exécutions**, décide s’il est envoyé quand la requête
+s’exécute sans vous : dans l’[Exécution](/docs/requests/runner), en ligne de commande ou pour un agent. Ceux-ci envoient
+les messages activés dans l’ordre après la connexion, puis écoutent pendant 10 secondes et ferment la connexion.
+
+### Le journal des messages [#the-message-log]
+
+L’onglet **Messages** du volet de réponse montre la session en direct : chaque message dans les deux sens, le plus
+récent en dernier, avec son heure et sa taille, ainsi que les moments d’ouverture et de fermeture de la connexion.
+
+- **Tout**, **Envoyé** et **Reçu** filtrent par direction.
+- **Filtrer les messages** trouve des messages d’après leur texte.
+- **Plus** affiche un message JSON mis en forme ; **Moins** le replie.
+- Le bouton de copie copie un message.
+
+Echolot répond lui-même aux pings du serveur. Un message reconstitué à partir de fragments peut atteindre 64 Mo ; un
+message plus grand ferme la connexion avec le code 1009.
+
+Quand la connexion se ferme, la session est conservée dans l’[Historique](/docs/workspaces/history) : le handshake comme
+requête, et le journal des messages comme corps de la réponse.
+
+## Server-sent events [#server-sent-events]
+
+Un flux de server-sent events est une réponse HTTP de type `text/event-stream` qui continue d’envoyer des événements.
+Utilisez pour cela une requête HTTP normale : il n’y a rien à configurer au-delà de l’adresse.
+
+<Shot id="requests-sse-events" alt="Realtime › Order events envoyé à l’API de démo : l’onglet Événements du volet de réponse avec des événements numérotés, chacun avec son nom d’événement, son id et ses données JSON" />
+
+1. Ouvrez **Realtime › Order events** dans l’espace de travail Alpenglow. Elle envoie `GET {{baseURL}}/orders/events`
+   avec `Accept: text/event-stream`.
+2. Choisissez **Envoyer**.
+3. Choisissez l’onglet **Événements** dans le volet de réponse.
+
+L’onglet **Événements** liste chaque événement dans l’ordre, numéroté, avec son nom d’événement et son id (`id:`), et
+les données en JSON quand c’en est. Il suit les nouveaux événements pendant que le flux tourne et les compte. L’onglet
+**Corps** montre le flux tel que le serveur l’a écrit, qui grandit à mesure qu’il arrive.
+
+Le flux dure jusqu’à ce que le serveur y mette fin ou que vous choisissiez **Annuler** (<kbd>⌘</kbd><kbd>.</kbd>) ; ce
+qui est arrivé est conservé. Une fois qu’un flux a démarré, le délai d’attente total de la requête ne s’y applique plus.
+Dans les exécutions, en ligne de commande et pour les agents, un flux prend fin au bout de 10 secondes.
+
+Pour reprendre un flux là où il s’est arrêté, renvoyez l’id du dernier événement dans un en-tête `Last-Event-ID`. Le
+flux de l’API de démo envoie 20 événements à une seconde d’intervalle, puis `end`, et respecte `Last-Event-ID`.
+
+Les abonnements GraphQL via HTTP utilisent aussi les server-sent events : voir [GraphQL](/docs/requests/graphql).
+
+## Depuis la ligne de commande [#from-the-command-line]
+
+`echolot send` ouvre des sessions WebSocket et Socket.IO et suit des flux d’événements depuis le terminal. Voir
+[echolot send](/docs/cli/send) et le [tutoriel temps réel](/docs/tutorials/realtime).

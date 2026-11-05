@@ -12,15 +12,16 @@ Open Settings with **Echolot › Settings…** or <kbd>⌘</kbd><kbd>,</kbd>. Th
 search field above them (<kbd>⌘</kbd><kbd>F</kbd>) keeps only the panes holding a matching setting; <kbd>↩</kbd>
 opens the first. Settings opens on the pane you used last.
 
-<Shot id="settings-general" alt="Settings on the General pane: appearance, code and responses, Quick Send, Echo, the command-line tool and updates" />
+<Shot id="settings-general" alt="Settings on the General pane: language, appearance, code and responses, Quick Send, Echo, the command-line tool and updates" />
 
 ## General
 
-Appearance and how code and responses are shown.
+The language, the appearance, and how code and responses are shown.
 
 | Setting | What it does | Default |
 | --- | --- | --- |
-| **Appearance** | **System**, **Light** or **Dark**, for every Echolot window, whatever macOS uses. | System |
+| **Language** | The language Echolot speaks: **System** follows System Settings › General › Language & Region, or choose one of Echolot's languages (they are listed in their own names). A new choice takes effect after a relaunch, and **Relaunch Echolot** appears under the setting. The section is shown once Echolot has more than one language. | System |
+| **Appearance** | **System**, **Light**, **Dark** or **Marine**, for every Echolot window, whatever macOS uses. Marine is dark mode in deep-water blues. | System |
 | **Code font size** | The size of response bodies, the hex view, the JSON tree and code editors, from 10 to 22 pt. **View** menu: <kbd>⌘</kbd><kbd>+</kbd> and <kbd>⌘</kbd><kbd>−</kbd> change it too. | 12 pt |
 | **Wrap long lines in responses** | Wraps long lines in the response's **Body**, **Raw** and **Wire** views instead of scrolling sideways. | Off |
 
@@ -35,7 +36,7 @@ Appearance and how code and responses are shown.
 
 | Setting | What it does | Default |
 | --- | --- | --- |
-| **Show Echo's status screen in the page header** | The small screen that tells what is going on in the window. See [Echo](/docs/ai/echo). | Off |
+| **Show Echo's status screen in the page header** | The small screen that tells what is going on in the window. See [Echo](/docs/ai/echo). | On |
 | **Humor** | **Facts only**, **A little** or **Plenty**. | A little |
 | **Let AI write some of Echo's comments** | A model writes some lines: Apple's on-device model where the Mac has it, otherwise the model chosen in Settings › Assistant. Not available with **Facts only**. **Written by** shows which model, and asks its permission if needed. | Off |
 
@@ -152,7 +153,7 @@ What Echolot may collect, always off until you say so. See [Privacy and security
 | Setting | What it does | Default |
 | --- | --- | --- |
 | **Share anonymous usage data** | Tells Echolot's developers which features are used (sending a request, a run, an MCP check) with small facts such as the request kind and status code, and reports errors with their stack traces. Never URLs, headers, bodies, variables, secrets or responses. | Off |
-| **Collect crash reports** | macOS hands Echolot its crash and hang reports on the next launch, and Echolot saves them on this Mac so you can attach them to feedback. Stack traces only. They are not sent anywhere. The count of saved reports is shown, with **Show in Finder**. | Off |
+| **Collect crash reports** | macOS hands Echolot its crash and hang reports on the next launch, and Echolot saves them on this Mac so you can attach them to feedback. Stack traces only. They are not sent anywhere. The count of saved reports is shown, with **Show in Finder**. | On |
 | **Update checks** | Shows how often Echolot asks GitHub for the list of releases: **Once a day**, **Only when you ask**, or **By the App Store**. GitHub sees the app's version and your IP address, nothing about you or your workspaces. | |
 
 ## About

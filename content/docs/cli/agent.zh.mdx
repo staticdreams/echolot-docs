@@ -1,0 +1,124 @@
+---
+title: "echolot agent"
+description: "在没有 App 的情况下让内置智能体执行任务，用策略文件代替批准，适用于脚本和 CI。"
+---
+
+`echolot agent` 将任务交给内置智能体（与[助手](/docs/ai/assistant)是同一个），让它使用工作区的工具完成任务。这里没有人来批准任何事，所以由策略决定它能做什么。
+可以在 CI 中使用（“检查每个请求并报告哪些失败”），也可以在脚本中使用。
+
+```sh
+echolot agent [<options>] <task>
+```
+
+`<task>` 是智能体应该做的事，用平常的话描述。
+
+## 运行任务 [#run-a-task]
+
+```sh
+export ANTHROPIC_API_KEY=…
+echolot agent "Check every request of the Catalog folder and report what fails" -w Alpenglow.echolot
+```
+
+模型的回答在写出时以流的方式输出到标准输出。结束时，摘要输出到标准错误：
+
+```text
+Agent finished: 9 tool calls, 18234 in, 1210 out.
+```
+
+`-v` 还会将每次工具调用及其结果打印到标准错误（`→ send_request …`、`← send_request ok in 82 ms`）。`--json` 则改为将整个会话打印为 JSON：每条消息、工具调用和结果、令牌用量以及结束的方式。
+
+## 提供商和模型 [#providers-and-models]
+
+| `--provider` | 密钥来自 | 模型 |
+| --- | --- | --- |
+| `anthropic`（默认） | `ANTHROPIC_API_KEY` | 除非 `--model` 另行指定，否则为 `claude-opus-5-5`。 |
+| `openai` | `OPENAI_API_KEY` | 必须指定 `--model`。 |
+| `gemini` | `GEMINI_API_KEY` | 必须指定 `--model`。 |
+| `openai-compatible` | 设置了 `OPENAI_API_KEY` 时用它；也可以不需要 | 必须指定 `--model`。适用于 Ollama、LM Studio、OpenRouter 和其他使用 OpenAI API 的服务器。`--base-url` 是服务器；默认是这台 Mac 上的 Ollama（`http://127.0.0.1:11434/v1`）。 |
+
+`--key-env` 指定另一个保存密钥的环境变量。请把密钥保存在你 CI 的机密中，或在命令运行时获取：
+
+```sh
+op run --env-file agent-keys.env -- echolot agent "Save every product as CSV" \
+  -w Alpenglow.echolot --provider openai --model gpt-5.5 --policy-file ci-policy.toml --json
+```
+
+在你自己的 Mac 上免费运行：
+
+```sh
+echolot agent "List the requests that have no checks" -w Alpenglow.echolot \
+  --provider openai-compatible --model qwen3:4b
+```
+
+## 策略 [#policies]
+
+智能体的工具就是 Echolot 的 MCP 服务器的工具，安全措施也相同：机密值永远不会到达模型，模型看到的一切都经过同样的遮盖。每类操作可以做什么由策略决定：
+
+| `--policy` | 运行什么 |
+| --- | --- |
+| `standard`（默认） | 读取和安全的发送（例如 `GET`）。其他发送、新主机和对工作区的更改会被拒绝。 |
+| `readonly` | 仅读取。 |
+| `permissive` | 发送以及对工作区的更改。删除、工作区不认识的主机和在受保护的环境中的发送会被拒绝。 |
+
+没有人参与时，“询问”就意味着“拒绝”。
+
+**策略文件**按操作类型放宽或收紧基础策略。它接受与工作区的 `[agents]` 部分相同的规则，外面带不带 `[agents]` 都可以：
+
+```toml
+# ci-policy.toml: let the agent send anything to the workspace's hosts, but never change the workspace
+[rules]
+unsafe-send = "allow"
+workspace-write = "refuse"
+destructive = "refuse"
+```
+
+| 操作 | 涵盖 |
+| --- | --- |
+| `read` | 读取请求、响应、环境以及其余内容。 |
+| `safe-send` | 发送不更改任何内容的请求，例如 `GET`。 |
+| `unsafe-send` | 发送可能更改某些内容的请求，例如 `POST` 或 `DELETE`。 |
+| `protected-send` | 在[受保护的环境](/docs/workspaces/protected-environments)中发送。 |
+| `new-host` | 发送到工作区不认识的主机。 |
+| `workspace-write` | 创建和更改请求、文件夹、环境和其他文件。 |
+| `destructive` | 删除。 |
+
+每项接受 `allow`、`ask` 或 `refuse`。`protected-send` 和 `new-host` 可以变得更严格，但永远不会被直接允许。
+
+策略文件算作你自己的，所以它可以放宽策略。工作区自己的 `[agents]` 规则只能收紧策略，除非你传入 `--trust-workspace-policy`。
+
+## 限制 [#limits]
+
+`--max-steps` 在模型运行这么多轮之后停止运行（默认 30）。`--token-budget` 在用掉这么多令牌之后停止运行。因限制而停止的运行以 1 退出。
+
+## 选项 [#options]
+
+| 选项 | 含义 |
+| --- | --- |
+| `-w`、`--workspace <folder>` | 工作区文件夹。默认：当前文件夹。 |
+| `--env <env>` | 调用未指明环境时使用的环境：不带 `.toml` 的文件名。 |
+| `--provider <provider>` | `anthropic`、`openai`、`gemini` 或 `openai-compatible`。默认 `anthropic`。 |
+| `--model <model>` | 模型；除 `anthropic` 外，每个提供商都必须指定。 |
+| `--base-url <url>` | 提供商的 URL，用于 `openai-compatible` 服务器。默认：Ollama 的。 |
+| `--key-env <name>` | 保存 API 密钥的环境变量，用于它不是提供商通常所用变量的情况。 |
+| `--policy <policy>` | 基础策略：`standard`、`readonly` 或 `permissive`。默认 `standard`。 |
+| `--policy-file <file>` | 一个 TOML 文件，按操作给出规则（`allow`、`ask`、`refuse`），与工作区的 `[agents]` 部分类似。 |
+| `--trust-workspace-policy` | 让工作区的 `[agents]` 规则不仅能收紧策略，也能放宽策略。 |
+| `--toolsets <list>` | 要提供的工具组，用逗号分隔，或用 `all`：`requests`（始终）、`flows`、`workspace`、`environments`、`specs`、`mocks`、`mcp-servers`、`history`、`flow-editing`。默认 `all`。 |
+| `--max-steps <n>` | 运行停止之前的模型轮数。默认 30。 |
+| `--token-budget <n>` | 运行停止之前可以使用的令牌数。 |
+| `--json` | 将整个会话打印为 JSON，而不是对话记录。 |
+| `-v`、`--verbose` | 将每次工具调用及其结果打印到标准错误。 |
+
+工具集在 [`echolot mcp`](/docs/cli/mcp#echolot-mcp-serve) 页面中说明。
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | 模型完成了任务。 |
+| `1` | 运行失败、模型拒绝，或达到了步数限制、令牌预算或输出限制。 |
+| `64` | 选项有误、提供商或策略未知、缺少 `--model`、没有 API 密钥，或环境未知。 |
+
+<Callout>
+  你的工作区数据会发送给你选择的模型提供商。如果数据必须留在本机，请对你自己 Mac 上的服务器使用 `openai-compatible`。
+</Callout>

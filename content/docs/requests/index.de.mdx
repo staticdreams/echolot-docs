@@ -1,0 +1,191 @@
+---
+title: "HTTP-Anfragen"
+description: "HTTP-Anfragen erstellen, senden und sichern und dich auf der Anfrageseite zurechtfinden."
+---
+
+Eine Anfrage ist ein gesicherter Aufruf an eine API: Methode, URL, Header, Body, Auth und Einstellungen, abgelegt als
+Datei in deinem Arbeitsbereich. Diese Seite behandelt HTTP-Anfragen von Anfang bis Ende. Die anderen Arten von
+Anfragen (GraphQL, gRPC, WebSocket und SSE, Socket.IO, MQTT und MCP-Aufrufe) nutzen dieselbe Seite mit anderen Tabs;
+siehe [Anfragearten](#request-kinds) am Ende.
+
+## Anfrage erstellen [#create-a-request]
+
+- Wähle **Datei › Neue Anfrage** (<kbd>⌘</kbd><kbd>N</kbd>). Die Anfrage landet in dem Ordner, den du in der
+  Seitenleiste ausgewählt hast, heißt **Neue Anfrage** und öffnet sich in einem Tab.
+- Oder klicke in der Seitenleiste auf das Menü **+** neben **Anfragen** und wähle **Neue Anfrage**. Dasselbe Menü
+  erstellt die anderen Arten und Ordner und importiert Dateien.
+- Oder klicke einen Ordner in der Seitenleiste mit der rechten Maustaste an und wähle **Neue Anfrage**, um sie direkt
+  in diesem Ordner anzulegen.
+- Um mit einem cURL-Befehl zu beginnen, erstelle eine Anfrage und füge den Befehl in das URL-Feld ein. Echolot
+  übernimmt daraus Methode, URL, Header, Body, Auth und Einstellungen. Optionen, die es nicht übernehmen kann,
+  erscheinen
+  als **cURL-Hinweise** unter der URL-Leiste; klicke darauf, um zu lesen, was fehlt.
+
+Benenne eine Anfrage mit **Bearbeiten › Umbenennen** um oder klicke sie in der Seitenleiste mit der rechten Maustaste
+an. **Bearbeiten › Duplizieren** (<kbd>⌘</kbd><kbd>D</kbd>) legt eine Kopie daneben an.
+
+## Die Anfrageseite [#the-request-page]
+
+<Shot id="requests-http-page" alt="Die Anfrageseite für List products: oben die URL-Leiste, links die Tabs der Anfrage und rechts die JSON-Antwort" />
+
+Von oben nach unten:
+
+1. **Die URL-Leiste**: die Methode, die URL und **Senden**.
+2. **Die Zeile darunter**: die URL, wie sie gesendet wird, mit allen Variablen aus der aktuellen Umgebung (Secrets
+   bleiben maskiert) und rechts, nach dem Senden, der Status, eine Zeitleiste des Austauschs und seine Dauer.
+3. **Zwei Bereiche**: auf der einen Seite die Tabs der Anfrage, auf der anderen die Antwort.
+
+Die Tabs der Anfrage sind **Doku**, **Header**, **Parameter**, **Body**, **Auth**, **Variablen**, **Tests**,
+**Skripte** und **Einstellungen**. Ein Tab mit Inhalt zeigt einen Punkt oder eine Zahl, damit du auf einen Blick siehst,
+dass eine Anfrage drei Header oder einen Body hat.
+
+Die Bereiche stehen nebeneinander oder untereinander. Wähle **Ansicht › Bereiche**, um zwischen **Nebeneinander** und
+**Untereinander** zu wechseln; die Wahl gilt jeweils für eine Art von Anfrage. Ziehe die Trennlinie, um die Bereiche
+anzupassen, und wähle **Ansicht › Bereiche › Bereichsgrößen zurücksetzen**, um zu den Standardgrößen zurückzukehren.
+Ist das Fenster zu schmal für zwei Bereiche nebeneinander, ordnet es sie von selbst untereinander an.
+
+## Methode und URL [#method-and-url]
+
+Klicke auf das Methoden-Badge, um **GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD** oder **OPTIONS** zu
+wählen.
+
+Gib die URL in das Feld daneben ein. Du kannst überall `{{variables}}` verwenden, etwa `{{baseURL}}/products`. Wenn du
+`{{` tippst, öffnet sich eine Liste mit den Variablen im aktuellen Gültigkeitsbereich und den
+[dynamischen Werten](/docs/requests/dynamic-values). Eine Variable erscheint als Pille; halte den Zeiger darauf, um
+ihren Wert zu sehen, und doppelklicke darauf, um ihn zu ändern. Variablen stammen aus
+[Umgebungen, dem Arbeitsbereich und Ordnern](/docs/workspaces/environments).
+
+Lässt sich etwas in der URL nicht auflösen, steht in der Zeile unter der URL-Leiste **1 Problem** (oder entsprechend
+mehr). Klicke darauf, um zu sehen, welche Variablen fehlen. Nicht aufgelöste Platzhalter werden unverändert gesendet.
+
+Liest die Anfrage die Antwort einer anderen Anfrage (zum Beispiel mit `{{$response('auth/sign-in', '$.access_token')}}`)
+und hat diese noch keine Antwort, steht in der Zeile **Sendet zuerst „Sign in“**: Echolot sendet diese Anfrage vor
+der aktuellen.
+
+## Query-Parameter [#query-parameters]
+
+Der Tab **Parameter** zeigt die Query der URL als Zeilen aus **SCHLÜSSEL** und **WERT**. Beide bleiben synchron:
+Bearbeitest du eine Zeile, ändert sich die URL; tippst du `?page=2` in die URL, erscheint eine Zeile.
+
+- Klicke auf **Parameter hinzufügen**, um einen hinzuzufügen.
+- Deaktiviere eine Zeile, um sie nicht mehr zu senden. Deaktivierte Parameter bleiben in der Anfrage, fehlen aber in
+  der URL.
+- `&`, `#` und Leerzeichen, die du in einen Namen oder Wert tippst, werden automatisch prozentcodiert.
+
+## Header [#headers]
+
+Der Tab **Header** listet die Header auf, die du setzt, in der Reihenfolge, in der du sie gesetzt hast, und mit der
+Groß- und Kleinschreibung der Namen, wie du sie geschrieben hast.
+
+- Klicke auf **Header hinzufügen** und tippe einen Namen. Echolot vervollständigt Header-Namen mit einem Hinweis, wofür
+  der jeweilige Header gedacht ist, und schlägt die üblichen Werte vor, sobald du einen gewählt hast.
+- Deaktiviere einen Header, um ihn zu behalten, ohne ihn zu senden.
+- Ziehe eine Zeile am Griff, um sie umzusortieren, oder klicke sie mit der rechten Maustaste an für **Nach oben**,
+  **Nach unten** und **Entfernen**.
+- Klicke auf **Als Text bearbeiten**, um alle Header als Text zu bearbeiten, einen `Name: value` pro Zeile. Eine
+  Zeile, die mit `//` beginnt, ist ein ausgeschalteter Header.
+
+Unter deinen Headern listet **AUTOMATISCH** auf, was Echolot beim Senden hinzufügt: die Header, die deine Auth, der Typ
+deines Body und der Cookie-Speicher erzeugen, und die, die jede HTTP-Anfrage braucht. Sie werden genau so gezeigt, wie
+sie hinausgehen, mit maskierten Zugangsdaten. Halte den Zeiger auf einen Header, um zu sehen, woher er kommt. Um
+stattdessen deinen eigenen Wert zu senden, füge einen Header mit demselben Namen hinzu oder klicke die Zeile mit der
+rechten Maustaste an und wähle **Durch eigenen ersetzen**. Ein `Authorization`-Header, den du selbst schreibst, wird
+anstelle des Headers gesendet, den der Tab **Auth** hinzufügen würde.
+
+Damit Echolot keine eigenen Header mehr hinzufügt, schalte **Rohmodus** im
+[Tab „Einstellungen“](/docs/requests/settings#raw-mode)
+ein.
+
+## Body, Auth und Einstellungen [#body-auth-and-settings]
+
+- **Body**: JSON, URL-codierte und Multipart-Formulare, GraphQL, Text, XML, HTML oder eine Datei. Siehe
+  [Request-Body](/docs/requests/body).
+- **Auth**: Basic, Bearer, API-Schlüssel, OAuth 2.0, AWS Signature und mehr, oder die Auth des Ordners. Siehe
+  [Authentifizierung](/docs/requests/auth).
+- **Einstellungen**: die HTTP-Version, Weiterleitungen, Cookies, TLS, die Zeitüberschreitung und der Rohmodus. Siehe
+  [Anfrageeinstellungen](/docs/requests/settings).
+- **Variablen**: Werte, die nur diese Anfrage nutzt, und Werte, die sie aus ihrer Antwort behält. Siehe
+  [Erfassungen aus Antworten](/docs/requests/captures).
+- **Tests** und **Skripte**: Prüfungen der Antwort und JavaScript vor und nach dem Senden. Siehe
+  [Skripte und Tests](/docs/requests/scripts-and-tests).
+- **Doku**: Notizen dazu, wofür die Anfrage da ist, für dich und dein Team.
+
+## Senden und abbrechen [#send-and-cancel]
+
+Klicke auf **Senden** oder drücke <kbd>⌘</kbd><kbd>R</kbd>. Auch <kbd>↩</kbd> im URL-Feld und
+<kbd>⌘</kbd><kbd>↩</kbd> senden. **Anfrage › Senden** macht dasselbe über die Menüleiste.
+
+Während die Anfrage läuft, wird aus **Senden** der Knopf **Abbrechen**: Klicke darauf oder drücke
+<kbd>⌘</kbd><kbd>.</kbd>, um zu stoppen. Die Antwort läuft beim Eintreffen in den Antwortbereich, sodass du den Anfang
+eines großen Body lesen kannst, bevor das Ende da ist.
+
+Ist die Umgebung des Fensters geschützt, heißt der Knopf **An Production senden …** (mit dem Namen der Umgebung) und
+jedes Senden fragt vorher nach. Siehe [Geschützte Umgebungen](/docs/workspaces/protected-environments).
+
+Weitere Aktionen für die aktuelle Anfrage findest du im Menü **Anfrage**:
+
+| Menüeintrag | Kurzbefehl | Was er tut |
+| --- | --- | --- |
+| **Als cURL kopieren** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> | Kopiert die Anfrage als `curl`-Befehl. |
+| **Code erzeugen …** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> | Zeigt die Anfrage als Code: cURL, Swift (URLSession), JavaScript (fetch, axios), TypeScript (fetch), Python (requests, httpx), Go (net/http), Kotlin (OkHttp), Java (HttpClient), C# (HttpClient), PHP (cURL) oder Rust (reqwest). |
+| **Austausch als HAR exportieren …** | | Sichert den letzten Austausch als HAR-Datei. |
+| **Im Body suchen** | <kbd>⌘</kbd><kbd>F</kbd> | Durchsucht den Body der Antwort. |
+
+**Code erzeugen …** setzt die Variablen der Anfrage ein. Skripte laufen nicht, und Secrets erscheinen im Klartext,
+also achte darauf, wohin du den Code einfügst. **Vorlagenordner öffnen** in diesem Blatt zeigt die Vorlagen, aus denen
+der Code stammt.
+
+## Tabs [#tabs]
+
+Jede Anfrage, die du öffnest, bekommt einen Tab über dem Editor.
+
+| Aktion | So geht’s |
+| --- | --- |
+| Nächster Tab | **Tabs › Nächsten Tab anzeigen**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> |
+| Vorheriger Tab | **Tabs › Vorherigen Tab anzeigen**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> |
+| Tab schließen | **Datei › Tab schließen**, <kbd>⌘</kbd><kbd>W</kbd> |
+| Zuletzt geschlossenen Tab wieder öffnen | **Tabs › Geschlossenen Tab wieder öffnen**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+
+## Sichern [#saving]
+
+Es gibt keinen Befehl zum Sichern: Jede Änderung wird kurz nach dem Bearbeiten selbst in die Datei der Anfrage
+geschrieben, und jede Änderung lässt sich mit **Bearbeiten › Widerrufen** (<kbd>⌘</kbd><kbd>Z</kbd>) zurücknehmen.
+Beim Schließen eines Tabs oder Beenden wartet Echolot, bis die letzte Änderung geschrieben ist.
+
+Ändert sich die Datei auf dem Datenträger, während du Änderungen hast, die Echolot noch nicht geschrieben hat (etwa
+nach einem `git pull`), erscheint eine Leiste mit **Diese Anfrage wurde auf dem Datenträger geändert**. Wähle
+**Meine behalten**, um deine Änderungen zu behalten und über die Datei zu schreiben, oder **Datei verwenden**, um
+deine
+Änderungen zu verwerfen und die Datei zu laden. Siehe [Git und Teams](/docs/workspaces/git-and-teams).
+
+## Die Antwort auf einen Blick [#the-response-at-a-glance]
+
+<Shot id="requests-http-exchange-card" alt="Die Detailkarte über der Antwort: Status 200, Dauer, Größe, die TLS-Version und ein Balken für jede Phase des Austauschs" />
+
+Nach dem Senden zeigt die Zeile unter der URL-Leiste den Status (grün für 2xx und so weiter), einen Balken mit den
+Phasen des Austauschs und die Gesamtdauer. Halte den Zeiger auf diese Zeile, um die Details zu sehen: Größe,
+Komprimierung, Weiterleitungen, Prüfungen, TLS, die Adresse des Servers und wie lange jede Phase gedauert hat.
+
+Der Antwortbereich zeigt den Body in mehreren Ansichten, die Header, Cookies, die rohe Nachricht, eine Hex-Ansicht und
+die Bytes auf der Leitung. Der Uhr-Knopf mit einer Zahl am Ende der Zeile öffnet die früheren Antworten dieser Anfrage.
+Siehe [Antworten](/docs/requests/responses).
+
+Vor dem ersten Senden steht im Antwortbereich **Ping senden**.
+
+## Anfragearten [#request-kinds]
+
+Dieselbe Anfrageseite sendet jedes Protokoll, das Echolot spricht. Erstelle sie über **Datei** oder das Menü **+** der
+Seitenleiste.
+
+| Art | Menüeintrag | Seite |
+| --- | --- | --- |
+| HTTP | **Neue Anfrage** | Diese Seite |
+| GraphQL | **Neue GraphQL-Anfrage** | [GraphQL](/docs/requests/graphql) |
+| gRPC | **Neue gRPC-Anfrage** | [gRPC](/docs/requests/grpc) |
+| WebSocket | **Neue WebSocket-Anfrage** | [WebSocket und SSE](/docs/requests/websocket-and-sse) |
+| Server-Sent Events | **Neue Anfrage** (eine HTTP-Anfrage, deren Server Ereignisse streamt) | [WebSocket und SSE](/docs/requests/websocket-and-sse) |
+| Socket.IO | **Neue Socket.IO-Anfrage** | [Socket.IO](/docs/requests/socket-io) |
+| MQTT | **Neue MQTT-Anfrage** | [MQTT](/docs/requests/mqtt) |
+| MCP | **Neuer MCP-Aufruf** (Menü **+** der Seitenleiste) | [MCP-Anfragen](/docs/requests/mcp-requests) |
+
+Um viele Anfragen hintereinander zu senden, mit Prüfungen und Datendateien, nutze die [Ausführung](/docs/requests/runner).

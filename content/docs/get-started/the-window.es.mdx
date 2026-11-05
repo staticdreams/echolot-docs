@@ -1,0 +1,203 @@
+---
+title: "La ventana"
+description: "Un recorrido por la ventana de Echolot, su barra lateral, sus páginas, pestañas y paneles, con los atajos de cada uno."
+---
+
+Cada espacio de trabajo se abre en su propia ventana. La ventana tiene dos partes: la **barra lateral** a la izquierda
+y el **panel de contenido** a la derecha, que muestra una página cada vez bajo su cabecera de página.
+
+<Shot id="get-started-window" alt="Una ventana de Echolot: la barra lateral con Inicio, Buscar, el selector de módulos y el árbol de solicitudes, y una solicitud con su respuesta a la derecha" />
+
+## La ventana de bienvenida [#the-welcome-window]
+
+Cuando no hay ninguna ventana de espacio de trabajo abierta, Echolot muestra su ventana de bienvenida:
+**Nuevo espacio de trabajo…**, **Abrir espacio de trabajo…**, **Abrir ejemplos** y tus espacios de trabajo recientes. Bajo el nombre
+muestra la versión, con un enlace a **Novedades**. Los espacios de trabajo que abres desde el Finder (doble clic en una
+carpeta `.echolot`) van directos a una ventana de espacio de trabajo.
+
+## La barra lateral [#the-sidebar]
+
+De arriba abajo:
+
+- **Inicio** y **Buscar**, junto a los botones de la ventana. **Inicio** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd>) es el
+  resumen del espacio de trabajo: recuentos de solicitudes, carpetas, entornos, variables y comprobaciones, tus
+  solicitudes recientes, las últimas respuestas, cómo van las pruebas y los entornos, con la tarjeta **Sonar** arriba,
+  que dibuja cada envío de la última hora, día, semana o mes según lo que tardó. Consulta
+  [Inicio y Sonar](/docs/get-started/home). **Buscar** abre la [paleta de comandos](#the-command-palette)
+  (<kbd>⌘</kbd><kbd>K</kbd>).
+- **El selector de módulos**, que elige lo que lista la barra lateral. Cada módulo tiene su propia página.
+- **Las listas del módulo.**
+- **El selector de espacios de trabajo** al pie.
+
+<kbd>⌘</kbd><kbd>B</kbd> (**Vista › Ocultar barra lateral**) oculta y muestra la barra lateral. Arrastra su borde
+derecho para ensancharla o estrecharla.
+
+### Módulos [#modules]
+
+| Módulo | Atajo | La barra lateral lista | Más información |
+| --- | --- | --- | --- |
+| **Solicitudes** | <kbd>⌘</kbd><kbd>1</kbd> | **Pruebas** y **Ejecución**, con su estado, y después tus carpetas y solicitudes | [Solicitudes](/docs/requests) |
+| **Servidores MCP** | <kbd>⌘</kbd><kbd>2</kbd> | Los servidores MCP del espacio de trabajo | [Servidores MCP](/docs/mcp-servers) |
+| **Especificaciones** | <kbd>⌘</kbd><kbd>3</kbd> | Documentos OpenAPI y archivos `.proto` | [Especificaciones](/docs/specs) |
+| **Mocks** | <kbd>⌘</kbd><kbd>4</kbd> | Servidores mock | [Mocks](/docs/mocks) |
+| **Flujos** | <kbd>⌘</kbd><kbd>5</kbd> | Flujos | [Flujos](/docs/flows) |
+
+Al cambiar a un módulo vuelves a lo que mostraba la última vez. Al hacer clic en una fila de una lista, se abre en la
+página del módulo.
+
+### El árbol de solicitudes [#the-requests-tree]
+
+En el módulo Solicitudes, el botón **+** junto a **Solicitudes** añade una solicitud de cualquier tipo (HTTP, GraphQL,
+WebSocket, Socket.IO, MQTT, gRPC o una llamada MCP), una carpeta, o abre las importaciones y exportaciones. Las filas
+de carpetas y solicitudes tienen sus propios menús (clic derecho), con **Nueva solicitud**, **Nueva carpeta**,
+**Ajustes de la carpeta…**, **Renombrar**, **Duplicar**, **Subir**, **Bajar**, **Mostrar en el Finder** y
+**Trasladar a la papelera…**.
+
+- Arrastra filas para reordenarlas o para moverlas a carpetas. Se abre un hueco donde caerán, y si te detienes sobre una
+  carpeta cerrada, se abre.
+- Selecciona varias filas con <kbd>⌘</kbd> o <kbd>⇧</kbd> y haz clic derecho para **Ejecutar N elementos**,
+  **Editar N solicitudes…**, **Nueva carpeta con N elementos**, **Trasladar a** y **Trasladar N elementos a la papelera…**.
+- Pega un comando cURL, una colección o una especificación en la barra lateral para [importarlo](/docs/get-started/importing),
+  o suelta archivos sobre la ventana.
+- **Editar › Duplicar** (<kbd>⌘</kbd><kbd>D</kbd>) y **Editar › Renombrar** actúan sobre la fila seleccionada.
+- Un punto junto a una solicitud significa que tiene cambios sin escribir.
+- Una señal de aviso junto a una solicitud significa que su último envío falló: sin respuesta, un estado de 400 o más,
+  o un estado de gRPC distinto de OK. Deja el puntero encima para leer qué salió mal. Un éxito posterior la borra.
+
+Nada se elimina sin preguntar, y los elementos eliminados van a la Papelera. Más en [Carpetas](/docs/workspaces/folders).
+
+### El selector de espacios de trabajo [#the-workspace-switcher]
+
+El nombre del espacio de trabajo, con su estado de guardado debajo: **Todo guardado**, **Guardando…** o
+**No se ha podido guardar**. Haz clic para ver tus espacios de trabajo recientes, **Nuevo espacio de trabajo…**,
+**Abrir espacio de trabajo…**, **Ajustes del espacio de trabajo…** y **Mostrar en el Finder**.
+**Archivo › Cambiar de espacio de trabajo…** (<kbd>⌘</kbd><kbd>P</kbd>) lista en cambio los espacios de trabajo recientes en un panel flotante; escribe
+para filtrar y pulsa <kbd>Return</kbd> para abrir.
+
+## La cabecera de la página [#the-page-header]
+
+La franja de la parte superior del panel de contenido nombra la página. En una solicitud, muestra las carpetas y el
+nombre de la solicitud. A la derecha están los botones de la ventana:
+
+| Botón | Qué hace |
+| --- | --- |
+| **Novedades** (destellos) | Aparece tras una actualización con las nuevas notas de la versión. |
+| **Historial** | Cada respuesta, con quién la envió: tú, una ejecución o un agente (<kbd>⌘</kbd><kbd>Y</kbd>). Consulta [Historial](/docs/workspaces/history). |
+| **Agentes** | Deja que agentes de IA externos usen este espacio de trabajo mediante el servidor MCP de Echolot. Consulta [Agentes](/docs/ai/agents). |
+| **Entorno** | Elige el entorno activo, o **Sin entorno**; **Gestionar entornos…** abre la página Entornos. Un entorno protegido muestra un escudo. Consulta [Entornos](/docs/workspaces/environments). |
+| **Disposición** | En una solicitud: lado a lado o apilados. Consulta [Paneles](#the-request-page). |
+| **Editor** | En una especificación: el editor visual o el de texto. |
+| **Asistente** (varita) | Abre el Asistente (<kbd>⌘</kbd><kbd>J</kbd>). |
+
+La cabecera hace las veces de barra de título: arrástrala para mover la ventana y haz doble clic en ella para que ocurra
+lo que establece **Ajustes del Sistema › Escritorio y Dock** para una barra de título (por omisión, hacer zoom).
+
+## Páginas [#pages]
+
+Además de las páginas de los módulos, el menú **Vista** abre estas:
+
+| Página | Atajo |
+| --- | --- |
+| **Inicio** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd> |
+| **Pruebas**: las comprobaciones de todas las solicitudes | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+| **Ejecución**: ejecuta carpetas o el espacio de trabajo | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd> |
+| **Entornos** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd> |
+| **Historial** | <kbd>⌘</kbd><kbd>Y</kbd> |
+
+**Vista › Mostrar variables** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>V</kbd>) abre el panel de variables: todas las variables del
+espacio de trabajo, de sus carpetas y de sus entornos, con el valor en uso marcado y los secretos ocultos. Fíjalo como
+columna junto al contenido, o déjalo flotar.
+
+**Ayuda › Ayuda para esta página** abre la página de esta documentación sobre la página en la que estás.
+
+## Pestañas [#tabs]
+
+Las solicitudes que abres se convierten en pestañas sobre la página de solicitud.
+
+| Acción | Atajo |
+| --- | --- |
+| **Cerrar pestaña** | <kbd>⌘</kbd><kbd>W</kbd> |
+| **Cerrar ventana** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd> |
+| **Pestañas › Mostrar pestaña siguiente** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> |
+| **Pestañas › Mostrar pestaña anterior** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> |
+| **Pestañas › Reabrir pestaña cerrada** | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+
+<kbd>⌘</kbd><kbd>W</kbd> cierra la pestaña a la vista, nunca la ventana, como en un navegador.
+
+## La página de solicitud [#the-request-page]
+
+La página de solicitud tiene dos paneles: el editor de la solicitud y la respuesta.
+
+- **La cabecera de la solicitud**, en la parte superior: el método, la dirección y **Enviar** (<kbd>⌘</kbd><kbd>R</kbd>
+  o <kbd>⌘</kbd><kbd>↩</kbd>). Con un entorno protegido activo, **Enviar** dice **Enviar a *entorno*…** y pregunta antes.
+  Las sesiones (WebSocket, Socket.IO, MQTT) tienen **Conectar** y **Desconectar** en su lugar.
+- **Las pestañas del editor** dependen del tipo de solicitud. Una solicitud HTTP tiene **Docs**, **Cabeceras**,
+  **Parámetros**, **Cuerpo**, **Autenticación**, **Variables**, **Pruebas**, **Scripts** y **Ajustes**. Consulta
+  [Solicitudes](/docs/requests).
+- **Las pestañas de la respuesta**: **Cuerpo**, **Pruebas**, **Cabeceras**, **Cookies**, **Sin formato**, **Hex** y
+  **Red**, más **Consola** cuando se ejecutaron scripts, **Eventos** para un stream, **Mensajes** para una sesión y
+  **Esquema** para GraphQL. Consulta [Respuestas](/docs/requests/responses).
+
+### Disposición de los paneles [#pane-layouts]
+
+Los paneles se colocan **Lado a lado** o **Apilado** (la respuesta debajo). Elige con el botón **Disposición** de la
+cabecera de la página, o con **Vista › Paneles**. Cada tipo de solicitud guarda su propia disposición y la posición de
+su propio divisor, solo en este Mac: una solicitud HTTP puede ir lado a lado mientras las de WebSocket van apiladas.
+Arrastra el divisor para cambiar el tamaño; **Vista › Paneles › Restablecer tamaño de los paneles** devuelve cada tipo
+a su tamaño inicial. Cuando la ventana es demasiado estrecha para ir lado a lado, los paneles se apilan hasta que hay
+sitio.
+
+### El menú Solicitud [#the-request-menu]
+
+| Elemento | Atajo |
+| --- | --- |
+| **Enviar** | <kbd>⌘</kbd><kbd>R</kbd> |
+| **Cancelar** | <kbd>⌘</kbd><kbd>.</kbd> |
+| **Copiar como cURL** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> |
+| **Generar código…** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> |
+| **Exportar intercambio como HAR…** | |
+| **Buscar en el cuerpo** | <kbd>⌘</kbd><kbd>F</kbd> |
+| **Paleta de comandos…** | <kbd>⌘</kbd><kbd>K</kbd> |
+
+**Vista › Código más grande** (<kbd>⌘</kbd><kbd>+</kbd>), **Código más pequeño** (<kbd>⌘</kbd><kbd>-</kbd>) y
+**Tamaño real del código** (<kbd>⌘</kbd><kbd>0</kbd>) cambian el tamaño de los cuerpos de respuesta, los árboles y los editores
+de código. **Vista › Ajustar líneas largas** las ajusta al ancho.
+
+## La paleta de comandos [#the-command-palette]
+
+<kbd>⌘</kbd><kbd>K</kbd>, o **Buscar** en la barra lateral, abre una búsqueda en todo el espacio de trabajo. Escribe
+unas letras y pulsa <kbd>Return</kbd> sobre un resultado:
+
+- **Solicitudes**, con su carpeta y su dirección.
+- **Acciones**: **Ir a** cualquier página, **Nueva solicitud** y los demás tipos, **Nueva carpeta**,
+  **Nueva especificación**, **Importar…**, **Exportar espacio de trabajo…**, **Ajustes del espacio de trabajo…**,
+  **Mostrar variables**, **Ejecutar espacio de trabajo** y, en una solicitud, **Enviar**, **Copiar como cURL**,
+  **Generar código…**, **Cambiar disposición** y **Restablecer tamaño de los paneles**.
+- **Entornos**: **Usar *entorno*** cambia a él.
+- **Respuestas**: a partir de tres caracteres, también busca en las respuestas del historial.
+
+<Shot id="get-started-command-palette" alt="La paleta de comandos sobre un espacio de trabajo, con solicitudes, acciones y entornos que coinciden con el texto escrito" />
+
+## El panel del Asistente [#the-assistant-panel]
+
+<kbd>⌘</kbd><kbd>J</kbd> (**Vista › Mostrar Asistente**), o la varita al final de la cabecera de la página, abre el
+Asistente a la derecha de cualquier página. Es el agente de IA integrado en Echolot: puede enviar solicitudes, escribir
+comprobaciones y crear flujos, especificaciones y mocks, y te pregunta antes de cambiar nada. Configura un modelo en
+**Ajustes › Asistente**. Consulta [Asistente](/docs/ai/assistant).
+
+## Echo [#echo]
+
+Echo es una pequeña pantalla de estado en el centro de la cabecera de la página. Cuenta lo que ocurre: los envíos y sus
+tiempos, los errores, las ejecuciones, los flujos, los mocks, los agentes y el entorno activo, con algún chiste de vez
+en cuando. Haz clic en ella para ver un informe de la sesión. Viene desactivada: actívala en
+**Ajustes › General › Echo** con **Mostrar la pantalla de estado de Echo en la cabecera de la página**. Consulta [Echo](/docs/ai/echo).
+
+## Ajustes [#settings]
+
+**Echolot › Ajustes…** (<kbd>⌘</kbd><kbd>,</kbd>) tiene los paneles **General**, **Red**, **Almacenamiento**,
+**Asistente**, **Agentes**, **Privacidad** y **Acerca de**, y un campo de búsqueda que encuentra un ajuste por su
+nombre. Consulta [Ajustes](/docs/settings). Los ajustes de un espacio de trabajo o de una carpeta están en
+**Ajustes del espacio de trabajo…** (**Autenticación**, **Variables**, **Scripts**, **Agentes**, **Proxy**, **Certificados**) y
+**Ajustes de la carpeta…** (**Autenticación**, **Variables**, **Scripts**, **Docs**).
+
+Todos los atajos de teclado están en [Atajos de teclado](/docs/reference/keyboard-shortcuts).

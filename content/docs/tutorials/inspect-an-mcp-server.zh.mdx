@@ -1,0 +1,92 @@
+---
+title: "检查 MCP 服务器"
+description: "添加演示商店的 MCP 服务器，查看它提供什么，调用它的工具，了解模型如何看待它，并把调用存储为带检查的请求。"
+---
+
+MCP 服务器为 AI 智能体提供工具、资源和提示词。在把服务器交给智能体之前，先看看它提供什么，亲自调用它的工具，并检查工具列表对模型意味着多大的开销。在本教程中，你会用演示商店的服务器 `https://demo.echolot.dev/mcp` 来完成这些，并把一次工具调用存储为带检查的请求。
+
+- **用时：** 15 分钟。
+- **你需要：** 任意工作区。[Alpenglow](/docs/tutorials#the-alpenglow-workspace) 已把这台服务器作为 **Alpenglow MCP** 包含在内；若想从头开始跟做，请使用另一个工作区。
+- **你将学到：** 添加服务器、检查、调用工具、**模型如何看待此服务器**卡片，以及 MCP 请求。
+
+## 1. 添加服务器 [#1-add-the-server]
+
+1. 切换到 **MCP 服务器**（<kbd>⌘</kbd><kbd>2</kbd>）。
+2. 选取**添加 MCP 服务器…**（在空白页面上，或边栏的 **+** 菜单中）。
+3. 在**添加 MCP 服务器**中：
+   - **名称**：`Demo shop`
+   - **传输方式**：**HTTP（Streamable HTTP）**
+   - **URL**：`https://demo.echolot.dev/mcp`
+4. 选取**添加**。
+
+服务器会作为文件保存在工作区的 `mcp-servers` 文件夹中。**+** 菜单也可以从 Claude Desktop、Claude Code、Cursor、VS Code 或 Codex 导入服务器。
+
+<Edition only="direct">
+  作为程序在 Mac 上运行的服务器（**本地命令（stdio）**，例如 `npx` 或 `uvx` 服务器）在直接下载版中可用。在 App Store 版中，请通过 HTTP 添加服务器，或用 `echolot mcp check` 检查它。
+</Edition>
+
+## 2. 检查 [#2-check-it]
+
+1. 选取**检查**。Echolot 会连接，确定服务器使用的协议版本，对其执行 ping，并列出它的工具、资源和提示词。
+2. 页面会逐张卡片地填充内容：
+   - **连接正常**，然后是**服务器**：协议（MCP 2025-11-25，带会话）、ping 和连接耗时、工具数量、它的功能，以及它的**指令**：“The Alpenglow demo shop from docs.echolot.dev. Read-only: search the catalog, look up products and orders.”
+   - **工具**：`search_catalog`、`get_product` 和 `order_status`，以及它们的描述。
+   - **资源**：`categories`（`alpenglow://catalog/categories`）。
+   - **提示词**：`pack_for_a_trip`，它接受一个 `trip`。
+   - **消息**：检查过程中的每条 JSON-RPC 消息。选取**显示全部**可查看每一条。
+
+**监视**会保持连接打开，并在列表变化和资源更新发生时显示它们。需要 OAuth 的服务器在这里会显示**登录…**；参见[添加服务器](/docs/mcp-servers/adding-servers)。
+
+<Shot id="tutorials-mcp-server-checked" alt="检查 Alpenglow MCP 之后的“MCP 服务器”页面：服务器卡片、三个工具，以及“模型如何看待此服务器”卡片" />
+
+## 3. 调用工具 [#3-call-a-tool]
+
+1. 在**工具**卡片中选取 `search_catalog`。调用面板会打开。
+2. 在**参数**下，**表单**为每个参数显示一个字段。把 `query` 设为 `ultralight tent`，把 `limit` 设为 `3`。**JSON** 则以文本形式显示同样的参数。
+3. 选取**调用**（<kbd>↩</kbd>）。
+
+结果显示在**结果**下，并附有耗时：每个商品一行，包括名称、SKU、以瑞士法郎计的价格和库存。失败的工具会显示**错误**和红色文本。试试用 `order_id` 为 `ord_7Hk2Lw` 的 `order_status`，并在**资源**下选取 `categories`，以同样的方式读取资源。
+
+## 4. 了解模型如何看待服务器 [#4-see-how-a-model-sees-the-server]
+
+每个工具的名称、描述和输入 Schema，在对话的每一轮都会发送给模型。**模型如何看待此服务器**卡片会度量这一点：
+
+- **Anthropic tokens**、**OpenAI tokens** 和 **Google Gemini tokens**：这三个工具每轮的开销。对于这台服务器，是几百个 token。
+- **最大的工具**：开销最大的工具。
+- 模型可能出错的问题列表，例如缺少描述或 Schema 令人困惑，每项都附有建议的修复方式。对于演示服务器：**没有会让模型出错的地方**。
+- **提供商收到的列表**：每家提供商的 API 所收到的工具列表原样，附有**拷贝**。
+
+下方的**用模型试试**卡片会把你输入的任务连同这些工具发送给模型，看它会选用哪些。这需要一个[助手提供商](/docs/ai/assistant)。命令行工具会打印同样的度量：
+
+```sh
+echolot mcp check --quality --url https://demo.echolot.dev/mcp
+```
+
+```text
+How a model sees the tools (estimates)
+  Anthropic      572 tokens a turn, 0.3% of a 200k context
+  OpenAI         166 tokens a turn, 0.1% of a 200k context
+  Google Gemini  225 tokens a turn, 0.1% of a 200k context
+  largest: search_catalog 98, get_product 66, order_status 62
+Nothing a model would stumble over.
+```
+
+详见[工具与质量](/docs/mcp-servers/tools-and-quality)。
+
+## 5. 把调用存储为带检查的请求 [#5-save-the-call-as-a-request-with-checks]
+
+1. 再次调用 `search_catalog`，然后选取**存储为请求**。**请求**下会出现一个名为 `search_catalog` 的请求，其中有服务器、工具和参数。
+2. 打开它。**操作**是**工具**；**调用**（<kbd>⌘</kbd><kbd>R</kbd>）像任何请求一样运行它。
+3. 在它的**测试**标签页中，打开**添加测试**并添加：
+   - **MCP 错误**等于 `false`：工具没有报告错误。
+   - **正文**包含 `TNT-`：响应列出了帐篷。
+   - **JSON 值** `$.content[0].text` 包含 `CHF`。
+4. 调用它。**3 项通过**。
+
+存储的调用会在[运行器](/docs/requests/runner)中运行，也可通过 `echolot run` 在 CI 中运行，因此服务器工具的变化会让构建失败，而不是让智能体出错。Alpenglow 的 **Agent tools** 文件夹里有两个这样的请求。**工具输出 Schema** 会对照工具声明的输出 Schema 检查结果，适用于声明了输出 Schema 的服务器。参见 [MCP 请求](/docs/requests/mcp-requests)。
+
+## 后续步骤 [#next-steps]
+
+- [让智能体安全地使用你的工作区](/docs/tutorials/agents-safely)：Echolot 本身也是一台 MCP 服务器。
+- [MCP 服务器](/docs/mcp-servers)：stdio 服务器、OAuth、导入其他 App 的配置。
+- [`echolot mcp`](/docs/cli/mcp)：`check`、`sign-in` 等。

@@ -1,0 +1,277 @@
+---
+title: "Fehlerbehebung"
+description: "Die häufigsten Probleme, die Meldung, die Echolot dazu zeigt, warum es passiert und was du tun kannst."
+---
+
+Schlägt ein Senden fehl, steht im Antwortbereich **Kein Echo**, dazu eine Erklärung in einfachen Worten, was schiefging,
+und was du als Nächstes versuchen kannst. **Erneut versuchen** sendet noch einmal. Der rohe Fehler bleibt in der Ansicht
+**Übertragung**. Suche unten die Meldung.
+
+<Shot id="troubleshooting-no-echo" alt="Ein fehlgeschlagenes Senden: Der Antwortbereich zeigt „Kein Echo“ und „Verbindung abgelehnt: Bei localhost:9 wartet nichts auf Verbindungen“ mit der Taste „Erneut versuchen“" />
+
+## Verbinden [#connecting]
+
+<Accordions type="single">
+<Accordion title="Verbindung abgelehnt: Bei … wartet nichts auf Verbindungen">
+
+Der Rechner des Servers hat geantwortet, aber kein Programm nimmt Verbindungen auf diesem Port an.
+
+- Prüfe, ob der Server läuft und auf dem Port aus der Adresse. Ein lokaler Server auf `3000` ist unter `localhost:8080`
+  nicht erreichbar.
+- Prüfe die Adresse, nachdem die Variablen eingesetzt sind: Halte den Zeiger auf eine `{{variable}}`-Pille, um ihren
+  Wert zu sehen, und prüfe im Seitenkopf, welche Umgebung aktiv ist.
+- Ein Server in Docker oder in einer virtuellen Maschine braucht seinen Port veröffentlicht zum Mac hin.
+
+</Accordion>
+<Accordion title="Der Host … wurde nicht gefunden">
+
+Der Name lässt sich nicht in eine Adresse auflösen. Prüfe die Schreibweise, dein Netzwerk und ein etwaiges VPN. Ein
+Host, den es nur in einem Firmennetz gibt, braucht dieses Netz oder sein VPN.
+
+</Accordion>
+<Accordion title="Keine rechtzeitige Antwort von … / Die Verbindung zu … kam nicht rechtzeitig zustande">
+
+**Keine rechtzeitige Antwort von …** heißt, die Verbindung stand, aber die Antwort brauchte länger als die
+Zeitüberschreitung der Anfrage. Ist der Server langsam, erhöhe die **Zeitüberschreitung** im Tab **Einstellungen** der
+Anfrage. **Die Verbindung zu … kam nicht rechtzeitig zustande** heißt, dass sich die Verbindung selbst nicht öffnete:
+eine Firewall, ein VPN oder ein Server, der nicht läuft.
+
+</Accordion>
+<Accordion title="Von … wurde eine offen gehaltene Verbindung geschlossen, bevor eine Antwort kam">
+
+Echolot verwendet offene Verbindungen wieder. Der Server hat eine geschlossen, gerade als die Anfrage hinausging, und es
+kam keine Antwort zurück.
+
+Bei Anfragen, die zweimal gesendet werden dürfen (GET und andere sichere oder idempotente Methoden oder eine Anfrage mit
+einem Header `Idempotency-Key`), versucht Echolot es von selbst einmal auf einer neuen Verbindung erneut. Bei anderen,
+etwa einem POST, tut es das nicht, weil der Server die Anfrage vielleicht schon ausgeführt hat: Prüfe das, bevor du sie
+noch einmal sendest.
+
+</Accordion>
+<Accordion title="Keine Verbindung zu … möglich / Die Verbindung wurde von … zurückgesetzt">
+
+**Keine Verbindung zu … möglich** heißt, dass das Netzwerk keine Route zum Server hat: Prüfe WLAN, Netzwerk und ein
+etwaiges VPN. **Die Verbindung wurde zurückgesetzt** heißt, dass der Server oder etwas dazwischen sie abgebrochen hat,
+oft eine Firewall oder ein Server, der das Protokoll ablehnt (zum Beispiel HTTP im Klartext an einen HTTPS-Port).
+
+</Accordion>
+<Accordion title="429 Too Many Requests von demo.echolot.dev">
+
+Die [Demo-API](/docs/tutorials/demo-api) wird gemeinsam genutzt und begrenzt jede Adresse auf 120 Anfragen pro Minute
+und auf 10 pro Minute für ihre großen, langsamen und streamenden Endpunkte (den Export, `bytes`, `delay`, WebSocket und
+SSE). Warte die Zahl der Sekunden im Antwort-Header `Retry-After` ab und sende erneut. Ein Durchlauf der Ausführung mit
+vielen Iterationen gegen die Demo erreicht das Limit schnell; verringere die Iterationen.
+
+</Accordion>
+</Accordions>
+
+## TLS und Zertifikate [#tls-and-certificates]
+
+<Accordions type="single">
+<Accordion title="Das Zertifikat von … ist nicht vertrauenswürdig">
+
+Das Zertifikat des Servers ist selbstsigniert, abgelaufen oder nicht von einer Stelle signiert, der dein Mac vertraut.
+Die Meldung sagt, was davon zutrifft.
+
+- Füge für eine Firmen- oder Entwicklungs-CA deren CA-Zertifikat für diesen Host unter
+  **Arbeitsbereichseinstellungen › Zertifikate** hinzu, statt die Prüfung auszuschalten. Siehe
+  [Anfrageeinstellungen](/docs/requests/settings).
+- Nur für einen Entwicklungsserver: Schalte **TLS-Zertifikate prüfen** im Tab **Einstellungen** der Anfrage aus.
+
+</Accordion>
+<Accordion title="Das Zertifikat von … gilt für einen anderen Hostnamen">
+
+Das Zertifikat ist gültig, nennt aber einen anderen Host. Verwende den Hostnamen, für den das Zertifikat ausgestellt
+wurde, oder korrigiere das Zertifikat auf dem Server.
+
+</Accordion>
+<Accordion title="Die sichere Verbindung zu … ist fehlgeschlagen (TLS-Handshake)">
+
+Der TLS-Handshake mit dem Server ist fehlgeschlagen. Der Text nach dem Doppelpunkt ist die eigene Begründung der
+TLS-Bibliothek. Eine häufige Ursache ist ein Server, der ein Client-Zertifikat verlangt: Füge eines für diesen Host
+unter **Arbeitsbereichseinstellungen › Zertifikate** hinzu.
+
+</Accordion>
+<Accordion title="Die Client-Zertifikatsdatei … existiert nicht / ist kein PEM-Zertifikat">
+
+Die Zertifikateinstellungen verweisen auf eine Datei, die verschoben wurde, oder auf eine Datei in einem anderen Format.
+Wähle die Datei unter **Arbeitsbereichseinstellungen › Zertifikate** erneut aus; Echolot liest PEM-Zertifikate.
+
+</Accordion>
+</Accordions>
+
+## Proxys [#proxies]
+
+<Accordions type="single">
+<Accordion title="Anfragen gehen nicht durch meinen Proxy oder durch einen, durch den sie nicht gehen sollten">
+
+**Einstellungen › Netzwerk › Proxy** entscheidet:
+
+| Auswahl | Bedeutung |
+| --- | --- |
+| **Systemeinstellungen** | HTTP-, HTTPS- und SOCKS-Proxys aus Systemeinstellungen › Netzwerk, mit ihren Ausnahmen. Automatische Proxy-Konfiguration (PAC) wird nicht verwendet. |
+| **Ohne** | Jede Anfrage verbindet sich direkt. |
+| **Manuell** | HTTP-, HTTPS- und SOCKS5-Proxys, die du einträgst, mit **Benutzername**, **Passwort** (im Schlüsselbund gespeichert) und **Ohne Proxy für** bei Hosts, die ihn überspringen. |
+
+Ein Arbeitsbereich kann in den **Arbeitsbereichseinstellungen › Proxy** seinen eigenen Proxy festlegen, der Vorrang vor
+dem der App hat. Verwendet deine Firma eine PAC-Datei, trage deren Proxy unter **Manuell** ein. Das Befehlszeilentool
+liest `HTTPS_PROXY`, `HTTP_PROXY` und `NO_PROXY`.
+
+</Accordion>
+<Accordion title="Der Proxy … verlangt Anmeldedaten (407)">
+
+Der Proxy verlangt eine Anmeldung. Füge dem Proxy in **Einstellungen › Netzwerk** oder in den Proxy-Einstellungen des
+Arbeitsbereichs einen **Benutzernamen** und ein **Passwort** hinzu.
+
+</Accordion>
+<Accordion title="Der Proxy … hat die Verbindung zu … abgelehnt / Der SOCKS-Proxy … konnte keine Verbindung zu … herstellen">
+
+Der Proxy funktioniert, will oder kann aber diesen Server nicht erreichen: Seine Regeln blockieren ihn, oder der Server
+ist von dort, wo der Proxy steht, nicht erreichbar. Ist der Server lokal oder intern, füge ihn unter **Ohne Proxy für**
+hinzu.
+
+</Accordion>
+</Accordions>
+
+## HTTP/3 [#http3]
+
+<Accordions type="single">
+<Accordion title="HTTP/3 erfordert macOS 27 oder neuer">
+
+HTTP/3 funktioniert ab macOS 27. Wähle auf einem älteren macOS im Tab **Einstellungen** der Anfrage **HTTP/2** oder
+**Automatisch**.
+
+</Accordion>
+<Accordion title="HTTP/3 läuft nicht über Proxys / kann noch keine eigenen CA-Dateien oder Client-Zertifikate nutzen">
+
+Echolot sendet HTTP/3 weder über einen Proxy (auch nicht über den des Systems, wie es Browser tun) noch mit eigenen
+CA-Dateien noch mit Client-Zertifikaten. Wähle für diese Anfrage **HTTP/2** oder **Automatisch**. Bei **Automatisch**
+wechselt Echolot nur dann von selbst zu HTTP/3, wenn ein Server es anbietet und nichts im Weg steht, und fällt auf TCP
+zurück, wenn sich die QUIC-Verbindung nicht öffnen lässt.
+
+</Accordion>
+</Accordions>
+
+## MCP-Server [#mcp-servers]
+
+<Accordions type="single">
+<Accordion title="Ein lokaler MCP-Server (stdio) startet nicht">
+
+Die Prüfung des Servers zeigt **Server startet** als fehlgeschlagen.
+
+- **Genehmige ihn zuerst.** Echolot startet den Befehl eines lokalen Servers erst, nachdem du ihn auf der Seite
+  „MCP-Server“ mit **Vertrauen und prüfen** genehmigt hast. Bis dahin sagen Aufrufe
+  `Echolot hat den MCP-Server „…“ noch nie gestartet. Prüfe seinen Befehl auf der Seite „MCP-Server“ und vertraue ihm zuerst.`
+  Eine Änderung am Befehl, an den Argumenten oder an der Umgebung fragt erneut.
+- **Befehl nicht gefunden.** Die Lösung lautet
+  `Prüfe, ob „npx“ installiert ist und im PATH liegt, oder gib den vollständigen Pfad an.` Echolot startet Server mit
+  dem PATH deiner Login-Shell, sodass `npx`, `uvx` und die Shims von Versionsverwaltungen, die in einem neuen
+  Terminal-Fenster funktionieren, auch in Echolot funktionieren. Funktioniert der Befehl nur nach etwas, das deine Shell
+  interaktiv tut, gib den vollständigen Pfad an (mit `which npx` im Terminal findest du ihn).
+- **Er startet und hört dann auf.** Führe denselben Befehl im Terminal aus, um zu sehen, warum; die Fehlerausgabe des
+  Servers steht auch im Nachrichtenprotokoll.
+
+Siehe [Server hinzufügen](/docs/mcp-servers/adding-servers).
+
+</Accordion>
+<Accordion title="„…“ ist ein MCP-Server, der als lokales Programm läuft, und Echolot kann hier keine Programme starten">
+
+Du verwendest die Mac-App-Store-Edition, die auf deinem Mac keine Programme starten kann. Der Server bleibt im
+Arbeitsbereich. Füge den Server über HTTP hinzu, wenn er das anbietet, führe ihn mit dem Befehlszeilentool aus
+(`echolot mcp check -- <command>`) oder nutze den Direktdownload. Siehe [Editionen](/docs/get-started/editions).
+
+</Accordion>
+<Accordion title="Ein HTTP-MCP-Server schlägt bei Autorisierung oder Server erreichbar fehl">
+
+Die Lösungszeile der Prüfung sagt, was zu tun ist: **Anmelden** bei einem Server, der OAuth verlangt, ein Header
+`Authorization` bei einem, der ein Token will, oder der richtige Pfad (MCP-Endpunkte sind oft `/mcp`) bei einem 404.
+
+</Accordion>
+</Accordions>
+
+## Dateien und Skripte [#files-and-scripts]
+
+<Accordions type="single">
+<Accordion title="Echolot darf „…“ nicht lesen">
+
+In der Mac-App-Store-Edition kann Echolot eine Datei außerhalb des Arbeitsbereichs erst lesen, nachdem du sie gewählt
+hast. Das passiert bei einem Body, der aus einer Datei gestreamt wird, einem Formularteil, einem Client-Zertifikat oder
+einer `.proto`-Datei, deren Pfad außerhalb von Echolot geschrieben wurde. Wähle bei der fehlgeschlagenen Antwort
+**Zugriff erlauben …**, wähle die Datei aus und sende erneut; Echolot merkt sie sich.
+
+Im Direktdownload heißt die Meldung, dass die Zugriffsrechte der Datei selbst dir das Lesen nicht erlauben.
+
+</Accordion>
+<Accordion title="Hier laufen Skripte, die Echolot auf diesem Mac noch nicht ausgeführt hat">
+
+Die Anfrage, ihr Ordner oder der Arbeitsbereich enthält Skripte, die von anderswo kommen: ein Import, ein `git pull`
+oder eine Änderung außerhalb von Echolot. Sie laufen erst, nachdem du ihnen vertraust. Wähle **Skripte prüfen …**, lies
+sie und vertraue ihnen. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests).
+
+</Accordion>
+<Accordion title="Die Anfrage konnte nicht gesichert werden">
+
+Echolot konnte die Datei der Anfrage nicht schreiben: Die Festplatte ist voll, der Ordner ist schreibgeschützt, oder der
+Arbeitsbereich wurde verschoben. **Erneut versuchen** probiert es noch einmal; **Weiter bearbeiten** lässt deine
+Änderungen im Tab, der offen bleibt, bis sie gesichert sind.
+
+</Accordion>
+<Accordion title="Diese Anfrage wurde auf dem Datenträger geändert">
+
+Eine andere App oder Git hat die Datei geändert, während du im Tab nicht gesicherte Änderungen hattest.
+**Datei verwenden** verwirft deine Änderungen und lädt die Datei; **Meine behalten** behält deine Änderungen und
+überschreibt die Datei.
+
+</Accordion>
+<Accordion title="macOS fragt nach Zugriff auf einen Schlüsselbund-Eintrag">
+
+Der Eintrag stammt von einer anderen Kopie von Echolot, von der anderen Edition oder vom Befehlszeilentool. macOS fragt
+einmal pro Eintrag; wähle **Immer erlauben**.
+
+</Accordion>
+</Accordions>
+
+## Die App und das Befehlszeilentool [#the-app-and-the-command-line-tool]
+
+<Accordions type="single">
+<Accordion title="Diese Beta ist abgelaufen">
+
+Veröffentlichte Beta-Builds des Direktdownloads laufen 30 Tage nach dem Release ab, oder früher, wenn der Entwickler
+einen Build beendet. Lade die neueste von [echolot.dev](https://echolot.dev) und installiere sie über die alte: Deine
+Arbeitsbereiche öffnen sich unverändert. Sagt die Meldung, das Datum dieses Macs scheine falsch zu sein, geht die Uhr
+mehr als einen Tag hinter einem Datum nach, das Echolot schon gesehen hat: Stelle Datum und Uhrzeit in den
+Systemeinstellungen ein. Siehe [Installieren](/docs/get-started/install#beta-builds-expire).
+
+</Accordion>
+<Accordion title="echolot: command not found">
+
+Das Befehlszeilentool ist noch nicht in deinem PATH. Wähle **Echolot › Befehlszeilentool installieren …** und öffne dann
+ein **neues** Terminal-Fenster (ein geöffnetes behält seinen alten PATH).
+**Einstellungen › Allgemein › Befehlszeilentool** zeigt, wo der Link liegt; zeigt es eine Warnung, verweist der Link auf
+eine Kopie von Echolot, die verschoben wurde: Wähle **Neu installieren**. Installiere das Tool in der App-Store-Edition
+separat; siehe [Befehlszeilentool](/docs/cli).
+
+</Accordion>
+<Accordion title="Secrets sind im Befehlszeilentool oder in CI leer">
+
+Ohne Schlüsselbund (Linux, CI oder `ECHOLOT_KEYCHAIN=0`) liest das Tool Secrets aus Umgebungsvariablen mit dem Namen
+`ECHOLOT_SECRET_<NAME>`, zum Beispiel `ECHOLOT_SECRET_PASSWORD` für die Secret-Variable `password`. Lege sie in den
+Secret-Einstellungen deiner CI fest. Siehe [CI](/docs/cli/ci).
+
+</Accordion>
+<Accordion title="Echolot konnte seinen Speicher unter … nicht anlegen">
+
+Echolot konnte seinen Speicherordner nicht anlegen, meist wegen fehlendem freien Speicherplatz oder fehlenden
+Zugriffsrechten. Antworten werden bis zu einem Neustart von Echolot in einem temporären Ordner aufbewahrt. Schaffe Platz
+oder korrigiere die Zugriffsrechte des Ordners (**Einstellungen › Über › Antworten und Verlauf › Im Finder anzeigen**
+zeigt, wo er liegt) und starte dann neu.
+
+</Accordion>
+</Accordions>
+
+## Du kommst nicht weiter [#still-stuck]
+
+**Hilfe › Fehler melden** öffnet auf GitHub ein neues Issue, in dem deine Versionen von Echolot und macOS schon
+eingetragen sind. Ist Echolot abgestürzt, hänge seinen Bericht an:
+**Einstellungen › Datenschutz › Absturzberichte sammeln** (standardmäßig an) bewahrt sie auf diesem Mac auf, und
+**Im Finder anzeigen** öffnet den Ordner.

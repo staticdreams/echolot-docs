@@ -1,0 +1,187 @@
+---
+title: "Solicitudes HTTP"
+description: "Crea, envía y guarda solicitudes HTTP, y muévete por la página de la solicitud."
+---
+
+Una solicitud es una llamada guardada a una API: su método, URL, cabeceras, cuerpo, autenticación y ajustes, conservados
+como un archivo en tu espacio de trabajo. Esta página recorre las solicitudes HTTP de principio a fin. Los demás tipos de
+solicitud (GraphQL, gRPC, WebSocket y SSE, Socket.IO, MQTT y llamadas MCP) usan la misma página con otras pestañas;
+consulta los [tipos de solicitud](#request-kinds) al final.
+
+## Crea una solicitud [#create-a-request]
+
+- Elige **Archivo › Nueva solicitud** (<kbd>⌘</kbd><kbd>N</kbd>). La solicitud se añade a la carpeta que tienes
+  seleccionada en la barra lateral, con el nombre **Nueva solicitud**, y se abre en una pestaña.
+- O haz clic en el menú **+** junto a **Solicitudes** en la barra lateral y elige **Nueva solicitud**. El mismo menú crea
+  los demás tipos y carpetas, e importa archivos.
+- O haz clic con el botón derecho en una carpeta de la barra lateral y elige **Nueva solicitud** para ponerla directamente
+  en esa carpeta.
+- Para partir de un comando cURL, crea una solicitud y pega el comando en el campo de la URL. Echolot rellena a partir de
+  él el método, la URL, las cabeceras, el cuerpo, la autenticación y los ajustes. Las opciones que no puede aplicar
+  aparecen como **notas de cURL** bajo la barra de la URL; haz clic en ellas para leer lo que se dejó fuera.
+
+Renombra una solicitud con **Edición › Renombrar** o haciendo clic con el botón derecho en ella en la barra lateral.
+**Edición › Duplicar** (<kbd>⌘</kbd><kbd>D</kbd>) hace una copia a su lado.
+
+## La página de la solicitud [#the-request-page]
+
+<Shot id="requests-http-page" alt="La página de la solicitud List products: la barra de la URL arriba, las pestañas de la solicitud a la izquierda y la respuesta JSON a la derecha" />
+
+De arriba abajo:
+
+1. **La barra de la URL**: el método, la URL y **Enviar**.
+2. **La línea de debajo**: la URL tal como se enviará, con todas las variables rellenadas desde el entorno actual (los
+   secretos siguen enmascarados) y, a la derecha, tras un envío, el estado, una línea de tiempo del intercambio y su
+   duración.
+3. **Dos paneles**: las pestañas de la solicitud a un lado, la respuesta al otro.
+
+Las pestañas de la solicitud son **Docs**, **Cabeceras**, **Parámetros**, **Cuerpo**, **Autenticación**, **Variables**,
+**Pruebas**, **Scripts** y **Ajustes**. Una pestaña que contiene algo muestra un punto o un número, para que veas de un
+vistazo que una solicitud tiene tres cabeceras o un cuerpo.
+
+Los paneles van uno al lado del otro, o uno encima del otro. Elige **Vista › Paneles** para alternar entre **Lado a lado**
+y **Apilado**; la elección se conserva para cada tipo de solicitud. Arrastra el divisor para cambiar el tamaño de los
+paneles, y elige **Vista › Paneles › Restablecer tamaño de los paneles** para volver a los tamaños predeterminados. Una
+ventana demasiado estrecha para los dos paneles lado a lado los apila por sí sola.
+
+## Método y URL [#method-and-url]
+
+Haz clic en la insignia del método para elegir **GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD** u
+**OPTIONS**.
+
+Escribe la URL en el campo de al lado. Usa `{{variables}}` en cualquier parte, como `{{baseURL}}/products`. Al escribir
+`{{`, se abre una lista con las variables del ámbito y los [valores dinámicos](/docs/requests/dynamic-values). Una
+variable se muestra como una píldora; pasa el puntero por ella para ver su valor y haz doble clic para cambiarlo. Las
+variables vienen de [los entornos, el espacio de trabajo y las carpetas](/docs/workspaces/environments).
+
+Si algo de la URL no se puede resolver, la línea bajo la barra de la URL dice **1 problema** (o cuántos). Haz clic en ella
+para ver qué variables faltan. Los tokens sin resolver se envían tal como están escritos.
+
+Cuando la solicitud lee la respuesta de otra solicitud (por ejemplo con `{{$response('auth/sign-in', '$.access_token')}}`)
+y esa solicitud aún no tiene respuesta, la línea dice **Primero envía “Sign in”**: Echolot envía esa solicitud antes que
+esta.
+
+## Parámetros de consulta [#query-parameters]
+
+La pestaña **Parámetros** muestra la consulta de la URL como filas de **CLAVE** y **VALOR**. Ambas se mantienen al día:
+edita una fila y la URL cambia; escribe `?page=2` en la URL y aparece una fila.
+
+- Haz clic en **Añadir parámetro** para añadir uno.
+- Desmarca una fila para dejar de enviarla. Los parámetros desmarcados se quedan con la solicitud pero salen de la URL.
+- Los `&`, `#` y espacios que escribes en un nombre o un valor se codifican por porcentaje por ti.
+
+## Cabeceras [#headers]
+
+La pestaña **Cabeceras** lista las cabeceras que defines, en el orden en que las defines, con las mayúsculas de sus
+nombres tal como las escribiste.
+
+- Haz clic en **Añadir cabecera** y escribe un nombre. Echolot completa los nombres de cabecera con una nota sobre para
+  qué sirve cada una, y ofrece los valores habituales cuando eliges una.
+- Desmarca una cabecera para conservarla sin enviarla.
+- Arrastra una fila por su asa para reordenarla, o haz clic con el botón derecho en ella para **Subir**, **Bajar** y
+  **Eliminar**.
+- Haz clic en **Editar en bloque** para editar todas las cabeceras como texto, un `Name: value` por línea. Una línea que
+  empieza por `//` es una cabecera desactivada.
+
+Debajo de tus cabeceras, **GENERADAS AUTOMÁTICAMENTE** lista lo que añade Echolot al enviar: las cabeceras que producen tu
+autenticación, el tipo de tu cuerpo y el almacén de cookies, y las que necesita toda solicitud HTTP. Se muestran
+exactamente como salen, con las credenciales enmascaradas. Pasa el puntero por una para ver de dónde viene. Para enviar
+tu propio valor en su lugar, añade una cabecera con el mismo nombre, o haz clic con el botón derecho en la fila y elige
+**Reemplazar por la mía**. Una cabecera `Authorization` que escribes tú mismo se envía en lugar de la que añadiría la
+pestaña **Autenticación**.
+
+Para que Echolot deje de añadir cabeceras propias, activa **Modo sin procesar** en la
+[pestaña Ajustes](/docs/requests/settings#raw-mode).
+
+## Cuerpo, autenticación y ajustes [#body-auth-and-settings]
+
+- **Cuerpo**: JSON, formularios URL-encoded y multipart, GraphQL, texto, XML, HTML o un archivo. Consulta
+  [Cuerpo de la solicitud](/docs/requests/body).
+- **Autenticación**: Basic, Bearer, claves de API, OAuth 2.0, AWS Signature y más, o la autenticación de la carpeta.
+  Consulta [Autenticación](/docs/requests/auth).
+- **Ajustes**: la versión de HTTP, las redirecciones, las cookies, TLS, el tiempo de espera y el modo sin procesar.
+  Consulta [Ajustes de la solicitud](/docs/requests/settings).
+- **Variables**: valores que solo usa esta solicitud, y valores que conserva de su respuesta. Consulta
+  [Capturas de respuesta](/docs/requests/captures).
+- **Pruebas** y **Scripts**: comprobaciones sobre la respuesta, y JavaScript antes y después del envío. Consulta
+  [Scripts y pruebas](/docs/requests/scripts-and-tests).
+- **Docs**: notas sobre para qué sirve la solicitud, para ti y tu equipo.
+
+## Enviar y cancelar [#send-and-cancel]
+
+Haz clic en **Enviar**, o pulsa <kbd>⌘</kbd><kbd>R</kbd>. Pulsar <kbd>↩</kbd> en el campo de la URL y
+<kbd>⌘</kbd><kbd>↩</kbd> también envía. **Solicitud › Enviar** hace lo mismo desde la barra de menús.
+
+Mientras la solicitud se ejecuta, **Enviar** se convierte en **Cancelar**: haz clic en él o pulsa
+<kbd>⌘</kbd><kbd>.</kbd> para detenerla. La respuesta llega al panel de respuesta a medida que se recibe, así que puedes
+leer el principio de un cuerpo grande antes de que llegue el final.
+
+Cuando el entorno de la ventana está protegido, el botón dice **Enviar a Production…** (con el nombre del entorno) y cada
+envío pide confirmación antes. Consulta [Entornos protegidos](/docs/workspaces/protected-environments).
+
+Otras acciones sobre la solicitud actual están en el menú **Solicitud**:
+
+| Elemento del menú | Atajo | Qué hace |
+| --- | --- | --- |
+| **Copiar como cURL** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> | Copia la solicitud como un comando `curl`. |
+| **Generar código…** | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> | Muestra la solicitud como código: cURL, Swift (URLSession), JavaScript (fetch, axios), TypeScript (fetch), Python (requests, httpx), Go (net/http), Kotlin (OkHttp), Java (HttpClient), C# (HttpClient), PHP (cURL) o Rust (reqwest). |
+| **Exportar intercambio como HAR…** | | Guarda el último intercambio como un archivo HAR. |
+| **Buscar en el cuerpo** | <kbd>⌘</kbd><kbd>F</kbd> | Busca en el cuerpo de la respuesta. |
+
+**Generar código…** rellena las variables de la solicitud. Los scripts no se ejecutan, y los secretos aparecen tal cual,
+así que ten cuidado con dónde pegas el código. **Abrir la carpeta de plantillas** en esa hoja muestra las plantillas de
+las que sale el código.
+
+## Pestañas [#tabs]
+
+Cada solicitud que abres obtiene una pestaña sobre el editor.
+
+| Acción | Cómo |
+| --- | --- |
+| Pestaña siguiente | **Pestañas › Mostrar pestaña siguiente**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> |
+| Pestaña anterior | **Pestañas › Mostrar pestaña anterior**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> |
+| Cerrar la pestaña | **Archivo › Cerrar pestaña**, <kbd>⌘</kbd><kbd>W</kbd> |
+| Reabrir la última pestaña cerrada | **Pestañas › Reabrir pestaña cerrada**, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+
+## Guardado [#saving]
+
+No hay un comando Guardar: cada cambio se guarda solo en el archivo de la solicitud un momento después de hacerlo, y
+cada cambio se puede deshacer con **Edición › Deshacer** (<kbd>⌘</kbd><kbd>Z</kbd>). Cerrar una pestaña o salir espera a
+que se escriba el último cambio.
+
+Si el archivo cambia en el disco mientras tienes cambios que Echolot aún no ha escrito (tras un `git pull`, por ejemplo),
+una barra dice **Esta solicitud ha cambiado en el disco**. Elige **Conservar los míos** para mantener tus cambios y
+escribirlos sobre el archivo, o **Usar los suyos** para descartar tus cambios y cargar el archivo. Consulta
+[Git y equipos](/docs/workspaces/git-and-teams).
+
+## La respuesta de un vistazo [#the-response-at-a-glance]
+
+<Shot id="requests-http-exchange-card" alt="La tarjeta de detalles sobre la respuesta: estado 200, tiempo, tamaño, la versión de TLS y una barra para cada fase del intercambio" />
+
+Tras un envío, la línea bajo la barra de la URL muestra el estado (verde para 2xx, y así sucesivamente), una barra con las
+fases del intercambio y el tiempo total. Pasa el puntero por esa línea para ver los detalles: tamaño, compresión,
+redirecciones, comprobaciones, TLS, la dirección del servidor y cuánto duró cada fase.
+
+El panel de respuesta tiene el cuerpo en varias vistas, las cabeceras, las cookies, el mensaje sin procesar, una vista
+hexadecimal y los bytes en la red. El botón del reloj con un número al final de la línea abre las respuestas anteriores de
+esta solicitud. Consulta [Respuestas](/docs/requests/responses).
+
+Antes del primer envío, el panel de respuesta dice **Envía un ping**.
+
+## Tipos de solicitud [#request-kinds]
+
+La misma página de solicitud envía todos los protocolos que habla Echolot. Créalos desde **Archivo** o desde el menú **+**
+de la barra lateral.
+
+| Tipo | Elemento del menú | Página |
+| --- | --- | --- |
+| HTTP | **Nueva solicitud** | Esta página |
+| GraphQL | **Nueva solicitud GraphQL** | [GraphQL](/docs/requests/graphql) |
+| gRPC | **Nueva solicitud gRPC** | [gRPC](/docs/requests/grpc) |
+| WebSocket | **Nueva solicitud WebSocket** | [WebSocket y SSE](/docs/requests/websocket-and-sse) |
+| Server-Sent Events | **Nueva solicitud** (una solicitud HTTP cuyo servidor emite eventos en streaming) | [WebSocket y SSE](/docs/requests/websocket-and-sse) |
+| Socket.IO | **Nueva solicitud Socket.IO** | [Socket.IO](/docs/requests/socket-io) |
+| MQTT | **Nueva solicitud MQTT** | [MQTT](/docs/requests/mqtt) |
+| MCP | **Nueva llamada MCP** (menú **+** de la barra lateral) | [Solicitudes MCP](/docs/requests/mcp-requests) |
+
+Para enviar muchas solicitudes seguidas, con comprobaciones y archivos de datos, usa la [Ejecución](/docs/requests/runner).

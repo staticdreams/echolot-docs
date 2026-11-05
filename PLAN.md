@@ -179,7 +179,40 @@ Help › Echolot Documentation (⌘?) opens `/docs`; Help › Help for This Page
 - A public demo API, rate limited.
 - The app's Help menu leads to the docs, and to the page about the current screen.
 
-## 10. Status (Nov 1, 2026)
+## 10. Languages and screenshots in every language (Nov 4, 2026)
+
+The docs are in English and seven more languages, the app's: German, Spanish, French, Japanese, Korean, Russian and
+Simplified Chinese (`de es fr ja ko ru zh`; Italian follows the app's). This follows `Echolot/docs/Localization-Plan.md`,
+section 3.3.
+
+- **Structure.** Fumadocs' i18n, configured in `src/lib/i18n.ts`: `parser: 'dot'`, `hideLocale: 'default-locale'`,
+  `fallbackLanguage: 'en'`. A translation sits beside the English page (`auth.mdx`, `auth.de.mdx`; `meta.de.json`);
+  a page with no translation shows in English. English keeps its addresses (`/docs/requests/auth`: a contract with
+  the app's Help menu); the others have a prefix (`/de/docs/requests/auth`). Routes live under `src/routes/{-$lang}/`.
+- **The site's own words** (search, "On this page", the 404, the Edition callouts, the home page) are in
+  `src/lib/i18n-ui.ts`, `src/lib/home-text.ts` and `src/components/edition.tsx`. The language switcher is Fumadocs'.
+- **Links between pages** are written `/docs/...` in every language; the MDX `a` and `Card` components add the prefix.
+  Headings of a translation carry the English anchor (`## Titel [#english-anchor]`), written by
+  `bun tools/check-l10n.ts --fix`, so a link to a heading works in every language.
+- **Search**: one Orama index for all languages, filtered by locale (Orama's multilingual tokenizer). **llms.txt** lists
+  every language, `/<lang>/llms.txt` and `/<lang>/llms-full.txt` one. **Open Graph images** are made per language for
+  `en de es fr` (the image font has Latin letters only); `ja ko ru zh` pages share the English page's image.
+- **No Accept-Language redirect**: the site is static files with no Worker. The app adds the prefix itself
+  (`EcholotWebsite.docs(for:)`, app repository); a visitor from a browser uses the switcher. A small Worker in front of
+  the assets could redirect on a first visit.
+- **Translating** is in `WRITING.md` ("Translations"). The app's own words come from its string catalogs:
+  `tools/labels.ts` looks any label up and builds `.work/l10n/labels.<code>.json`; `tools/check-l10n.ts` checks a
+  translation against the English page. **What's new** in every language is made by `tools/sync-whats-new.ts` from the
+  app's `changelog.json`, which carries its own translations.
+- **Screenshots** in a language: `tools/drive.ts <lang> [scene…]` launches the Debug build in that language
+  (`-AppleLanguages`) with the Alpenglow workspace and captures each scene in `tools/scenes.ts`, light and dark, into
+  `.work/captures/<lang>/`; `tools/shots.ts --lang <lang>` crops them with the same boxes as English into
+  `public/shots/<lang>/` and `src/lib/shots.l10n.json`. `<Shot>` shows the reader's language when it has the shot, else
+  the English one. Scenes are locale-proof: requests open through ⌘K by their English names, tabs and menu items are
+  found by place. `tools/capture-all.sh <lang…>` runs every scene. Scenes that need hover, other apps (Terminal,
+  Finder, Shortcuts), local servers or a model provider are not scripted: those shots stay English in every language.
+
+## 11. Status (Nov 1, 2026)
 
 All 82 pages of section 2 are written, checked against the app's code and the CLI. Screenshots: 78 of 92 taken from the real app
 (a Debug build, the Alpenglow workspace, light and dark). How they are made:

@@ -1,0 +1,129 @@
+---
+title: "플로로 자동화하기"
+description: "로그인하고, 주문을 나열하고, 판단하고, 알려 주는 플로를 캔버스에서 만들고, 실행하고, 일정을 잡고, 웹훅으로 시작합니다."
+---
+
+플로는 캔버스에서 요청과 다른 단계를 연결하므로, 직접 하던 작업을 클릭 한 번으로, 일정에 따라, 또는 다른 시스템이 호출할 때 실행할 수 있습니다. 이
+튜토리얼에서는 **Orders to ship**을 만듭니다. 데모 숍에 로그인하여 Heidi의 주문을 나열하고, 결제는 되었지만 아직 배송되지 않은 주문이 있으면 알림을 보냅니다.
+
+- **소요 시간:** 20분.
+- **필요한 것:** **환경 없음**을 선택한 [Alpenglow 작업 공간](/docs/tutorials#the-alpenglow-workspace). 이 작업 공간의 플로 **Morning stock check**는 같은
+  구조의 완성된 예제입니다.
+- **배우는 내용:** 블록과 연결, 조건 분기와 알림 블록, 실행 로그, 일정, 웹훅, `echolot flow run`.
+
+## 1. 플로 만들기 [#1-make-a-flow]
+
+1. **플로**(<kbd>⌘</kbd><kbd>5</kbd>)로 전환합니다.
+2. 사이드바의 **+** 메뉴(**새로운 플로**)를 열고 **빈 플로**를 선택합니다. **시작** 블록이 **출력** 블록에 연결된 플로 **새로운 플로**가 열립니다.
+3. 빈 캔버스를 클릭하여 선택된 블록이 없게 합니다. 인스펙터에서 **이름**을 `Orders to ship`으로, **설명**을 `Says when an order is paid but not shipped.`로
+   설정합니다.
+
+플로가 열려 있는 동안 사이드바에는 캔버스로 드래그할 수 있는 작업 공간의 **요청**이 나열됩니다. **+** 메뉴의 **템플릿에서** 섹션은 **페이지 가져와 내보내기** 같은 만들어진
+플로에서 시작합니다. [템플릿](/docs/flows/templates)을 참고하십시오.
+
+## 2. 요청 추가하기 [#2-add-the-requests]
+
+1. **시작**과 **출력** 사이의 연결에 포인터를 올리고 **이 연결 끊기** 버튼을 선택합니다.
+2. 사이드바의 **Auth › Sign in**을 캔버스로 드래그합니다. 제목이 **Sign in**인 **요청** 블록이 되며, 입력 `send`와 출력 `success`, `fail`이 있습니다.
+3. **Orders › List orders**를 그 오른쪽 캔버스로 드래그합니다.
+4. 연결합니다. **시작**의 `run` 포트에서 **Sign in**의 `send` 포트로, 그다음 **Sign in**의 `success` 포트에서 **List orders**의 `send` 포트로 드래그합니다.
+
+**Sign in**은 성공할 때마다 토큰을 `{{token}}`에 저장하므로 **List orders**는 새 토큰을 보냅니다. 요청 블록의 `success` 출력은 응답을 전달합니다. `status`,
+`headers`, `body`, `time`, `url`입니다. `fail`은 요청이 응답을 받지 못하거나 검사가 실패할 때 발생합니다.
+
+## 3. 조건 분기 블록으로 판단하기 [#3-decide-with-an-if-block]
+
+1. 도구 막대에서 **블록**(<kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd>)을 선택하고 **블록 또는 요청 검색**에 `If`를 입력한 뒤 <kbd>↩</kbd>를 누릅니다.
+2. 인스펙터에서 **제목**을 `Waiting to ship?`으로, **조건**을 다음으로 설정합니다.
+
+   ```js
+   value.body.items.some(o => o.status === 'paid')
+   ```
+
+   조건은 JavaScript입니다. `value`는 들어온 값으로, 여기서는 **List orders**의 응답입니다.
+3. **List orders**의 `success`를 조건 분기 블록의 `value`에 연결합니다.
+
+## 4. 직접 알림 받기 [#4-notify-yourself]
+
+1. 조건 분기 블록의 `true` 포트에서 드래그하여 빈 캔버스 위에서 놓습니다. 그 자리에 블록 선택기가 열립니다. **알림**을 선택하면 `true`에 연결된 채로 들어옵니다.
+2. 블록 설정에서 **제목**을 `Orders to ship`으로, **메시지**를 다음으로 설정합니다.
+
+   ```text
+   {{value.body.total}} orders, at least one paid and waiting.
+   ```
+
+   `{{value…}}`는 들어온 값의 일부를 채워 넣으며, 작업 공간 변수도 사용할 수 있습니다.
+3. **List orders**의 `success`를 **출력** 블록의 `value`에도 연결합니다. 웹훅은 **출력**에 도달한 값으로 응답합니다(7단계).
+
+**정리**를 선택하면 블록이 실행 순서대로 정렬되고, **맞춤**(<kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd>)을 선택하면 모든 블록이 보입니다.
+
+<Shot id="tutorials-flows-canvas" alt="실행 후 캔버스의 플로: 시작, 요청 블록, 조건 분기 블록, 그 true 포트에 연결된 알림 블록이 각각 완료로 표시됨" />
+
+## 5. 실행하기 [#5-run-it]
+
+1. **실행**(<kbd>⌘</kbd><kbd>R</kbd>)을 선택합니다.
+2. 각 블록은 실행되는 동안 배지를 표시하고, 이어서 **완료**를 표시합니다. 캔버스 아래의 실행 로그에 모든 블록이 시간과 함께 나열됩니다.
+3. 알림에 제목 **Orders to ship**과 메시지 "3 orders, at least one paid and waiting."이 표시됩니다. 데모의 주문 `ord_8Jm4Qx`가 결제 완료 상태입니다. 처음에는
+   macOS가 Echolot이 알림을 표시해도 되는지 묻습니다.
+4. **List orders**를 선택합니다. 인스펙터의 **마지막 실행**에 들어온 값과 나간 값이 표시되며, **보기**를 **입력**과 **출력** 사이에서 전환합니다.
+
+조건을 `o.status === 'cancelled'`로 바꾸고 다시 실행해 봅니다. 조건 분기 블록은 값을 아무 곳에도 연결되지 않은 `false`로 보내므로 알림이 오지 않습니다. 다시 되돌려
+놓으십시오.
+
+실행이 실패하면 실패한 블록에 오류가 표시됩니다. Mac의 온디바이스 모델을 사용할 수 있다면 실행 로그의 **실패 원인 설명**이 무엇이 잘못되었는지 알려 줍니다.
+이전 실행은 도구 막대의 **실행** 메뉴에 남아 있습니다. 자세한 내용은 [실행과 트리거](/docs/flows/running-and-triggers)에 있습니다.
+
+## 6. 일정에 따라 실행하기 [#6-run-it-on-a-schedule]
+
+1. **시작** 블록을 선택합니다. 인스펙터에 **트리거** 섹션이 있습니다.
+2. <strong>일정</strong>을 켭니다. <strong>간격</strong>을 선택한 상태에서 <strong>간격</strong>을 `60`분으로 설정하거나, <strong>시각 지정(cron)</strong>을 선택하고 평일 오전 7시를 뜻하는 `0 7 * * 1-5` 같은 cron
+   줄(분, 시, 일, 월, 요일)을 입력합니다.
+3. **허용**을 선택합니다. Echolot은 사용자 없이 무언가가 플로를 시작하기 전에 플로를 허용하라고 요청하며, 플로가 바뀐 뒤에 다시 요청합니다(**다시 허용**). **취소**를
+   누르면 멈춥니다.
+
+인스펙터에 다음 실행 시각이 표시됩니다. 일정은 작업 공간 윈도우가 열려 있는 동안 실행됩니다. 앱 없이 실행하려면 켜져 있는 Mac이나 서버에서
+`echolot flow serve -w Alpenglow.echolot`을 사용합니다.
+
+## 7. 웹훅으로 시작하기 [#7-start-it-from-a-webhook]
+
+1. **시작** 블록의 **트리거**에서 **웹훅**을 켭니다. 메서드는 **POST**로 두고 경로를 `/orders-to-ship`으로 설정합니다.
+2. **허용**을 선택합니다. 인스펙터에 `127.0.0.1`의 주소가 **URL 복사**와 **토큰 복사**와 함께 표시됩니다.
+3. 터미널에서 토큰을 Bearer 토큰으로 사용하여 호출합니다.
+
+   ```sh
+   curl -X POST 'http://127.0.0.1:PORT/orders-to-ship' -H 'Authorization: Bearer TOKEN'
+   ```
+
+   복사한 URL과 토큰을 붙여넣습니다. 플로가 실행되고, 응답은 **출력**에 도달한 값인 주문입니다.
+
+쿼리 문자열과 JSON 본문은 플로의 입력을 채웁니다. 웹훅은 윈도우가 열려 있는 동안 이 Mac에서만 응답하며, `echolot flow serve`는 앱 없이 웹훅을 제공하고 기본 포트는
+4100입니다. Alpenglow의 **Order status on webhook**도 또 다른 예제입니다. 플로는 AI 에이전트에 도구로 제공할 수도 있습니다(**에이전트(MCP 도구)**).
+[에이전트](/docs/ai/agents)를 참고하십시오.
+
+## 8. 터미널에서 실행하기 [#8-run-it-from-terminal]
+
+```sh
+echolot flow list -w Alpenglow.echolot
+echolot flow run "Orders to ship" -w Alpenglow.echolot
+```
+
+각 블록이 끝날 때마다 시간과 함께 출력하고, 이어서 알림의 텍스트와 결과를 출력합니다.
+
+```text
+✓ start  Start  0 ms
+✓ …      Sign in  168 ms
+✓ …      List orders  116 ms
+✓ …      Waiting to ship?  4 ms
+notification: Orders to ship — 3 orders, at least one paid and waiting.
+✓ …      Notify  0 ms
+Orders to ship: passed in 304 ms
+```
+
+CI에서는 `--no-input`을 추가하여 사람이 필요한 플로가 기다리지 않고 실패하게 합니다. 플로는 작업 공간의 `flows` 폴더에 있는 파일이므로, 사용하는 요청과 함께 Git에
+들어갑니다. [`echolot flow`](/docs/cli/flow)를 참고하십시오.
+
+## 다음 단계 [#next-steps]
+
+- [블록](/docs/flows/blocks): 승인, 묻기, 각 항목 반복, 폴링, 파일 쓰기와 나머지 블록.
+- [템플릿](/docs/flows/templates): 기기 로그인, 토큰 갱신, 페이지 가져와 내보내기, 스모크 모니터.
+- [에이전트가 작업 공간을 안전하게 사용하게 하기](/docs/tutorials/agents-safely): 플로를 에이전트에 도구 하나로 제공합니다.

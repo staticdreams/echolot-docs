@@ -1,0 +1,119 @@
+---
+title: "Inspeccionar un servidor MCP"
+description: "Añade el servidor MCP de la tienda de demostración, mira lo que ofrece, llama a sus herramientas, lee cómo lo ve un modelo y guarda las llamadas como solicitudes con comprobaciones."
+---
+
+Un servidor MCP da a los agentes de IA herramientas, recursos y prompts. Antes de ponérselo a un agente, mira qué ofrece,
+llama tú mismo a sus herramientas y comprueba lo que le cuesta a un modelo la lista de herramientas. En este tutorial
+lo haces con el servidor de la tienda de demostración, `https://demo.echolot.dev/mcp`, y guardas una llamada a una
+herramienta como solicitud con comprobaciones.
+
+- **Tiempo:** 15 minutos.
+- **Necesitas:** cualquier espacio de trabajo. [Alpenglow](/docs/tutorials#the-alpenglow-workspace) ya tiene este servidor
+  como **Alpenglow MCP**; para seguir el tutorial desde cero, usa otro espacio de trabajo.
+- **Aprendes:** añadir un servidor, la comprobación, llamar a herramientas, la tarjeta
+  **Cómo ve un modelo este servidor** y las solicitudes MCP.
+
+## 1. Añade el servidor [#1-add-the-server]
+
+1. Cambia a **Servidores MCP** (<kbd>⌘</kbd><kbd>2</kbd>).
+2. Elige **Añadir servidor MCP…** (en la página vacía, o en el menú **+** de la barra lateral).
+3. En **Añadir servidor MCP**:
+   - **Nombre**: `Demo shop`
+   - **Transporte**: **HTTP (Streamable HTTP)**
+   - **URL**: `https://demo.echolot.dev/mcp`
+4. Elige **Añadir**.
+
+El servidor se guarda como un archivo en la carpeta `mcp-servers` del espacio de trabajo. El menú **+** también puede
+importar servidores de Claude Desktop, Claude Code, Cursor, VS Code o Codex.
+
+<Edition only="direct">
+  Los servidores que se ejecutan como programa en tu Mac (**Comando local (stdio)**, como los servidores de `npx` o
+  `uvx`) funcionan en la descarga directa. En la edición de la App Store, añade un servidor por HTTP, o compruébalo con
+  `echolot mcp check`.
+</Edition>
+
+## 2. Compruébalo [#2-check-it]
+
+1. Elige **Comprobar**. Echolot se conecta, averigua qué versión del protocolo habla el servidor, le hace ping y lista sus
+   herramientas, recursos y prompts.
+2. La página se va rellenando, tarjeta a tarjeta:
+   - **La conexión funciona**, y después **Servidor**: el protocolo (MCP 2025-11-25, con una sesión), los tiempos de ping
+     y de conexión, el número de herramientas, sus capacidades y sus **Instrucciones**: "The Alpenglow demo shop from
+     docs.echolot.dev. Read-only: search the catalog, look up products and orders."
+   - **Herramientas**: `search_catalog`, `get_product` y `order_status`, con sus descripciones.
+   - **Recursos**: `categories` (`alpenglow://catalog/categories`).
+   - **Prompts**: `pack_for_a_trip`, que recibe un `trip`.
+   - **Mensajes**: todos los mensajes JSON-RPC de la comprobación. Elige **Mostrar todo** para verlos todos.
+
+**Observar** mantiene una conexión abierta y muestra los cambios de las listas y las actualizaciones de recursos en cuanto
+ocurren. Un servidor que necesita OAuth muestra aquí **Iniciar sesión…**; consulta
+[añadir servidores](/docs/mcp-servers/adding-servers).
+
+<Shot id="tutorials-mcp-server-checked" alt="La página Servidores MCP tras comprobar Alpenglow MCP: la tarjeta Servidor, tres herramientas y la tarjeta Cómo ve un modelo este servidor" />
+
+## 3. Llama a una herramienta [#3-call-a-tool]
+
+1. En la tarjeta **Herramientas**, elige `search_catalog`. Se abre la hoja de llamada.
+2. En **Argumentos**, **Formulario** muestra un campo por parámetro. Pon `query` en `ultralight tent` y `limit` en `3`.
+   **JSON** muestra los mismos argumentos como texto.
+3. Elige **Llamar** (<kbd>↩</kbd>).
+
+El resultado aparece bajo **Resultado** con el tiempo que tardó: una línea por producto, con su nombre, su SKU, su precio
+en CHF y su stock. Una herramienta que falla muestra **Error** y el texto en rojo. Prueba `order_status` con `order_id`
+`ord_7Hk2Lw`, y elige `categories` en **Recursos** para leer el recurso del mismo modo.
+
+## 4. Mira cómo ve el servidor un modelo [#4-see-how-a-model-sees-the-server]
+
+El nombre, la descripción y el esquema de entrada de cada herramienta van a un modelo en cada turno de una conversación.
+La tarjeta **Cómo ve un modelo este servidor** lo mide:
+
+- **Tokens de Anthropic**, **tokens de OpenAI** y **tokens de Google Gemini**: lo que cuestan las tres herramientas por
+  turno. Para este servidor, unos cientos de tokens.
+- **Herramientas más grandes**: las herramientas que más cuestan.
+- Una lista de problemas con los que un modelo tropezaría, como una descripción que falta o un esquema confuso, cada uno
+  con una solución sugerida. Para el servidor de demostración: **Nada con lo que un modelo vaya a tropezar**.
+- **La lista tal como la recibe un proveedor**: la lista de herramientas exactamente como la recibe la API de cada
+  proveedor, con **Copiar**.
+
+La tarjeta **Probar con un modelo**, debajo, envía una tarea que escribes a un modelo con estas herramientas, para ver
+cuáles elige. Eso necesita un [proveedor del Asistente](/docs/ai/assistant). La herramienta de línea de comandos imprime
+las mismas medidas:
+
+```sh
+echolot mcp check --quality --url https://demo.echolot.dev/mcp
+```
+
+```text
+How a model sees the tools (estimates)
+  Anthropic      572 tokens a turn, 0.3% of a 200k context
+  OpenAI         166 tokens a turn, 0.1% of a 200k context
+  Google Gemini  225 tokens a turn, 0.1% of a 200k context
+  largest: search_catalog 98, get_product 66, order_status 62
+Nothing a model would stumble over.
+```
+
+Más en [herramientas y calidad](/docs/mcp-servers/tools-and-quality).
+
+## 5. Guarda la llamada como solicitud con comprobaciones [#5-save-the-call-as-a-request-with-checks]
+
+1. Llama a `search_catalog` otra vez y elige **Guardar como solicitud**. Aparece una solicitud llamada `search_catalog`
+   bajo **Solicitudes**, con el servidor, la herramienta y los argumentos.
+2. Ábrela. **Operación** es **Herramienta**; **Llamar** (<kbd>⌘</kbd><kbd>R</kbd>) la ejecuta como cualquier solicitud.
+3. En su pestaña **Pruebas**, abre **Añadir prueba** y añade:
+   - **Error de MCP** es igual a `false`: la herramienta no notificó ningún error.
+   - **Cuerpo** contiene `TNT-`: la respuesta lista tiendas de campaña.
+   - **Valor JSON** `$.content[0].text` contiene `CHF`.
+4. Llámala. **3 superadas**.
+
+Las llamadas guardadas se ejecutan en [Ejecución](/docs/requests/runner) y en CI con `echolot run`, así que un cambio en
+las herramientas de un servidor rompe una compilación en vez de a un agente. La carpeta **Agent tools** de Alpenglow tiene
+dos solicitudes así. **Esquema de salida de la herramienta** comprueba un resultado con el esquema de salida que declara
+la herramienta, para los servidores que lo declaran. Consulta [solicitudes MCP](/docs/requests/mcp-requests).
+
+## Siguientes pasos [#next-steps]
+
+- [Deja que un agente use tu espacio de trabajo con seguridad](/docs/tutorials/agents-safely): Echolot también es un
+  servidor MCP.
+- [Servidores MCP](/docs/mcp-servers): servidores stdio, OAuth, importar la configuración de otras apps.
+- [`echolot mcp`](/docs/cli/mcp): `check`, `sign-in` y el resto.

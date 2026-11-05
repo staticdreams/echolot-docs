@@ -20,12 +20,9 @@ From top to bottom:
 
 - **Home** and **Search**, beside the window's buttons. **Home** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd>) is the
   workspace's overview: counts of requests, folders, environments, variables and checks, your recent requests, the
-  latest responses, how the tests stand, and the environments. Its **Sonar** card plots the sends of the last hour,
-  24 hours, 7 days or 30 days by time and duration, with **Sends**, **Answered OK**, **Median time** (and p95),
-  **Under 250 ms** and **Over 1 s**, each against the period before. The figures count every send still in the
-  workspace's history (sends you cleared, or that its limits removed, no longer count); the chart shows the most
-  recent ones. Point at a ping to see its request, and click it to open the response. **Search** opens the
-  [command palette](#the-command-palette) (<kbd>⌘</kbd><kbd>K</kbd>).
+  latest responses, how the tests stand, and the environments, with the **Sonar** card on top, which plots every send
+  of the last hour, day, week or month by how long it took. See [Home and Sonar](/docs/get-started/home).
+  **Search** opens the [command palette](#the-command-palette) (<kbd>⌘</kbd><kbd>K</kbd>).
 - **The module switcher**, which picks what the sidebar lists. Each module has its own page.
 - **The module's lists.**
 - **The workspace switcher** at the foot.
@@ -60,6 +57,8 @@ menus (right-click), with **New Request**, **New Folder**, **Folder Settings…*
   files onto the window.
 - **Edit › Duplicate** (<kbd>⌘</kbd><kbd>D</kbd>) and **Edit › Rename** work on the selected row.
 - A dot beside a request means it has changes not yet written.
+- A warning sign beside a request means its latest send failed: no response, a status of 400 or more, or a gRPC status
+  other than OK. Rest the pointer on it to read what went wrong. A later success clears it.
 
 Nothing is deleted without asking, and deleted items go to the Trash. More in [Folders](/docs/workspaces/folders).
 

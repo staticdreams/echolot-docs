@@ -119,13 +119,13 @@ See [Agents](/docs/ai/agents) and [Let an AI agent use your workspace safely](/d
 
 ## Usage data and crash reports
 
-Both are off by default, in **Settings › Privacy**.
+Both are in **Settings › Privacy**: usage data is off by default, crash reports kept on this Mac are on.
 
 - **Share anonymous usage data.** When on, Echolot tells its developers which features are used (sending a request,
   a run, an MCP check) with small facts such as the request kind and status code, and reports errors with their stack
   traces. Never URLs, headers, bodies, variables, secrets or responses. It goes to PostHog, the analytics service
   Echolot uses.
-- **Collect crash reports.** When on, macOS hands Echolot its crash and hang reports on the next launch and Echolot
+- **Collect crash reports.** On by default. macOS hands Echolot its crash and hang reports on the next launch and Echolot
   saves them on this Mac, so you can attach them to a bug report. They contain stack traces only, and are not sent
   anywhere. **Show in Finder** opens them.
 

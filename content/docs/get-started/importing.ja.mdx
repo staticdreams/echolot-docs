@@ -1,0 +1,106 @@
+---
+title: "読み込み"
+description: "cURL、Postman、Insomnia、OpenAPI、Swagger、HAR、Paw、Brunoのリクエストをワークスペースに取り込み、読み込みレポートを読みます。"
+---
+
+Echolotは、他のツールにある既存のデータをワークスペースに読み込みます。リクエスト、フォルダ、認証、変数、環境、スクリプトが対象です。
+形式は内容から判別し、認証情報はキーチェーンに移し、取り込めなかった内容はレポートで知らせます。
+
+## Echolotが読み込むもの [#what-echolot-imports]
+
+| 形式 | ファイル | 取り込まれる内容 |
+| --- | --- | --- |
+| **cURL** | ペーストした、またはテキストファイルにある`curl …`コマンド | 1件のリクエスト：メソッド、アドレス、ヘッダー、ボディ、Basic認証、リダイレクトやTLS検証などの設定。 |
+| **Postman** | Collection v2.0とv2.1、環境（`.json`） | フォルダ、リクエスト、認証、コレクション変数、プリリクエストスクリプトとテストスクリプト。環境は[環境](/docs/workspaces/environments)になります。 |
+| **Insomnia** | v4のJSON書き出し、v5のYAMLコレクション | フォルダ、リクエスト、認証、環境。 |
+| **OpenAPI** | OpenAPI 3.0と3.1、Swagger 2.0（JSONまたはYAML） | すべてのオペレーションにつき1件のリクエスト。パラメータ、ボディの例、セキュリティスキームの認証を含みます。サーバのアドレスは変数`{{baseUrl}}`になります。 |
+| **HAR** | ブラウザまたはプロキシのHTTP Archive 1.2（`.har`） | セッションのAPI呼び出し。複数のホストがある場合は、ホストごとに1つのフォルダ。 |
+| **Paw** | PawとRapidAPI for Macのドキュメント（`.paw`） | グループ、リクエスト、環境。Pawの動的な値は、可能なものはEcholotの[変数と動的な値](/docs/requests/dynamic-values)になります。 |
+| **Bruno** | コレクションフォルダ（`bruno.json`または`.bru`ファイルがあるもの） | フォルダ、リクエスト、認証、環境、スクリプトとテスト（記述のまま）。 |
+
+コレクション、仕様、HARファイル、Brunoフォルダは、その名前の専用フォルダに取り込まれます。cURLコマンドは1件のリクエストになります。
+
+Claude Desktop、Claude Code、Cursor、VS Code、CodexのMCPサーバ設定も、MCPサーバとして読み込めます。[サーバの追加](/docs/mcp-servers/adding-servers)を参照してください。
+
+## アプリで読み込む [#import-in-the-app]
+
+次のどの方法でも読み込めます。読み込み先は、サイドバーで選択しているフォルダ、または選択がなければワークスペースの最上位です。
+
+- <strong>ファイル › 読み込む…</strong>（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd>）、またはサイドバーの<strong>+</strong>メニューや[コマンドパレット](/docs/get-started/the-window#the-command-palette)の<strong>読み込む…</strong>。1つまたは複数のファイル、あるいはBrunoのコレクションフォルダを選びます。
+- ファイルやBrunoフォルダを、ウインドウのコンテンツパネルのどこか、またはサイドバーのフォルダに**ドロップ**します。
+- cURLコマンド、またはコレクションや仕様のテキストを、サイドバーに**ペースト**します（サイドバーにフォーカスして<kbd>⌘</kbd><kbd>V</kbd>）。
+- **リクエストのアドレスフィールドにcURLコマンドをペースト**します。この方法ではリクエストは新規作成されません。開いているリクエストのメソッド、アドレス、ヘッダー、ボディ、認証、設定が置き換わり、名前と位置は変わりません。
+  使えなかった内容は、アドレスバーの下に**cURLの注記**として一覧表示されます。
+
+<Shot id="get-started-import-report" alt="Postmanコレクションを読み込んだ後の読み込みレポート：読み込んだリクエストとフォルダの数、そのまま読み込めなかった内容の注記、キーチェーンに移したシークレット" />
+
+### 読み込みレポート [#the-import-report]
+
+読み込みが終わると、レポートが開きます。タイトルには取り込んだ内容が表示されます（「22件のリクエスト、7件のフォルダを読み込みました」）。その下に、読み込み元の形式と、すべて読み込めたかどうかが表示されます。続いて、ファイルごとに次の内容が並びます。
+
+- そのままでは取り込めなかった内容についての**注記**。注記なしに捨てられるものはありません。
+- **シークレット**：ファイルではなくキーチェーンに保存された値の名前。値そのものは表示されません。
+
+**サイドバーに表示**で読み込んだ項目が選択されます。**完了**でレポートが閉じます。注記のない単独のcURLコマンドは、レポートなしですぐに開きます。
+
+## シークレットはキーチェーンへ [#secrets-go-to-the-keychain]
+
+ワークスペースのファイルには、パスワード、トークン、キーが平文で書き込まれることはありません。そのため、Gitにコミットできます。
+
+- **リクエストに入力された認証情報**（認証、`Authorization`ヘッダー、APIキーのヘッダー）は、リクエストとフィールドの名前が付いたシークレット変数になります。
+  たとえば`curl -u heidi:alpenglow https://demo.echolot.dev/echo/basic-auth/heidi/alpenglow`は、`heidi-alpenglow`というリクエストを作り、パスワードは`{{heidi_alpenglow_password}}`になります。値はキーチェーンに保存されます。
+- **環境とコレクションのシークレットの値**も、同じようにキーチェーンに保存されます。
+
+アドレスのクエリ文字列、ボディ、`user:password@`形式のアドレスにある認証情報は、まだ移されません。読み込んだワークスペースをコミットする前に確認してください。[シークレット](/docs/workspaces/secrets)を参照してください。
+
+## スクリプト [#scripts]
+
+Postmanのプリリクエストスクリプトとテストスクリプトは取り込まれ、Echolotの`pm.*`サンドボックスで実行されます。
+読み込まれたスクリプトは、信頼するまで実行されません。レポートにはスクリプトの数が表示され、それが必要な最初の送信で確認を求められます（**スクリプトを確認…**）。
+Brunoのスクリプトとテストは記述のまま取り込まれますが、Brunoの`bru`、`req`、`res`はPostmanの`pm`とは異なるため、実行前に修正が必要な場合があります。
+[スクリプトとテスト](/docs/requests/scripts-and-tests)を参照してください。
+
+## 取り込まれないもの [#what-doesnt-come-across]
+
+該当する内容は、レポートにそのつど記載されます。
+
+| 形式 | 除外または変更される内容 |
+| --- | --- |
+| cURL | Cookieファイル、Echolotに対応する設定がないオプション、コロンのないヘッダー。ファイルから読み取るボディやフォームフィールド（`-d @file`、`-F field=@file`）は、リクエストの送信時にそのファイルから読み取られます。 |
+| Postman | Echolotにない認証タイプ。ファイルのボディとファイルのフィールド：ファイルをもう一度選んでください。 |
+| Insomnia | Echolotにない種類の項目。Echolotに相当する機能がないテンプレートタグ（`{% … %}`）はテキストのまま残ります。Echolotにない認証タイプ。ファイルのボディとフィールド。Echolotが提供しないOAuth 2.0のグラントは、認可コードグラントになります。 |
+| OpenAPI | リクエストに入れられない場所のパラメータ、リクエストに入れられない種類のボディ、OAuthのフロー（認証は手動で設定してください）、Cookieとして送るAPIキー（`Cookie`ヘッダーを追加してください）。サーバがない仕様、またはサーバのアドレスが相対パスの仕様：送信前に`{{baseUrl}}`を設定してください。非推奨のオペレーションも読み込まれます。 |
+| HAR | 画像、フォント、スクリプト、スタイルシート。繰り返されたリクエストは1回だけ取り込まれます。ブラウザのセッション認証情報を含むヘッダー：代わりにフォルダに認証を設定してください。 |
+| Paw | Echolotにない種類の動的な値は空のテキストになります。ファイル参照とクライアント証明書：もう一度設定してください。 |
+| Bruno | Echolotにないボディと認証のモード。フォルダ全体で共有されるヘッダー（Echolotのフォルダにはありません）：リクエストまたはプリリクエストスクリプトに追加してください。Echolotに相当するものがない演算子を使うアサーション。 |
+
+## OpenAPIファイルはリンクされたままになる [#openapi-files-stay-linked]
+
+OpenAPIまたはSwaggerのファイルを読み込むと、そのコピーがワークスペースの`specs/`フォルダにも保存され、新しいリクエストのフォルダはその仕様に従います。
+仕様が変わると、Echolotは変更内容を表示し、リクエストに反映できます。仕様は[仕様](/docs/specs)ページで編集します。
+
+## コマンドラインから読み込む [#import-from-the-command-line]
+
+`echolot import`は同じ形式をワークスペースのフォルダに読み込みます。移行のスクリプト化や、CIでの読み込みに使えます。
+
+```sh
+echolot import Alpenglow.postman_collection.json -w "Alpenglow.echolot"
+echolot import staging.postman_environment.json -w "Alpenglow.echolot"
+echolot import openapi.yaml -w "Alpenglow.echolot" --folder catalog
+pbpaste | echolot import - -w "Alpenglow.echolot"       # a cURL command from the clipboard
+```
+
+形式は内容から判別します。`--format`を指定すると判別を省略できます（`curl`、`postman-collection`、`postman-environment`、`openapi`、`swagger`、`insomnia`、`har`、`paw`、`mcp-config`）。同じレポートが出力されます。
+
+```txt
+Imported 22 requests, 7 folders from Postman collection v2.1.
+warning: 19 pre-request or test scripts were imported; Echolot runs them once you trust them.
+```
+
+Macでは、アプリと同じようにシークレットがキーチェーンに保存されます。キーチェーンがない環境（Linux、または`ECHOLOT_KEYCHAIN=0`）では、シークレットはファイルに残らず、送信する場所でどの`ECHOLOT_SECRET_<NAME>`変数を設定すればよいかがツールから示されます。
+コマンドラインツール自体は、Newmanと同じく、すべてのスクリプトを確認なしで実行します。
+
+Postmanコレクションは、読み込まなくても実行できます。`echolot run collection.json`で、そのまま実行されます。
+[読み込みと書き出し](/docs/cli/import-export)と[`echolot run`](/docs/cli/run)を参照してください。
+
+逆方向については、[書き出し](/docs/workspaces/exporting)を参照してください。

@@ -1,0 +1,183 @@
+---
+title: "运行和触发"
+description: "手动运行流程、按计划运行、由 Webhook 触发、作为工具提供给 AI 智能体或在命令行中运行，并允许那些无需你在场就启动流程的触发器。"
+---
+
+流程在有东西启动它时运行：你，用<strong>运行</strong>按钮；AI 智能体，当你把流程作为工具提供时；计划；Webhook；或终端或 CI 中的 `echolot flow run`。
+无论由谁启动，每个请求都与在请求页面中发送走同一条路径。
+
+## 手动运行 [#run-by-hand]
+
+1. 在“流程”页面中打开流程。
+2. 点按工具栏中的<strong>运行</strong>，或按 <kbd>⌘</kbd><kbd>R</kbd>。
+3. 流程有[输入](/docs/flows#inputs-and-outputs)时，标题为流程名称的<strong>运行</strong>面板会询问这些输入。每个字段显示输入的名称、类型以及是否必填，初始值为它的默认值。留空即使用默认值，然后点按<strong>运行</strong>。
+
+流程会先存储，因此运行使用的就是画布上的内容。它在窗口当前使用的[环境](/docs/workspaces/environments)下运行。流程有错误时，<strong>运行</strong>不可用；其提示文字为“请先修复流程的问题”。
+
+当[受保护的环境](/docs/workspaces/protected-environments)处于使用中时，按钮会显示为<strong>在 Production 中运行…</strong>（附该环境的名称），Echolot 会在运行开始前询问一次。运行中的请求不会再次询问。
+
+### 运行视图 [#the-run-view]
+
+流程运行时，它的块会在画布上显示状态，<strong>运行</strong>日志会在画布下方打开：
+
+| 画布上 | 含义 |
+| --- | --- |
+| 强调色边框 | 块正在运行，或在等你操作。 |
+| 绿色边框 | 块已完成。 |
+| 红色边框 | 块失败。 |
+
+运行日志依次列出：
+
+- 每个块完成时的情况，附耗时；
+- “日志”块的输出行，以及“求值”块中的 `console.log`；
+- “断言”块和 `pm.test` 的测试结果，标题栏中显示<strong>测试</strong>通过数/总数；
+- 错误，以红色显示；
+- 运行如何结束：`已完成，用时 1.2 s`、`已停止，用时 …` 或带原因的 `失败，用时 …`。
+
+点按某一行可选中对应的块。选择任意块，即可在检查器中看到它的<strong>上次运行</strong>，其中按端口列出<strong>输入</strong>和<strong>输出</strong>值。
+<strong>清除</strong>会清空日志和画布上的状态；关闭按钮会隐藏日志，工具栏中的<strong>运行日志</strong>可再次显示它。
+
+运行进行时，<strong>停止</strong>（<kbd>⌘</kbd><kbd>.</kbd>）取代<strong>运行</strong>。它会结束运行、关闭正在进行的请求，并撤掉屏幕上的所有提问。
+
+运行失败且这台 Mac 的设备端模型可用时，日志标题栏中的一个按钮会根据日志解释失败原因。
+
+### 之前的运行 [#earlier-runs]
+
+窗口会保留已打开流程最近 20 次运行，包括由计划或 Webhook 启动的运行。它们列在边栏的<strong>运行</strong>下（附结束情况、开始时间和耗时），也列在工具栏的<strong>运行</strong>菜单中。
+点按其中一次，即可在画布上再次显示：各块的状态和每个块的<strong>上次运行</strong>。<strong>运行</strong>菜单中的<strong>清空画布</strong>会把它们从画布上移除。
+
+运行记录保留在窗口中。流程发送的请求与其他任何发送一样，保存在工作区的[历史记录](/docs/workspaces/history)中。
+
+## 触发器 [#triggers]
+
+选择“开始”块，即可在检查器中看到流程的<strong>触发器</strong>。<strong>“运行”按钮和 `echolot flow run`</strong>始终开启。勾选其他触发器即可添加：
+
+- <strong>智能体（MCP 工具）</strong>
+- <strong>计划</strong>
+- <strong>Webhook</strong>
+
+“开始”块为每个已开启的触发器显示一个小图标，边栏也在流程名称下方显示它们。
+
+<Shot id="flows-triggers-start" alt="Order status on webhook 的“开始”块的检查器：“触发器”部分中勾选了 Webhook，方法为 POST，路径为 /order-status，下方是本地地址以及“拷贝 URL”和“拷贝令牌”，还有“已允许”和“撤销许可”" />
+
+### 允许触发器 [#allow-a-trigger]
+
+智能体、计划和 Webhook 会在你不在画布前时启动流程，因此每一种还需要你对这个流程的许可。在每个已勾选的触发器下，点按<strong>允许</strong>。触发器随后显示<strong>已允许</strong>和一个<strong>撤销许可</strong>按钮。
+
+许可针对流程当前的样子：流程本身、它发送的请求及其上层的文件夹、工作区的变量、认证、代理和证书，以及它所运行的流程。
+改动其中任何一项，无论是在画布上、在 Git 中还是由智能体改动，触发器都会停止，直到你再次允许。此时它会显示“自你允许以来，此流程已更改。”，并提供<strong>再次允许</strong>。
+流程不能自己允许自己：许可保存在你这台 Mac 上的 Echolot 中，而不在工作区里。有错误的流程永远不会由触发器启动。
+
+环境值的变化（例如一个新令牌）不会使许可失效。
+
+### 智能体：把流程作为 MCP 工具 [#agents-a-flow-as-an-mcp-tool]
+
+把流程提供给 AI 智能体，它就成为 Echolot 的 MCP 服务器的一个工具：智能体调用一个工具，流程完成那些请求，机密则留在 Echolot 中。
+
+1. 选择“开始”块并勾选<strong>智能体（MCP 工具）</strong>。
+2. <strong>工具名称</strong>默认是 `flow_` 加上用下划线连接的流程文件名（`flow_place_test_order`），除非你输入别的名称：最多 64 个字母、数字、`_` 和 `-`。
+3. 为模型写好<strong>工具的作用</strong>。它起初是流程的描述。
+4. 点按<strong>允许</strong>。
+5. 打开<strong>设置 › 智能体</strong>并连接你的客户端。见 [AI 智能体](/docs/ai/agents)。
+
+工具的参数就是流程的输入，其结果是“输出”块收到的内容。<strong>Place a test order</strong> 以 `place_test_order` 的名称提供。
+只要“流程”工具集处于开启状态（默认开启），该流程就会出现在工具列表中。智能体只能启动已提供且已允许的流程。
+
+智能体启动流程时，Echolot 会在运行之前向你询问一次，并说明流程会做什么：向哪些地址发送哪些请求、存储哪些变量和机密、写入哪些文件、运行哪些工具和流程，以及在哪里询问人。
+在运行期间，你已批准的内容不会再次询问；受保护的环境、新主机和删除仍会询问，智能体自身规则所拒绝的内容也一样。
+
+由智能体启动的流程中的“人员”块会交给智能体的客户端：由它显示消息、代码和链接，或询问各个值。“批准”块始终由你决定：智能体回答它时，Echolot 会先询问你。
+
+[助手](/docs/ai/assistant)以同样的方式运行流程。
+
+### 计划 [#schedule]
+
+让流程每隔若干分钟，或按日历自行运行。
+
+1. 选择“开始”块并勾选<strong>计划</strong>。它的初始值是每 60 分钟一次。
+2. 选择<strong>间隔</strong>并填写<strong>每</strong> … <strong>分钟</strong>，或选择<strong>设置时间（cron）</strong> 并输入一行 cron（分钟、小时、日、月、星期）。一个计划只能二选一，且最多每分钟运行一次。
+3. 点按<strong>允许</strong>。
+
+获得允许后，检查器会显示<strong>下次运行</strong>及其日期和时间。计划运行在工作区窗口打开期间进行，使用运行时刻窗口所用的环境，并以输入的默认值启动。
+Mac 休眠或窗口关闭期间错过的运行，会在 Echolot 下次检查时运行一次；仍在运行的流程不会再次启动。计划运行失败时会显示通知。
+要在没有 App 的情况下运行计划，请使用 [`echolot flow serve`](#run-from-the-command-line)。
+
+cron 行使用五个字段，采用你的 Mac 所在的时区：分钟（0–59）、小时（0–23）、每月的日（1–31）、月（1–12 或 `jan`–`dec`）和星期（0–7 或 `sun`–`sat`；0 和 7 都是星期日）。
+每个字段可以是 `*`、数字、范围（`1-5`）、列表（`1,15`）和步长（`*/15`、`8-18/2`）。日和星期同时有限制时，任一匹配即可。
+
+| cron 行 | 运行时间 |
+| --- | --- |
+| `0 6 * * *` | 每天 6:00（<strong>Morning stock check</strong>）。 |
+| `0 7 * * 1-5` | 工作日 7:00。 |
+| `*/15 8-18 * * *` | 8:00 到 18:45 每 15 分钟一次。 |
+| `0 9 1 * *` | 每月 1 日 9:00。 |
+
+“人员”块在计划运行期间无法询问任何人，因此会在那里失败。
+
+### Webhook [#webhook]
+
+当有东西向本地地址发送请求时，启动流程。
+
+1. 选择“开始”块并勾选 <strong>Webhook</strong>。
+2. 选择方法（`GET`、`POST`、`PUT`、`PATCH` 或 `DELETE`；默认为 `POST`）和以 `/` 开头的路径。路径起初是 `/` 加上流程的文件名。
+3. 点按<strong>允许</strong>。
+
+获得允许后，检查器会显示地址，例如 `POST http://127.0.0.1:52817/order-status`，并附有<strong>拷贝 URL</strong>和<strong>拷贝令牌</strong>。Echolot 只在这台 Mac 上（127.0.0.1）、窗口打开期间监听。端口为每个工作区选定一次并保持不变。
+
+调用方必须发送工作区的令牌，该令牌由 Echolot 在第一次时生成并保存在钥匙串中。下面任何一种方式都可以：
+
+- 标头 `Authorization: Bearer <token>`；
+- 标头 `X-Echolot-Token: <token>`；
+- 查询参数 `?token=<token>`。
+
+```sh
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "Authorization: Bearer <token>"
+```
+
+<strong>Order status on webhook</strong> 先登录，获取订单，然后用订单作答。查询参数和 JSON 正文的键会填充流程中同名的输入；其他键会被忽略。名为 `body` 的输入获得整个正文。
+因此，有一个输入 `order` 的流程可以接受 `?order=ord_7Hk2Lw` 或 `{"order": "ord_7Hk2Lw"}`。运行使用窗口当前使用的环境。
+
+| 应答 | 时机 |
+| --- | --- |
+| `200`，附 JSON 形式的输出 | 运行通过。正文是“输出”块收到的内容，或 `null`。 |
+| `401` | 令牌缺失或错误。 |
+| `404` | 没有已允许的流程应答该方法和路径；错误信息会列出能应答的那些。 |
+| `413` | 正文大于 8 MB。流程不会运行。 |
+| `500` | 运行失败。正文包含 `error` 和运行的 id。 |
+| `503` | 运行已被停止。 |
+
+Webhook 运行在两分钟后停止。“人员”块在那里无法询问任何人，因此会失败。
+
+## 后台运行 [#background-runs]
+
+由计划和 Webhook 在 App 中启动的运行，在流程打开期间显示在该流程的<strong>运行</strong>下；失败的运行会显示 macOS 通知，附流程名称和错误。
+它们以你的权限运行，就像你自己启动的运行一样，但仅限于你已允许的流程。
+
+## 在命令行中运行 [#run-from-the-command-line]
+
+`echolot` 命令无需 App 即可运行同样的流程。在 CI 中，流程就是这样成为发布关卡的。
+
+```sh
+# 列出流程、它们的输入和问题
+echolot flow list -w Alpenglow.echolot
+
+# 运行一个流程；运行或其中某个测试失败时以错误退出
+echolot flow run morning-stock-check -w Alpenglow.echolot --env staging --no-input
+
+# 以 name=value 的形式传入输入（由“分页并导出”模板创建的流程）
+echolot flow run export-products -w Alpenglow.echolot --input pages=5
+
+# 运行计划并应答 Webhook，直到按下 Ctrl-C
+echolot flow serve -w Alpenglow.echolot --port 4100
+```
+
+- `flow run` 会在每个块完成时打印它，然后打印输出。`--json` 改为打印运行记录。“人员”块在终端中询问；使用 `--no-input` 时，它们会让运行失败，这正是 CI 需要的。“通知”块会打印它们的文本。
+- `flow serve` 会在计划流程到期时运行它们，并在端口 4100 上应答 Webhook（`--port 0` 会选一个空闲端口）。`--share` 监听所有网络接口，供容器使用。令牌来自 `--token`，其次是 `ECHOLOT_WEBHOOK_TOKEN`，否则生成并打印一个新令牌。
+- 在命令行中，运行是你自己启动的，因此流程无需<strong>允许</strong>：`flow serve` 会运行每个带有计划或 Webhook 且没有错误的流程。
+
+所有选项见 [echolot flow](/docs/cli/flow)。
+
+<Edition only="direct">
+  命令行工具包含在直接下载版中（<strong>Echolot › 安装命令行工具…</strong>）。对于 App Store 版，请从发布页面的 zip 单独安装。
+</Edition>

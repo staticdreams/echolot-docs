@@ -1,0 +1,314 @@
+---
+title: "脚本 API"
+description: "请求前脚本和测试脚本能用到的一切：pm 对象、expect、JSON Schema 辅助函数和库，以及哪些功能不可用。"
+---
+
+脚本是在发送请求之前（请求前）或响应到达之后（测试）运行的 JavaScript。它们使用 Postman 的 `pm` API，因此 Postman 集合中的脚本可以原样运行。本页列出了全部内容。关于如何在 App 中编写脚本并查看结果，参见[脚本和测试](/docs/requests/scripts-and-tests)。
+
+## 脚本在哪里运行 [#where-scripts-run]
+
+- 请求的脚本在它的<strong>脚本</strong>标签页中，存储为请求旁边的 `<slug>.pre.js` 和 `<slug>.test.js`。文件夹和工作区也有脚本（`_folder.pre.js`、`_folder.test.js`）；参见[工作区文件](/docs/reference/workspace-files#_foldertoml)。
+- 对每个请求，先运行工作区的脚本，再由外向内运行各文件夹的脚本，最后是请求自己的脚本。同一事件的所有脚本共享一个沙盒。
+- MCP 调用没有脚本。
+- 来自 Echolot 之外（导入、Git、其他编辑器）的脚本，只有在你信任之后才会运行：用<strong>查看脚本…</strong>阅读它们之后，选择<strong>信任脚本</strong>。
+- 命令行工具也会运行脚本，见 [`echolot run`](/docs/cli/run) 和 [`echolot send`](/docs/cli/send)。
+
+## 沙盒 [#the-sandbox]
+
+脚本在 Echolot 内部的沙盒 JavaScript 引擎（QuickJS）中运行，没有文件系统，没有自己的网络，也没有 Node.js 模块。唯一的出口是 `pm.sendRequest`，它通过 Echolot 发送。
+
+| 限制 | 数值 |
+| --- | --- |
+| 一个事件的所有脚本的 JavaScript 运行时间 | 5 秒 |
+| 内存 | 128 MB |
+| 等待所有 `pm.sendRequest` 的应答 | 30 秒 |
+| 脚本能看到的响应正文 | 前 32 MB |
+
+抛出错误或超出限制的脚本会被报告为脚本错误，计为一次失败的测试。
+
+## pm.test [#pmtest]
+
+```js
+pm.test("Status is 200", () => {
+  pm.response.to.have.status(200);
+});
+
+pm.test("Has products", () => {
+  const body = pm.response.json();
+  pm.expect(body.items).to.be.an("array").that.is.not.empty;
+});
+```
+
+| 形式 | 含义 |
+| --- | --- |
+| `pm.test(name, fn)` | 一个具名测试。当 `fn` 返回而没有抛出错误时通过。 |
+| `pm.test(name, async () => { … })` | 返回 promise 的测试，在 promise 兑现时通过。 |
+| `pm.test(name, done => { … })` | 带参数的测试，调用 `done()` 时通过，调用 `done(error)` 或从不调用时失败。 |
+| `pm.test.skip(name, fn)` | 跳过的测试，会列出但不计数。 |
+| `tests[name] = condition` | 旧形式：条件为真时通过。 |
+
+请求前脚本中的测试同样计数。
+
+## pm.expect [#pmexpect]
+
+`pm.expect(value)`（或 `expect(value)`）是 Chai 风格的断言。失败信息与 Chai 的写法相同：`expected 401 to equal 200`。
+
+<strong>链接词</strong>，读起来通顺但不起作用：`to`、`be`、`been`、`is`、`that`、`which`、`and`、`has`、`have`、`with`、`at`、`of`、`same`、`but`、`does`、`still`、`also`。
+
+<strong>标志：</strong> `not`（取反）、`deep`（按值比较）、`nested`（`property` 中使用点分路径）、`own`、`any`、`all`、`ordered`。
+
+| 断言 | 通过的条件 |
+| --- | --- |
+| `.equal(x)`、`.equals`、`.eq` | 值为 `x`（`===`；配合 `deep` 则按值比较）。 |
+| `.eql(x)`、`.eqls` | 值与 `x` 深度相等。 |
+| `.above(n)`、`.gt`、`.greaterThan` | 值大于 `n`。 |
+| `.least(n)`、`.gte`、`.greaterThanOrEqual` | 值至少为 `n`。 |
+| `.below(n)`、`.lt`、`.lessThan` | 值小于 `n`。 |
+| `.most(n)`、`.lte`、`.lessThanOrEqual` | 值至多为 `n`。 |
+| `.within(a, b)` | 值在 `a` 和 `b` 之间，包含两端。 |
+| `.closeTo(x, delta)`、`.approximately` | 值与 `x` 的差在 `delta` 之内。 |
+| `.a(type)`、`.an(type)` | 值的类型为 `type`：`string`、`number`、`boolean`、`object`、`array`、`null`、`undefined`、`regexp`、`date`、`error`、`function`。 |
+| `.instanceof(C)`、`.instanceOf` | 值是 `C` 的实例。 |
+| `.include(x)`、`.includes`、`.contain`、`.contains` | 字符串包含 `x`，数组含有 `x`，对象含有 `x` 的键和值。 |
+| `.ok` | 值为真值。 |
+| `.true`、`.false`、`.null`、`.undefined`、`.NaN` | 值恰好是这个。 |
+| `.exist`、`.exists` | 值既不是 `null` 也不是 `undefined`。 |
+| `.empty` | 字符串或数组没有元素，对象没有键，Map 或 Set 没有条目。 |
+| `.finite` | 值是有限的数字。 |
+| `.property(name)`、`.property(name, value)` | 对象有该属性，若给出则值也相同。之后继续针对该属性的值。也可用 `.ownProperty`、`.haveOwnProperty`。 |
+| `.lengthOf(n)`、`.length(n)` | 值的 `length`（或 Map、Set 的大小）为 `n`。 |
+| `.match(regex)`、`.matches` | 字符串匹配该正则表达式。 |
+| `.string(s)` | 字符串包含 `s`。 |
+| `.keys(…)`、`.key` | 对象恰好有这些键（配合 `any` 时为其中之一；在 `include` 之后则至少有这些）。 |
+| `.members(array)` | 数组有相同的成员（配合 `include` 时至少有这些；配合 `ordered` 时顺序也相同）。 |
+| `.oneOf(array)` | 值是数组中的某一项。 |
+| `.satisfy(fn)`、`.satisfies` | `fn(value)` 返回 true。 |
+| `.throw()`、`.throws`、`.Throw` | 函数抛出错误（若给出，则消息包含某个字符串或匹配某个正则，或属于某个类）。 |
+| `.jsonSchema(schema)` | 值符合该 JSON Schema。参见 [JSON Schema](#json-schema)。 |
+
+对响应而言，`expect` 还接受 Postman 的响应断言：`pm.expect(pm.response).to.have.status(200)`、`.header(name)`、`.jsonBody(…)`、`.body(…)`、`.responseTime(…)`，以及 `pm.expect(pm.response).to.be.ok`、`.success`、`.json` 和下面列出的其他断言。
+
+## pm.response [#pmresponse]
+
+在测试脚本中，即响应。
+
+| 成员 | 含义 |
+| --- | --- |
+| `code` | 状态码：`200`。 |
+| `status` | 原因短语：`"OK"`。也可用 `reason()`。 |
+| `headers` | 标头，是一个[列表](#lists)。`pm.response.headers.get("Content-Type")`。 |
+| `responseTime` | 以毫秒计的时间。 |
+| `responseSize` | 正文的大小，以字节计。也可用 `size()`，它返回 `{ body, header, total }`。 |
+| `text()` | 作为文本的正文。 |
+| `json(reviver)` | 解析为 JSON 的正文；不是 JSON 时抛出错误。 |
+
+<strong>响应断言：</strong> `pm.response.to.have.…` 和 `pm.response.to.not.have.…`：
+
+| 断言 | 通过的条件 |
+| --- | --- |
+| `status(200)`、`status("OK")` | 状态码是 200，或原因是 OK。也可用 `statusCode(n)`、`statusReason(text)`。 |
+| `header(name)`、`header(name, value)` | 有该标头，若给出则值也相同。 |
+| `body()`、`body(text)`、`body(regex)`、`body(object)` | 正文不为空、等于该文本、匹配该正则，或等于该 JSON。 |
+| `jsonBody()`、`jsonBody(path)`、`jsonBody(path, value)`、`jsonBody(object)` | 正文是 JSON、有该点分路径、值相同，或等于该对象。 |
+| `responseTime(ms)` | 响应用时不超过 `ms`。 |
+
+`pm.response.to.be.…`：
+
+| 属性 | 在状态码为以下值时通过 |
+| --- | --- |
+| `info` | 100 到 199 |
+| `success` | 200 到 299 |
+| `ok` | 200 |
+| `accepted` | 202 |
+| `redirection` | 300 到 399 |
+| `clientError` | 400 到 499 |
+| `serverError` | 500 或更大 |
+| `error` | 400 或更大 |
+| `badRequest`、`unauthorized`（或 `unauthorised`）、`forbidden`、`notFound`、`rateLimited` | 400、401、403、404、429 |
+| `json`、`html`、`xml`、`text` | （`Content-Type` 包含该词） |
+| `withBody` | （正文不为空） |
+
+## pm.request [#pmrequest]
+
+请求。在请求前脚本中，对它所做的更改就是实际发送的内容。
+
+| 成员 | 含义 |
+| --- | --- |
+| `url` | URL，是一个对象；见下文。`String(pm.request.url)` 是文本。 |
+| `method` | 方法；可以更改。 |
+| `headers` | 标头，是一个[列表](#lists)。 |
+| `body` | 正文：`{ mode: "raw", raw: "…" }`，或 `undefined`。 |
+| `name`、`id` | 请求的名称，以及它在工作区中的路径。 |
+| `addHeader(item)`、`removeHeader(name)`、`upsertHeader(item)` | 更改标头。项是 `{ key, value }` 或 `"Name: value"`。 |
+| `addQueryParams(params)`、`removeQueryParams(names)` | 更改查询：`"a=1&b=2"`、`{ key, value }` 或它们的数组。 |
+| `to.have.header(name, value)` | 针对请求标头的断言。 |
+
+```js
+pm.request.headers.upsert({ key: "X-Request-Id", value: pm.variables.replaceIn("{{$guid}}") });
+pm.request.url.addQueryParams("per_page=50");
+```
+
+`url` 对象有 `protocol`、`host`（标签数组）、`port`、`path`（路径段数组）、`query`（列表）、`hash`，以及 `getHost()`、`getPath()`、`getQueryString()`、`getPathWithQuery()`、`getRemote()`、`update(text)`、`addQueryParams(…)`、`removeQueryParams(…)`、`toString()`。你没有更改的 URL 会保持其原文，包括 `{{variables}}`；Echolot 在脚本之后才解析它们。
+
+## 变量 [#variables]
+
+| 作用域 | 含义 |
+| --- | --- |
+| `pm.environment` | 当前环境的变量。`pm.environment.name` 是它的名称。 |
+| `pm.collectionVariables` | 工作区的变量。 |
+| `pm.globals` | 全局变量。 |
+| `pm.iterationData` | 数据驱动运行的当前行。只读。 |
+| `pm.variables` | 同时涵盖所有作用域，由近及远。`set` 和 `unset` 只更改本地值。 |
+
+每个作用域都有 `get(name)`、`has(name)`、`set(name, value)`、`unset(name)`、`clear()`、`toObject()` 和 `replaceIn(text)`。`set` 会把对象转换为 JSON 文本。
+
+`pm.variables.get` 按以下顺序查找：本地值、数据行、文件夹和请求变量、环境、工作区、全局变量。
+
+```js
+// Pre-request: sign the body
+const signature = CryptoJS.HmacSHA256(pm.request.body.raw, pm.environment.get("apiSecret")).toString();
+pm.request.headers.upsert({ key: "X-Signature", value: signature });
+
+// Test: keep the new order's ID for the next requests
+pm.collectionVariables.set("orderId", pm.response.json().id);
+```
+
+<strong>`set` 会保留什么。</strong>脚本设置的值是 Postman 所说的“当前值”：它们在 App 中持续到窗口关闭，在命令行中持续到命令结束，并且在请求解析时优先于其作用域中已存储的值。它们绝不会写入工作区文件。要保存响应中的值，请使用[响应捕获](/docs/requests/captures)。`pm.variables.set` 设置的本地值在运行开始时会被丢弃。
+
+`replaceIn(text)` 从上述作用域填入 `{{variables}}`。动态值中，它认识 `{{$guid}}`、`{{$randomUUID}}`、`{{$timestamp}}`、`{{$isoTimestamp}}` 和 `{{$randomInt}}`；其他所有 `{{$…}}` 都保持原样，由 Echolot 在发送请求时解析。
+
+## pm.info [#pminfo]
+
+| 成员 | 含义 |
+| --- | --- |
+| `eventName` | `"prerequest"` 或 `"test"`。 |
+| `iteration` | 运行的迭代序号，从 0 起。 |
+| `iterationCount` | 运行共有多少次迭代。 |
+| `requestName` | 请求的名称。 |
+| `requestId` | 请求在工作区中的路径。 |
+
+## pm.sendRequest [#pmsendrequest]
+
+在脚本中通过 Echolot 发送另一个请求：代理、证书和 Cookie 与任何请求一样生效。
+
+```js
+pm.sendRequest("https://demo.echolot.dev/v1/categories", (error, response) => {
+  if (error) { console.error(error); return; }
+  pm.collectionVariables.set("firstCategory", response.json().items[0].id);
+});
+
+// or with a promise
+pm.sendRequest({
+  url: pm.variables.replaceIn("{{baseURL}}/auth/token"),
+  method: "POST",
+  header: { "Content-Type": "application/json" },
+  body: { mode: "raw", raw: JSON.stringify({ email: "heidi@alpenglow.ch", password: pm.environment.get("password") }) }
+}).then(response => {
+  pm.environment.set("token", response.json().access_token);
+});
+```
+
+- 第一个参数是 URL，或带有 `url`、`method`（默认 `GET`）、`header`（`{ key, value }` 数组、对象或列表）和 `body` 的对象。
+- `body` 是字符串、`{ mode: "raw", raw }`、`{ mode: "urlencoded", urlencoded: [{ key, value }] }` 或 `{ mode: "graphql", graphql: { query, variables } }`。后两者在你没有设置时会自动设置 `Content-Type`。
+- URL 中的 `{{variables}}` 会按请求的环境填入。
+- 回调接收 `(error, response)`；`response` 与 `pm.response` 类似。没有回调时返回 promise。
+- 该请求没有自己的认证（工作区的认证不适用），也不运行脚本。
+- 智能体的 `pm.sendRequest` 与它的其他发送一样，要经过智能体的批准。
+
+## 控制运行 [#controlling-a-run]
+
+| 调用 | 作用 |
+| --- | --- |
+| `pm.execution.setNextRequest(name)` | 在运行中，接下来继续该请求。`null` 结束运行。也可用 `pm.setNextRequest`、`postman.setNextRequest`。 |
+| `pm.execution.skipRequest()` | 在请求前脚本中：不发送这个请求。 |
+
+## pm.cookies [#pmcookies]
+
+此次交换的 Cookie：请求发送的和响应设置的。是一个[列表](#lists)，带有 `pm.cookies.get(name)`、`has(name)`、`toObject()`，以及返回 `{ name, key, value }` 的 `one(name)`。
+
+## 列表 [#lists]
+
+标头、查询参数和 Cookie 都是 Postman 的属性列表：
+
+| 方法 | 作用 |
+| --- | --- |
+| `get(key)` | 值；键不区分大小写。 |
+| `one(key)` | 整个项，`{ key, value, disabled }`。 |
+| `has(key)`、`has(key, value)` | 是否存在（且值相同）。 |
+| `add(item)`、`append(item)`、`upsert(item)` | 添加项，或添加或替换项。 |
+| `remove(key)`、`remove(fn)`、`clear()` | 移除项。 |
+| `toObject()`、`all()`、`count()`、`idx(i)` | 以对象形式、以数组形式返回项，项的数量，以及指定索引处的项。 |
+| `each(fn)`、`map(fn)`、`filter(fn)`、`find(fn)` | 遍历各项。 |
+| `toString()` | `Name: value` 的各行。 |
+
+## console [#console]
+
+`console.log`、`info`、`warn`、`error`、`debug` 和 `trace` 会写入请求的<strong>控制台</strong>，在命令行中则写在 `── console ──` 之下。对象以 JSON 形式写出。
+
+## 计时器 [#timers]
+
+`setTimeout`、`setInterval` 和 `setImmediate` 会在脚本结束后，按延迟的先后顺序运行其函数，并不真正等待。`setInterval` 只运行一次。`clearTimeout` 等函数用于取消。
+
+## JSON Schema [#json-schema]
+
+有三种方式，都基于 Echolot 自己的 JSON Schema 验证器：
+
+```js
+const schema = {
+  type: "object",
+  required: ["sku", "price"],
+  properties: { sku: { type: "string" }, price: { type: "object" } }
+};
+
+// Chai
+pm.expect(pm.response.json()).to.have.jsonSchema(schema);
+
+// ajv
+const Ajv = require("ajv");
+const validate = new Ajv().compile(schema);
+pm.test("Matches the schema", () => pm.expect(validate(pm.response.json()), JSON.stringify(validate.errors)).to.be.true);
+
+// tv4
+pm.test("Matches the schema", () => pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true);
+```
+
+| 辅助函数 | 包含 |
+| --- | --- |
+| `require("ajv")` | 一个类：`new Ajv(options)`、`validate(schema, data)`、`compile(schema)`（带 `.errors` 的函数）、`addSchema(schema, key)`、`getSchema(key)`、`errorsText(errors)` 和 `errors`。`addFormat` 和 `addKeyword` 可以调用，但不起作用。 |
+| `tv4`（也可用 `require("tv4")`） | `validate(data, schema)`（带 `tv4.error`）、`validateResult(data, schema)`、`validateMultiple(data, schema)`。 |
+| `.jsonSchema(schema)` | 上面的 Chai 断言。 |
+
+JSON Schema 检查也可以不用脚本：使用<strong>测试</strong>标签页中的 <strong>JSON Schema</strong> 检查。
+
+## 库 [#libraries]
+
+| 名称 | 包含 |
+| --- | --- |
+| `CryptoJS`（也可用 `require("crypto-js")`） | `MD5`、`SHA1`、`SHA256`、`SHA384`、`SHA512`、`HmacMD5`、`HmacSHA1`、`HmacSHA256`、`HmacSHA384`、`HmacSHA512`；`enc.Hex`、`enc.Utf8`、`enc.Base64`、`enc.Latin1`；`lib.WordArray.create(bytes)` 和 `lib.WordArray.random(n)`。结果带有 `toString(encoder)`。 |
+| `_`（也可用 `require("lodash")`） | 集合常用的 lodash 函数：`each`/`forEach`、`map`、`filter`、`reject`、`find`、`findIndex`、`some`、`every`、`reduce`、`includes`/`contains`、`get`、`has`、`set`、`keys`、`values`、`size`，`is…` 系列测试（`isArray`、`isString`、`isEmpty`、`isEqual` 等），`startsWith`、`endsWith`、`trim`、`toLower`、`toUpper`、`capitalize`、`parseInt`、`toNumber`、`toString`、`first`/`head`、`last`、`tail`、`initial`、`uniq`、`flatten`、`compact`、`concat`、`range`、`times`、`sortBy`、`groupBy`、`keyBy`、`countBy`、`pick`、`omit`、`assign`/`extend`、`clone`、`cloneDeep`、`merge`、`random`、`sample`、`sum`、`max`、`min`、`noop`、`identity`、`now`、`uniqueId`。 |
+| `require("uuid")` | `v4()`，一个随机 UUID。 |
+| `btoa`、`atob`（也可用 `require("btoa")`、`require("atob")`） | Latin-1 文本的 Base64 编码，以及解码。 |
+
+## 旧版 Postman 全局变量 [#the-old-postman-globals]
+
+旧集合中的脚本会用到这些，它们都可以使用：
+
+| 全局变量 | 含义 |
+| --- | --- |
+| `tests["name"] = condition` | 一个测试。 |
+| `responseBody`、`responseCode`（`code`、`name`、`detail`）、`responseHeaders`、`responseTime` | 响应。 |
+| `request`（`url`、`method`、`headers`、`data`、`name`、`description`） | 请求。 |
+| `environment`、`globals`、`data`、`iteration` | 作为对象的变量、数据行、迭代。 |
+| `postman.setEnvironmentVariable`、`getEnvironmentVariable`、`clearEnvironmentVariable`、`clearEnvironmentVariables` | 环境。 |
+| `postman.setGlobalVariable`、`getGlobalVariable`、`clearGlobalVariable`、`clearGlobalVariables` | 全局变量。 |
+| `postman.getResponseHeader(name)`、`postman.getResponseCookie(name)`、`postman.setNextRequest(name)` | 响应和运行。 |
+| `"text".has("x")` | 字符串是否包含另一个字符串。 |
+
+## 不可用的功能 [#what-is-not-there]
+
+- 其他模块：对上面未列出的任何内容使用 `require`（`cheerio`、`xml2js`、`moment`、Node 自带的模块）都会抛出 “The module … is not available in Echolot scripts.”。
+- 真正的等待：计时器不会延迟运行，也没有 `fetch` 或 `XMLHttpRequest`。请使用 `pm.sendRequest`。
+- 文件和进程：脚本不能读写文件，也不能启动程序。
+- `pm.visualizer.set` 可以调用，因此使用它的脚本能运行，但 Echolot 不显示可视化内容。
+- `xml2Json`、`pm.require` 和 Postman 的包库，以及 `pm.vault`。
+- 文件中的机密：脚本可以像读取其他变量一样读取机密变量，但它们 `set` 的内容绝不会进入工作区文件。

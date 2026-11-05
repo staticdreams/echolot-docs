@@ -1,0 +1,128 @@
+---
+title: "Importer"
+description: "Importez dans un espace de travail des requêtes issues de cURL, Postman, Insomnia, OpenAPI, Swagger, HAR, Paw et Bruno, et lisez le rapport d’import."
+---
+
+Echolot importe dans un espace de travail ce que vous avez déjà dans d’autres outils : requêtes, dossiers,
+authentification, variables, environnements et scripts. Il détermine le format d’après le contenu, place les
+identifiants dans le trousseau et vous indique dans un rapport ce qu’il n’a pas pu reprendre.
+
+## Ce qu’Echolot importe [#what-echolot-imports]
+
+| Format | Fichiers | Ce qui est repris |
+| --- | --- | --- |
+| **cURL** | Une commande `curl …`, collée ou dans un fichier texte | Une requête : méthode, adresse, en-têtes, corps, authentification Basic et réglages comme les redirections et les vérifications TLS. |
+| **Postman** | Collections v2.0 et v2.1, environnements (`.json`) | Dossiers, requêtes, authentification, variables de collection, scripts de pré-requête et de test ; les environnements deviennent des [environnements](/docs/workspaces/environments). |
+| **Insomnia** | Exports JSON v4, collections YAML v5 | Dossiers, requêtes, authentification, environnements. |
+| **OpenAPI** | OpenAPI 3.0 et 3.1, Swagger 2.0, JSON ou YAML | Une requête par opération, avec ses paramètres, un exemple de corps et l’authentification de son schéma de sécurité. L’adresse du serveur devient la variable `{{baseUrl}}`. |
+| **HAR** | HTTP Archive 1.2 d’un navigateur ou d’un proxy (`.har`) | Les appels d’API de la session, un dossier par hôte quand il y en avait plusieurs. |
+| **Paw** | Documents Paw et RapidAPI pour Mac (`.paw`) | Groupes, requêtes, environnements ; les valeurs dynamiques de Paw deviennent les [variables et valeurs dynamiques](/docs/requests/dynamic-values) d’Echolot quand c’est possible. |
+| **Bruno** | Un dossier de collection (avec `bruno.json` ou des fichiers `.bru`) | Dossiers, requêtes, authentification, environnements, scripts et tests tels qu’écrits. |
+
+Une collection, une spec, un fichier HAR ou un dossier Bruno arrive dans un dossier à part, qui porte son nom. Une
+commande cURL devient une seule requête.
+
+Les configs de serveurs MCP de Claude Desktop, Claude Code, Cursor, VS Code et Codex s’importent aussi, comme serveurs
+MCP : voir [Ajouter des serveurs](/docs/mcp-servers/adding-servers).
+
+## Importer dans l’app [#import-in-the-app]
+
+Choisissez l’une de ces méthodes. L’import va dans le dossier sélectionné dans la barre latérale, ou en haut de l’espace
+de travail.
+
+- **Fichier › Importer…** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd>), ou **Importer…** dans le menu **+** de la barre
+  latérale ou dans la [palette de commandes](/docs/get-started/the-window#the-command-palette). Choisissez un ou
+  plusieurs fichiers, ou un dossier de collection Bruno.
+- **Déposez** des fichiers ou un dossier Bruno n’importe où sur le panneau de contenu de la fenêtre, ou sur un dossier de
+  la barre latérale.
+- **Collez** une commande cURL, ou le texte d’une collection ou d’une spec, dans la barre latérale
+  (<kbd>⌘</kbd><kbd>V</kbd> avec la barre latérale active).
+- **Collez une commande cURL dans le champ d’adresse d’une requête.** Celle-ci ne crée pas de requête : elle remplace la
+  méthode, l’adresse, les en-têtes, le corps, l’authentification et les réglages de la requête ouverte, et en garde le
+  nom et la place. Ce qui n’a pas pu être utilisé est listé sous la barre d’adresse comme **Notes cURL**.
+
+<Shot id="get-started-import-report" alt="Le rapport d’import après l’import d’une collection Postman : le nombre de requêtes et de dossiers importés, les notes sur ce qui n’a pas pu être importé tel quel et les secrets placés dans le trousseau" />
+
+### Le rapport d’import [#the-import-report]
+
+Après un import, un rapport s’ouvre. Son titre dit ce qui est arrivé (« 22 requêtes, 7 dossiers importés ») ; en dessous,
+de quels formats cela vient et si tout a été importé. Puis, pour chaque fichier :
+
+- **Notes** sur tout ce qui n’a pas pu être repris tel quel. Rien n’est abandonné sans note.
+- **Secrets** : les noms des valeurs enregistrées dans le trousseau plutôt que dans les fichiers. Jamais les valeurs.
+
+**Afficher dans la barre latérale** sélectionne ce qui a été importé ; **Terminé** ferme le rapport. Une seule commande
+cURL sans rien à signaler s’ouvre directement, sans rapport.
+
+## Les secrets vont dans le trousseau [#secrets-go-to-the-keychain]
+
+Les fichiers de l’espace de travail ne reçoivent jamais de mot de passe, de jeton ou de clé en clair, vous pouvez donc
+les valider dans Git.
+
+- **Les identifiants saisis dans les requêtes** (dans l’authentification, dans un en-tête `Authorization`, dans un
+  en-tête de clé d’API) deviennent des variables secrètes, nommées d’après la requête et le champ. Par exemple,
+  `curl -u heidi:alpenglow https://demo.echolot.dev/echo/basic-auth/heidi/alpenglow` crée une requête nommée `heidi-alpenglow`
+  dont le mot de passe est `{{heidi_alpenglow_password}}` ; la valeur va dans le trousseau.
+- **Les valeurs secrètes des environnements et des collections** vont dans le trousseau de la même façon.
+
+Les identifiants présents dans les chaînes de requête des adresses, dans les corps et dans les adresses
+`user:password@` ne sont pas encore déplacés : vérifiez-les avant de valider un espace de travail importé. Voir
+[Secrets](/docs/workspaces/secrets).
+
+## Scripts [#scripts]
+
+Les scripts de pré-requête et de test de Postman sont repris et s’exécutent dans le sandbox `pm.*` d’Echolot. L’app
+n’exécute les scripts importés qu’après que vous leur avez fait confiance : le rapport indique combien il y en avait, et
+le premier envoi qui en a besoin vous demande de les examiner (**Examiner les scripts…**). Les scripts et les tests de
+Bruno sont repris tels qu’écrits, mais `bru`, `req` et `res` de Bruno ne sont pas le `pm` de Postman, ils peuvent donc
+demander des corrections avant de s’exécuter. Voir [Scripts et tests](/docs/requests/scripts-and-tests).
+
+## Ce qui n’est pas repris [#what-doesnt-come-across]
+
+Le rapport nomme chacun de ces cas quand il se présente :
+
+| Format | Écarté ou modifié |
+| --- | --- |
+| cURL | Les fichiers de cookies, les options pour lesquelles Echolot n’a pas de réglage, les en-têtes sans deux-points. Un corps ou un champ de formulaire lu depuis un fichier (`-d @file`, `-F field=@file`) est lu depuis ce fichier à l’envoi de la requête. |
+| Postman | Les types d’authentification qu’Echolot n’a pas. Les corps et champs de type fichier : choisissez de nouveau les fichiers. |
+| Insomnia | Les éléments de types qu’Echolot n’a pas. Les balises de modèle (`{% … %}`) sans équivalent dans Echolot restent du texte. Les types d’authentification qu’Echolot n’a pas. Les corps et champs de type fichier. Un octroi OAuth 2.0 qu’Echolot ne propose pas devient un octroi par code d’autorisation. |
+| OpenAPI | Les paramètres à des endroits qu’une requête ne peut pas contenir, les corps de requête de types qu’elle ne peut pas contenir, les flux OAuth (configurez l’authentification à la main), les clés d’API envoyées en cookies (ajoutez un en-tête `Cookie`). Une spec sans serveurs ou avec une adresse de serveur relative : définissez `{{baseUrl}}` avant d’envoyer. Les opérations obsolètes sont importées quand même. |
+| HAR | Les images, polices, scripts et feuilles de style. Les requêtes répétées ne sont importées qu’une fois. Les en-têtes qui portent les identifiants de session du navigateur : définissez plutôt l’authentification sur le dossier. |
+| Paw | Les valeurs dynamiques de types qu’Echolot n’a pas deviennent du texte vide. Les références de fichiers et les certificats client : définissez-les de nouveau. |
+| Bruno | Les modes de corps et d’authentification qu’Echolot n’a pas. Les en-têtes partagés par tout un dossier (les dossiers d’Echolot n’en ont pas) : ajoutez-les aux requêtes ou à un script de pré-requête. Les vérifications avec un opérateur sans équivalent dans Echolot. |
+
+## Les fichiers OpenAPI restent liés [#openapi-files-stay-linked]
+
+L’import d’un fichier OpenAPI ou Swagger en garde aussi une copie dans le dossier `specs/` de l’espace de travail, et le
+nouveau dossier de requêtes suit cette spec : quand la spec change, Echolot peut montrer ce qui a changé et
+l’appliquer aux requêtes. Modifiez la spec sur la page [Specs](/docs/specs).
+
+## Importer en ligne de commande [#import-from-the-command-line]
+
+`echolot import` accepte les mêmes formats dans un dossier d’espace de travail, pour que vous puissiez scripter une
+migration ou importer en CI :
+
+```sh
+echolot import Alpenglow.postman_collection.json -w "Alpenglow.echolot"
+echolot import staging.postman_environment.json -w "Alpenglow.echolot"
+echolot import openapi.yaml -w "Alpenglow.echolot" --folder catalog
+pbpaste | echolot import - -w "Alpenglow.echolot"       # a cURL command from the clipboard
+```
+
+Il détecte le format d’après le contenu ; `--format` désactive la détection (`curl`, `postman-collection`,
+`postman-environment`, `openapi`, `swagger`, `insomnia`, `har`, `paw` ou `mcp-config`). Il affiche le même rapport :
+
+```txt
+Imported 22 requests, 7 folders from Postman collection v2.1.
+warning: 19 pre-request or test scripts were imported; Echolot runs them once you trust them.
+```
+
+Sur un Mac, les secrets vont dans le trousseau comme dans l’app. Là où il n’y a pas de trousseau (Linux, ou
+`ECHOLOT_KEYCHAIN=0`), ils restent hors des fichiers, et l’outil indique quelles variables `ECHOLOT_SECRET_<NAME>`
+définir là où vous envoyez. L’outil en ligne de commande exécute lui-même tous les scripts sans demander, comme le fait
+Newman.
+
+Vous n’avez pas besoin d’importer une collection Postman pour l’exécuter : `echolot run collection.json` l’exécute telle
+quelle. Voir [Import et export](/docs/cli/import-export) et [`echolot run`](/docs/cli/run).
+
+Pour faire le chemin inverse, voir [Exporter](/docs/workspaces/exporting).

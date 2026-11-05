@@ -1,0 +1,91 @@
+---
+title: "Raccourcis"
+description: "Exécutez des requêtes et des dossiers enregistrés depuis l’app Raccourcis, Siri et les automatisations, et utilisez le résultat dans l’action suivante."
+---
+
+Echolot ajoute deux actions à l’app Raccourcis : **Exécuter la requête** et **Exécuter le dossier**. Elles envoient des
+requêtes enregistrées avec leurs vérifications, comme le fait l’[exécution](/docs/requests/runner), et transmettent le
+résultat à l’action suivante. Utilisez-les pour vérifier une API chaque matin, depuis un raccourci clavier, ou en le
+demandant à Siri. Echolot ne passe pas au premier plan pendant leur exécution.
+
+<Shot id="mac-shortcuts-action" alt="L’app Raccourcis avec l’action Exécuter le dossier d’Echolot réglée sur le dossier Catalog de l’espace de travail Alpenglow, suivie d’une action Si sur sa valeur Réussi" />
+
+## Les actions [#the-actions]
+
+Trouvez-les dans l’app Raccourcis en recherchant Echolot, sous **Requêtes**.
+
+### Exécuter la requête [#run-request]
+
+Envoie une requête enregistrée d’un espace de travail avec ses vérifications, et renvoie le résultat. Dans l’éditeur,
+elle se lit **Exécuter *Requête* dans *Espace de travail***.
+
+| Paramètre | Quoi choisir |
+| --- | --- |
+| **Espace de travail** | Un espace de travail ouvert dans Echolot, ou l’un de vos espaces de travail récents. |
+| **Requête** | Une requête enregistrée de cet espace de travail. Chacune indique sa méthode et son chemin. |
+| **Environnement** | Facultatif. Le nom de l’environnement tel que l’espace de travail l’affiche, ou son slug. Vide : l’environnement que l’espace de travail utilise dans sa fenêtre, ou celui qu’il a utilisé en dernier. |
+
+### Exécuter le dossier [#run-folder]
+
+Exécute toutes les requêtes d’un dossier, dans l’ordre et avec leurs vérifications, et renvoie le résultat. Dans
+l’éditeur, elle se lit **Exécuter *Dossier* dans *Espace de travail***.
+
+| Paramètre | Quoi choisir |
+| --- | --- |
+| **Espace de travail** | Un espace de travail ouvert dans Echolot, ou l’un de vos espaces de travail récents. |
+| **Dossier** | Un dossier de cet espace de travail, ou **Tout l’espace de travail (*nom*)** pour toutes les requêtes. |
+| **Environnement** | Facultatif, comme pour Exécuter la requête. |
+
+Les requêtes s’exécutent avec leurs scripts et leurs vérifications, et leurs réponses vont dans l’[historique](/docs/workspaces/history)
+de l’espace de travail, comme depuis sa fenêtre. L’espace de travail n’a pas besoin d’être ouvert.
+
+<Edition only="appstore">
+  Les actions fonctionnent de la même façon dans l’édition App Store. Un espace de travail qui n’est pas ouvert est
+  accessible grâce à l’accès que vous avez donné à Echolot en l’ouvrant.
+</Edition>
+
+## Le résultat [#the-outcome]
+
+Les deux actions renvoient un **Résultat de l’exécution** à l’action suivante, et en affichent le résumé à la fin du
+raccourci.
+
+| Propriété | Ce qu’elle contient |
+| --- | --- |
+| **Réussi** | Si chaque requête s’est exécutée sans erreur et si chaque vérification a réussi (les vérifications ignorées ne comptent pas contre). |
+| **Requêtes** | Le nombre de requêtes exécutées. |
+| **Requêtes en échec** | Le nombre de requêtes en échec. |
+| **État** | Le code d’état, pour une seule requête. |
+| **Durée (ms)** | La durée en millisecondes, pour une seule requête. |
+| **Résumé** | Une ligne, par exemple `GET List products: 200 in 182 ms, 3 of 3 checks passed` pour une requête, ou `2 of 9 requests failed` pour un dossier. |
+| **Échecs** | Une ligne par requête en échec : son nom et l’erreur ou les vérifications en échec. |
+
+## Environnements protégés [#protected-environments]
+
+Quand l’environnement est [protégé](/docs/workspaces/protected-environments), Raccourcis demande avant tout envoi,
+en indiquant l’environnement et ce qui serait envoyé. Si vous refusez, l’action se termine sans rien envoyer.
+
+## Siri [#siri]
+
+Les actions d’Echolot sont prêtes pour Siri sans créer de raccourci : dites « Exécuter une requête dans Echolot » ou
+« Envoyer une requête avec Echolot » pour Exécuter la requête, et « Exécuter un dossier dans Echolot » ou « Exécuter les
+requêtes d’un dossier dans Echolot » pour Exécuter le dossier.
+
+## Exemple : vérifier la boutique chaque matin [#example-check-the-shop-every-morning]
+
+Avec l’espace de travail d’exemple Alpenglow, qui fonctionne avec l’[API de démo](/docs/tutorials/demo-api) :
+
+<Steps>
+<Step>
+Dans l’app Raccourcis, créez un raccourci et ajoutez **Exécuter le dossier**. Choisissez l’espace de travail Alpenglow et
+le dossier **Catalog**.
+</Step>
+<Step>
+Ajoutez **Si**, avec **Réussi** du **Résultat de l’exécution** comme entrée et **est faux** comme condition.
+</Step>
+<Step>
+Dans le Si, ajoutez **Afficher la notification** avec le **Résumé** du résultat, ou **Échecs** pour chaque requête en échec.
+</Step>
+<Step>
+Dans **Automatisation**, créez une automatisation personnelle qui exécute le raccourci chaque matin.
+</Step>
+</Steps>

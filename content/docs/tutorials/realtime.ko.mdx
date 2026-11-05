@@ -1,0 +1,97 @@
+---
+title: "실시간 통신"
+description: "데모 API에서 WebSocket과 서버 전송 이벤트로 실시간 주문 이벤트를 보고, Mac의 서버에서 Socket.IO로 채팅하고 MQTT로 센서를 읽습니다."
+---
+
+실시간 API는 연결을 열어 둔 채 양방향으로 메시지를 보냅니다. 이 튜토리얼에서는 데모 숍의 주문 피드를 WebSocket과 서버 전송 이벤트로 보고, 이어서 Socket.IO로
+숍의 고객 지원 창구와 대화하고 MQTT로 창고 온도를 읽습니다. 모두 나란히 진행합니다.
+
+- **소요 시간:** 20분.
+- **필요한 것:** **환경 없음**을 선택한 [Alpenglow 작업 공간](/docs/tutorials#the-alpenglow-workspace). Socket.IO와 MQTT에는
+  [로컬 서버](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt)가 필요합니다. `examples/servers`에서 `bun run realtime`을 실행하십시오.
+- **배우는 내용:** 연결, 저장한 메시지, 실시간 로그, 이벤트 스트림, 네임스페이스와 확인 응답, 구독, QoS와 보존된 메시지.
+
+## 1. WebSocket: 주문 피드 [#1-websocket-the-order-feed]
+
+1. **Realtime › Order updates**를 엽니다. URL은 `{{wsURL}}/orders`이며 `wss://demo.echolot.dev/v1/orders`입니다.
+2. **연결**(<kbd>⌘</kbd><kbd>R</kbd>)을 선택합니다. 버튼이 **연결 해제**로 바뀝니다.
+3. 응답의 **메시지** 탭이 채워집니다. 열린 연결을 나타내는 링크 아이콘, 서버의 `hello`, 그다음 1.5초마다 오는 주문 이벤트입니다. 예를 들어
+   `{"event": "order.created", "order": "ord_9Tq3Vb", …}`입니다. 보낸 메시지에는 위쪽 화살표가, 받은 메시지에는 아래쪽을 가리키는 녹색 화살표가 있습니다.
+   **더 보기**는 긴 JSON 메시지를 펼칩니다.
+4. 요청의 **메시지** 탭에 저장된 메시지 **Subscribe**가 있으며 `{"op":"subscribe","channel":"orders"}`가 들어 있습니다. 해당 메시지의 **보내기**를 선택합니다.
+   서버가 `{"op": "subscribed", "channel": "orders"}`로 응답합니다.
+5. 아래쪽 입력란에 `{"id": 42, "text": "hello"}`를 입력하고 **보내기**(<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>)를 선택합니다. 서버가
+   `{"op": "ack", "id": 42}`로 확인 응답합니다. <strong>+</strong>를 선택하면 나중을 위해 메시지를 저장합니다.
+6. **모두**, **보냄**, **받음**으로 로그를 좁히거나, **메시지 필터링**에 `shipped`를 입력합니다.
+7. **연결 해제**를 선택합니다. 로그가 **Closed by Echolot**으로 끝납니다.
+
+데모는 3분이 지나면 세션을 닫으며(`1000 Demo sessions last 3 minutes`), 10초에 메시지를 20개 넘게 보내면 `1008`로 닫습니다. **실행 시 보내기**를 선택한 저장 메시지는
+요청이 실행 또는 명령줄 도구에서 실행될 때 연결한 뒤 순서대로 전송됩니다. 자세한 내용은 [WebSocket과 SSE](/docs/requests/websocket-and-sse)에 있습니다.
+
+<Shot id="tutorials-realtime-websocket" alt="연결된 Order updates: 왼쪽에 저장된 Subscribe와 Ping 메시지, 오른쪽에 보낸 메시지와 받은 메시지의 실시간 로그" />
+
+## 2. 서버 전송 이벤트: 같은 피드를 스트림으로 [#2-server-sent-events-the-same-feed-as-a-stream]
+
+1. **Realtime › Order events**를 엽니다. 일반 HTTP 요청 `GET {{baseURL}}/orders/events`이며 헤더 `Accept: text/event-stream`이 있습니다.
+2. <strong>보내기</strong>를 선택합니다. 응답이 <strong>이벤트</strong> 탭에서 열리며 <strong>수신 대기 중… 중단을 누르면 끝납니다.</strong>라고 표시됩니다.
+3. 이벤트가 1초마다 도착하며, 각각 번호와 이름이 제목인 카드에 표시됩니다. 예를 들어 **1. order.created**이고 그 아래에 **id 1**이 있습니다. 이벤트 20개 후에
+   서버가 `end`를 보내고 스트림을 닫습니다.
+4. 더 일찍 멈추려면 **취소**(<kbd>⌘</kbd><kbd>.</kbd>)를 선택합니다.
+
+이벤트 이후부터 다시 받으려면 마지막으로 본 ID, 예를 들어 `15`를 값으로 하는 `Last-Event-ID` 헤더를 추가하고 다시 보냅니다. 서버가 16부터 20까지 보냅니다.
+**헤더** 탭에 `Last-Event-ID`를 입력하면 값으로 `{{lastEventId}}`가 제안됩니다. 그 변수에 값을 지정하거나 숫자를 직접 입력하십시오.
+
+## 3. Socket.IO: 고객 지원 창구 [#3-socketio-the-support-desk]
+
+먼저 로컬 서버를 시작합니다(`bun run realtime`). 서버가 `Alpenglow realtime: Socket.IO on http://localhost:3001/support, MQTT on mqtt://localhost:1883`을
+출력합니다.
+
+1. **Realtime › Support chat**을 엽니다. URL은 `{{realtimeURL}}`, `http://localhost:3001`입니다. **이벤트** 탭에서 **네임스페이스**는 `/support`이며, URL 막대의
+   메서드 메뉴에서 **서버** 버전(Socket.IO 4)을 설정합니다.
+2. **연결**을 선택합니다. 이벤트 세 개가 도착합니다. 에이전트의 이름과 대기열이 담긴 `welcome`, `typing`, 그리고 `message`입니다.
+   "Grüezi! How can I help with your order?"
+3. 저장된 이벤트 **Say hello**는 `message`를 `{"text":"Grüezi!"}`와 함께 전송합니다. **확인 응답** 체크 상자를 선택하여 서버가 확인 응답하도록 하고 **전송**을
+   선택합니다.
+4. 로그에 확인 응답 `{"id": "msg_31", "delivered": true}`가 표시되고, 잠시 후 Heidi의 답이 옵니다. "Your Matterhorn 2P ships tomorrow from Bern."
+5. 저장하지 않은 이벤트를 전송하려면 입력란의 **이벤트** 필드에 이름을, 인수를 JSON으로 입력하고 **전송**(<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>)을 선택합니다.
+
+로그의 각 행에는 네임스페이스, 이벤트, 그리고 있는 경우 확인 응답의 번호가 표시됩니다. **이벤트 필터링**은 로그를 좁힙니다. 서버가 자기 이벤트 중 하나에 확인 응답을 요청하면
+그 행에 **확인 응답** 버튼이 나타납니다. `{"token": "{{token}}"}` 같은 인증 페이로드는 **이벤트** 탭의 **인증** 필드에 넣습니다. [Socket.IO](/docs/requests/socket-io)를
+참고하십시오.
+
+## 4. MQTT: 창고 센서 [#4-mqtt-warehouse-sensors]
+
+같은 로컬 서버가 `localhost:1883`에서 MQTT 브로커를 실행하며, 창고 세 곳의 온도를 1.5초마다 게시합니다.
+
+1. **Realtime › Warehouse sensors**를 엽니다. URL은 `mqtt://{{mqttHost}}`이며, 메서드 메뉴의 **프로토콜**은 **MQTT 3.1.1**입니다.
+2. **구독** 탭에는 **QoS 1**의 구독 `warehouses/+/temperature`가 있고 **연결 시 구독**이 선택되어 있습니다. `+`는 토픽의 한 레벨과 일치합니다.
+3. **연결**을 선택합니다. `warehouses/zurich/temperature`, `warehouses/bern/temperature`, `warehouses/chur/temperature`의 메시지가 도착하며, 예를 들어
+   `{"celsius": 6.1, "humidity": 44, …}`입니다.
+4. **모든 토픽** 메뉴를 사용해 창고 하나만 표시합니다.
+5. **구독** 입력란에 `warehouses/status`를 입력하고 **QoS 0**으로 둔 채 **구독**을 선택합니다. 메시지 하나가 바로 도착합니다. `{"online": 3}`이며 보존됨 표시가 있습니다.
+   브로커가 나중에 구독하는 누구에게나 전달하려고 보관한 메시지입니다.
+6. **게시** 탭에서 토픽을 `warehouses/bern/door`로, 페이로드를 `{"open": true}`로 설정하고 **게시**(<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>)를 선택합니다.
+   `warehouses/#`을 구독하면 돌아오는 것을 볼 수 있습니다. `#`은 아래의 모든 레벨과 일치합니다.
+
+**연결** 탭에는 **클라이언트 ID**, 클린 세션 설정, **Keep Alive**, 유언 메시지가 있습니다. 브로커의 사용자 이름과 암호는 **인증** 탭에 Basic 인증으로 넣으며, 암호는 비밀
+변수에 보관하십시오. 명령줄 도구도 MQTT를 사용합니다.
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 5
+```
+
+[MQTT](/docs/requests/mqtt)와 [`echolot mqtt`](/docs/cli/mqtt)를 참고하십시오.
+
+## 5. 나란히 보기 [#5-side-by-side]
+
+요청마다 자체 탭이 있습니다. **Order updates**, **Support chat**, **Warehouse sensors**를 세 탭에 열어 두고 각각 연결하면, 탭을 전환하는 동안에도 모든 연결이 열린 채로
+유지됩니다. 세션이 닫히면 Echolot은 전체 메시지 로그와 함께 기록에 보관하므로 나중에 다시 읽을 수 있습니다(<kbd>⌘</kbd><kbd>Y</kbd>).
+
+로컬 서버는 gRPC도 제공합니다. `bun run grpc`를 실행하고 **Inventory**의 요청을 보내 보십시오. **Watch stock**은 재고 수준 열두 개를 스트리밍하고 끝납니다.
+[gRPC](/docs/requests/grpc)를 참고하십시오.
+
+## 다음 단계 [#next-steps]
+
+- [WebSocket과 SSE](/docs/requests/websocket-and-sse): 서브프로토콜, 바이너리 메시지, 세션 검사.
+- [Socket.IO](/docs/requests/socket-io)와 [MQTT](/docs/requests/mqtt): 모든 설정.
+- [API를 테스트하고 CI에서 실행하기](/docs/tutorials/test-in-ci): 세션도 실행에서 저장된 메시지를 보내며 실행됩니다.

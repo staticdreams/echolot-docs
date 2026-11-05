@@ -1,0 +1,156 @@
+---
+title: "Entornos y variables"
+description: "Usa variables en las solicitudes, guarda un conjunto de valores para cada servidor en un entorno, cambia entre ellos y mira qué valor prevalece."
+---
+
+Una variable es un nombre para un valor que usas en muchos sitios: una dirección base, un nombre de usuario, un token.
+Escríbela como `{{name}}` en cualquier campo de una solicitud, y Echolot pone el valor al enviar. Un entorno es un
+conjunto de valores para un lugar al que envías, como Local, Staging o Production: cambia el entorno y todas las
+solicitudes van allí.
+
+## Usa una variable [#use-a-variable]
+
+Escribe `{{name}}` en la dirección, una cabecera, un parámetro, el cuerpo, los campos de autenticación o los ajustes. En
+Alpenglow, todas las direcciones empiezan por `{{baseURL}}`:
+
+```
+{{baseURL}}/products/{{productId}}
+```
+
+Escribe `{{` en un campo para ver una lista de las variables que puede usar la solicitud, con [valores
+dinámicos](/docs/requests/dynamic-values) como `{{$uuid}}`, fechas, hashes y valores de las respuestas de otras
+solicitudes. Una variable puede contener otras variables: `baseURL` puede ser `https://{{host}}/v1`.
+
+Un nombre que la solicitud no puede resolver queda marcado en el campo, y Echolot dice por qué, por ejemplo
+`{{productId}} is not defined` o `the secret {{token}} has no value on this Mac`.
+
+## Dónde se definen las variables [#where-variables-are-defined]
+
+Las variables viven en cinco niveles, del más amplio al más cercano:
+
+| Nivel | Dónde lo editas | Se guarda en |
+| --- | --- | --- |
+| **Global** | **Entornos › Global** | Solo este Mac, para todos los espacios de trabajo. |
+| **Espacio de trabajo** | **Entornos › Espacio de trabajo**, o **Ajustes del espacio de trabajo… › Variables** | `workspace.toml` |
+| **Entorno** | **Entornos ›** el entorno | `environments/<name>.toml` |
+| **Carpeta** | **Ajustes de la carpeta… › Variables** | el `_folder.toml` de la carpeta |
+| **Solicitud** | La pestaña **Variables** de la solicitud | el archivo de la solicitud |
+
+Los valores que no son secretos se escriben en esos archivos a medida que los tecleas. Los valores secretos nunca: consulta
+los [secretos](/docs/workspaces/secrets).
+
+## Qué valor prevalece [#which-value-wins]
+
+Cuando el mismo nombre está definido en varios niveles, gana el más cercano:
+
+1. Las variables propias de la solicitud.
+2. Las de su carpeta y después las de las carpetas que tiene encima, desde la más cercana hacia fuera.
+3. Las del entorno activo.
+4. Las del espacio de trabajo.
+5. Las globales.
+
+Así, el espacio de trabajo guarda los valores predeterminados, un entorno cambia lo que difiere en su servidor, y una
+carpeta o una solicitud pueden prevalecer sobre ambos. Una variable desactivada (con su casilla sin marcar) se omite y se
+usa el valor del nivel siguiente.
+
+En Alpenglow, `baseURL` es `https://demo.echolot.dev/v1` en el espacio de trabajo. Con **Staging** activo pasa a ser
+`https://staging.alpenglow.example/v1`, porque Staging también la define. Con **Sin entorno**, las solicitudes usan el
+valor del espacio de trabajo y van a la API de demostración.
+
+Los valores que define un script mientras se ejecuta (con `pm.environment.set` y similares) duran lo que la ventana o el
+comando que lo ejecutó, y nunca se escriben en archivos. Consulta [scripts y pruebas](/docs/requests/scripts-and-tests).
+Las [capturas de respuesta](/docs/requests/captures) son distintas: guardan el valor que toman en una variable del
+espacio de trabajo o del entorno.
+
+## Elige un entorno [#choose-an-environment]
+
+El menú de entornos está en la cabecera de la página de todas las páginas. Muestra el entorno activo con un punto: verde
+para un entorno, rojo para uno [protegido](/docs/workspaces/protected-environments), gris para **Sin entorno**.
+
+Haz clic en él y elige un entorno, o **Sin entorno** para usar solo los valores del espacio de trabajo.
+**Gestionar entornos…** abre la página Entornos.
+
+<Shot id="workspaces-environment-menu" alt="El menú de entornos en la cabecera de la página, abierto: Sin entorno, Local, Staging y Production con un escudo" />
+
+La elección pertenece a la ventana y a este Mac. No se escribe en el espacio de trabajo, así que elegir un entorno no
+cambia ningún archivo, y cada compañero elige el suyo. Echolot lo recuerda para el espacio de trabajo y lo vuelve a
+elegir la próxima vez que lo abres.
+
+La página [Ejecución](/docs/requests/runner), los flujos y el [Envío rápido](/docs/mac/quick-send) también usan el entorno
+activo de la ventana. En la línea de comandos, elige uno con `--env`:
+
+```sh
+echolot run Alpenglow.echolot --env staging
+```
+
+`--env` acepta el nombre de archivo del entorno sin `.toml`, o su nombre.
+
+## La página Entornos [#the-environments-page]
+
+Ábrela con **Vista › Entornos** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>), o con **Gestionar entornos…** en el menú de
+entornos. A la izquierda:
+
+- **Predeterminados**: **Global** y **Espacio de trabajo**.
+- **Entornos**: una fila por cada uno. **Activo** marca el que usa la ventana, y un escudo marca uno protegido.
+
+Selecciona una fila para editar sus variables a la derecha.
+
+<Shot id="workspaces-environments-page" alt="La página Entornos con Staging seleccionado: su nombre, el interruptor Protegido y sus variables baseURL, wsURL y password" />
+
+### Añade un entorno [#add-an-environment]
+
+1. En la página Entornos, haz clic en **+** junto a **Entornos** (**Añadir entorno**).
+2. Se abre un entorno nuevo llamado `New Environment`. Escribe su nombre en el campo del nombre y pulsa <kbd>↩</kbd>.
+3. Añade las variables que difieren en este servidor.
+
+Cada entorno es un archivo en `environments/`. La página muestra su nombre bajo las variables:
+`File: environments/staging.toml`.
+
+### Edita variables [#edit-variables]
+
+Cada fila tiene:
+
+| Columna | Qué hace |
+| --- | --- |
+| Casilla | Activa o desactiva la variable sin quitarla. |
+| **Nombre** | El nombre que escribes en `{{…}}`. |
+| **Valor** | El valor. Para un secreto, un campo que guarda el valor en el llavero. |
+| **Secreto** | Guarda el valor en el llavero de este Mac, nunca en el archivo. Consulta los [secretos](/docs/workspaces/secrets). |
+| **−** | Quita la variable. |
+
+Haz clic en **Añadir variable** para una fila nueva. Echolot guarda la tabla un momento después de que dejas de escribir, y
+todos los cambios se pueden deshacer con **Editar › Deshacer**.
+
+Un entorno solo necesita las variables que difieren de las del espacio de trabajo. Todo lo demás viene de los valores
+predeterminados del espacio de trabajo.
+
+### Renombra, protege o elimina un entorno [#rename-protect-or-delete-an-environment]
+
+En la parte superior de un entorno:
+
+- El campo del nombre lo renombra. El archivo conserva su nombre, así que todo lo que hace referencia al archivo lo sigue
+  encontrando. Un entorno añadido en esta página empieza siendo `New Environment`, así que su archivo es
+  `new-environment.toml` pongas el nombre que pongas después; `--env` acepta también el nombre.
+- **Protegido** hace que todo envío a él pregunte antes. Consulta los [entornos
+  protegidos](/docs/workspaces/protected-environments).
+- **Eliminar entorno…** pregunta y luego traslada su archivo a la papelera. Si estaba activo, la ventana cambia a
+  **Sin entorno**.
+
+### Variables globales [#global-variables]
+
+**Global** contiene variables para todos los espacios de trabajo de este Mac, como tu propio nombre de usuario. Son el
+nivel más amplio: cualquier espacio de trabajo, entorno, carpeta o solicitud con el mismo nombre prevalece sobre ellas.
+No forman parte de ningún espacio de trabajo, así que tus compañeros y la herramienta de línea de comandos no las ven.
+
+## Mira de dónde viene un valor [#see-where-a-value-comes-from]
+
+**Vista › Mostrar variables** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>V</kbd>) abre el panel Variables: todas las variables que puede
+ver la solicitud actual, en columnas para Global, Espacio de trabajo, cada entorno, las carpetas de la solicitud y la
+propia solicitud. El valor en uso está marcado; los entornos que no están activos se muestran para compararlos. Los
+secretos siguen enmascarados. Haz clic en el título de una columna para ir a donde se edita. Fija el panel para
+mantenerlo como una columna junto a la página.
+
+<Shot id="workspaces-variables-panel" alt="El panel Variables sobre Catalog › Get product: baseURL y productId en las columnas Espacio de trabajo, Local, Staging y Production, con el valor en uso marcado" />
+
+Deja el puntero sobre una `{{variable}}` en un campo de una solicitud para ver una vista rápida: su valor, de qué nivel
+viene y **Todas las variables…** para abrir el panel en ella.

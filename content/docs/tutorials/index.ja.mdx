@@ -1,0 +1,63 @@
+---
+title: "チュートリアル"
+description: "Alpenglowデモショップを使った、最初のリクエストからエージェントやCIまでの、ステップごとのレッスン。"
+---
+
+各チュートリアルでは、1つの作業を最初から最後まで進めます。すべて、架空のアウトドア用品店**Alpenglow**を使います。`https://demo.echolot.dev`の[デモAPI](/docs/tutorials/demo-api)と、あらゆる種類のリクエストがすでに入っているサンプルワークスペースです。
+必要なものは、macOS 15以降のAppleシリコンを搭載したMacで動くEcholotです。デモに送信した内容は保存されません。
+
+## Alpenglowワークスペース [#the-alpenglow-workspace]
+
+ほとんどのチュートリアルは、自分でワークスペースを作るか、Alpenglowから始めます。入手方法は次のとおりです。
+
+1. [Alpenglow.echolot.zip](/examples/Alpenglow.echolot.zip)をダウンロードします。
+2. Finderでzipをダブルクリックして展開します。`Alpenglow.echolot`ができます。
+3. `Alpenglow.echolot`をダブルクリックします。Echolotがワークスペースのウインドウで開きます。**ファイル › ワークスペースを開く…**（<kbd>⌘</kbd><kbd>O</kbd>）で選んで開くこともできます。
+
+Alpenglowは**環境なし**を選んだ状態で動作します。ワークスペースの変数がデモAPIを指しているためです。内容は次のとおりです。
+
+| フォルダ | 内容 |
+| --- | --- |
+| Auth | アクセストークンをシークレット変数`{{token}}`に保存する**Sign in**、**Who am I**、**Orders with OAuth 2** |
+| Catalog | **List products**、**Search**、**Get product**、**Categories**、GraphQLリクエストの**Search products**、**Export the catalog**（14 MB） |
+| Orders | **List orders**、**Create order**、**Get order**、**Cancel order**。すべて、フォルダのBearer認証でトークンを送信します |
+| Realtime | **Order updates**（WebSocket）、**Order events**（Server-Sent Events）、**Support chat**（Socket.IO）、**Warehouse sensors**（MQTT） |
+| Inventory | gRPC呼び出し3つ：**List warehouses**、**Watch stock**、**Reserve stock** |
+| Agent tools | **Alpenglow MCP**サーバへのMCPリクエスト2つ：**search_catalog**と**order_status** |
+| Echo | `/echo`エンドポイントへのリクエスト：送信した内容、ステータス、リダイレクト、Basic認証、Cookie、XML、HTML |
+
+ほかに、3つの環境（**Local**、**Staging**、保護された**Production**。StagingとProductionは架空のアドレスです）、3つのフロー（**Place a test order**、**Morning stock check**、**Order status on webhook**）、MCPサーバ**Alpenglow MCP**、仕様の`alpenglow.yaml`、`shop.graphql`、`inventory.proto`があります。
+
+<Shot id="tutorials-alpenglow-window" alt="サイドバーにフォルダが並んだAlpenglowワークスペースと、開いているCatalog › List products" />
+
+## gRPC、Socket.IO、MQTT用のサーバをMacで動かす [#servers-on-your-mac-for-grpc-socketio-and-mqtt]
+
+デモAPIは、gRPC、Socket.IO、MQTTを提供できません。これらのための小さなサーバが、ドキュメントのリポジトリの`examples/servers`にあります。[Bun](https://bun.sh)が必要で、待ち受けるのはお使いのMacだけです。
+
+```sh
+git clone https://github.com/staticdreams/echolot-docs.git
+cd echolot-docs/examples/servers
+bun install
+bun run realtime   # Socket.IO on http://localhost:3001 (namespace /support), MQTT on mqtt://localhost:1883
+bun run grpc       # the Inventory service on localhost:50051 (in a second Terminal window)
+```
+
+Alpenglowの**Support chat**、**Warehouse sensors**、**Inventory**リクエストは、すでにこれらのアドレスを指しています。サーバは<kbd>Control</kbd>-<kbd>C</kbd>で止めます。
+
+## チュートリアル一覧 [#the-tutorials]
+
+| チュートリアル | 学ぶこと | 所要時間 |
+| --- | --- | --- |
+| [最初のワークスペース](/docs/tutorials/first-workspace) | 何もないところからワークスペースを作る：リクエスト、フォルダ、環境、シークレット、Git | 15分 |
+| [リクエストをつなぐ](/docs/tutorials/chain-requests) | サインインし、トークンを保存し、フォルダの認証ですべてに送る。動的な値、`Idempotency-Key` | 15分 |
+| [APIをテストしてCIで実行する](/docs/tutorials/test-in-ci) | チェックを追加し、ランナーでワークスペースを実行し、GitHub Actionsで`echolot run`とJUnitレポートを使う | 20分 |
+| [仕様ファーストで設計してモックにする](/docs/tutorials/spec-first) | OpenAPI仕様を読み込むか設計し、リントし、モックにし、モックにリクエストを送って仕様と照合する | 20分 |
+| [フローで自動化する](/docs/tutorials/automate-with-flows) | キャンバスでフローを作る：サインイン、注文の一覧、判断、通知。実行し、スケジュールし、Webhookから開始する | 20分 |
+| [MCPサーバを調べる](/docs/tutorials/inspect-an-mcp-server) | デモのMCPサーバを追加し、ツールを確認し、呼び出し、品質カードを読み、呼び出しをチェック付きのリクエストとして保存する | 15分 |
+| [エージェントにワークスペースを安全に使わせる](/docs/tutorials/agents-safely) | Claude Codeなどのクライアントを接続し、許可する操作を設定し、送信を承認し、環境を保護する。または内蔵のアシスタントを使う | 20分 |
+| [リアルタイム](/docs/tutorials/realtime) | デモAPIでWebSocketとServer-Sent Events、ローカルのサーバでSocket.IOとMQTT | 20分 |
+| [Postmanから移行する](/docs/tutorials/coming-from-postman) | コレクションと環境を読み込み、対応関係を確認し、実行し、書き出して戻す | 15分 |
+
+<Callout title="デモAPIには制限があります">
+  1つのアドレスにつき1分あたり120リクエストまで、書き出し、WebSocket、Server-Sent Eventsは1分あたり10リクエストまで受け付けます。上限を超えると`429 Too Many Requests`が返ります。1分待ってからもう一度送信してください。
+</Callout>

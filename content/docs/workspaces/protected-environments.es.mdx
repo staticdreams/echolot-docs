@@ -1,0 +1,90 @@
+---
+title: "Entornos protegidos"
+description: "Marca un entorno como Production como protegido, para que todo envío a él pregunte antes, tanto a ti como a los agentes."
+---
+
+Un entorno protegido pregunta antes de que se le envíe nada. Marca tu entorno de producción como protegido, y un
+<kbd>⌘</kbd><kbd>R</kbd> accidental, una ejecución de la página Ejecución o una llamada de un agente no podrán llegar
+a él sin que alguien diga que sí. Los entornos protegidos se marcan en rojo en todos los sitios donde aparecen.
+
+## Protege un entorno [#protect-an-environment]
+
+1. Abre la página [Entornos](/docs/workspaces/environments) (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>).
+2. Selecciona el entorno.
+3. Activa **Protegido** junto a su nombre.
+
+La fila del entorno y su punto en el menú de entornos se vuelven rojos, con un escudo. En el archivo es una sola línea,
+así que la elección se comparte con todo el que abre el espacio de trabajo:
+
+```toml
+name = "Production"
+protected = true
+```
+
+En Alpenglow, **Production** está protegido.
+
+## Qué pregunta antes [#what-asks-first]
+
+Mientras hay un entorno protegido activo, esto pregunta antes de salir:
+
+| Lo que inicias | Dónde |
+| --- | --- |
+| Enviar una solicitud de cualquier tipo, incluidos los métodos seguros como `GET` | La página de la solicitud: **Enviar**, **Solicitud › Enviar** (<kbd>⌘</kbd><kbd>R</kbd>), <kbd>⌘</kbd><kbd>↩</kbd> |
+| Conectar una sesión WebSocket, Socket.IO, MQTT o de otro tipo | La página de la solicitud: **Conectar** |
+| Mensajes en una sesión que se abrió antes de que cambiaras al entorno protegido | La página de la solicitud |
+| Una ejecución | La página [Ejecución](/docs/requests/runner): **Ejecutar**, una vez por ejecución |
+| Ejecutar un flujo | La página [Flujos](/docs/flows): **Ejecutar** |
+| Envío rápido | El panel de [Envío rápido](/docs/mac/quick-send) |
+| Acciones de Atajos | La app [Atajos](/docs/mac/shortcuts) muestra la pregunta |
+| Llamadas, comprobaciones y vigilancias | La página [Servidores MCP](/docs/mcp-servers) |
+| Obtener un token de OAuth 2.0, descargar un esquema GraphQL, reflexión de gRPC | La página de la solicitud |
+
+Los botones lo dicen antes de que hagas clic: **Enviar** pasa a decir **Enviar a Production…**, **Conectar** pasa a decir
+**Conectar a Production…** y **Ejecutar** pasa a decir **Ejecutar en Production…**, en rojo.
+
+<Shot id="workspaces-protected-send-button" alt="Catalog › List products con Production activo: el botón Enviar dice Enviar a Production… en rojo" />
+
+## La pregunta [#the-question]
+
+La pregunta nombra el entorno y muestra lo que saldría: el método y la dirección resuelta, con los secretos
+enmascarados. Por ejemplo:
+
+> **¿Enviar a Production?**
+>
+> Production está protegido. Cada envío pregunta antes.
+>
+> GET https://api.alpenglow.example/v1/products?category=tents&in_stock=true&sort=-price&per_page=10
+
+- **Cancelar** es el botón predeterminado: <kbd>↩</kbd> cancela, y <kbd>Esc</kbd> también. Nada va a un entorno
+  protegido por accidente.
+- **Enviar** (o **Conectar**, o **Ejecutar**) envía. Haz clic en él con el ratón.
+- **No volver a preguntar hasta que cambie de entorno** detiene las preguntas en esta ventana hasta que elijas otro
+  entorno. Echolot lo conserva solo en memoria: nunca se escribe en el disco, y termina cuando cambias de entorno, cierras
+  la ventana o sales de la app.
+
+<Shot id="workspaces-protected-send-question" alt="La pregunta ¿Enviar a Production? sobre la página de la solicitud, con Cancelar como botón predeterminado y la casilla No volver a preguntar hasta que cambie de entorno" />
+
+## Qué hacen los agentes en su lugar [#what-agents-do-instead]
+
+Los agentes de IA nunca pasan por un entorno protegido por su cuenta. Todo envío a él, sea cual sea su método y digan lo
+que digan las reglas de los agentes del espacio de trabajo, te lo pregunta en la hoja de aprobación del agente. La hoja
+dice: «El entorno está protegido, así que cada envío pregunta antes, sea cual sea el método y las reglas.»
+**Permitir una vez** no es ahí el botón predeterminado, así que <kbd>↩</kbd> no lo aprueba. **Permitir en esta sesión**
+deja que la misma llamada vuelva a salir sin preguntar hasta que se cierra la ventana; **Denegar** la rechaza.
+
+Esto vale para el [Asistente](/docs/ai/assistant) integrado y para los [agentes externos](/docs/ai/agents) a través del
+servidor MCP de Echolot. Las reglas de los agentes en un espacio de trabajo nunca pueden permitir sin más los envíos a
+entornos protegidos. Cuando `echolot mcp serve` se ejecuta sin interfaz, sin nadie a quien preguntar, esos envíos se
+rechazan.
+
+## La línea de comandos [#the-command-line]
+
+`echolot run`, `echolot send` y los demás comandos no preguntan: elegir `--env production` en la línea de comandos es la
+decisión. Mantén las credenciales de producción fuera de los secretos de tu CI si CI nunca debe llegar a producción.
+
+## Consejos [#tips]
+
+- Protege todos los entornos que apuntan a datos reales, no solo Production.
+- [Echo](/docs/ai/echo), la pantalla de estado, muestra un recordatorio rojo mientras hay un entorno protegido activo.
+- Para trabajar un tiempo contra producción sin las preguntas, usa **No volver a preguntar hasta que cambie de entorno**
+  en lugar de desactivar **Protegido**: la protección se mantiene para tus compañeros y los agentes.

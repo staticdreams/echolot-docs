@@ -1,0 +1,60 @@
+---
+title: "echolot validate"
+description: "运行前检查工作区：每个文件都能读取，每个请求都能用所选环境解析。"
+---
+
+`echolot validate` 读取工作区的每个文件并解析每个请求，但不发送任何内容。请在 CI 中最先运行它，或在提交之前运行，以发现损坏的文件、某个环境中缺失的变量，
+或不再符合其 Schema 的 GraphQL 查询。
+
+```sh
+echolot validate [<workspace>] [--env <env>]
+```
+
+`<workspace>` 是工作区文件夹；省略时为当前文件夹。
+
+## 检查工作区 [#check-a-workspace]
+
+```sh
+echolot validate Alpenglow.echolot
+```
+
+```text
+auth/who-am-i: note: {{token}} is captured from a response during the run
+auth/client-credentials: note: the OAuth 2.0 token comes from the token URL (client credentials) when the request is sent
+orders/list-orders: note: {{token}} is captured from a response during the run
+orders/create-order: note: {{token}} is captured from a response during the run
+orders/get-order: note: {{token}} is captured from a response during the run
+orders/cancel-order: note: {{token}} is captured from a response during the run
+29 requests, 3 environments: no problems
+```
+
+每个问题占标准错误上的一行，以请求的路径开头。运行过程中才会产生的内容（OAuth 客户端凭据令牌、捕获的变量、其他请求的响应）事先无从知道，所以只会注明，不会算作问题。
+最后一行输出到标准输出，统计请求数、环境数和问题数。
+
+检查的内容：
+
+- 工作区的每个文件都能读取：TOML 能解析、值是 Echolot 认识的（例如认证类型）、没有由更新版本的 Echolot 存储的文件。
+- 每个请求都能用该环境解析：每个 `{{variable}}` 和每个动态值都有值。
+- 指明了 Schema 的 GraphQL 请求会对照该 Schema 检查，并给出每个问题的行和列。警告（例如已弃用的字段）不会导致失败。
+
+## 选项 [#options]
+
+| 选项 | 含义 |
+| --- | --- |
+| `-e`、`--env <env>` | 用来解析的环境：不带 `.toml` 的文件名，或它的名称。 |
+
+你运行时用到的每个环境都要验证一次：
+
+```sh
+echolot validate Alpenglow.echolot --env staging
+```
+
+机密变量的解析方式与运行时相同：来自 `ECHOLOT_SECRET_<NAME>` 变量，在 Mac 上也可来自钥匙串。参见[机密](/docs/cli#secrets)。
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | 没有问题。注明的内容不计入。 |
+| `1` | 至少有一个问题，或无法读取工作区。 |
+| `64` | 环境不存在。 |

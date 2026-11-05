@@ -1,0 +1,93 @@
+---
+title: "Kurzbefehle"
+description: "Führe gesicherte Anfragen und Ordner aus der Kurzbefehle-App, mit Siri und in Automationen aus und verwende das Ergebnis in der nächsten Aktion."
+---
+
+Echolot ergänzt die Kurzbefehle-App um zwei Aktionen: **Anfrage ausführen** und **Ordner ausführen**. Sie senden gesicherte
+Anfragen samt ihren Prüfungen, so wie es die [Ausführung](/docs/requests/runner) tut, und reichen das Ergebnis an die
+nächste Aktion weiter. Damit prüfst du eine API jeden Morgen, per Tastaturkurzbefehl oder auf Zuruf an Siri. Echolot
+kommt dabei nicht in den Vordergrund.
+
+<Shot id="mac-shortcuts-action" alt="Die Kurzbefehle-App mit Echolots Aktion „Ordner ausführen“ für den Ordner Catalog des Arbeitsbereichs Alpenglow, gefolgt von einer Wenn-Aktion auf dem Wert „Bestanden“" />
+
+## Die Aktionen [#the-actions]
+
+Du findest sie in der Kurzbefehle-App, wenn du nach Echolot suchst, unter **Anfragen**.
+
+### Anfrage ausführen [#run-request]
+
+Sendet eine gesicherte Anfrage eines Arbeitsbereichs mit ihren Prüfungen und gibt das Ergebnis zurück. Im Editor lautet
+sie **Anfrage ausführen *Anfrage* in *Arbeitsbereich***.
+
+| Parameter | Was du wählst |
+| --- | --- |
+| **Arbeitsbereich** | Ein in Echolot geöffneter Arbeitsbereich oder einer deiner letzten Arbeitsbereiche. |
+| **Anfrage** | Eine gesicherte Anfrage dieses Arbeitsbereichs. Jede zeigt ihre Methode und ihren Pfad. |
+| **Umgebung** | Optional. Der Name der Umgebung, wie der Arbeitsbereich ihn zeigt, oder ihr Slug. Bleibt das Feld leer, gilt die Umgebung, die der Arbeitsbereich in seinem Fenster verwendet oder zuletzt verwendet hat. |
+
+### Ordner ausführen [#run-folder]
+
+Führt jede Anfrage eines Ordners der Reihe nach mit ihren Prüfungen aus und gibt das Ergebnis zurück. Im Editor lautet
+sie **Ordner ausführen *Ordner* in *Arbeitsbereich***.
+
+| Parameter | Was du wählst |
+| --- | --- |
+| **Arbeitsbereich** | Ein in Echolot geöffneter Arbeitsbereich oder einer deiner letzten Arbeitsbereiche. |
+| **Ordner** | Ein Ordner dieses Arbeitsbereichs oder **Ganzer Arbeitsbereich (*Name*)** für jede Anfrage. |
+| **Umgebung** | Optional, wie bei „Anfrage ausführen“. |
+
+Die Anfragen laufen mit ihren Skripten und Prüfungen, und ihre Antworten landen im
+[Verlauf](/docs/workspaces/history) des Arbeitsbereichs, genau wie bei der Ausführung im Fenster des Arbeitsbereichs.
+Der Arbeitsbereich muss nicht geöffnet sein.
+
+<Edition only="appstore">
+  Die Aktionen funktionieren in der App-Store-Edition genauso. Einen Arbeitsbereich, der nicht geöffnet ist, erreicht
+  Echolot über den Zugriff, den du Echolot beim Öffnen gegeben hast.
+</Edition>
+
+## Das Ergebnis [#the-outcome]
+
+Beide Aktionen geben ein **Ergebnis des Durchlaufs** an die nächste Aktion zurück und zeigen seine Zusammenfassung, wenn
+der Kurzbefehl endet.
+
+| Eigenschaft | Was sie enthält |
+| --- | --- |
+| **Bestanden** | Ob jede Anfrage ohne Fehler lief und jede Prüfung bestanden wurde (übersprungene Prüfungen zählen nicht dagegen). |
+| **Anfragen** | Wie viele Anfragen gelaufen sind. |
+| **Fehlgeschlagene Anfragen** | Wie viele fehlgeschlagen sind. |
+| **Status** | Der Statuscode, bei einer einzelnen Anfrage. |
+| **Dauer (ms)** | Die Zeit in Millisekunden, bei einer einzelnen Anfrage. |
+| **Zusammenfassung** | Eine Zeile, etwa `GET List products: 200 in 182 ms, 3 of 3 checks passed` bei einer Anfrage oder `2 of 9 requests failed` bei einem Ordner. |
+| **Fehler** | Eine Zeile je fehlgeschlagener Anfrage: ihr Name und der Fehler oder die fehlgeschlagenen Prüfungen. |
+
+## Geschützte Umgebungen [#protected-environments]
+
+Ist die Umgebung [geschützt](/docs/workspaces/protected-environments), fragen die Kurzbefehle nach, bevor etwas gesendet
+wird, und nennen die Umgebung und was gesendet würde. Lehnst du ab, endet die Aktion, ohne dass etwas gesendet wurde.
+
+## Siri [#siri]
+
+Die Aktionen von Echolot sind für Siri bereit, ohne dass du einen Kurzbefehl einrichten musst: Sage „Eine Anfrage in
+Echolot ausführen“ oder „Eine Anfrage mit Echolot senden“ für „Anfrage ausführen“ und „Einen Ordner in Echolot
+ausführen“ oder „Die Anfragen eines Ordners in Echolot ausführen“ für „Ordner ausführen“.
+
+## Beispiel: den Shop jeden Morgen prüfen [#example-check-the-shop-every-morning]
+
+Mit dem Beispiel-Arbeitsbereich Alpenglow, der gegen die [Demo-API](/docs/tutorials/demo-api) arbeitet:
+
+<Steps>
+<Step>
+Erstelle in der Kurzbefehle-App einen neuen Kurzbefehl und füge **Ordner ausführen** hinzu. Wähle den Arbeitsbereich
+Alpenglow und den Ordner **Catalog**.
+</Step>
+<Step>
+Füge **Wenn** hinzu, mit **Bestanden** des **Ergebnisses des Durchlaufs** als Eingabe und **ist falsch** als Bedingung.
+</Step>
+<Step>
+Füge innerhalb von „Wenn“ **Benachrichtigung anzeigen** mit der **Zusammenfassung** des Ergebnisses hinzu oder mit den
+**Fehlern** für jede fehlgeschlagene Anfrage.
+</Step>
+<Step>
+Erstelle unter **Automation** eine persönliche Automation, die den Kurzbefehl jeden Morgen ausführt.
+</Step>
+</Steps>

@@ -1,0 +1,172 @@
+---
+title: "echolot send"
+description: "Sende eine Anfrage vom Terminal aus, eine URL oder eine gesicherte Anfrage, und lies ihren Body, die Header, die Zeiten und die Bytes der Übertragung."
+---
+
+`echolot send` sendet eine Anfrage und schreibt den Body der Antwort in die Standardausgabe. Gib ihm eine URL, wie du
+sie curl gibst, oder den Pfad einer gesicherten Anfrage in einem Arbeitsbereich, die es sendet wie die App: mit
+Variablen, Auth, Skripten und Prüfungen. Es öffnet auch WebSocket- und Socket.IO-Sitzungen und hört Event-Streams ab.
+
+```sh
+echolot send [<options>] <url>
+```
+
+`<url>` ist eine URL oder der Pfad einer gesicherten Anfragedatei (`.req.toml`, `.gql.toml` oder `.mcp.toml`) im Ordner
+`requests` eines Arbeitsbereichs.
+
+## Eine URL senden [#send-a-url]
+
+```sh
+echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P
+```
+
+Der Body geht in die Standardausgabe, sodass du ihn weiterreichen (`| jq .`) oder mit `-o` in eine Datei schreiben
+kannst. Sonst wird nichts ausgegeben, solange du nicht darum bittest:
+
+- `-i` gibt vor dem Body die Statuszeile und die Header aus.
+- `-v` gibt die Zeiten in die Standardfehlerausgabe aus: DNS, Verbindung, TLS, Warten und Übertragung, Größe und Hash
+  des Bodys, die Remote-Adresse, die TLS-Version, das gewählte Protokoll und die Zertifikate des Servers. Ein
+  dekodierter Body (gzip, Brotli, zstd) zeigt seine Größe davor und danach.
+- `--wire` gibt die genauen gesendeten und empfangenen Bytes, wie auf der Leitung mitgeschnitten, in die
+  Standardfehlerausgabe aus.
+
+Mit einem Body und Headern:
+
+```sh
+echolot send https://demo.echolot.dev/echo/anything -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"sku": "TNT-MH-2P"}' -v
+```
+
+```text
+── body ── decoded zstd 257 → 418 bytes
+── timing ──
+DNS          79.61 ms
+Connect      15.65 ms
+TLS          28.70 ms
+Waiting      19.75 ms
+Transfer      0.53 ms
+Total       146.36 ms
+Body      418 bytes, sha256 01facf0b2388ca67…
+Remote    [2606:4700:3031::6815:3cf1]:443
+── tls ── TLS 1.3, ALPN h2
+CN=echolot.dev
+  issuer CN=WE1,O=Google Trust Services,C=US, valid until 30 Jan 2027
+Alt-Svc   the server offers HTTP/3 (h3 on port 443); --http3 uses it, and so do later requests on Automatic in the same run
+```
+
+`-H` behält die Reihenfolge und die Schreibweise deiner Header bei. `--data-file` streamt den Body aus einer Datei,
+statt ihn in den Speicher zu lesen, und eignet sich daher für große Uploads. `--raw` sendet keine Header, die du nicht
+geschrieben hast: kein `Host`, kein `Content-Length`, kein `Accept-Encoding`.
+
+## Eine gesicherte Anfrage senden [#send-a-saved-request]
+
+Gib den Pfad einer Anfragedatei an. Echolot findet den Arbeitsbereich darum herum, löst `{{variables}}` mit der
+Umgebung auf, die du wählst, führt die Skripte und Prüfungen der Anfrage aus und gibt die Ergebnisse aus:
+
+```sh
+echolot send Alpenglow.echolot/requests/catalog/get-product.req.toml -i
+```
+
+```text
+HTTP/2 200 OK
+content-type: application/json; charset=utf-8
+etag: W/"TNT-MH-2P-1"
+…
+
+{
+  "sku": "TNT-MH-2P",
+  "name": "Matterhorn 2P Tent",
+  …
+}
+── tests ──
+✓ Status equals 200
+✓ JSON value $.sku equals {{productId}}
+2 passed
+```
+
+- `-e staging` oder `--env staging` löst mit der Umgebung in `environments/staging.toml` auf.
+- Geheime Variablen kommen aus `ECHOLOT_SECRET_<NAME>`-Variablen oder auf einem Mac aus dem Schlüsselbund. Siehe
+  [Secrets](/docs/cli#secrets).
+- Was die Skripte protokollieren, erscheint unter `── console ──`, Prüfungen und `pm.test`-Ergebnisse unter
+  `── tests ──`, in der Standardfehlerausgabe. Eine fehlgeschlagene Prüfung setzt den Exit-Code auf 1.
+- Eine Variable, die sich nicht auflöst, wird als Warnung ausgegeben, bevor die Anfrage hinausgeht.
+- `-X`, `-H`, `-d` und `--data-file` sind für URLs; eine gesicherte Anfrage sendet, was ihre Datei sagt. `--timeout`,
+  `--http1.1`, `--http2`, `--http3`, `--raw`, `-k`, `--listen`, die Proxy- und die Zertifikat-Optionen gelten für
+  beide.
+
+## Event-Streams, WebSocket und Socket.IO [#event-streams-websocket-and-socketio]
+
+**Server-Sent Events.** Eine Antwort mit `text/event-stream` wird, sobald sie eintrifft, in die Standardausgabe
+gestreamt. `--listen` gibt an, wie lange zugehört wird: standardmäßig 10 Sekunden, bei `0` so lange, bis der Server den
+Stream beendet.
+
+```sh
+echolot send https://demo.echolot.dev/v1/orders/events --listen 0
+```
+
+**WebSocket.** Eine URL mit `ws://` oder `wss://` öffnet eine Sitzung. Jede Zeile, die du tippst (oder einspeist), und
+`-d` wird als Textnachricht gesendet; eintreffende Nachrichten werden eine pro Zeile ausgegeben, binäre in Base64. Endet
+die Eingabe, hört Echolot `--listen` Sekunden lang zu und schließt dann. `--subprotocol` bietet ein Subprotokoll an und
+kann mehrfach angegeben werden. `-i` oder `-v` gibt die Upgrade-Antwort in die Standardfehlerausgabe aus.
+
+```sh
+echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolot.dev/v1/orders --listen 5
+```
+
+**Socket.IO.** `--socketio` spricht Socket.IO über eine URL mit `http(s)://` oder `ws(s)://`. Jede Eingabezeile ist ein
+Ereignis: sein Name, dann seine JSON-Argumente (`chat {"text": "hi"}`; ein Array sind mehrere Argumente). Ereignisse
+werden als `name [arguments]` ausgegeben, Bestätigungen als `ack id [arguments]`.
+
+```sh
+echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+```
+
+Unter [Socket.IO-Anfragen](/docs/requests/socket-io) findest du Server, an denen du das ausprobieren kannst.
+
+## Optionen [#options]
+
+| Option | Bedeutung |
+| --- | --- |
+| `-e`, `--env <env>` | Die Umgebung, mit der eine gesicherte Anfrage aufgelöst wird: ihr Dateiname ohne `.toml`. |
+| `-X`, `--request <method>` | Die HTTP-Methode; jedes Token ist erlaubt. Standard `GET`. |
+| `-H`, `--header <header>` | Ein Header als `'Name: value'`. Wiederholbar; Reihenfolge und Schreibweise bleiben erhalten. |
+| `-d`, `--data <data>` | Ein Body der Anfrage, direkt angegeben. |
+| `--data-file <file>` | Den Body der Anfrage aus dieser Datei streamen. |
+| `-o`, `--output <file>` | Den Body in diese Datei statt in die Standardausgabe schreiben. |
+| `--raw` | Rohmodus: gar keine automatischen Header senden. |
+| `-k`, `--insecure` | Die Prüfung des TLS-Zertifikats überspringen. |
+| `-i`, `--include` | Vor dem Body die Statuszeile und die Header ausgeben. |
+| `-v`, `--verbose` | Die Aufschlüsselung der Zeiten in die Standardfehlerausgabe ausgeben. |
+| `--wire` | Die genauen gesendeten und empfangenen Bytes in die Standardfehlerausgabe ausgeben. |
+| `--listen <seconds>` | Sekunden, die ein Event-Stream abgehört wird, bevor er beendet wird; `0` hört zu, bis der Server ihn beendet. Standard 10. |
+| `--timeout <seconds>` | Zeitüberschreitung für den ganzen Austausch. Standard 60. |
+| `--http1.1` | Nur mit HTTP/1.1 senden. |
+| `--http2` | Nur mit HTTP/2 senden: ALPN über TLS, Prior Knowledge über einfaches HTTP. |
+| `--http3` | Nur mit HTTP/3 über QUIC senden: nur `https://`, keine Proxys; macOS 27 und neuer sowie Linux. |
+| `--subprotocol <name>` | Für URLs mit `ws://` und `wss://`: ein Subprotokoll, das angeboten wird. Wiederholbar. |
+| `--socketio` | Socket.IO sprechen; jede Eingabezeile ist `event [JSON arguments]`. |
+| `--namespace <namespace>` | Für `--socketio`: der Namespace, dem beigetreten wird. Standard: der Pfad der URL, sonst `/`. |
+| `--auth <json>` | Für `--socketio`: die Auth-Nutzlast, ein JSON-Objekt. |
+| `--socketio-version <version>` | Für `--socketio`: die Socket.IO-Version des Servers, `4` (auch für 3) oder `2`. Standard 4. |
+| `--socketio-path <path>` | Für `--socketio`: wo der Server lauscht. Standard `/socket.io/`. |
+| `--proxy <url>` | Über diesen Proxy senden: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
+| `--no-proxy` | Direkt verbinden und `HTTP_PROXY` und die anderen ignorieren. |
+| `--cacert <file>` | Zusätzlich den CA-Zertifikaten in dieser PEM-Datei vertrauen. Wiederholbar. |
+| `--cert <file>` | Dieses Client-Zertifikat senden: eine PEM-Datei (mit `--key`) oder eine `.p12`/`.pfx`-Datei. |
+| `--key <file>` | Der private PEM-Schlüssel des Client-Zertifikats, wenn die Zertifikatsdatei keinen enthält. |
+| `--pass <passphrase>` | Die Passphrase des Schlüssels oder der PKCS#12-Datei. Besser die Umgebungsvariable `ECHOLOT_CERT_PASSPHRASE` nutzen. |
+
+Ohne `--http1.1`, `--http2` oder `--http3` wählt Echolot die Version, wie es die Einstellung **Automatisch** der App
+tut. Wähle nur eine davon.
+
+## Exit-Codes [#exit-codes]
+
+| Code | Wann |
+| --- | --- |
+| `0` | Eine Antwort unter 400, und jede Prüfung bestand. |
+| `1` | Keine Antwort (der Grund wird ausgegeben), oder eine Prüfung oder ein Test schlug fehl. |
+| `22` | Der Status der Antwort war 400 oder höher. Der Body wird trotzdem geschrieben. |
+| `64` | Eine falsche Option, eine URL, die keine ist, oder eine Datei außerhalb eines Arbeitsbereichs. |
+
+Ein Skript vor der Anfrage, das `pm.execution.skipRequest()` aufruft, sendet nichts und endet mit 0.

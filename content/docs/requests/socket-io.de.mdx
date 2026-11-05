@@ -1,0 +1,84 @@
+---
+title: "Socket.IO"
+description: "Einem Socket.IO-Namespace mit Auth-Payload beitreten, Ereignisse mit Argumenten und Bestätigungen senden und das Ereignislog lesen."
+---
+
+Eine Socket.IO-Anfrage verbindet sich mit einem Socket.IO-Server, tritt einem Namespace bei und bleibt verbunden: Du
+sendest Ereignisse und siehst die Ereignisse des Servers, sobald sie eintreffen. Echolot spricht Socket.IO 2, 3 und 4
+über WebSocket.
+
+<Shot id="requests-socketio-events" alt="Realtime › Support chat, verbunden mit dem lokalen Server: der Tab „Ereignisse“ mit dem Namespace /support, dem gesicherten Ereignis Say hello und dem Log mit dem gesendeten Ereignis und der Antwort des Servers" />
+
+<Callout title="Mit Alpenglow ausprobieren">
+  **Realtime › Support chat** verbindet sich mit einem lokalen Socket.IO-Server auf `localhost:3001`, aus dem Ordner
+  `examples/servers` des Docs-Repositorys (`bun run realtime`).
+</Callout>
+
+## Verbinden [#connect]
+
+1. Wähle **Datei › Neue Socket.IO-Anfrage** oder **Neue Socket.IO-Anfrage** im Menü **+** neben **Anfragen** in der
+   Seitenleiste.
+2. Tippe die Adresse des Servers, etwa `http://localhost:3001` (in Alpenglow `{{realtimeURL}}`). `http://`, `https://`,
+   `ws://` und `wss://` funktionieren alle.
+3. Wähle die Version des Servers im Menü des Badges **SIO** vor der Adresse: **Socket.IO 4**, **Socket.IO 3** oder
+   **Socket.IO 2**.
+4. Wähle **Verbinden** (<kbd>⌘</kbd><kbd>R</kbd>). Solange die Verbindung steht, heißt es **Trennen**.
+
+Der Editor hat diese Tabs: **Doku**, **Ereignisse**, **Header**, **Parameter**, **Auth**, **Variablen**, **Tests**,
+**Skripte** und **Einstellungen**. Header, Query-Parameter und Auth gehören zum WebSocket-Handshake.
+
+## Namespace, Pfad und Auth [#namespace-path-and-auth]
+
+Der obere Teil des Tabs **Ereignisse** legt fest, wie der Client beitritt:
+
+| Feld | Was es ist |
+| --- | --- |
+| **Namespace** | Der Namespace, dem beigetreten wird, etwa `/support`. Leer tritt dem Pfad der Adresse bei, oder `/` |
+| **Pfad** | Wo der Server lauscht. Leer heißt der Standard, `/socket.io/` |
+| **Auth** | Die Auth-Payload, ein JSON-Objekt wie `{"token": "{{token}}"}`. Socket.IO 3 und 4 senden sie beim Beitritt zum Namespace. Leer für keine |
+
+Halte ein Token in einer [geheimen Variablen](/docs/workspaces/secrets) und schreibe `{{token}}` in die Payload, damit der
+Wert nie in der Anfragedatei landet. Ein Server, der die Verbindung ablehnt, antwortet mit einem Fehler, den das Log in
+Rot zeigt.
+
+## Ereignisse senden [#emit-events]
+
+Unten im Tab **Ereignisse**:
+
+1. Tippe den Namen des Ereignisses, etwa `message`.
+2. Tippe seine Argumente als JSON, mit `{{variables}}`. Ein Array sind mehrere Argumente; jeder andere Wert ist das
+   einzige. Lass es leer für keines.
+3. Setze das Häkchen bei **Ack**, um den Server um eine Bestätigung des Ereignisses zu bitten.
+4. Wähle **Senden** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>).
+
+Zum Beispiel sendet das Ereignis `message` mit den Argumenten `{"text": "Grüezi!"}` ein Objekt, und
+`["order", {"id": "ord_7Hk2Lw"}]` sendet zwei Argumente.
+
+Wähle **+**, um das Ereignis mit der Anfrage zu sichern. Jedes gesicherte Ereignis hat einen Namen, das Ereignis, seine
+Argumente, **Ack** und einen eigenen Knopf **Senden**. **In Durchläufen senden**, das Kästchen an seinem Anfang,
+entscheidet, ob es gesendet wird, wenn die Anfrage ohne dich läuft: Die [Ausführung](/docs/requests/runner), die
+Befehlszeile und Agenten senden die aktivierten Ereignisse nach dem Beitritt der Reihe nach, hören 10 Sekunden zu und
+schließen dann. Support chat hat ein gesichertes Ereignis, **Say hello**.
+
+## Das Ereignislog [#the-event-log]
+
+Der Tab **Nachrichten** des Antwortbereichs zeigt die Sitzung: jedes Ereignis in beide Richtungen, das neueste zuletzt,
+mit Zeit und Größe.
+
+- Jede Zeile zeigt den Namen und Namespace des Ereignisses und seine Bestätigungs-ID, wenn es eine verlangt hat. Eine
+  Bestätigung zeigt die ID, auf die sie antwortet.
+- **Alle**, **Gesendet** und **Empfangen** filtern nach Richtung; **Ereignisse filtern** findet Ereignisse nach Name oder
+  Text.
+- **Mehr** formatiert JSON-Argumente übersichtlich.
+- Sendet der Server ein Ereignis, das eine Bestätigung verlangt, antwortet **Bestätigen** darauf, ohne Argumente.
+- Binäre Anhänge, die mit einem Ereignis eintreffen, erscheinen darunter, jeweils als **Attachment 1, Base64: …**.
+
+Ein Socket.IO-Paket nimmt höchstens 1000 Anhänge auf, zusammen bis zu 64 MB.
+
+Schließt die Verbindung, wird die Sitzung im [Verlauf](/docs/workspaces/history) behalten, mit dem Log als Body der
+Antwort.
+
+## In der Befehlszeile [#from-the-command-line]
+
+`echolot send --socketio` verbindet sich vom Terminal aus: Jede Zeile, die du tippst, ist ein Ereignis mit seinen
+JSON-Argumenten. Es führt auch gesicherte `.sio.toml`-Anfragen aus. Siehe [echolot send](/docs/cli/send).

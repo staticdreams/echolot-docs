@@ -1,0 +1,166 @@
+---
+title: "Installieren"
+description: "Lade Echolot herunter, öffne es zum ersten Mal, halte es aktuell, lege das Befehlszeilentool in deinen PATH und entferne es wieder."
+---
+
+Echolot gibt es als Direktdownload von [echolot.dev](https://echolot.dev). Diese Seite behandelt diese Edition. Eine
+Mac-App-Store-Edition wird aus demselben Code gebaut; [Editionen](/docs/get-started/editions) vergleicht beide.
+
+## Voraussetzungen [#requirements]
+
+- macOS 15 oder neuer.
+- Ein Mac mit Apple Silicon.
+- Einige Funktionen brauchen ein neueres macOS: Apples On-Device-Modell für den Assistenten braucht macOS 26, und
+  HTTP/3 braucht macOS 27. Alles andere läuft unter macOS 15.
+
+## Herunterladen und installieren [#download-and-install]
+
+<Steps>
+<Step>
+
+Öffne [echolot.dev](https://echolot.dev) und wähle den Download. Er führt zum neuesten Release auf
+[GitHub](https://github.com/staticdreams/echolot-public/releases), wo jedes Release seine Dateien behält:
+
+| Datei | Was sie ist |
+| --- | --- |
+| `Echolot-<version>.dmg` | Die App in einem Disk-Image. Nimm diese. |
+| `Echolot-<version>.zip` | Dieselbe App, gezippt. |
+| `echolot-<version>-macos.zip` | Das Befehlszeilentool einzeln, für einen Mac ohne die App. |
+| `Echolot-<version>.mcpb` | Eine Erweiterung, die Claude Desktop mit einem Arbeitsbereich verbindet. Siehe [Agenten](/docs/ai/agents). |
+
+</Step>
+<Step>
+
+Öffne das Disk-Image und ziehe **Echolot** auf den Ordner **Programme** daneben.
+
+</Step>
+<Step>
+
+Öffne Echolot aus dem Ordner „Programme“. Die App ist von ihrem Entwickler signiert und von Apple notarisiert, daher
+fragt macOS nur einmal, ob du eine aus dem Internet geladene App öffnen willst.
+
+</Step>
+</Steps>
+
+## Erster Start [#first-launch]
+
+Echolot öffnet sich mit seinem Willkommensfenster:
+
+<Shot id="get-started-welcome" alt="Das Willkommensfenster mit Neuer Arbeitsbereich, Arbeitsbereich öffnen und Beispiele öffnen sowie einer Liste der letzten Arbeitsbereiche" />
+
+| Auswahl | Was sie tut |
+| --- | --- |
+| **Neuer Arbeitsbereich …** | Legt einen Arbeitsbereich an: einen Ordner, der auf `.echolot` endet (der Name beginnt als `My API.echolot`), wo auch immer du ihn sicherst. |
+| **Arbeitsbereich öffnen …** | Öffnet einen vorhandenen `.echolot`-Ordner. |
+| **Beispiele öffnen** | Öffnet einen fertigen Arbeitsbereich mit Beispielanfragen: öffentliche APIs, Weiterleitungen und große Payloads. Echolot legt ihn beim ersten Mal in seinem eigenen Datenordner an. |
+
+Arbeitsbereiche, die du öffnest, erscheinen unter **Letzte Arbeitsbereiche**; klicke auf einen, um ihn erneut zu öffnen.
+Jeder Arbeitsbereich öffnet sich in einem eigenen Fenster, und die Fenster kehren mit ihrem Arbeitsbereich zurück, wenn
+du Echolot wieder startest.
+
+Das erste Arbeitsbereichsfenster, das du öffnest, bietet eine einminütige [geführte Tour](/docs/get-started/tour) an;
+**Hilfe › Tour zeigen** startet sie erneut. Echolot spricht die Sprache deines Macs, wenn es sie hat, und du kannst das
+in den [Einstellungen](/docs/settings#general) ändern.
+
+Von hier aus [sendest du deine erste Anfrage](/docs/get-started/first-request) oder [importierst](/docs/get-started/importing)
+eine Collection, die du schon hast.
+
+## Updates [#updates]
+
+Der Direktdownload aktualisiert sich selbst. Einmal am Tag fragt er GitHub, ob es ein neueres Release gibt, und fragt
+dich, bevor er es installiert. Updates sind signiert: Echolot installiert nur Updates, die von seinem Entwickler
+signiert sind. Ein Update ersetzt die App und damit das Befehlszeilentool in ihr.
+
+- **Echolot › Nach Updates suchen …** sucht sofort.
+- **Einstellungen › Allgemein › Updates** bietet die Auswahl:
+
+| Einstellung | Bedeutung |
+| --- | --- |
+| **Automatisch nach Updates suchen** | Sucht einmal am Tag. Standardmäßig an. |
+| **Updates automatisch laden und installieren** | Installiert ohne Nachfrage. Braucht die Einstellung darüber. |
+| **Zuletzt geprüft** | Wann zuletzt gesucht wurde, mit **Jetzt prüfen**. |
+
+Nach einem Update öffnet sich nichts von selbst. Ein Knopf **Neuigkeiten** (Funkeln, mit einem Punkt) erscheint als
+erster der Knöpfe oben rechts im Fenster; klicke darauf, um die Versionshinweise zu lesen, oder wähle
+**Bis zum nächsten Update ausblenden**. **Hilfe › Neu in Echolot** zeigt jederzeit die Hinweise jedes Releases, und das tut auch
+[Neuigkeiten](/docs/whats-new).
+
+<Shot id="get-started-whats-new" alt="Der Knopf Neuigkeiten im Seitenkopf, geöffnet, mit den Hinweisen des gerade installierten Releases" />
+
+<Edition only="appstore">
+  Der App Store hält die App-Store-Edition aktuell. Sie hat keinen Eintrag **Nach Updates suchen …**, und
+  Einstellungen › Allgemein › Updates sagt das auch.
+</Edition>
+
+## Beta-Builds laufen ab [#beta-builds-expire]
+
+Echolot ist in einer öffentlichen Beta, und jeder veröffentlichte Beta-Build der App läuft 30 Tage nach seiner
+Veröffentlichung ab. Echolot aktualisiert sich vorher selbst, sodass du es bei eingeschalteter automatischer Suche nicht
+bemerkst. Der Entwickler kann einen Build auch früher beenden (zum Beispiel einen mit einem schweren Fehler) oder
+verlängern, über eine signierte Statusdatei, die Echolot beim Start und einmal am Tag liest.
+
+Ist ein Build abgelaufen, zeigt Echolot einen einzigen Hinweis, **Diese Beta ist abgelaufen**, bevor sich ein Fenster
+öffnet. Er nennt Version und Build sowie den Tag, an dem er endete, und sagt, dass eine neuere Beta auf echolot.dev
+liegt. **OK** beendet Echolot, nachdem es ungesicherte Änderungen geschrieben hat. Ein Build, der während des Laufs
+abläuft, zeigt denselben Hinweis. Lade das neueste Release von [echolot.dev](https://echolot.dev) und installiere es
+über das alte.
+
+Was unberührt bleibt:
+
+- **Deine Arbeitsbereiche.** Sie sind einfache Dateien, und der nächste Build öffnet sie unverändert.
+- **Das Befehlszeilentool** läuft nie ab, weder in der App noch einzeln geladen, sodass CI weiterläuft.
+- **Übersicht**-Vorschauen von Arbeitsbereichen im Finder funktionieren weiter.
+
+Kurzbefehle-Aktionen eines abgelaufenen Builds schlagen mit einem Fehler fehl und senden nichts.
+
+Die Uhr des Macs zurückzustellen bringt einen abgelaufenen Build nicht zurück. Liegt die Uhr mehr als einen Tag hinter
+einem Datum, das Echolot schon gesehen hat, sagt der Hinweis, dass das Datum dieses Macs falsch aussieht: Stelle Datum
+und Uhrzeit ein oder hole dir einen neueren Build.
+
+<Edition only="direct">
+  Nur die Beta-Builds des Direktdownloads laufen ab. Die App-Store-Edition nie: Ihre Betas laufen über TestFlight.
+</Edition>
+
+## Das Befehlszeilentool installieren [#install-the-command-line-tool]
+
+Der Direktdownload enthält das Befehlszeilentool `echolot` in der App. Um es im Terminal zu nutzen, lege es in deinen
+PATH:
+
+1. Wähle **Echolot › Befehlszeilentool installieren …** oder öffne **Einstellungen › Allgemein** und wähle unter
+   **Befehlszeilentool** den Eintrag **Befehlszeilentool installieren …**.
+2. Echolot legt einen Link namens `echolot` in `/opt/homebrew/bin` oder `/usr/local/bin` an. Kann keiner der Ordner
+   beschrieben werden, fragt macOS nach dem Passwort eines Administrators.
+3. Öffne ein neues Terminal-Fenster und tippe `echolot --help`.
+
+```sh
+echolot --version
+echolot send https://demo.echolot.dev/v1/products -i
+```
+
+**Einstellungen › Allgemein › Befehlszeilentool** zeigt, wo das mitgelieferte Tool liegt und ob es in deinem PATH ist,
+mit **Neu installieren** und **Entfernen**. Steht eine Datei namens `echolot` im Weg, die nicht von Echolot stammt,
+fragt Echolot vor dem Ersetzen, und die alte Datei kommt in den Papierkorb. Da der Link in die App zeigt, wird das Tool
+mit der App aktualisiert.
+
+Das Tool und seine Befehle beschreibt das [Befehlszeilentool](/docs/cli).
+
+<Edition only="appstore">
+  Die App-Store-Edition hat kein Befehlszeilentool in sich. Installiere das Tool einzeln von der Releases-Seite
+  (`echolot-<version>-macos.zip`); siehe [Befehlszeilentool](/docs/cli).
+</Edition>
+
+## Deinstallieren [#uninstall]
+
+1. Falls du das Befehlszeilentool installiert hast, öffne zuerst **Einstellungen › Allgemein** und wähle unter
+   **Befehlszeilentool** den Eintrag **Entfernen**.
+2. Beende Echolot und ziehe es aus dem Ordner „Programme“ in den Papierkorb.
+3. Um auch Echolots eigene Daten zu entfernen (gespeicherte Antworten, Verlauf, Absturzberichte und den
+   Beispiel-Arbeitsbereich), öffne **Einstellungen › Über** und wähle neben **Antworten und Verlauf** den Eintrag
+   **Im Finder anzeigen**, bevor du die App löschst, und lösche dann diesen Ordner `Echolot`. Es ist
+   `~/Library/Application Support/Echolot`.
+4. Secrets, Modellschlüssel und der Speicherschlüssel liegen in deinem Anmeldeschlüsselbund, in Einträgen, deren Namen
+   mit `Echolot` beginnen (`Echolot secret …`, `Echolot model API key`). Um sie zu entfernen, öffne die
+   Schlüsselbundverwaltung und suche nach `Echolot`. Lösche Secrets nur, wenn keine Kopie von Echolot oder seines
+   Befehlszeilentools sie mehr braucht.
+
+Deine Arbeitsbereiche bleiben unberührt: Sie liegen dort, wo du sie gesichert hast.

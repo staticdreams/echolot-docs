@@ -1,0 +1,8 @@
+{
+  "title": "模拟服务器",
+  "pages": [
+    "index",
+    "routes",
+    "scripted-routes"
+  ]
+}

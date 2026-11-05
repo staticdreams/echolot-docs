@@ -1,0 +1,76 @@
+---
+title: "实时通信"
+description: "通过 WebSocket 和 Server-Sent Events 观看演示 API 的实时订单事件，然后在 Mac 上的服务器上通过 Socket.IO 聊天、通过 MQTT 读取传感器。"
+---
+
+实时 API 保持连接打开，并双向发送消息。在本教程中，你会通过 WebSocket 和 Server-Sent Events 观看演示商店的订单信息流，然后通过 Socket.IO 与商店的客服台交谈，并通过 MQTT 读取仓库温度，让它们并排运行。
+
+- **用时：** 20 分钟。
+- **你需要：** 选择了**无环境**的 [Alpenglow 工作区](/docs/tutorials#the-alpenglow-workspace)。对于 Socket.IO 和 MQTT，还需要[本地服务器](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt)：在 `examples/servers` 中运行 `bun run realtime`。
+- **你将学到：** 连接、已存储的消息、实时日志、事件流、命名空间和确认、订阅、QoS 和保留消息。
+
+## 1. WebSocket：订单信息流 [#1-websocket-the-order-feed]
+
+1. 打开 **Realtime › Order updates**。它的 URL 是 `{{wsURL}}/orders`，即 `wss://demo.echolot.dev/v1/orders`。
+2. 选取**连接**（<kbd>⌘</kbd><kbd>R</kbd>）。按钮会变成**断开连接**。
+3. 响应的**消息**标签页开始填充：一个链接图标表示已打开的连接，然后是服务器的 `hello`，之后每 1.5 秒一个订单事件，例如 `{"event": "order.created", "order": "ord_9Tq3Vb", …}`。发送的消息带有向上的箭头，接收的消息带有绿色向下的箭头。**更多**可展开较长的 JSON 消息。
+4. 在请求的**消息**标签页中，已存储的消息 **Subscribe** 包含 `{"op":"subscribe","channel":"orders"}`。选取它的**发送**。服务器返回 `{"op": "subscribed", "channel": "orders"}`。
+5. 在底部的输入框中输入 `{"id": 42, "text": "hello"}`，然后选取**发送**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>）。服务器用 `{"op": "ack", "id": 42}` 确认。选取 **+** 可存储这条消息以备日后使用。
+6. 用**全部**、**已发送**和**已接收**缩小日志范围，或者在**过滤消息**中输入 `shipped`。
+7. 选取**断开连接**。日志以**已由 Echolot 关闭**结束。
+
+演示服务在三分钟后关闭会话（`1000 Demo sessions last 3 minutes`），如果你在十秒内发送超过 20 条消息，则以 `1008` 关闭。勾选了**在运行中发送**的已存储消息，会在请求于运行器或命令行工具中运行时，于连接之后按顺序发送。详见 [WebSocket 与 SSE](/docs/requests/websocket-and-sse)。
+
+<Shot id="tutorials-realtime-websocket" alt="已连接的 Order updates：左侧是已存储的 Subscribe 和 Ping 消息，右侧是已发送和已接收消息的实时日志" />
+
+## 2. Server-Sent Events：同一信息流的流式形式 [#2-server-sent-events-the-same-feed-as-a-stream]
+
+1. 打开 **Realtime › Order events**。它是一个普通的 HTTP 请求，`GET {{baseURL}}/orders/events`，带有标头 `Accept: text/event-stream`。
+2. 选取**发送**。响应在它的**事件**标签页中打开：**正在监听…点按“停止”以结束。**
+3. 每秒到达一个事件，每个事件显示在各自的卡片中，卡片标题带有序号和名称，例如 **1. order.created**，下方是 **id 1**。20 个事件之后，服务器发送 `end` 并关闭流。
+4. 要提前停止，请选取**取消**（<kbd>⌘</kbd><kbd>.</kbd>）。
+
+要在某个事件之后继续，请添加标头 `Last-Event-ID`，值为你看到的最后一个 id，比如 `15`，然后再次发送。服务器会发送 16 到 20。在**标头**标签页中输入 `Last-Event-ID` 时，会提示 `{{lastEventId}}` 作为它的值；请给这个变量赋值，或者直接输入数字。
+
+## 3. Socket.IO：客服台 [#3-socketio-the-support-desk]
+
+请先启动本地服务器（`bun run realtime`）。它们会打印 `Alpenglow realtime: Socket.IO on http://localhost:3001/support, MQTT on mqtt://localhost:1883`。
+
+1. 打开 **Realtime › Support chat**。它的 URL 是 `{{realtimeURL}}`，即 `http://localhost:3001`。在它的**事件**标签页中，**命名空间**是 `/support`；URL 栏的方法菜单设置**服务器**版本（Socket.IO 4）。
+2. 选取**连接**。会到达三个事件：带有客服姓名和队列的 `welcome`、`typing`，然后是 `message`：“Grüezi! How can I help with your order?”
+3. 已存储的事件 **Say hello** 会发送 `message`，内容为 `{"text":"Grüezi!"}`。勾选它的**确认**框，让服务器被要求确认它，然后选取**发送**。
+4. 日志显示确认 `{"id": "msg_31", "delivered": true}`，片刻之后是 Heidi 的回答：“Your Matterhorn 2P ships tomorrow from Bern.”
+5. 要发送尚未存储的事件，请在输入框的 **event** 字段中输入事件名称，以 JSON 输入其参数，然后选取**发送**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>）。
+
+日志的每一行会标明命名空间、事件，以及确认的编号（如果有）。**过滤事件**可缩小日志范围。当服务器要求你确认它的某个事件时，该行会出现**确认**按钮。认证载荷，例如 `{"token": "{{token}}"}`，放在**事件**标签页的**认证**字段中。参见 [Socket.IO](/docs/requests/socket-io)。
+
+## 4. MQTT：仓库传感器 [#4-mqtt-warehouse-sensors]
+
+同样的本地服务器还在 `localhost:1883` 上运行一个 MQTT Broker，每 1.5 秒发布三个仓库的温度。
+
+1. 打开 **Realtime › Warehouse sensors**。它的 URL 是 `mqtt://{{mqttHost}}`，方法菜单中的**协议**是 **MQTT 3.1.1**。
+2. 它的**订阅**标签页中有订阅 `warehouses/+/temperature`，**QoS 1**，并勾选了**连接时订阅**。`+` 匹配主题的一级。
+3. 选取**连接**。`warehouses/zurich/temperature`、`warehouses/bern/temperature` 和 `warehouses/chur/temperature` 的消息会陆续到达，例如 `{"celsius": 6.1, "humidity": 44, …}`。
+4. 用**所有主题**菜单可以只显示一个仓库。
+5. 在**订阅**输入框中输入 `warehouses/status`，保持 **QoS 0**，然后选取**订阅**。会立即到达一条消息 `{"online": 3}`，标有“保留”：Broker 为之后订阅的任何人保存了它。
+6. 在**发布**标签页中，把主题设为 `warehouses/bern/door`，载荷设为 `{"open": true}`，然后选取**发布**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>）。订阅 `warehouses/#` 可看到它返回：`#` 匹配其下的所有级别。
+
+**连接**标签页包含**客户端 ID**、清除会话设置、**保持连接**和遗嘱。Broker 的用户名和密码作为 Basic 认证放在**认证**标签页中；请把密码保存在机密变量中。命令行工具同样支持 MQTT：
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 5
+```
+
+参见 [MQTT](/docs/requests/mqtt) 和 [`echolot mqtt`](/docs/cli/mqtt)。
+
+## 5. 并排运行 [#5-side-by-side]
+
+每个请求都有自己的标签页。让 **Order updates**、**Support chat** 和 **Warehouse sensors** 在三个标签页中保持打开并分别连接：在它们之间切换时，每个连接都保持打开。会话关闭后，Echolot 会把它连同完整的消息日志保存在历史记录中，因此你可以稍后再读（<kbd>⌘</kbd><kbd>Y</kbd>）。
+
+本地服务器也提供 gRPC：运行 `bun run grpc`，然后发送 **Inventory** 中的请求。**Watch stock** 会流式传输十几个库存水平然后结束。参见 [gRPC](/docs/requests/grpc)。
+
+## 后续步骤 [#next-steps]
+
+- [WebSocket 与 SSE](/docs/requests/websocket-and-sse)：子协议、二进制消息、对会话的检查。
+- [Socket.IO](/docs/requests/socket-io) 和 [MQTT](/docs/requests/mqtt)：每项设置。
+- [测试 API 并在 CI 中运行](/docs/tutorials/test-in-ci)：会话也会在运行器中运行，并发送它们已存储的消息。

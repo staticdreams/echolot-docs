@@ -1,0 +1,235 @@
+---
+title: "Exécution et déclencheurs"
+description: "Exécutez un flux à la main, selon une planification, depuis un webhook, comme outil pour des agents IA ou en ligne de commande, et autorisez les déclencheurs qui lancent des flux sans vous."
+---
+
+Un flux s’exécute quand quelque chose le lance : vous, avec le bouton **Exécuter** ; un agent IA, quand vous proposez le
+flux comme outil ; une planification ; un webhook ; ou `echolot flow run` dans un terminal ou en CI. Quoi qu’il le
+lance, chaque requête suit le même chemin qu’un envoi depuis la page de la requête.
+
+## Exécuter à la main [#run-by-hand]
+
+1. Ouvrez le flux sur la page Flux.
+2. Cliquez sur **Exécuter** dans la barre d’outils, ou appuyez sur <kbd>⌘</kbd><kbd>R</kbd>.
+3. Quand le flux a des [entrées](/docs/flows#inputs-and-outputs), la feuille **Exécuter** portant le nom du flux les
+   demande. Chaque champ affiche le nom de l’entrée, son type et si elle est obligatoire, et commence par sa valeur par
+   défaut. Laissez un champ vide pour utiliser la valeur par défaut, puis cliquez sur **Exécuter**.
+
+Le flux est d’abord enregistré : l’exécution utilise donc ce qui est sur le canevas. Il s’exécute avec
+l’[environnement](/docs/workspaces/environments) actif de la fenêtre. **Exécuter** est indisponible tant que le flux a des
+erreurs ; son infobulle indique « Corrigez d’abord les problèmes du flux ».
+
+Quand un [environnement protégé](/docs/workspaces/protected-environments) est actif, le bouton indique
+**Exécuter dans Production…** (avec le nom de cet environnement) et Echolot demande confirmation une fois avant le début
+de l’exécution. Les requêtes à l’intérieur de l’exécution ne redemandent pas.
+
+### La vue d’exécution [#the-run-view]
+
+Pendant l’exécution du flux, ses blocs affichent leur état sur le canevas, et le journal d’exécution s’ouvre dessous :
+
+| Sur le canevas | Signification |
+| --- | --- |
+| Bordure de la couleur d’accentuation | Le bloc s’exécute, ou vous attend. |
+| Bordure verte | Le bloc a terminé. |
+| Bordure rouge | Le bloc a échoué. |
+
+Le journal d’exécution liste, dans l’ordre :
+
+- chaque bloc à mesure qu’il termine, avec sa durée ;
+- les lignes des blocs Journal et des `console.log` dans les blocs Évaluer ;
+- les résultats de test des blocs Vérifier et de `pm.test`, avec **Tests** réussis/total dans l’en-tête ;
+- les erreurs, en rouge ;
+- la façon dont l’exécution s’est terminée : `Finished in 1.2 s`, `Stopped in …` ou `Failed in …` avec la raison.
+
+Cliquez sur une ligne pour sélectionner son bloc. Sélectionnez n’importe quel bloc pour voir sa **Dernière exécution**
+dans l’inspecteur, avec ses valeurs d’**Entrée** et de **Sortie** par port. **Effacer** vide le journal et les états du
+canevas ; le bouton de fermeture masque le journal, et **Journal d’exécution** dans la barre d’outils l’affiche de
+nouveau.
+
+**Arrêter** (<kbd>⌘</kbd><kbd>.</kbd>) prend la place de **Exécuter** pendant une exécution. Il termine l’exécution,
+ferme la requête en cours et retire toute question affichée à l’écran.
+
+Quand une exécution échoue et que le modèle intégré au Mac est disponible, un bouton dans l’en-tête du journal explique
+l’échec à partir du journal.
+
+### Exécutions précédentes [#earlier-runs]
+
+La fenêtre conserve les 20 dernières exécutions du flux ouvert, y compris celles qu’une planification ou un webhook a
+lancées. Elles sont listées sous **Exécutions de** dans la barre latérale (avec la façon dont chacune s’est terminée,
+son heure de début et sa durée) et dans le menu **Exécutions** de la barre d’outils. Cliquez sur l’une d’elles pour
+l’afficher de nouveau sur le canevas : états des blocs et **Dernière exécution** de chaque bloc.
+**Effacer le canevas** dans le menu **Exécutions** les retire du canevas.
+
+Les enregistrements d’exécution restent dans la fenêtre. Les requêtes qu’un flux envoie figurent dans
+l’[historique](/docs/workspaces/history) de l’espace de travail comme n’importe quel autre envoi.
+
+## Déclencheurs [#triggers]
+
+Sélectionnez le bloc **Démarrer** pour voir les **Déclencheurs** du flux dans l’inspecteur.
+**Bouton Exécuter et `echolot flow run`** est toujours actif. Cochez les autres pour les ajouter :
+
+- **Agents (un outil MCP)**
+- **Planification**
+- **Webhook**
+
+Le bloc Démarrer affiche une petite icône pour chaque déclencheur actif, et la barre latérale les affiche sous le nom
+du flux.
+
+<Shot id="flows-triggers-start" alt="L’inspecteur du bloc Démarrer de Order status on webhook : la section Déclencheurs avec Webhook coché, la méthode POST et le chemin /order-status, l’adresse locale avec Copier l’URL et Copier le jeton, et Autorisé avec Révoquer" />
+
+### Autoriser un déclencheur [#allow-a-trigger]
+
+Les agents, les planifications et les webhooks lancent des flux quand vous n’êtes pas devant le canevas : chacun a donc
+aussi besoin de votre permission pour ce flux. Sous chaque déclencheur coché, cliquez sur **Autoriser**. Le déclencheur
+affiche alors **Autorisé** et un bouton **Révoquer**.
+
+La permission vaut pour le flux tel qu’il est maintenant : le flux lui-même, les requêtes qu’il envoie avec les
+dossiers au-dessus d’elles, les variables, l’auth, le proxy et les certificats de l’espace de travail, et les flux qu’il
+exécute. Modifiez l’un de ces éléments, sur le canevas, dans Git ou par un agent, et le déclencheur s’arrête jusqu’à ce
+que vous l’autorisiez de nouveau. Il indique alors « Le flux a changé depuis que vous l’avez autorisé. » et propose
+**Autoriser à nouveau**. Un flux ne peut pas s’autoriser lui-même : la permission est conservée dans Echolot sur votre
+Mac, pas dans l’espace de travail. Un flux avec des erreurs ne démarre jamais depuis un déclencheur.
+
+Les changements de valeurs d’environnement (un jeton récent, par exemple) ne retirent pas la permission.
+
+### Agents : un flux comme outil MCP [#agents-a-flow-as-an-mcp-tool]
+
+Proposez un flux aux agents IA et il devient un outil du serveur MCP d’Echolot : l’agent appelle un seul outil, le flux
+envoie les requêtes, et les secrets restent dans Echolot.
+
+1. Sélectionnez le bloc Démarrer et cochez **Agents (un outil MCP)**.
+2. **Nom de l’outil** est `flow_` suivi du nom de fichier du flux avec des tirets bas (`flow_place_test_order`), sauf si
+   vous en saisissez un autre : jusqu’à 64 lettres, chiffres, `_` et `-`.
+3. Rédigez **Ce que fait l’outil**, à l’intention du modèle. Il commence par la description du flux.
+4. Cliquez sur **Autoriser**.
+5. Activez **Réglages › Agents** et connectez votre client. Voir [agents IA](/docs/ai/agents).
+
+Les arguments de l’outil sont les entrées du flux, et son résultat est ce que le bloc Sortie a reçu. **Place a test
+order** est proposé sous le nom `place_test_order`. Le flux apparaît dans la liste des outils tant que l’ensemble
+d’outils **Flux** est activé (il l’est par défaut). Les agents ne peuvent démarrer que des flux proposés et autorisés.
+
+Quand un agent démarre un flux, Echolot vous demande une fois, avant l’exécution, avec ce que le flux va faire : quelles
+requêtes il envoie à quelles adresses, quelles variables et quels secrets il enregistre, quels fichiers il écrit, quels
+outils et flux il exécute, et où il interroge une personne. Pendant l’exécution, ce que vous avez approuvé s’exécute sans
+redemander ; les environnements protégés, les nouveaux hôtes et les suppressions demandent toujours, tout comme ce que
+les règles propres à l’agent refusent.
+
+Les blocs Personnes d’un flux lancé par un agent vont au client de l’agent : il affiche le message, le code et le lien,
+ou demande les valeurs. Un bloc Approuver vous revient toujours : quand l’agent y répond, Echolot vous demande d’abord.
+
+L’[Assistant](/docs/ai/assistant) exécute les flux de la même façon.
+
+### Planification [#schedule]
+
+Exécutez un flux tout seul, toutes les tant de minutes ou selon un calendrier.
+
+1. Sélectionnez le bloc Démarrer et cochez **Planification**. Elle commence à toutes les 60 minutes.
+2. Choisissez **Intervalle** et renseignez **Toutes les** … **minutes**, ou choisissez **Heures fixes (cron)** et
+   saisissez une ligne cron (minute, heure, jour, mois, jour de la semaine). Une planification est l’un ou l’autre,
+   et s’exécute au plus une fois par minute.
+3. Cliquez sur **Autoriser**.
+
+Une fois autorisée, l’inspecteur affiche **Prochaine exécution** avec sa date et son heure. Les exécutions planifiées
+ont lieu tant que la fenêtre de l’espace de travail est ouverte, avec l’environnement actif de la fenêtre au moment de
+l’exécution, et démarrent avec les valeurs par défaut des entrées. Une exécution manquée pendant que le Mac dormait ou
+que la fenêtre était fermée s’exécute une fois au prochain contrôle d’Echolot ; un flux encore en cours n’est pas
+redémarré. Une exécution planifiée en échec affiche une notification. Pour exécuter des planifications sans l’app,
+utilisez [`echolot flow serve`](#run-from-the-command-line).
+
+Les lignes cron utilisent cinq champs, dans le fuseau horaire de votre Mac : minute (0–59), heure (0–23), jour du mois
+(1–31), mois (1–12 ou `jan`–`dec`) et jour de la semaine (0–7 ou `sun`–`sat` ; 0 et 7 sont dimanche). Chaque champ
+accepte `*`, des nombres, des plages (`1-5`), des listes (`1,15`) et des pas (`*/15`, `8-18/2`). Quand le jour et le
+jour de la semaine sont tous deux restreints, il suffit que l’un des deux corresponde.
+
+| Ligne cron | S’exécute |
+| --- | --- |
+| `0 6 * * *` | Tous les jours à 6 h 00 (**Morning stock check**). |
+| `0 7 * * 1-5` | En semaine à 7 h 00. |
+| `*/15 8-18 * * *` | Toutes les 15 minutes de 8 h 00 à 18 h 45. |
+| `0 9 1 * *` | Le premier de chaque mois à 9 h 00. |
+
+Les blocs Personnes ne peuvent interroger personne pendant une exécution planifiée : ils y échouent.
+
+### Webhook [#webhook]
+
+Démarrez un flux quand quelque chose envoie une requête à une adresse locale.
+
+1. Sélectionnez le bloc Démarrer et cochez **Webhook**.
+2. Choisissez la méthode (`GET`, `POST`, `PUT`, `PATCH` ou `DELETE` ; `POST` par défaut) et le chemin, qui commence par
+   `/`. Le chemin commence par `/` suivi du nom de fichier du flux.
+3. Cliquez sur **Autoriser**.
+
+Une fois autorisé, l’inspecteur affiche l’adresse, par exemple `POST http://127.0.0.1:52817/order-status`, avec
+**Copier l’URL** et **Copier le jeton**. Echolot écoute sur ce Mac uniquement (127.0.0.1) tant que la fenêtre est
+ouverte. Le port est choisi une fois par espace de travail et conservé.
+
+Les appelants doivent envoyer le jeton de l’espace de travail, qu’Echolot crée la première fois et conserve dans le
+trousseau. L’un de ces moyens suffit :
+
+- l’en-tête `Authorization: Bearer <token>` ;
+- l’en-tête `X-Echolot-Token: <token>` ;
+- le paramètre de requête `?token=<token>`.
+
+```sh
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "Authorization: Bearer <token>"
+```
+
+**Order status on webhook** se connecte, récupère la commande et répond avec elle. La chaîne de requête et les clés d’un
+corps JSON renseignent les entrées du flux portant les mêmes noms ; les autres clés sont ignorées. Une entrée nommée
+`body` reçoit tout le corps. Un flux avec une entrée `order` accepte donc `?order=ord_7Hk2Lw` ou
+`{"order": "ord_7Hk2Lw"}`. L’exécution utilise l’environnement actif de la fenêtre.
+
+| Réponse | Quand |
+| --- | --- |
+| `200` avec la sortie en JSON | L’exécution a réussi. Le corps est ce que le bloc Sortie a reçu, ou `null`. |
+| `401` | Le jeton est absent ou erroné. |
+| `404` | Aucun flux autorisé ne répond à cette méthode et ce chemin ; l’erreur liste ceux qui répondent. |
+| `413` | Le corps dépasse 8 Mo. Le flux n’est pas exécuté. |
+| `500` | L’exécution a échoué. Le corps contient `error` et l’ID de l’exécution. |
+| `503` | L’exécution a été arrêtée. |
+
+Une exécution de webhook s’arrête après deux minutes. Les blocs Personnes ne peuvent interroger personne : ils y
+échouent.
+
+## Exécutions en arrière-plan [#background-runs]
+
+Les exécutions que les planifications et les webhooks lancent dans l’app apparaissent sous **Exécutions de** ce flux tant
+qu’il est ouvert, et une exécution en échec affiche une notification macOS avec le nom du flux et l’erreur. Elles
+s’exécutent avec votre autorité, comme une exécution que vous lancez, mais seulement pour les flux que vous avez
+autorisés.
+
+## Exécuter en ligne de commande [#run-from-the-command-line]
+
+La commande `echolot` exécute les mêmes flux sans l’app. En CI, c’est ainsi qu’un flux devient une barrière de livraison.
+
+```sh
+# List the flows, their inputs and problems
+echolot flow list -w Alpenglow.echolot
+
+# Run one; exits with an error when the run or one of its tests fails
+echolot flow run morning-stock-check -w Alpenglow.echolot --env staging --no-input
+
+# Pass inputs as name=value (a flow made from the Paginate and export template)
+echolot flow run export-products -w Alpenglow.echolot --input pages=5
+
+# Run schedules and answer webhooks until Ctrl-C
+echolot flow serve -w Alpenglow.echolot --port 4100
+```
+
+- `flow run` imprime chaque bloc à mesure qu’il termine, puis la sortie. `--json` imprime à la place
+  l’enregistrement de l’exécution. Les blocs Personnes interrogent dans le terminal ; avec `--no-input`, ils font
+  échouer l’exécution, ce dont la CI a besoin. Les blocs Notifier impriment leur texte.
+- `flow serve` exécute les flux planifiés à l’échéance et répond aux webhooks sur le port 4100 (`--port 0` en choisit un
+  libre). `--share` écoute sur toutes les interfaces réseau, pour les conteneurs. Le jeton vient de `--token`, sinon de
+  `ECHOLOT_WEBHOOK_TOKEN`, sinon d’un nouveau qu’il imprime.
+- En ligne de commande, vous avez lancé l’exécution vous-même : les flux n’ont donc pas besoin d’**Autoriser** ;
+  `flow serve` exécute chaque flux avec une planification ou un webhook et sans erreur.
+
+Toutes les options sont décrites sur [echolot flow](/docs/cli/flow).
+
+<Edition only="direct">
+  L’outil en ligne de commande est fourni dans le téléchargement direct
+  (**Echolot › Installer l’outil en ligne de commande…**). Avec l’édition App Store, installez-le séparément à partir du
+  zip de la page des versions.
+</Edition>

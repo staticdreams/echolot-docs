@@ -1,0 +1,79 @@
+---
+title: "WebSocket 与 SSE"
+description: "连接 WebSocket 服务器，发送已存储的消息和一次性消息，并实时跟踪服务器发送事件流。"
+---
+
+WebSocket 请求会打开一个持续保持的连接：你发送消息，并在服务器的消息到达时立即看到。服务器发送事件（SSE）是响应持续流式传输的普通 HTTP 请求；Echolot 会在每个事件到达时显示它。
+
+## WebSocket 请求 [#websocket-requests]
+
+<Shot id="requests-websocket-log" alt="Realtime › Order updates 已连接到演示 API：消息标签页中有已存储的 Subscribe 和 Ping 消息，响应窗格的消息日志中有已发送和已接收的订单事件" />
+
+### 连接 [#connect]
+
+1. 选取 **文件 › 新建 WebSocket 请求**，或在边栏中 **请求** 旁边的 **+** 菜单里选取 **新建 WebSocket 请求**。
+2. 输入地址，以 `ws://` 或 `wss://` 开头。Alpenglow 的 **Realtime › Order updates** 使用 `{{wsURL}}/orders`，即 `wss://demo.echolot.dev/v1/orders`。
+3. 选取 **连接**（<kbd>⌘</kbd><kbd>R</kbd>）。
+
+连接打开期间，按钮显示 **断开连接**（再按一次 <kbd>⌘</kbd><kbd>R</kbd>）。当启用了受保护的环境时，它显示 **连接到 Production…**（带该环境的名称），并会先询问。见[受保护的环境](/docs/workspaces/protected-environments)。
+
+编辑器有这些标签页：**文档**、**消息**、**标头**、**参数**、**认证**、**变量**、**测试**、**脚本** 和 **设置**。标头、查询参数和认证随开场握手（HTTP 升级）一起发送，
+所以需要在标头或地址中带令牌的服务器会在那里拿到它。TLS 验证、代理和证书等设置的适用方式与 [HTTP 请求](/docs/requests/settings)相同。
+
+### 子协议 [#subprotocols]
+
+在 **消息** 标签页顶部，**子协议** 列出要向服务器提供的协议，用逗号分隔，例如 `graphql-ws, chat.v2`。留空表示不提供。
+
+### 发送消息 [#send-messages]
+
+在 **消息** 标签页底部，输入消息并选取 **发送**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>）。其中可以使用 `{{variables}}`。在连接打开之前，字段显示 **连接后即可发送消息**。
+
+经常发送的消息可以与请求一起存储。点按字段旁边的 **+** 即可存储你输入的内容。每条已存储的消息都有名称、文本和它自己的 **发送** 按钮。Order updates 有两条：
+
+```json
+{"op":"subscribe","channel":"orders"}
+```
+
+```json
+{"op":"ping"}
+```
+
+已存储消息开头的复选框 **在运行中发送**，决定请求在无人操作的情况下运行时是否发送它：在[运行器](/docs/requests/runner)中、通过命令行，或为智能体运行时。
+这些情况会在连接之后按顺序发送已启用的消息，然后监听 10 秒并关闭。
+
+### 消息日志 [#the-message-log]
+
+响应窗格的 **消息** 标签页实时显示会话：双向的每条消息，最新的在最后，附有时间和大小，以及连接打开和关闭的时刻。
+
+- **全部**、**已发送** 和 **已接收** 按方向过滤。
+- **过滤消息** 按文本查找消息。
+- **更多** 以美化格式显示 JSON 消息；**收起** 再次将其折叠。
+- 拷贝按钮拷贝一条消息。
+
+Echolot 会自己应答服务器的 ping。由分片拼接而成的消息最大可达 64 MB；更大的消息会以代码 1009 关闭连接。
+
+连接关闭时，会话保存在[历史记录](/docs/workspaces/history)中：握手作为请求，消息日志作为响应正文。
+
+## 服务器发送事件 [#server-sent-events]
+
+服务器发送事件流是类型为 `text/event-stream`、持续发送事件的 HTTP 响应。为它使用普通的 HTTP 请求即可：除了地址，无需任何设置。
+
+<Shot id="requests-sse-events" alt="Realtime › Order events 发送到演示 API：响应窗格的事件标签页中有带编号的事件，每个都有事件名称、ID 和 JSON 数据" />
+
+1. 在 Alpenglow 工作区中打开 **Realtime › Order events**。它发送 `GET {{baseURL}}/orders/events`，带 `Accept: text/event-stream`。
+2. 选取 **发送**。
+3. 在响应窗格中选取 **事件** 标签页。
+
+**事件** 标签页按顺序列出每个事件，带编号，附有事件名称和它的 ID（`id:`），数据是 JSON 时则以 JSON 显示。事件流运行期间，它会跟随新事件并为其计数。
+**正文** 标签页按服务器写出的样子显示事件流，随着数据到达不断增长。
+
+事件流会一直运行，直到服务器结束它或你选取 **取消**（<kbd>⌘</kbd><kbd>.</kbd>）；已到达的内容会保留。事件流开始之后，请求的总超时不再对它适用。
+在运行中、通过命令行以及为智能体运行时，事件流会在 10 秒后结束。
+
+要从事件流停下的地方继续，请在 `Last-Event-ID` 标头中把最后一个事件的 ID 发回去。演示 API 的事件流发送 20 个事件，相邻两个事件相隔一秒，随后发送 `end`，并支持 `Last-Event-ID`。
+
+通过 HTTP 的 GraphQL 订阅同样使用服务器发送事件：见 [GraphQL](/docs/requests/graphql)。
+
+## 通过命令行 [#from-the-command-line]
+
+`echolot send` 可以在终端中打开 WebSocket 和 Socket.IO 会话，并跟踪事件流。见 [echolot send](/docs/cli/send) 和[实时教程](/docs/tutorials/realtime)。

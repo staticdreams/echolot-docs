@@ -1,0 +1,99 @@
+---
+title: "Erfassungen aus Antworten"
+description: "Werte aus einer Antwort, etwa ein Token oder eine ID, nach jedem Senden in Variablen behalten, damit jede andere Anfrage den neuesten liest."
+---
+
+Eine Erfassung behält nach jedem Senden einen Wert aus der Antwort einer Anfrage in einer Variablen. Erfasse das
+Zugriffstoken aus einer Anmeldeantwort in `{{token}}`, und jede Anfrage, die `{{token}}` nutzt, sendet das neueste, ohne
+Kopieren. Wird das Token erneuert, bekommen es alle neu.
+
+Erfassungen werden mit der Anfrage gesichert und funktionieren daher für alle, die den Arbeitsbereich haben, in der
+Ausführung und in Flows genauso wie beim Klick auf **Senden**.
+
+## Wert aus der Antwort sichern [#store-a-value-from-the-response]
+
+Am schnellsten legst du eine Erfassung aus der Antwort selbst an:
+
+1. Sende die Anfrage. Im Alpenglow-Beispiel sendest du **Auth › Sign in**.
+2. Wähle im Tab **Body** den **JSON-Baum** (oder **Formular**, **MessagePack** oder **XML** für diese Bodys).
+3. Halte den Zeiger auf den Wert, etwa `access_token`, und klicke auf **In Variable speichern …**.
+4. Tippe einen **Variablennamen** oder behalte den aus dem Pfad vorgeschlagenen. Bereits verwendete Namen werden beim
+   Tippen angeboten; wählst du einen, ersetzt das diese Variable (das Panel zeigt **Ersetzt token**).
+5. Wähle unter **Sichern in** die Umgebung des Fensters (**Umgebung „Staging“**) oder **Arbeitsbereich**.
+6. Setze das Häkchen bei **Geheim**, um den Wert nur im Schlüsselbund und nie in Dateien zu halten. Es ist bei Namen, die
+   nach Zugangsdaten aussehen (`token`, `secret`, `password`, `apiKey` und Ähnliche), von Anfang an gesetzt.
+7. Lass **Bei jedem Senden aktualisieren** angehakt, damit es eine Erfassung der Anfrage wird, mit ihr gesichert. Nimm
+   das Häkchen weg, um den Wert nur einmal zu sichern.
+8. Klicke auf **Sichern**.
+
+<Shot id="requests-http-store-variable" alt="Das Panel „In Variable speichern“ über dem JSON-Baum von Sign in: der Pfad $.access_token, der Variablenname token, „Sichern in“ auf Arbeitsbereich, „Geheim“ und „Bei jedem Senden aktualisieren“ angehakt" />
+
+## Erfassungen bearbeiten [#edit-captures]
+
+Die Erfassungen einer Anfrage stehen in ihrem Tab **Variablen** unter **Aus der Antwort**, unterhalb der eigenen
+Variablen der Anfrage. Jede Zeile ist eine Erfassung:
+
+| Spalte | Was sie enthält |
+| --- | --- |
+| Kontrollkästchen | Ob die Erfassung läuft. |
+| **Variable** | Der Name der Variablen, ohne Klammern. |
+| **Quelle** | Wo in der Antwort der Wert gelesen wird. |
+| **Pfad oder Name** | Ein JSONPath, ein XPath oder der Name eines Headers oder Cookies. |
+| **Gesichert in** | **Umgebung** (die beim Senden der Anfrage für das Fenster gewählte) oder **Arbeitsbereich**. |
+| **Geheim** | Wird auf diesem Mac im Schlüsselbund gehalten, nie in Arbeitsbereichsdateien. Eine Variable, die schon ein Secret ist, bleibt eines. |
+
+Klicke auf **Wert hinzufügen** für eine neue Zeile und auf die Taste **−**, um eine zu entfernen. Nach dem Senden zeigt
+jede Zeile ein grünes Häkchen, wenn sie ihren Wert gesichert hat, oder eine orangefarbene Warnung mit dem Grund, wenn
+nicht.
+
+### Woher Werte kommen [#where-values-come-from]
+
+| Quelle | Pfad oder Name | Beispiel |
+| --- | --- | --- |
+| **JSON** | Ein JSONPath in einen JSON-Body. | `$.access_token` |
+| **Formular** | Ein JSONPath in einen URL-codierten Body, gelesen als Objekt. | `$.access_token` |
+| **MessagePack** | Ein JSONPath in einen MessagePack-Body, gelesen als JSON. | `$.access_token` |
+| **XML** | Ein XPath in einen XML-Body. | `/auth/token` |
+| **Header** | Ein Antwort-Header, nach Namen. | `Location` |
+| **Cookie** | Ein Cookie, das die Antwort setzt, nach Namen. | `session` |
+| **Status** | Der Statuscode. | |
+| **Body** | Der ganze Body als Text. | |
+
+## Umgebung oder Arbeitsbereich [#environment-or-workspace]
+
+- **Umgebung** schreibt die Variable in die Umgebung, die zum Zeitpunkt des Sendens für das Fenster gewählt ist. Nutze
+  das für Werte, die je Server abweichen, etwa ein Staging-Token und ein Production-Token. Ist keine Umgebung gewählt,
+  wird nichts gesichert, und die Zeile sagt, dass du eine wählen oder im Arbeitsbereich sichern sollst.
+- **Arbeitsbereich** schreibt eine Variable des Arbeitsbereichs, die unabhängig von der gewählten Umgebung gleich ist.
+
+Der Wert einer Umgebung hat bei gleichem Namen Vorrang vor dem des Arbeitsbereichs; eine Erfassung in den
+Arbeitsbereich wird also verdeckt, wenn die gewählte Umgebung eine Variable mit diesem Namen hat. Siehe
+[Umgebungen](/docs/workspaces/environments).
+
+## Secrets [#secrets]
+
+Ein erfasstes Secret wird nur in den Schlüsselbund geschrieben. Die Arbeitsbereichsdatei nennt die Variable, enthält
+aber nie ihren Wert, sodass du den Arbeitsbereich committen kannst. Schalte **Geheim** für jedes Token, jede Sitzungs-ID
+und jeden Schlüssel an, die du erfasst. Siehe [Secrets](/docs/workspaces/secrets).
+
+In Alpenglow erfasst **Auth › Sign in** `$.access_token` in das Secret `token` des Arbeitsbereichs, und der Ordner
+**Orders** sendet es als Bearer-Token.
+
+## Wenn nichts erfasst wird [#when-nothing-is-captured]
+
+Eine Erfassung lässt ihre Variable, wie sie war, und nennt nach dem Senden den Grund, wenn:
+
+- der Status der Antwort 400 oder höher ist: Werte werden nur aus Antworten unter 400 behalten, sodass eine
+  fehlgeschlagene Anmeldung nie ein gutes Token überschreibt,
+- der Pfad in der Antwort nichts findet,
+- der Body größer als 32 MB ist,
+- sie in die Umgebung sichert und keine Umgebung gewählt ist,
+- das Schreiben nicht erlaubt ist: Sendet ein KI-Agent die Anfrage, entscheidet seine Richtlinie, ob er Variablen ändern
+  darf. Siehe [Agenten](/docs/ai/agents).
+
+## Erfassungen oder Antwortwerte [#captures-or-response-values]
+
+[Dynamische Werte](/docs/requests/dynamic-values#values-from-other-requests-responses) wie
+`{{$response('auth/sign-in', '$.access_token')}}` lesen die neueste Antwort einer Anfrage direkt und senden sie zuerst,
+falls sie noch keine hat. Eine Erfassung kopiert den Wert stattdessen in eine Variable, was zu einem Wert passt, den
+viele Anfragen nutzen oder den mehrere Anfragen erneuern können. Beide lesen denselben JSONPath und XPath.

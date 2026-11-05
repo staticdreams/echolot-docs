@@ -1,0 +1,338 @@
+---
+title: "动态值"
+description: "Echolot 提供的全部动态值，附带参数和示例，分组方式与输入两个左花括号后出现的建议列表相同。"
+---
+
+动态值是 `{{ }}` 中的一个函数：`{{$uuid}}`、`{{$base64('heidi:alpenglow')}}`、`{{$responseJSONPath('auth/sign-in', '$.access_token')}}`。Echolot 会在发送请求时计算它。动态值可用于变量能用的任何地方：URL、标头、正文、认证字段、消息和设置。关于如何在 App 中选取和编辑它们，参见[动态值](/docs/requests/dynamic-values)。
+
+## 书写方式 [#writing-them]
+
+- 动态值以 `$` 开头：`{{$timestamp}}`。没有参数时，括号可以省略。
+- 参数放在括号中，用逗号分隔：加引号的文本（`'…'` 或 `"…"`）、数字、不加引号的变量名，或其他动态值。
+- 文本参数本身可以包含标记：`{{$base64('{{email}}:{{password}}')}}`。引号内的 `}}` 不会结束该标记。
+- 无法解析的内容会保持你写的样子并被报告，因此多余的 `{{` 绝不会破坏请求。
+
+```text
+{{$sha256('{{body}}', 'base64')}}
+{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}
+{{$hmacSha256(apiSecret, $timestamp)}}
+```
+
+## 响应 [#responses]
+
+这些值读取另一个已存储请求的最新响应，该请求用其路径指定（`folder/request`，如 `auth/sign-in`）。每个值都接受一个可选的最后参数，说明是否先发送那个请求：
+
+| 最后一个参数 | 含义 |
+| --- | --- |
+| `'if-missing'`（默认） | 当它还没有响应时先发送。 |
+| `'fresh'` | 每次都先发送；在一次运行中只发送一次。 |
+| `'latest'` | 从不发送；使用最新的响应。 |
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$responseJSONPath` | 请求、JSONPath | 响应正文中用 JSONPath 选出的值。`{{$responseJSONPath('auth/sign-in', '$.access_token')}}` |
+| `$responseKeyPath` | 请求、键路径 | 用 `data.items.0.id` 这样的键路径选出的值。`{{$responseKeyPath('orders/list-orders', 'items.0.id')}}` |
+| `$responseJq` | 请求、jq 过滤器 | jq 过滤器对正文的处理结果；有多个结果时每行一个。`{{$responseJq('catalog/list-products', '.items[0].sku')}}` |
+| `$responseXPath` | 请求、XPath | XML 响应中的值。`{{$responseXPath('echo/xml', '/catalog/product[1]/@sku')}}` |
+| `$responseRegex` | 请求、模式 | 正文中正则表达式的第一个匹配：如果有分组，则为第一个分组。`{{$responseRegex('echo/html', '<title>(\\w+)</title>')}}` |
+| `$responseHeader` | 请求、标头 | 一个响应标头。`{{$responseHeader('orders/create-order', 'Location')}}` |
+| `$responseCookie` | 请求、Cookie | 响应所设置的某个 Cookie 的值。`{{$responseCookie('echo/set-cookie', 'flavour')}}` |
+| `$responseStatus` | 请求 | 状态码。`{{$responseStatus('auth/sign-in')}}` |
+| `$responseBody` | 请求 | 整个正文，作为文本。`{{$responseBody('auth/who-am-i')}}` |
+| `$responseBodyLength` | 请求 | 正文的大小，以字节计。`{{$responseBodyLength('catalog/export')}}` |
+| `$response` | 请求、查询 | 以上任一项，由查询的形式决定：JSONPath（`$.token`）、XPath（`/a/b`，或 `xpath:…`）、`regex:…`、`jq:…`、`keypath:…`、`header:Name` 或 `cookie:Name`。`{{$response('auth/sign-in', 'header:Content-Type')}}` |
+
+例如，**Who am I** 可以直接从 **Sign in** 取得令牌，必要时先发送它：
+
+```text
+Authorization: Bearer {{$responseJSONPath('auth/sign-in', '$.access_token')}}
+```
+
+如果请求循环读取彼此的响应，会被拒绝，并指出构成循环的请求。[响应捕获](/docs/requests/captures)是在请求之间传递值的另一种方式。
+
+## 请求 [#requests]
+
+这些值读取一个请求在发送时的样子，即已解析的结果。第一个参数是已存储请求的路径，或者为空（`''`）表示正在发送的请求。
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$requestURL` | 请求 | 它的 URL，已解析。`{{$requestURL('')}}` |
+| `$requestMethod` | 请求 | 它的方法。`{{$requestMethod('')}}` |
+| `$requestHeader` | 请求、标头 | 一个标头，已解析，包括其认证添加的内容。`{{$requestHeader('', 'Content-Type')}}` |
+| `$requestQuery` | 请求、参数 | 其 URL 的一个查询参数，已解码。`{{$requestQuery('', 'page')}}` |
+| `$requestBody` | 请求 | 它的正文，已解析，作为文本。`{{$requestBody('')}}` |
+| `$requestJSONPath` | 请求、JSONPath | 其 JSON 正文中的值。`{{$requestJSONPath('orders/create-order', '$.lines[0].sku')}}` |
+| `$requestJq` | 请求、jq 过滤器 | jq 过滤器对其 JSON 正文的处理结果。`{{$requestJq('', '.lines[0].quantity')}}` |
+| `$requestVariable` | 请求、变量 | 该请求所看到的某个变量。`{{$requestVariable('auth/sign-in', 'email')}}` |
+
+常见的用法是用请求发送的内容给请求签名：
+
+```text
+X-Signature: {{$hmacSha256(apiSecret, $requestBody(''))}}
+```
+
+## 编码 [#encoding]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$base64` | 文本 | 文本的 Base64 编码。`{{$base64('heidi:alpenglow')}}` |
+| `$base64Decode` | Base64 | 将 Base64 或 Base64URL 解码为文本。`{{$base64Decode('aGVpZGk=')}}` |
+| `$base64Url` | 文本 | 文本的 Base64URL 编码，不带填充。`{{$base64Url('{"alg":"none"}')}}` |
+| `$urlEncode` | 文本 | 文本经百分号编码，可用于 URL 组成部分。`{{$urlEncode('ultralight tent')}}` |
+| `$urlDecode` | 文本 | 将百分号编码的文本解码；`+` 保持为 `+`。`{{$urlDecode('ultralight%20tent')}}` |
+| `$hex` | 文本 | 文本的 UTF-8 字节，十六进制。`{{$hex('Grüezi')}}` |
+| `$hexDecode` | 十六进制 | 将十六进制解码为文本。`{{$hexDecode('6869')}}` |
+| `$jsonEscape` | 文本 | 转义后可放入 JSON 字符串的文本，不含引号。`{{$jsonEscape(note)}}` |
+| `$newline` | 无 | 一个换行符（`\n`）。 |
+| `$cr` | 无 | 一个回车符（`\r`）。 |
+| `$crlf` | 无 | 一个回车符加换行符（`\r\n`）。 |
+| `$tab` | 无 | 一个制表符。 |
+| `$unescape` | 序列 | 将转义序列转换为字符的文本：`\n`、`\r`、`\t`、`\0`、`\\`、`\xHH`、`\uHHHH`。`{{$unescape('café')}}` |
+| `$basicAuth` | 用户、密码 | HTTP Basic 的 `Authorization` 值：`Basic ` 加 `user:password` 的 Base64。`{{$basicAuth(email, password)}}` |
+| `$jwt` | 载荷、密钥、算法（可选） | 以密钥签名的 JSON 载荷的 JWT：默认为 `HS256`，也可选 `HS384` 或 `HS512`。`{{$jwt('{"sub": "heidi"}', jwtSecret)}}` |
+
+## 哈希和签名 [#hashes-and-signatures]
+
+每个哈希接受文本，以及可选的输出格式：`'hex'`（默认）、`'base64'` 或 `'base64url'`。每个 HMAC 接受密钥、消息，以及可选的输出格式。
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$md5` | 文本、输出 | 文本的 MD5。`{{$md5('alpenglow')}}` |
+| `$sha1` | 文本、输出 | SHA-1。`{{$sha1('alpenglow')}}` |
+| `$sha224` | 文本、输出 | SHA-224。 |
+| `$sha256` | 文本、输出 | SHA-256。`{{$sha256($requestBody(''), 'base64')}}` |
+| `$sha384` | 文本、输出 | SHA-384。 |
+| `$sha512` | 文本、输出 | SHA-512。 |
+| `$hmacMd5` | 密钥、消息、输出 | 以密钥计算的消息的 HMAC-MD5。 |
+| `$hmacSha1` | 密钥、消息、输出 | HMAC-SHA1。 |
+| `$hmacSha224` | 密钥、消息、输出 | HMAC-SHA224。 |
+| `$hmacSha256` | 密钥、消息、输出 | HMAC-SHA256。`{{$hmacSha256(apiSecret, $timestamp)}}` |
+| `$hmacSha384` | 密钥、消息、输出 | HMAC-SHA384。 |
+| `$hmacSha512` | 密钥、消息、输出 | HMAC-SHA512。 |
+
+## 时间 [#time]
+
+这些值都取发送请求的那一刻。
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$timestamp` | 无 | 以秒计的 Unix 时间：`1793525000`。 |
+| `$timestampMs` | 无 | 以毫秒计的 Unix 时间：`1793525000123`。 |
+| `$isoTimestamp` | 无 | UTC 的 ISO 8601 格式，含毫秒：`2026-11-01T09:30:00.123Z`。 |
+| `$httpDate` | 无 | HTTP 日期，用于 `Date` 或 `If-Modified-Since`：`Sun, 01 Nov 2026 09:30:00 GMT`。 |
+| `$date` | 格式、偏移秒数（可选）、时区（可选） | 按 Unicode 日期模式格式化的时间，按偏移量平移，位于指定时区（未指定则为 UTC）。`{{$date('yyyy-MM-dd')}}`、`{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
+
+## 随机 [#random]
+
+每次发送都会生成新值。
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$uuid` | 无 | 一个小写的随机 UUID。也可用 `$guid` 和 `$randomUUID`。`{{$uuid}}` |
+| `$randomInt` | 最小值、最大值 | 两者之间的整数，包含两端。只给一个参数时它是最大值，从 0 起；不给参数则为 0 到 1000。`{{$randomInt(1, 5)}}` |
+| `$randomString` | 长度、字符（可选） | 随机字符，未指定时为 16 个（最多 4096 个）：字母和数字，或指定的字符。`{{$randomString(8, 'ABCDEF0123456789')}}` |
+| `$randomHex` | 字节数 | 十六进制的随机字节，未指定时为 16 个（最多 2048 个）；数字个数是字节数的两倍。`{{$randomHex(8)}}` |
+
+Alpenglow 的 **Create order** 发送 `Idempotency-Key: {{$uuid}}`，因此它下的每一笔订单都是新的。
+
+## 示例数据 [#fake-data]
+
+为请求正文、测试数据和[模拟路由](/docs/mocks/routes#bodies-with-fake-data)生成的虚构值：姓名、地址、公司、价格、日期、乱数假文等，每次发送都不同。这些名称就是 Postman 的动态变量，因此使用它们的集合在这里会发送真实的值。在 `{{` 列表中，它们位于**示例数据**下，按分组排列。
+
+参数都是可选的；数字范围为 -10^15 到 10^15。模拟服务器的正文还可以使用[随机](#random)和[时间](#time)中的 `$uuid`（即 `$randomUUID`）、`$randomInt`、`$randomString`、`$randomHex`、`$timestamp`、`$timestampMs` 和 `$isoTimestamp`。在“终端”中，[`echolot fake`](/docs/cli/fake) 用它们填充模板。
+
+### 常用 [#common]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomFloat` | 最小值、最大值、小数位数 | 上下限之间（0 到 1000）的小数，除非另行指定，保留 2 位小数。 |
+| `$randomDigits` | 长度 | 随机数字组成的字符串，除非指定长度，否则为 6 位。 |
+| `$randomBoolean` | 无 | true 或 false。 |
+| `$randomElement` | 选项 | 随机选出的一个参数：$randomElement(active, paused, closed)。 |
+| `$randomAlphaNumeric` | 无 | 一个字母或数字。 |
+| `$randomColor` | 无 | 颜色名称：teal。 |
+| `$randomHexColor` | 无 | 十六进制颜色：#3f8acb。 |
+| `$randomAbbreviation` | 无 | 技术缩写：SQL。 |
+
+### 姓名和职业 [#names-and-jobs]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomFirstName` | 无 | 名字：Amelia。 |
+| `$randomLastName` | 无 | 姓氏：Okafor。 |
+| `$randomFullName` | 无 | 名字加姓氏：Amelia Okafor。 |
+| `$randomNamePrefix` | 无 | Mr.、Ms.、Dr.… |
+| `$randomNameSuffix` | 无 | Jr.、PhD… |
+| `$randomJobArea` | 无 | Mobility、Security… |
+| `$randomJobDescriptor` | 无 | Lead、Senior… |
+| `$randomJobTitle` | 无 | Senior Security Engineer。 |
+| `$randomJobType` | 无 | Engineer、Designer… |
+
+### 互联网 [#internet]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomEmail` | 无 | 电子邮件地址：amelia.okafor@gmail.com。 |
+| `$randomExampleEmail` | 无 | example.com、example.net 或 example.org 的电子邮件地址。 |
+| `$randomUserName` | 无 | 用户名：amelia_okafor42。 |
+| `$randomPassword` | 无 | 15 个随机字母和数字。 |
+| `$randomUrl` | 无 | https://northwind.io |
+| `$randomDomainName` | 无 | northwind.io |
+| `$randomDomainSuffix` | 无 | com、io、dev… |
+| `$randomDomainWord` | 无 | northwind |
+| `$randomIP` | 无 | IPv4 地址：192.168.14.7。 |
+| `$randomIPV6` | 无 | IPv6 地址。 |
+| `$randomMACAddress` | 无 | MAC 地址：3a:f1:0c:5e:92:b4。 |
+| `$randomProtocol` | 无 | http 或 https。 |
+| `$randomSemver` | 无 | 语义化版本：2.14.3。 |
+| `$randomLocale` | 无 | 区域设置：de_CH。 |
+| `$randomUserAgent` | 无 | 浏览器的 User-Agent。 |
+
+### 地址和地点 [#addresses-and-places]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomStreetName` | 无 | Maple Avenue |
+| `$randomStreetAddress` | 无 | 42 Maple Avenue |
+| `$randomCity` | 无 | Lisbon |
+| `$randomZipCode` | 无 | 五位数字的邮政编码。也可用 `$randomZip`。 |
+| `$randomCountry` | 无 | Portugal |
+| `$randomCountryCode` | 无 | ISO 3166 国家代码：PT。 |
+| `$randomLatitude` | 无 | 纬度：38.7223。 |
+| `$randomLongitude` | 无 | 经度：-9.1393。 |
+
+### 电话 [#phone]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomPhoneNumber` | 无 | 电话号码：555-201-4417。 |
+| `$randomPhoneNumberExt` | 无 | 带国家代码的电话号码：+44 555-201-4417。 |
+
+### 公司 [#companies]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomCompanyName` | 无 | Northwind Labs |
+| `$randomCompanySuffix` | 无 | Inc、LLC、GmbH… |
+| `$randomBs` | 无 | streamline seamless platforms |
+| `$randomBsAdjective` | 无 | seamless |
+| `$randomBsBuzz` | 无 | streamline |
+| `$randomBsNoun` | 无 | platforms |
+| `$randomCatchPhrase` | 无 | Adaptive real-time framework |
+| `$randomCatchPhraseAdjective` | 无 | Adaptive |
+| `$randomCatchPhraseDescriptor` | 无 | real-time |
+| `$randomCatchPhraseNoun` | 无 | framework |
+
+### 金融 [#finance]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomPrice` | 最小值、最大值 | 保留两位小数的价格，除非指定上下限，否则为 1 到 1000。 |
+| `$randomCurrencyCode` | 无 | EUR |
+| `$randomCurrencyName` | 无 | Euro |
+| `$randomCurrencySymbol` | 无 | € |
+| `$randomBankAccount` | 无 | 8 位的账号。 |
+| `$randomBankAccountName` | 无 | Savings Account |
+| `$randomBankAccountIban` | 无 | 校验位有效的 IBAN。 |
+| `$randomBankAccountBic` | 无 | BIC（SWIFT 代码）。 |
+| `$randomCreditCardMask` | 无 | 银行卡的末四位数字。 |
+| `$randomTransactionType` | 无 | deposit、payment、refund… |
+| `$randomBitcoin` | 无 | 虚构的比特币地址。 |
+
+### 商店和商品 [#shops-and-products]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomProduct` | 无 | Chair |
+| `$randomProductName` | 无 | Ergonomic Wooden Chair |
+| `$randomProductAdjective` | 无 | Ergonomic |
+| `$randomProductMaterial` | 无 | Wooden |
+| `$randomDepartment` | 无 | Garden |
+
+### 日期 [#dates]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomDatePast` | 无 | 过去一年中的某个时刻，ISO 8601 格式。 |
+| `$randomDateFuture` | 无 | 未来一年中的某个时刻，ISO 8601 格式。 |
+| `$randomDateRecent` | 无 | 过去两天中的某个时刻，ISO 8601 格式。 |
+| `$randomDate` | 无 | 过去一年中的某一天：2026-03-14。 |
+| `$randomWeekday` | 无 | Tuesday |
+| `$randomMonth` | 无 | March |
+
+### 单词 [#words]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomWord` | 无 | 一个单词。 |
+| `$randomWords` | 数量 | 几个单词，除非指定数量，否则为 3 个。 |
+| `$randomNoun` | 无 | router |
+| `$randomVerb` | 无 | compile |
+| `$randomIngverb` | 无 | compiling |
+| `$randomAdjective` | 无 | wireless |
+| `$randomPhrase` | 无 | 由上述单词组成的短语。 |
+
+### 乱数假文 [#lorem-ipsum]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomLoremWord` | 无 | dolor |
+| `$randomLoremWords` | 数量 | 乱数假文单词，除非指定数量，否则为 3 个。 |
+| `$randomLoremSentence` | 无 | 一个句子。 |
+| `$randomLoremSentences` | 数量 | 几个句子，除非指定数量，否则为 2 到 6 个。 |
+| `$randomLoremParagraph` | 无 | 一个段落。 |
+| `$randomLoremParagraphs` | 数量 | 若干段落，除非指定数量，否则为 3 个。 |
+| `$randomLoremText` | 无 | 一个或几个句子。 |
+| `$randomLoremSlug` | 无 | dolor-sit-amet |
+| `$randomLoremLines` | 无 | 几个句子，每行一个。 |
+
+### 文件 [#files]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomFileName` | 无 | router_matrix.pdf |
+| `$randomFileType` | 无 | image、text、video… |
+| `$randomFileExt` | 无 | pdf |
+| `$randomCommonFileName` | 无 | 带常见扩展名的文件名。 |
+| `$randomCommonFileType` | 无 | image、video、text… |
+| `$randomCommonFileExt` | 无 | png |
+| `$randomFilePath` | 无 | /var/reports/router_matrix.pdf |
+| `$randomDirectoryPath` | 无 | /var/reports |
+| `$randomMimeType` | 无 | application/pdf |
+
+### 图像 [#images]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomAvatarImage` | 无 | 头像图片的地址。 |
+| `$randomImageUrl` | 无 | 一张 640×480 图片的地址。 |
+| `$randomAbstractImage` | 无 | 主题为 abstract 的 640×480 图片的地址。其他主题：`$randomAnimalsImage`、`$randomBusinessImage`、`$randomCatsImage`、`$randomCityImage`、`$randomFoodImage`、`$randomNightlifeImage`、`$randomFashionImage`、`$randomPeopleImage`、`$randomNatureImage`、`$randomSportsImage`、`$randomTransportImage`。 |
+| `$randomImageDataUri` | 无 | 作为 data: URI 的小型 SVG 图片。 |
+
+### 数据库 [#databases]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$randomDatabaseColumn` | 无 | createdAt |
+| `$randomDatabaseType` | 无 | varchar |
+| `$randomDatabaseCollation` | 无 | utf8mb4_unicode_ci |
+| `$randomDatabaseEngine` | 无 | InnoDB |
+
+## 文本 [#text]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$lowercase` | 文本 | 小写的文本。`{{$lowercase(email)}}` |
+| `$uppercase` | 文本 | 大写的文本。`{{$uppercase(productId)}}` |
+| `$trim` | 文本 | 去掉两端空格和换行的文本。`{{$trim($responseBody('auth/who-am-i'))}}` |
+
+## 文件和系统 [#files-and-the-system]
+
+| 值 | 参数 | 返回什么 |
+| --- | --- | --- |
+| `$file` | 路径 | 文件的内容：相对于工作区的路径，或绝对路径。`{{$file('fixtures/order.json')}}` |
+| `$env` | 名称 | Echolot 进程的环境变量。`{{$env('HOME')}}` |
+
+## 动态值和智能体 [#dynamic-values-and-agents]
+
+当 AI 智能体发送请求时（通过 Echolot 的 MCP 服务器或助手），`$env` 不返回任何内容，`$file` 只读取工作区内的文件。机密值绝不会到达智能体。参见[智能体](/docs/ai/agents)。

@@ -1,0 +1,120 @@
+---
+title: "Votre première requête"
+description: "Créez un espace de travail, envoyez une requête à l’API de démo et lisez sa réponse, en quelques minutes."
+---
+
+Cette page vous mène d’un Echolot vide à une requête envoyée et une réponse lue. Elle utilise
+[l’API de démo](/docs/tutorials/demo-api) à l’adresse `https://demo.echolot.dev`, une boutique fictive d’équipement de
+plein air qui répond sans aucune configuration.
+
+## 1. Créer un espace de travail [#1-create-a-workspace]
+
+Un espace de travail est un dossier qui contient vos requêtes, à raison d’un fichier chacune. Commencez par en créer un.
+
+<Steps>
+<Step>
+
+Dans la fenêtre de bienvenue, choisissez **Nouvel espace de travail…** (ou **Fichier › Nouvel espace de travail…**,
+<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>).
+
+</Step>
+<Step>
+
+Donnez-lui un nom, par exemple `Alpenglow.echolot`, choisissez où le ranger et cliquez sur **Créer**.
+
+</Step>
+</Steps>
+
+L’espace de travail s’ouvre dans sa propre fenêtre. Il est vide, la page indique donc
+**Cet espace de travail est vide**.
+
+## 2. Créer une requête [#2-make-a-request]
+
+<Steps>
+<Step>
+
+Choisissez **Nouvelle requête** sur la page, ou appuyez sur <kbd>⌘</kbd><kbd>N</kbd>. Une requête nommée
+**Nouvelle requête** apparaît dans la barre latérale, son nom sélectionné. Saisissez `List products` et appuyez sur
+<kbd>Return</kbd>.
+
+</Step>
+<Step>
+
+Cliquez dans le champ d’adresse en haut de la page (il affiche **Saisissez une URL, utilisez des \{\{variables\}\}**) et
+saisissez :
+
+```txt
+https://demo.echolot.dev/v1/products?category=tents&per_page=5
+```
+
+La méthode est **GET**, ce qu’il vous faut. L’onglet **Paramètres** liste maintenant `category` et `per_page` ; vous
+pouvez les modifier là ou dans l’adresse.
+
+</Step>
+</Steps>
+
+Inutile d’enregistrer. Echolot écrit la requête dans un fichier `.req.toml` du dossier de l’espace de travail un instant
+après que vous avez arrêté de saisir, et le nom de l’espace de travail en bas de la barre latérale indique
+**Tout est enregistré**.
+
+<Callout title="Vous avez déjà une commande cURL ?">
+  Collez-la dans le champ d’adresse. Echolot en tire la méthode, l’adresse, les en-têtes, le corps et l’authentification,
+  et liste sous la barre d’adresse tout ce qu’il n’a pas pu utiliser.
+</Callout>
+
+## 3. L’envoyer [#3-send-it]
+
+Appuyez sur <kbd>⌘</kbd><kbd>R</kbd>, ou choisissez **Envoyer**. <kbd>⌘</kbd><kbd>↩</kbd> envoie aussi. Pendant
+l’exécution, **Envoyer** devient **Annuler** (<kbd>⌘</kbd><kbd>.</kbd>).
+
+<Shot id="get-started-first-response" alt="La requête List products envoyée, avec le statut 200 au-dessus de la réponse et le corps JSON dans le volet de réponse" />
+
+## 4. Lire la réponse [#4-read-the-response]
+
+Le volet de réponse se trouve à côté de la requête (ou en dessous, si vous choisissez la disposition empilée).
+
+- **La ligne au-dessus de la réponse** indique l’état (`200 OK`), la durée et la taille. Laissez le pointeur dessus pour
+  les détails : les tailles, la durée de chaque phase (DNS, Connexion, TLS, Attente, Transfert), la connexion TLS et
+  les éventuelles redirections.
+- **Corps** affiche le corps. Les choix d’**Affichage** au-dessus permettent de le lire de différentes façons :
+  **Texte**, **JSON** (formaté), **Arbre JSON**, et pour d’autres contenus **XML**, **Formulaire**, **MessagePack** ou
+  **Aperçu**. Echolot choisit le premier d’après le type de contenu. <kbd>⌘</kbd><kbd>F</kbd> recherche du texte dans
+  le corps.
+- **En-têtes** liste les en-têtes de la réponse. L’API de démo place le total dans `X-Total-Count` et les pages
+  suivantes dans `Link`.
+- **Cookies** liste les cookies définis par la réponse.
+- **Brut** et **Hex** montrent les octets tels que reçus. **Réseau** montre l’échange complet tel qu’il a circulé sur le
+  réseau, envoyé et reçu.
+- **Tests** montre les résultats des vérifications de la requête, une fois qu’elle en a.
+
+Chaque réponse est aussi conservée dans l’[historique](/docs/workspaces/history) de la requête
+(<kbd>⌘</kbd><kbd>Y</kbd>), pour que vous puissiez y revenir et la comparer à la suivante.
+
+## 5. Ajouter une vérification [#5-add-a-check]
+
+Les vérifications s’exécutent après chaque envoi et vous préviennent quand une API cesse de répondre comme il faut.
+
+1. Ouvrez l’onglet **Tests** de la requête.
+2. Choisissez **Générer à partir de la réponse…**. Echolot propose des vérifications d’après la réponse que vous venez
+   de recevoir : l’état, le type de contenu, des valeurs dans le JSON.
+3. Cochez celles que vous voulez et choisissez **Ajouter N tests** (le bouton compte les vérifications cochées).
+4. Envoyez de nouveau. L’onglet **Tests** de la réponse indique chaque vérification réussie ou en échec.
+
+[Scripts et tests](/docs/requests/scripts-and-tests) présente tous les types de vérification.
+
+## Étapes suivantes [#next-steps]
+
+- Envoyez un corps : créez une autre requête, réglez la méthode sur **POST**, l’adresse sur
+  `https://demo.echolot.dev/echo/anything` et saisissez du JSON dans l’onglet **Corps**. La démo renvoie ce qu’elle a
+  reçu.
+- Copiez la requête en commande cURL avec **Requête › Copier en tant que cURL** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd>),
+  ou générez du code avec **Requête › Générer du code…** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd>).
+- Placez l’adresse du serveur dans une variable et ajoutez des environnements : [Environnements](/docs/workspaces/environments).
+- Repérez-vous dans l’app : [La fenêtre](/docs/get-started/the-window).
+- Suivez un pas-à-pas plus long : [Votre premier espace de travail](/docs/tutorials/first-workspace).
+
+<Callout type="warn" title="L’API de démo est partagée">
+  Elle accepte 120 requêtes par minute et par adresse (10 par minute pour ses endpoints volumineux, lents et en flux).
+  Au-delà de la limite, elle répond `429 Too Many Requests` avec un en-tête `Retry-After` ; attendez ce nombre de
+  secondes et envoyez de nouveau.
+</Callout>

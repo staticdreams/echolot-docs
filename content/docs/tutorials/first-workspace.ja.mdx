@@ -1,0 +1,127 @@
+---
+title: "最初のワークスペース"
+description: "デモAPIを使って、リクエスト、フォルダ、環境、シークレット、Gitを備えたワークスペースを一から作ります。"
+---
+
+このチュートリアルでは、Alpenglowショップ用の自分のワークスペースを作ります。フォルダ内の2つのリクエスト、サーバのアドレスを持つ環境、キーチェーンに保管するパスワード、そのすべてを管理するGitリポジトリです。
+
+- <strong>所要時間：</strong>15分。
+- <strong>必要なもの：</strong>Echolot。最後のパートではGit（ターミナルで`git --version`。macOSがインストールを案内します）。
+- <strong>学べること：</strong>ワークスペースがディスク上でどのように構成されているか、そしてコミットしても安全な理由。
+
+## 1. ワークスペースを作る [#1-make-the-workspace]
+
+1. <strong>Echolotへようこそ</strong>ウインドウで、<strong>新規ワークスペース…</strong>を選びます。ワークスペースのウインドウからは、<strong>ファイル › 新規ワークスペース…</strong>（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>）を選びます。
+2. **新規ワークスペース**パネルで、名前を`Alpenglow Shop`にして、`~/Projects`などのフォルダを選びます。Echolotが`.echolot`拡張子を付けます。
+3. **作成**を選びます。
+
+**このワークスペースは空です**と表示されたウインドウが開きます。ディスク上では、`Alpenglow Shop.echolot`は、`workspace.toml`と空の`requests`フォルダを含むフォルダです。Finderでは1つのファイルのように見え、ダブルクリックするとワークスペースが開きます。
+
+## 2. 最初のリクエストを送る [#2-send-your-first-request]
+
+1. 空のページで**新規リクエスト**を選ぶか、**ファイル › 新規リクエスト**（<kbd>⌘</kbd><kbd>N</kbd>）を選びます。リクエストがサイドバーに現れ、名前を編集できる状態になります。
+2. `List products`と入力して<kbd>↩</kbd>を押します。
+3. メソッドは**GET**のままにします。URLフィールドに次のように入力します。
+
+   ```text
+   https://demo.echolot.dev/v1/products?category=tents
+   ```
+
+   クエリパラメータは**パラメータ**タブにも表示され、そこで表として編集できます。
+4. **送信**を選びます（<kbd>⌘</kbd><kbd>R</kbd>、または<kbd>⌘</kbd><kbd>↩</kbd>）。
+
+レスポンスペインに、`200 OK`、時間、サイズが表示されます。**ボディ**タブには、商品がJSONで表示されます。表示を**JSONツリー**に切り替えると、リストを折りたたんだり展開したりできます。各タブは[レスポンスのページ](/docs/requests/responses)で説明しています。
+
+保存のコマンドはありません。Echolotは、入力をやめて少しすると、リクエストを保存します。サイドバーの下部に**すべて保存済み**と表示されます。
+
+## 3. リクエストをフォルダに入れる [#3-put-requests-in-a-folder]
+
+1. **ファイル › 新規フォルダ**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>）を選び、`Catalog`と入力して<kbd>↩</kbd>を押します。
+2. **List products**を**Catalog**にドラッグします。
+3. **Catalog**を右クリックして、**新規リクエスト**を選びます。名前を`Get product`にします。
+4. URLを`https://demo.echolot.dev/v1/products/TNT-MH-2P`にして送信します。
+
+テント1つ、Matterhorn 2Pが、価格とチューリッヒ・ベルンの在庫とともに返ります。リクエストはそれぞれ1つのファイルです。`requests/catalog/get-product.req.toml`のようになります。
+フォルダには、その中のすべてのリクエストに適用される認証、変数、スクリプトも設定できます。[フォルダ](/docs/workspaces/folders)を参照してください。
+
+## 4. アドレスを環境に移す [#4-move-the-address-into-an-environment]
+
+サーバのアドレスをすべてのリクエストに直接入力すると、サーバの切り替えが大変になります。代わりに環境に入れます。
+
+1. <strong>表示 › 環境</strong>（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>）を選びます。または、ページヘッダーの環境メニューを開いて<strong>環境を管理…</strong>を選びます。
+2. **+**（**環境を追加**）を選びます。**新規環境**が現れます。その**名前**を`Demo`に変更します。
+3. **変数を追加**を選びます。**名前**を`baseURL`、**値**を`https://demo.echolot.dev/v1`にします。
+4. `Local`という名前の2つ目の環境を追加し、`baseURL`を`http://localhost:8787/v1`にします。これはデモAPIを自分のMacで動かした場合のアドレスです。このチュートリアルでは動かしておく必要はありません。
+5. ページヘッダーの環境メニューで、**Demo**を選びます。
+6. **List products**に戻って、URLを`{{baseURL}}/products?category=tents`に変更します。**Get product**も同じように、`{{baseURL}}/products/TNT-MH-2P`にします。
+
+`{{`と入力すると、変数の一覧が表示されます。URLの中の`{{baseURL}}`はトークンとして表示されます。ポインタを重ねると、現在の環境での値が表示されます。
+両方のリクエストをもう一度送信してください。どちらも引き続きデモAPIに届きます。**Local**を選べば、ほかには何も変更せずに、リクエストは代わりにMacに向かいます。
+
+<Shot id="tutorials-first-workspace-environment" alt="環境のページで環境を1つ選んだ状態：変数のbaseURLとwsURL、そしてシークレットのpassword" />
+
+## 5. パスワードを秘密にする [#5-keep-a-password-secret]
+
+ショップへのサインインにはパスワードが必要です。パスワードは、コミットするファイルに入れてはいけません。
+
+1. **環境**のページで**Demo**を選び、**変数を追加**を選びます。
+2. 名前を`password`にして、**シークレット**のチェックボックスをオンにします。値のフィールドがパスワードフィールドに変わり、**このMacでは未設定**と表示されます。
+3. `alpenglow`と入力して<kbd>↩</kbd>を押します（または**保存**を選びます）。鍵のアイコンが、値がキーチェーンにあることを示します。
+4. `Auth`フォルダと、その中に`Sign in`リクエストを作ります。メソッドを**POST**、URLを`{{baseURL}}/auth/token`にします。
+5. **ボディ**タブで**JSON**を選び、次のように入力します。
+
+   ```json
+   { "email": "heidi@alpenglow.ch", "password": "{{password}}" }
+   ```
+
+6. 送信します。
+
+レスポンスは`200 OK`で、`access_token`が含まれます。EcholotはJSONのボディに対して、`Content-Type: application/json`を自動で追加します。
+`environments/demo.toml`を見てください。`password`変数は`secret = true`で、値なしで書かれています。値はこのMacのキーチェーンにだけあるので、ワークスペースを開く人は、それぞれ自分で設定します。[シークレット](/docs/workspaces/secrets)を参照してください。
+
+[次のチュートリアル](/docs/tutorials/chain-requests)では、このトークンを、必要なリクエストで使います。
+
+## 6. ワークスペースをGitに入れる [#6-put-the-workspace-in-git]
+
+EcholotにはGitのコマンドはありません。ワークスペースは通常のTOMLファイルなので、コードと同じようにGitを使います。
+
+1. サイドバーの下部でワークスペースのメニューを開き、**Finderに表示**を選びます。`Alpenglow Shop.echolot`フォルダをターミナルのアイコンにドラッグするか、`cd`で移動します。
+2. 次を実行します。
+
+   ```sh
+   git init
+   git add .
+   git commit -m "Alpenglow Shop: catalog and sign-in"
+   ```
+
+コミットした内容：
+
+```text
+Alpenglow Shop.echolot/
+├── workspace.toml
+├── environments/
+│   ├── demo.toml
+│   └── local.toml
+└── requests/
+    ├── _folder.toml
+    ├── auth/
+    │   ├── _folder.toml
+    │   ├── sign-in.req.toml
+    │   └── sign-in.body.json
+    └── catalog/
+        ├── _folder.toml
+        ├── get-product.req.toml
+        └── list-products.req.toml
+```
+
+この中に秘密のものはなく、`.gitignore`も必要ありません。レスポンスと履歴は、ワークスペースの外にあるEcholot自身のストレージに保存されます。
+各ファイルは毎回同じ形式で書き込まれるため、差分には変更した部分だけが表示されます。
+
+ほかの人が変更をプルすると、開いているウインドウは自動でそれを取り込みます。未保存の編集があるファイルがディスク上で変更された場合は、**このリクエストはディスク上で変更されました**というバーが表示されます。**ファイルの内容を使用**か**自分の変更を保持**を選びます。
+詳しくは[Gitとチーム](/docs/workspaces/git-and-teams)を参照してください。
+
+## 次のステップ [#next-steps]
+
+- [リクエストをつなぐ](/docs/tutorials/chain-requests)：**Sign in**のトークンを、必要なすべてのリクエストに送ります。
+- [保護された環境](/docs/workspaces/protected-environments)：重要なサーバへの送信のたびに、Echolotが確認するようにします。
+- [ワークスペースのファイル](/docs/reference/workspace-files)：すべてのファイルとフィールド。

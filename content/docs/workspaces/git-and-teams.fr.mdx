@@ -1,0 +1,116 @@
+---
+title: "Git et équipes"
+description: "Partagez un espace de travail avec Git, relisez les changements sous forme de petits diffs, et gardez les secrets et les réglages personnels hors du dépôt."
+---
+
+Un espace de travail est un dossier de fichiers texte écrits pour être conservés dans Git : un fichier par requête, les
+mêmes octets pour le même contenu, rien de privé à l’intérieur. Validez-le, poussez-le, et votre équipe travaille à
+partir des mêmes requêtes, chacun avec ses propres identifiants.
+
+## Des fichiers faits pour les diffs [#files-made-for-diffs]
+
+- **Un fichier par requête.** Modifier une requête modifie un fichier. Ajouter une requête ajoute un fichier.
+- **Déterministe.** Echolot écrit le même contenu de la même façon à chaque fois : les mêmes clés dans le même ordre.
+  Enregistrer sans rien changer ne change donc rien, et un diff ne montre que ce que vous avez modifié.
+- **Lisible.** Les requêtes sont en TOML ; les corps se trouvent à côté de leur requête, dans leurs propres fichiers
+  (`create-order.body.json`), et les requêtes GraphQL en `.graphql` : ils apparaissent donc dans les diffs comme du JSON
+  et du GraphQL, et non comme des chaînes échappées.
+- **L’ordre dans le fichier du dossier.** L’ordre des éléments d’un dossier est une liste dans son `_folder.toml`, et
+  non une partie des noms de fichier : réordonner ne change donc qu’une ligne.
+- **Vos commentaires restent.** Les commentaires que vous écrivez à la main dans un fichier (`# why this header`) sont
+  conservés quand Echolot l’enregistre : le bloc de commentaires en haut, les commentaires au-dessus d’une clé ou d’une
+  table, et les commentaires après une valeur. Un commentaire sur une clé qui n’existe plus est supprimé.
+
+Renommer une requête renomme son fichier, ainsi que les fichiers de corps et de scripts à côté. Renommer un
+environnement conserve le nom de son fichier.
+
+## Quoi valider [#what-to-commit]
+
+Validez tout le dossier de l’espace de travail. Il n’y a rien à y ignorer : Echolot n’y écrit jamais de valeurs
+secrètes, d’historique, de corps de réponse ni vos réglages personnels.
+
+| Dans l’espace de travail (partagé) | Sur votre Mac uniquement (non partagé) |
+| --- | --- |
+| Requêtes, dossiers, leur ordre, documentation, auth et scripts | Valeurs secrètes, dans le trousseau |
+| Variables et leurs valeurs non secrètes | Variables globales |
+| Environnements, et lesquels sont protégés | Quel environnement est actif |
+| Serveurs MCP, specs, mocks, flux | Historique et corps de réponse |
+| Les règles des agents, le proxy et les certificats de l’espace de travail | Disposition des volets et autres réglages de l’app |
+| Conversations de l’Assistant que vous avez choisi de partager | Scripts et règles des agents auxquels vous avez fait confiance |
+
+Gardez l’ID de l’espace de travail dans `workspace.toml` tel quel. Echolot s’en sert pour retrouver les valeurs secrètes
+de chacun.
+
+<Callout type="warn">
+  Une valeur saisie directement dans un champ, sans passer par une variable secrète, est écrite telle quelle dans le
+  fichier. Echolot avertit sous les champs d’auth et de proxy qui en contiennent une
+  (**Enregistré en clair dans le fichier de l’espace de travail.**) ; cliquez sur **Placer dans le trousseau** avant de
+  valider. Voir [secrets](/docs/workspaces/secrets).
+</Callout>
+
+## Commencer à partager [#start-sharing]
+
+1. Placez l’espace de travail dans un dépôt Git : créez le dépôt dans le dossier `.echolot`, ou gardez l’espace de
+   travail comme un dossier à l’intérieur du dépôt de votre projet. Tout dossier contenant un `workspace.toml` s’ouvre
+   dans Echolot.
+2. Validez et poussez.
+3. Vos collègues clonent le dépôt et ouvrent l’espace de travail avec **Fichier › Ouvrir un espace de travail…**.
+4. Chaque collègue définit une fois les valeurs secrètes sur son Mac : la page
+   [Environnements](/docs/workspaces/environments) affiche **Non défini sur ce Mac** pour chacune.
+
+L’outil en ligne de commande lit les mêmes fichiers : la CI exécute donc les requêtes que vous validez. Voir
+[Tester en CI](/docs/tutorials/test-in-ci).
+
+## Changements venus de Git, d’éditeurs et d’agents [#changes-from-git-editors-and-agents]
+
+Echolot surveille le dossier de l’espace de travail. Quand des fichiers changent hors d’Echolot (un `git pull`, un
+changement de branche, un éditeur, un agent), la fenêtre les recharge : la barre latérale, les requêtes ouvertes, les
+environnements, les specs, les mocks et les flux suivent aussitôt.
+
+Une requête ouverte sans modifications non enregistrées prend la nouvelle version sans poser de question.
+
+Quand la requête a des modifications non enregistrées dans son onglet, Echolot ne choisit pas de camp. Une barre
+apparaît au-dessus de la requête : **Cette requête a changé sur le disque**, « Une autre app ou Git a modifié le fichier
+alors que vous aviez des modifications non enregistrées ici. »
+
+- **Garder les miennes** conserve les modifications de l’onglet et les écrit par-dessus le fichier.
+- **Utiliser la leur** abandonne les modifications de l’onglet et charge le fichier depuis le disque.
+
+Tant que vous n’avez pas choisi, Echolot n’enregistre pas cette requête : le changement sur le disque reste tel quel.
+
+### Fermer un onglet pendant un conflit [#closing-a-tab-during-a-conflict]
+
+Si vous fermez l’onglet avant de choisir, Echolot demande : **« Create order » a changé sur le disque alors que vous
+aviez des modifications non enregistrées.** « Fermer l’onglet ne garde qu’une version. » Choisissez **Garder les
+miennes**, **Utiliser la leur**, ou **Annuler** pour garder l’onglet ouvert. Fermer la fenêtre ou quitter pendant
+qu’un conflit attend vous signale que la modification ne peut pas être enregistrée, et demande avant de l’abandonner :
+aucune des deux versions n’est donc perdue sans votre accord.
+
+### Conflits de fusion [#merge-conflicts]
+
+Résolvez les conflits de fusion Git dans votre éditeur ou votre outil Git, comme pour n’importe quel fichier texte. Un
+fichier qui contient encore des marqueurs de conflit n’est pas du TOML valide. Tant qu’un fichier ne peut pas être lu,
+une fenêtre ouverte garde ce qu’elle avait lu auparavant, et l’ouverture de l’espace de travail échoue avec un message
+dans la fenêtre d’accueil qui nomme le fichier : « … » est illisible. Corrigez le fichier et l’espace de travail se lit
+de nouveau.
+
+## Scripts et règles des agents venus de Git [#scripts-and-agent-rules-from-git]
+
+Les scripts peuvent envoyer des requêtes et lire les variables de l’espace de travail : Echolot n’exécute donc un script
+qu’une fois que vous lui avez fait confiance sur votre Mac. Les scripts que vous écrivez dans Echolot sont approuvés. Un
+script qui arrive par Git, par une importation ou par un autre éditeur, ou dont le code y a changé, affiche
+**Ces scripts viennent de l’extérieur d’Echolot** jusqu’à ce que vous le lisiez et cliquiez sur
+**Faire confiance aux scripts**. Voir [scripts et tests](/docs/requests/scripts-and-tests).
+
+Il en va de même pour les règles des agents de l’espace de travail : les règles du fichier qui restreignent ce que les
+agents peuvent faire s’appliquent aussitôt ; les règles qui l’élargissent ne comptent qu’une fois que vous avez fait
+confiance à cette version sur votre Mac. Voir [agents](/docs/ai/agents).
+
+## Partager sans Git [#sharing-without-git]
+
+Pour remettre un espace de travail à quelqu’un qui n’utilise pas Git, [exportez-le](/docs/workspaces/exporting) en
+**Espace de travail Echolot**. La copie reçoit un nouvel ID : ses secrets sont donc séparés des vôtres, et les valeurs
+secrètes n’y sont jamais écrites.
+
+Copier un dossier d’espace de travail dans le Finder conserve son ID. Sur le même Mac, la copie et l’original lisent les
+mêmes valeurs secrètes dans le trousseau.

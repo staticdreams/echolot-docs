@@ -1,0 +1,587 @@
+---
+title: "Archivos del espacio de trabajo"
+description: "El formato del espacio de trabajo, archivo por archivo y clave por clave, para leer diffs, escribir archivos a mano y generarlos."
+---
+
+Un espacio de trabajo es una carpeta que termina en `.echolot` con archivos TOML sencillos dentro: uno por solicitud,
+entorno, servidor MCP, mock y flujo. El Finder lo muestra como un único documento; en Terminal, en Git y en tu editor es
+una carpeta normal. Echolot escribe todos los archivos siempre de la misma manera (las claves en un orden fijo, sin
+escribir nada que tenga su valor predeterminado), así que un cambio en la app es un cambio pequeño en el diff. Consulta
+[Git y equipos](/docs/workspaces/git-and-teams).
+
+```text
+Alpenglow.echolot/
+  workspace.toml                     the workspace: ID, name, variables, auth, agents, proxy, certificates
+  environments/
+    staging.toml                     one environment
+  requests/
+    _folder.toml                     the order of the top level
+    _folder.pre.js                   the workspace's pre-request script (and _folder.test.js)
+    auth/
+      _folder.toml                   a folder: name, order, docs, variables, auth
+      sign-in.req.toml               an HTTP request
+      sign-in.body.json              its body
+      sign-in.pre.js                 its pre-request script
+      sign-in.test.js                its test script
+    catalog/
+      search-products.gql.toml       a GraphQL request
+      search-products.graphql        its query
+  mcp-servers/
+    alpenglow-mcp.toml               an MCP server
+  specs/
+    alpenglow.yaml                   an OpenAPI document
+    shop.graphql                     a GraphQL schema
+    inventory.proto                  a protobuf file
+  mocks/
+    shop.toml                        a mock server: settings and routes
+    shop.js                          its routes in JavaScript
+  flows/
+    place-test-order.flow.toml       a flow
+  assistant/
+    checking-orders.md               a shared Assistant conversation, to read
+    checking-orders.json             the same, to open in the app
+```
+
+## Reglas de todos los archivos [#rules-for-every-file]
+
+- Los archivos son TOML 1.0, UTF-8.
+- Cada uno empieza con `echolot = 1`, la versión del formato. Un archivo con un número más alto lo guardó una versión
+  más reciente de Echolot, y Echolot lo dice en lugar de abrirlo.
+- Los nombres de archivo son **slugs**: letras minúsculas, dígitos y guiones, de 80 caracteres como máximo, creados a
+  partir del nombre del elemento (`Sign in` es `sign-in`). El nombre en sí es la clave `name`.
+- Las rutas entre elementos son slugs unidos con `/`, relativas a `requests/`: `auth/sign-in`, `orders`.
+- Los campos de texto pueden contener `{{variables}}` y [valores dinámicos](/docs/reference/dynamic-values).
+- Las listas de cosas son arrays de tablas de TOML (`[[headers]]`). Todo lo que tiene `enabled = false` se conserva pero
+  está desactivado; sin la clave, está activado.
+
+## Lo que nunca va en los archivos [#what-never-goes-in-the-files]
+
+- **Valores secretos.** Una variable secreta se escribe con su nombre y `secret = true`, sin valor; el valor vive en el
+  llavero de tu Mac. Los campos que necesitan un secreto (una contraseña, la contraseña de un proxy, un secreto de
+  cliente) deben contener una `{{variable}}` que sea secreta. Echolot ofrece trasladar al llavero una contraseña que
+  escribes, y las importaciones lo hacen por sí solas. Consulta [secretos](/docs/workspaces/secrets).
+- Los tokens OAuth y los inicios de sesión de MCP: en el llavero.
+- Los valores que fijan los scripts con `pm.environment.set` y similares: duran lo que dure la ventana o el comando.
+- El historial y las respuestas: en Application Support de tu Mac, un historial por espacio de trabajo. Consulta
+  [historial](/docs/workspaces/history).
+- Tu propia disposición: la disposición de los paneles y sus tamaños, las pestañas abiertas, el entorno que elegiste.
+
+Así que un espacio de trabajo se puede confirmar y compartir sin riesgo. Un compañero fija sus propios valores secretos.
+
+## workspace.toml [#workspacetoml]
+
+```toml
+# Echolot workspace. Requests live in requests/, one file each.
+echolot = 1
+id = "0b7d4c1e-2f6a-4e38-9c51-7a1e3d9b5f20"
+name = "Alpenglow"
+
+[[variables]]
+name = "baseURL"
+value = "https://demo.echolot.dev/v1"
+
+[[variables]]
+name = "token"
+secret = true
+```
+
+| Clave | Significado |
+| --- | --- |
+| `id` | El ID del espacio de trabajo. Los secretos del llavero le pertenecen, así que las copias con el mismo ID los comparten. Una copia exportada recibe uno nuevo. |
+| `name` | El nombre del espacio de trabajo. |
+| `[[variables]]` | Las variables del espacio de trabajo. Consulta [variables](#variables). |
+| `[auth]` | La autenticación de toda solicitud que la hereda. Consulta [autenticación](#auth). Predeterminado: ninguna. |
+| `[agents]` | Las reglas para los agentes de IA. Consulta [agentes](#agents). |
+| `[proxy]` | El proxy propio del espacio de trabajo, en lugar del de la app. |
+| `[[certificates]]` | Certificados de CA en los que confiar y certificados de cliente que enviar, por host. |
+
+### Proxy [#proxy]
+
+| Clave | Significado |
+| --- | --- |
+| `mode` | `manual` (predeterminado), `system`, `environment` (la familia `HTTPS_PROXY`) o `none`. |
+| `url` | El proxy: `http://host:port`, `https://…` o `socks5://host:port`. |
+| `username`, `password` | Las credenciales del proxy. Escribe la contraseña como una `{{variable}}` secreta. |
+| `bypass` | Los hosts a los que acceder directamente, como un array. |
+
+### Certificados [#certificates]
+
+Cada tabla `[[certificates]]` es una regla para un host:
+
+| Clave | Significado |
+| --- | --- |
+| `host` | El host al que se aplica la regla. |
+| `trust` | Archivos PEM de certificados de CA en los que confiar, como un array. |
+| `certificate` | Un certificado de cliente: un archivo PEM, o un archivo `.p12`/`.pfx`. |
+| `key` | La clave PEM del certificado de cliente, cuando el archivo del certificado no la incluye. |
+| `passphrase` | La contraseña de la clave o del archivo PKCS#12. Escríbela como una `{{variable}}` secreta. |
+
+### Agentes [#agents]
+
+`[agents]` define lo que pueden hacer los agentes de IA en este espacio de trabajo, mediante el servidor MCP de Echolot
+y el Asistente. Consulta [agentes](/docs/ai/agents).
+
+```toml
+[agents]
+allowed-hosts = ["demo.echolot.dev"]
+max-requests = 200
+max-requests-per-minute = 30
+
+[agents.rules]
+unsafe-send = "ask"
+destructive = "refuse"
+```
+
+| Clave | Significado |
+| --- | --- |
+| `enabled` | `false` desactiva los agentes para el espacio de trabajo: no obtienen nada de él. Predeterminado: `true`. |
+| `allowed-hosts` | Hosts que cuentan como propios del espacio de trabajo, además de los que usan sus solicitudes. |
+| `max-requests` | Solicitudes que puede enviar en total una sesión de agente. |
+| `max-requests-per-minute` | Solicitudes que puede enviar por minuto una sesión de agente. |
+| `[agents.rules]` | Una regla por tipo de acción: `allow`, `ask` o `refuse`. |
+
+Los tipos de acción son `read`, `safe-send`, `unsafe-send`, `protected-send`, `new-host`, `workspace-write` y
+`destructive`. Una regla más estricta siempre cuenta. Una más permisiva solo cuenta cuando confías en ella (la app
+pregunta; la línea de comandos necesita `--trust-workspace-policy`). `protected-send` y `new-host` nunca pueden
+ponerse en `allow`.
+
+## environments/ [#environments]
+
+Un archivo por entorno; su nombre de archivo es su slug, que usa `--env`.
+
+```toml
+echolot = 1
+name = "Production"
+protected = true
+
+[[variables]]
+name = "baseURL"
+value = "https://api.alpenglow.example/v1"
+
+[[variables]]
+name = "password"
+secret = true
+```
+
+| Clave | Significado |
+| --- | --- |
+| `name` | El nombre del entorno. |
+| `protected` | `true` lo convierte en un [entorno protegido](/docs/workspaces/protected-environments): cada envío pregunta antes. |
+| `[[variables]]` | Sus variables. |
+
+### Variables [#variables]
+
+Igual en `workspace.toml`, los entornos, las carpetas y las solicitudes:
+
+| Clave | Significado |
+| --- | --- |
+| `name` | El nombre de la variable, que se usa como `{{name}}`. |
+| `value` | Su valor. Se omite en un secreto. |
+| `secret` | `true` para un secreto: el valor está en el llavero. |
+| `enabled` | `false` la desactiva. |
+
+## requests/ [#requests]
+
+La carpeta `requests` contiene el árbol que ves en la barra lateral. Cada carpeta que hay en ella es una carpeta del
+árbol, y cada archivo de solicitud, una solicitud. El tipo de solicitud viene del sufijo del archivo:
+
+| Sufijo | Tipo |
+| --- | --- |
+| `.req.toml` | HTTP, incluidos los eventos enviados por el servidor (SSE) |
+| `.gql.toml` | GraphQL |
+| `.grpc.toml` | gRPC |
+| `.ws.toml` | WebSocket |
+| `.sio.toml` | Socket.IO |
+| `.mqtt.toml` | MQTT |
+| `.mcp.toml` | Una llamada a un servidor MCP |
+
+Junto a una solicitud, con el mismo slug:
+
+| Archivo | Contiene |
+| --- | --- |
+| `<slug>.body.<ext>` | El cuerpo de la solicitud en su propio formato: `.json`, `.xml`, `.txt`, `.html`, `.graphql` o `.form.txt`. |
+| `<slug>.graphql` | La consulta de una solicitud GraphQL. |
+| `<slug>.pre.js` | El script previo a la solicitud. |
+| `<slug>.test.js` | El script de prueba. |
+
+### _folder.toml [#foldertoml]
+
+Cada carpeta tiene uno, y también `requests/` mismo, para el nivel superior.
+
+```toml
+echolot = 1
+name = "Auth"
+order = ["sign-in", "who-am-i", "client-credentials"]
+docs = "Send \"Sign in\" first: it captures the access token into {{token}}."
+```
+
+| Clave | Significado |
+| --- | --- |
+| `name` | El nombre de la carpeta. No está en `requests/_folder.toml`. |
+| `order` | Los slugs de lo que hay en la carpeta, en el orden que usan la barra lateral y las ejecuciones. Lo que no aparece en la lista va después, ordenado por slug. |
+| `docs` | La documentación de la carpeta, en Markdown. |
+| `spec` | La especificación que sigue la carpeta, como `specs/alpenglow.yaml`. |
+| `spec-url` | De dónde se obtiene esa especificación, cuando vino de una URL. |
+| `agent-tools` | `true` ofrece las solicitudes de la carpeta a los agentes como herramientas. |
+| `[[variables]]` | Las variables de la carpeta, para todo lo que contiene. |
+| `[auth]` | La autenticación de la carpeta, para todo lo que contiene y la hereda. Predeterminado: heredar. |
+
+Junto a él, `_folder.pre.js` y `_folder.test.js` son los scripts de la carpeta; en `requests/` son los del espacio de
+trabajo. Se ejecutan para cada solicitud de dentro, del espacio de trabajo hacia abajo hasta la propia solicitud. Una
+carpeta que sigue una especificación también tiene `_spec-lock.json`, lo último que tomó de la especificación; deja que
+Echolot lo mantenga.
+
+### Claves de todas las solicitudes [#keys-of-every-request]
+
+```toml
+echolot = 1
+name = "Sign in"
+method = "POST"
+url = "{{baseURL}}/auth/token"
+
+[body]
+syntax = "json"
+file = "sign-in.body.json"
+
+[[headers]]
+name = "Content-Type"
+value = "application/json"
+
+[[assertions]]
+target = "status"
+check = "equals"
+expected = "200"
+
+[[captures]]
+variable = "token"
+from = "json"
+path = "$.access_token"
+scope = "workspace"
+secret = true
+```
+
+| Clave | Significado |
+| --- | --- |
+| `name` | El nombre de la solicitud. |
+| `url` | La URL, con su cadena de consulta. Todos los tipos salvo las llamadas MCP tienen una. |
+| `docs` | La documentación de la solicitud, en Markdown. |
+| `spec-operation` | La operación de la especificación a partir de la cual se creó, como `POST /auth/token`. |
+| `[[headers]]` | `name`, `value` y `enabled = false` para una que está desactivada. |
+| `[[disabled-params]]` | Parámetros de consulta desactivados: `name`, `value`. Los que están activados están en la URL. |
+| `[[disabled-form-fields]]` | Campos de formulario desactivados: `name`, `value`. |
+| `[[variables]]` | Las variables propias de la solicitud. |
+| `[[assertions]]` | Sus comprobaciones. |
+| `[[captures]]` | Valores que guarda en variables después de cada respuesta. |
+| `[auth]` | Su autenticación. Predeterminado: heredar de su carpeta. |
+| `[settings]` | Ajustes que difieren de los de la app. |
+
+### Solicitudes HTTP (.req.toml) [#http-requests-reqtoml]
+
+| Clave | Significado |
+| --- | --- |
+| `method` | El método: `GET`, `POST` o cualquier token. Predeterminado: `GET`. |
+| `[body]` | El cuerpo; ninguno si se omite. |
+
+La tabla `[body]` admite una de tres formas:
+
+| Forma | Claves |
+| --- | --- |
+| Texto | `syntax`: `json`, `xml`, `text`, `html`, `graphql` o `form` (campos de formulario codificados como URL). `file`: el archivo del cuerpo junto a la solicitud. |
+| Un archivo transmitido desde el disco | `stream-from`: la ruta del archivo. |
+| Multipart | `syntax = "multipart"` y una tabla `[[body.parts]]` por parte: `name`, después `value` (texto) o `file` (una ruta), `content-type`, `enabled`. |
+
+### Solicitudes GraphQL (.gql.toml) [#graphql-requests-gqltoml]
+
+```toml
+echolot = 1
+name = "Search products"
+url = "{{baseURL}}/graphql"
+operation = "SearchProducts"
+schema = "specs/shop.graphql"
+query-file = "search-products.graphql"
+graphql-variables = """
+{
+  "text": "ultralight"
+}"""
+```
+
+| Clave | Significado |
+| --- | --- |
+| `query-file` | El archivo junto a la solicitud con la consulta, `<slug>.graphql`. |
+| `operation` | La operación que se ejecuta, cuando la consulta tiene varias. |
+| `graphql-variables` | Las variables de GraphQL, como texto JSON. Los archivos más antiguos las llaman `variables`. |
+| `schema` | El esquema con el que se comprueba y se completa: un archivo de `specs/`. |
+| `transport` | `post` (predeterminado), `get`, o `websocket` para las suscripciones. |
+| `persisted-queries` | `true` envía primero solo el SHA-256 de la consulta, y la consulta cuando el servidor no la conoce (automatic persisted queries). |
+| `batch` | `true` envía un documento con varias operaciones como un array, una entrada por operación. |
+| `[[uploads]]` | Subidas de archivos: `variable` (la variable a la que va el archivo) y `path`. |
+
+### Solicitudes gRPC (.grpc.toml) [#grpc-requests-grpctoml]
+
+| Clave | Significado |
+| --- | --- |
+| `proto` | El archivo `.proto` que describe el servicio, como `specs/inventory.proto`. |
+| `reflection` | `true` usa en su lugar la reflexión del servidor. |
+| `service` | El servicio, como `alpenglow.inventory.v1.Inventory`. |
+| `rpc` | El método, como `Reserve`. |
+| `message` | El mensaje como texto JSON; un array de mensajes para un método con streaming del cliente. |
+| `deadline-ms` | El plazo en milisegundos. |
+| `compression` | `gzip` o `deflate` para los mensajes enviados. |
+
+### Solicitudes WebSocket (.ws.toml) [#websocket-requests-wstoml]
+
+| Clave | Significado |
+| --- | --- |
+| `subprotocols` | Subprotocolos que ofrecer, como un array. |
+| `[[messages]]` | Mensajes guardados: `name`, `text`, `enabled`. |
+
+### Solicitudes Socket.IO (.sio.toml) [#socketio-requests-siotoml]
+
+| Clave | Significado |
+| --- | --- |
+| `version` | La versión de Socket.IO del servidor: `4` (predeterminada), `3` o `2`. |
+| `path` | Dónde escucha el servidor. Predeterminado: `/socket.io/`. |
+| `namespace` | El namespace al que unirse, como `/support`. |
+| `socket-auth` | El payload de autenticación, como texto JSON. |
+| `[[emits]]` | Eventos guardados: `name`, `event`, `arguments` (texto JSON), `ack = true` para pedir una confirmación, `enabled`. |
+
+### Solicitudes MQTT (.mqtt.toml) [#mqtt-requests-mqtttoml]
+
+| Clave | Significado |
+| --- | --- |
+| `version` | `5` (predeterminada) o `3.1.1`. |
+| `client-id` | El ID de cliente; uno aleatorio si está vacío. |
+| `clean-start` | `false` pide al broker que conserve la sesión. Predeterminado: `true`. |
+| `keep-alive` | Segundos entre pings. Predeterminado: 60. |
+| `[will]` | El último mensaje (will): `topic`, `payload`, `qos`, `retain`. |
+| `[[subscriptions]]` | `filter`, `qos` (predeterminado: 0), `no-local`, `enabled`. |
+| `[[messages]]` | Mensajes guardados para publicar: `name`, `topic`, `payload`, `qos`, `retain`, `content-type`, `enabled`. |
+
+El nombre de usuario y la contraseña son la autenticación Basic de la solicitud.
+
+### Llamadas MCP (.mcp.toml) [#mcp-calls-mcptoml]
+
+```toml
+echolot = 1
+name = "search_catalog"
+server = "alpenglow-mcp"
+tool = "search_catalog"
+arguments = """
+{
+  "query": "ultralight tent",
+  "limit": 3
+}"""
+```
+
+| Clave | Significado |
+| --- | --- |
+| `server` | El slug del servidor en `mcp-servers/`. |
+| `tool`, `resource`, `prompt` o `method` | Lo que se llama: una herramienta por su nombre, un recurso por su URI, un prompt por su nombre, o un método JSON-RPC sin procesar. Solo uno de ellos. |
+| `arguments` | Los argumentos como texto JSON. |
+
+### Aserciones [#assertions]
+
+| Clave | Significado |
+| --- | --- |
+| `target` | Lo que se comprueba: `status`, `header`, `json`, `body`, `time` (milisegundos), `size` (bytes), `schema` (JSON Schema), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status`. |
+| `name` | Para `header`: el nombre de la cabecera. |
+| `path` | Para `json`: un JSONPath, como `$.items.length`. |
+| `check` | `equals`, `not-equals`, `contains`, `not-contains`, `less-than`, `at-most`, `greater-than`, `at-least`, `exists`, `not-exists`, `matches` (una expresión regular), `is-type`, `is-one-of`, `matches-schema`. |
+| `expected` | El valor con el que comparar; no se escribe para las comprobaciones que no lo necesitan. |
+| `enabled` | `false` la desactiva. |
+
+Consulta [scripts y pruebas](/docs/requests/scripts-and-tests) para saber qué comprobaciones ofrece cada destino.
+
+### Capturas [#captures]
+
+| Clave | Significado |
+| --- | --- |
+| `variable` | La variable en la que guardar el valor. |
+| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status` o `body`. |
+| `path` | Dónde está el valor: un JSONPath, un XPath, el nombre de una cabecera o de una cookie. No se usa con `status` ni `body`. |
+| `scope` | `environment` (predeterminado: el entorno activo) o `workspace`. |
+| `secret` | `true` guarda el valor como un secreto, en el llavero. |
+| `enabled` | `false` la desactiva. |
+
+Una respuesta de 400 o más, o un valor que no está, deja la variable como estaba. Consulta
+[capturas](/docs/requests/captures).
+
+### Ajustes [#settings]
+
+| Clave | Significado |
+| --- | --- |
+| `timeout` | Segundos para todo el intercambio. |
+| `raw` | `true` no envía cabeceras automáticas. |
+| `verify-tls` | `false` omite la verificación del certificado. |
+| `follow-redirects` | `false` se detiene ante una redirección. |
+| `max-redirects` | Cuántas redirecciones seguir. |
+| `decompress` | `false` conserva el cuerpo tal como lo codificó el servidor. |
+| `cookies` | `false` ni envía ni guarda cookies. |
+| `http-version` | `automatic`, `http1`, `http2` o `http3`. |
+| `stream-limit` | Segundos de escucha de un stream de eventos o de una sesión. |
+
+Consulta [ajustes de la solicitud](/docs/requests/settings).
+
+### Autenticación [#auth]
+
+`[auth]` tiene un `type` y las claves de ese tipo. Una solicitud o una carpeta sin `[auth]` hereda; la predeterminada
+del espacio de trabajo es ninguna autenticación.
+
+| `type` | Claves |
+| --- | --- |
+| `inherit` | Ninguna: toma la de la carpeta. |
+| `none` | Ninguna: sin autenticación, aunque la carpeta tenga alguna. |
+| `basic`, `digest` | `username`, `password` |
+| `bearer` | `token`; `prefix` cuando no es `Bearer` |
+| `api-key` | `name`, `value`, `in` (`header` o `query`) |
+| `oauth2` | `grant` (`authorization-code`, `client-credentials`, `device-code`), `authorization-url`, `token-url`, `device-authorization-url`, `client-id`, `client-secret`, `scope`, `audience`, `redirect-uri`; `pkce = false` para desactivar PKCE; `client-authentication = "body"` para enviar las credenciales del cliente en el cuerpo en lugar de con Basic; `header-prefix` cuando no es `Bearer` |
+| `aws-signature` | `access-key-id`, `secret-access-key`, `session-token`, `region`, `service` |
+| `jwt` | `algorithm` (`HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`), `secret`, `secret-base64`, `payload`, `header`, `issued-at = false` para omitir `iat`, `expires-in` (segundos, 300 por omisión), `in` (`header` o `query`), `prefix`, `query-name` (`token` por omisión) |
+| `hawk` | `id`, `key`, `algorithm` (`sha256` o `sha1`), `ext`, `payload-hash` |
+| `edgegrid` | `client-token`, `client-secret`, `access-token`, `max-body` (131072 por omisión), `headers-to-sign` |
+| `ntlm` | `username`, `password`, `domain`, `workstation` |
+
+Escribe cada contraseña, token y clave como una `{{variable}}` secreta. Consulta [autenticación](/docs/requests/auth).
+
+## mcp-servers/ [#mcp-servers]
+
+Un archivo por servidor MCP; el nombre del archivo es el slug que nombran las llamadas MCP.
+
+```toml
+echolot = 1
+name = "Alpenglow MCP"
+transport = "http"
+url = "https://demo.echolot.dev/mcp"
+```
+
+| Clave | Significado |
+| --- | --- |
+| `name` | El nombre del servidor. |
+| `transport` | `http` (Streamable HTTP) o `stdio` (un programa que inicia Echolot). |
+| `url` | Para `http`: el endpoint. |
+| `[[headers]]` | Para `http`: `name`, `value`, `enabled`. |
+| `command` | Para `stdio`: el programa que se inicia. |
+| `arguments` | Para `stdio`: sus argumentos, como un array. |
+| `working-directory` | Para `stdio`: la carpeta en la que se inicia. |
+| `[[environment]]` | Para `stdio`: variables de entorno, `name`, `value`, `enabled`. |
+| `[oauth]` | Ajustes de cliente para un servidor que inicia sesión con OAuth: `client-id`, `client-secret`, `scope`, `redirect-uri`. |
+
+Consulta [añadir servidores](/docs/mcp-servers/adding-servers).
+
+## specs/ [#specs]
+
+Archivos de especificación tal cual: documentos OpenAPI (`.yaml`, `.yml`, `.json`), esquemas GraphQL (SDL `.graphql`, o
+el resultado de una introspección como JSON) y archivos protobuf (`.proto`). Echolot los edita en el sitio y conserva tu
+formato. Las solicitudes y los mocks los nombran por su ruta, como `specs/alpenglow.yaml`. Consulta
+[especificaciones](/docs/specs).
+
+## mocks/ [#mocks]
+
+Un archivo por servidor mock, y sus rutas en JavaScript junto a él.
+
+```toml
+echolot = 1
+name = "Shop"
+spec = "specs/alpenglow.yaml"
+port = 4010
+delay = 200
+
+[[scenarios]]
+operation = "GET /products/{sku}"
+status = "404"
+
+[[routes]]
+id = "e5f6a7b8"
+method = "GET"
+path = "/users/{id}"
+summary = "One user"
+
+[[routes.responses]]
+name = "OK"
+status = 200
+content-type = "application/json"
+headers = [{ name = "X-Request-Id", value = "{{$randomUUID}}" }]
+body = """
+{
+  "id": "{{request.params.id}}",
+  "name": "{{$randomFullName}}"
+}"""
+
+[[routes.responses]]
+name = "Not found"
+status = 404
+content-type = "application/json"
+rules = [{ source = "path", name = "id", value = "0" }]
+body = """{ "error": "no user {{request.params.id}}" }"""
+```
+
+| Clave | Significado |
+| --- | --- |
+| `name` | El nombre del mock. |
+| `spec` | La especificación que sirve. Sin ella, solo responden las rutas del mock. |
+| `port` | El puerto. Predeterminado: 4010. |
+| `share-on-network` | `true` responde en todas las interfaces de red, no solo en este Mac. |
+| `delay` | Milisegundos antes de cada respuesta. |
+| `failure-rate` | Porcentaje de solicitudes que reciben un 500 inyectado, de 0 a 100. |
+| `validate-requests` | `false` responde a las solicitudes que incumplen la especificación. Predeterminado: `true`. |
+| `[[scenarios]]` | La respuesta elegida para una operación de la especificación: `operation` (como `GET /pets`), `status`, `example` (el nombre del ejemplo). |
+| `[[routes]]` | Una ruta creada a mano: `id` (se mantiene mientras la ruta cambia), `method` (o `ANY`), `path` (`{id}` para un parámetro), `summary`, `enabled = false` para una ruta desactivada, `response` (el nombre de la respuesta predeterminada; la primera si se omite), `request-content-type` y `request-body` (lo que envían las solicitudes creadas a partir de ella). |
+| `[[routes.responses]]` | Una respuesta de la ruta anterior: `name`, `status`, `content-type`, `headers` (`name` y `value`), `rules` (`source` es `path`, `query`, `header` o `body`; `name`; `value`, con `*` para cualquiera y vacío para ninguno) y `body`. |
+
+`mocks/<slug>.js` contiene las rutas del mock en JavaScript, que responden antes que las rutas creadas a mano y la
+especificación. Para las operaciones de la especificación, las respuestas nunca viven en el mock: los ejemplos van a la
+especificación. Consulta [mocks](/docs/mocks), [rutas y datos falsos](/docs/mocks/routes) y
+[rutas con script](/docs/mocks/scripted-routes).
+
+## flows/ [#flows]
+
+Un archivo por flujo, `<slug>.flow.toml`. Echolot escribe los bloques, las conexiones y las notas en un orden fijo, así
+que mover un bloque cambia dos líneas.
+
+```toml
+echolot = 1
+name = "Place a test order"
+description = "Places an order, then asks a person whether to keep it."
+
+[mcp]
+tool = "place_test_order"
+description = "Places a test order on the demo shop, asking a person before keeping it."
+
+[[blocks]]
+id = "signin"
+kind = "request"
+title = "Sign in"
+position = [330, 250]
+
+[blocks.settings]
+request = "auth/sign-in"
+
+[[wires]]
+from = "start.run"
+to = "signin.run"
+```
+
+| Clave | Significado |
+| --- | --- |
+| `name`, `description` | El nombre del flujo y lo que hace. |
+| `[mcp]` | Ofrece el flujo a los agentes como una herramienta: `tool` (su nombre) y `description`. |
+| `[schedule]` | Lo ejecuta según una programación: `every-minutes`, o `cron` (como `"0 6 * * *"`). |
+| `[webhook]` | Lo ejecuta cuando llega una solicitud: `method` (`POST` por omisión) y `path`. |
+| `[[inputs]]` | Sus entradas: `name`, `type` (`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
+| `[[blocks]]` | Sus bloques: `id`, `kind`, `title`, `position` (`[x, y]` en el lienzo), `paused`, `color` y `[blocks.settings]` con los ajustes del tipo. |
+| `[[wires]]` | Enlaces: `from` y `to`, cada uno `block.port`. |
+| `[[groups]]` | Grupos de bloques: `title`, `blocks` (sus ID), `color`. |
+| `[[notes]]` | Notas en el lienzo: `text`, `frame` (`[x, y, width, height]`). |
+
+Los tipos de bloque y sus ajustes están en [bloques](/docs/flows/blocks).
+
+## assistant/ [#assistant]
+
+Conversaciones con el [Asistente](/docs/ai/assistant) que compartes en el espacio de trabajo: `<slug>.md` para leer en
+cualquier editor, y `<slug>.json` para que Echolot lo vuelva a abrir.
+
+## Otros archivos [#other-files]
+
+Los archivos que Echolot no conoce se dejan en paz, así que un README, un `.gitignore` o archivos de datos pueden vivir
+en el espacio de trabajo. Los datos que guarda un agente o un flujo (como `exports/products.csv`) van donde se haya
+pedido, dentro del espacio de trabajo.

@@ -1,0 +1,160 @@
+---
+title: "APIをテストしてCIで実行する"
+description: "リクエストにチェックを追加してランナーで実行し、同じワークスペースをGitHub Actionsでコマンドラインツールを使ってJUnitレポート付きで実行します。"
+---
+
+チェックを使うと、リクエストがテストになります。送信のたびに、何が成功し何が失敗したかがわかります。このチュートリアルでは、Alpenglowのリクエストにチェックを追加し、ランナーでフォルダを実行し、さらに同じワークスペースをGitHub Actionsでpushのたびに`echolot run`で実行します。
+
+- <strong>所要時間：</strong>20分。
+- **必要なもの：**[Alpenglowワークスペース](/docs/tutorials#the-alpenglow-workspace)と、最後のパートでpushできるGitHubリポジトリ。
+- <strong>学べること：</strong>チェック、ランナーとそのレポート、`echolot run`、CIでのシークレット。
+
+## 1. リクエストにあるチェックを確認する [#1-look-at-the-checks-a-request-has]
+
+1. **Catalog › List products**を開いて、**テスト**タブを選びます。
+2. チェックは4つあります。<strong>ステータス</strong>が`200`と等しい、<strong>JSONの値</strong>`$.items.length`が`0`より大きい、<strong>ヘッダー</strong>`Content-Type`が`json`を含む、<strong>レスポンス時間（ms）</strong>が`1000`より小さい、です。
+3. 送信します。タブには**4件成功**と表示され、レスポンスの**テスト**タブには`4/4`と表示されて、**チェック**の下に各チェックが並びます。
+
+## 2. 自分のチェックを追加する [#2-add-your-own-checks]
+
+1. **テスト**タブで**テストを追加**を開いて、**JSONの値**を選びます。
+2. パスを`$.items[0].price.currency`、比較を**次と等しい**、期待値を`CHF`にします。
+3. もう一度**テストを追加**を開いて、**サイズ（バイト）**、**次より小さい**、`65536`を選びます。
+4. 送信します。6つのチェックが成功します。
+
+チェックをもっと手早く追加する方法が2つあります。
+
+- レスポンスの**JSONツリー**で値を右クリックして、**チェックを追加**を選びます。チェックには、その値のパスと値が入ります。
+- **レスポンスから生成…**は、最新のレスポンスからチェックを提案します。ボディの**JSON Schema**も含まれます。
+
+次に、失敗を見てみましょう。レスポンス時間のチェックを**次より小さい**`1`に変更して送信します。タブに**6件中1件が失敗**と表示され、レスポンスの**テスト**タブには、失敗したチェックの下に返ってきた内容が表示されます。`1000`に戻します。
+
+コードが必要なチェックは、**スクリプト**タブで`pm.test()`を使ったテストスクリプトを書きます。[スクリプトとテスト](/docs/requests/scripts-and-tests)を参照してください。
+
+<Shot id="tutorials-ci-tests-tab" alt="List productsの「テスト」タブ。チェックが並び、送信後にすべて成功している" />
+
+## 3. ランナーでフォルダを実行する [#3-run-folders-in-the-runner]
+
+1. **Catalog**フォルダを右クリックして、**フォルダを実行**を選びます。**ランナー**ページが開き、中のすべてのリクエストを順番に実行します。
+2. 統計には、**リクエスト**、**成功**、**失敗**、**失敗したチェック**、**時間**が表示され、**結果**カードには各リクエストのステータス、時間、失敗したチェックが並びます。
+3. 自分で実行を設定するには、**表示 › ランナー**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd>）を選びます。**実行**カードで次を設定します。
+   - **対象**：**ワークスペース全体**、**フォルダ**のどれか1つ、または**1件のリクエスト**。**Auth**を選んで実行し、次に**Orders**を実行してください。Ordersのリクエストは、**Sign in**が保存したトークンを送信します。
+   - **環境**、**反復**（`3`を試してください）、リクエスト間の**遅延**（ミリ秒）、失敗したリクエストの**再試行回数**、**最初の失敗で停止**。
+   - <strong>データ</strong>：<strong>CSVまたはJSONを選択…</strong>で、行ごとに1回、その行の列を変数として実行します。
+4. **実行**を選びます（<kbd>⌘</kbd><kbd>R</kbd>）。
+5. <strong>レポートを保存</strong>を開いて、<strong>JUnit XML…</strong>、<strong>JSON…</strong>、<strong>HTML…</strong>、<strong>HAR（すべてのやり取り）…</strong>のいずれかを選びます。
+
+ワークスペース全体を実行すると、**Realtime**と**Inventory**も実行されます。[ローカルのサーバ](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt)が動いていないと、Socket.IO、MQTT、gRPCのリクエストは失敗します。
+詳しくは[ランナー](/docs/requests/runner)を参照してください。
+
+<Shot id="tutorials-ci-runner" alt="Catalogフォルダを実行した後のランナーページ。すべて成功している" />
+
+## 4. ターミナルから実行する [#4-run-it-from-terminal]
+
+1. コマンドラインツールをインストールします。<strong>Echolot › コマンドラインツールをインストール…</strong>を選ぶか、<strong>設定 › 一般</strong>でオンにします。`echolot`が`PATH`に追加されます。
+
+   <Edition only="appstore">
+     App Store版には、コマンドラインツールが含まれていません。[リリース](https://github.com/staticdreams/echolot-public/releases)から`echolot-<version>-macos.zip`をダウンロードして展開し、`echolot`を`PATH`にあるフォルダに置いてください。[CLI](/docs/cli)を参照してください。
+   </Edition>
+
+2. すべてのファイルが読み込め、すべての変数が解決できることを確認します。
+
+   ```sh
+   echolot validate Alpenglow.echolot
+   ```
+
+   `29 requests, 3 environments: no problems`と出力されます。
+3. デモAPIだけで動く3つのフォルダを実行します。
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders
+   ```
+
+   ```text
+   ✓ POST   auth/sign-in  200 142 ms
+       ✓ Status equals 200
+       ✓ JSON value $.access_token exists
+   ✓ GET    auth/who-am-i  200 87 ms
+       ✓ Status equals 200
+   …
+   All 13 requests passed  18/18 checks passed · 1.35 s
+   ```
+
+   `--folder`には、フォルダまたはリクエストのファイル名（`auth`、`catalog/list-products`）を指定します。リクエストにレスポンスがない場合やチェックが失敗した場合、終了コードは`1`になるので、スクリプトやCIはそこで止まれます。
+4. コンソール出力に加えて、JUnitレポートも書き出します。
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders \
+     --reporter junit --out results.xml --reporter console
+   ```
+
+   各リクエストが`testsuite`に、各チェックが`testcase`になります。すべてのオプションは[`echolot run`](/docs/cli/run)にあります。
+
+## 5. GitHub Actionsで実行する [#5-run-it-in-github-actions]
+
+1. `Alpenglow.echolot`をリポジトリにコミットします。
+2. `.github/workflows/api.yml`を追加します。
+
+   ```yaml
+   name: API checks
+   on: [push, pull_request]
+
+   jobs:
+     api:
+       runs-on: macos-15
+       steps:
+         - uses: actions/checkout@v4
+
+         - name: Install the Echolot CLI
+           env:
+             GH_TOKEN: ${{ github.token }}
+           run: |
+             gh release download --repo staticdreams/echolot-public --pattern 'echolot-*-macos.zip' --dir "$RUNNER_TEMP"
+             unzip -q "$RUNNER_TEMP"/echolot-*-macos.zip -d "$RUNNER_TEMP/echolot"
+             echo "$RUNNER_TEMP/echolot" >> "$GITHUB_PATH"
+
+         - name: Validate
+           run: echolot validate Alpenglow.echolot
+
+         - name: Run
+           run: >
+             echolot run Alpenglow.echolot
+             --folder auth --folder catalog --folder orders
+             --reporter console --reporter junit --out results.xml
+
+         - name: Keep the report
+           if: always()
+           uses: actions/upload-artifact@v4
+           with:
+             name: echolot-results
+             path: results.xml
+   ```
+
+3. pushします。**Run**ステップには、Macと同じ行が出力され、チェックが失敗するとジョブも失敗します。JUnitファイルは`echolot-results`として実行に添付されます。JUnitのテストレポート用アクションなら、どれでも表として表示できます。
+
+コマンドラインツールはAppleシリコンのmacOSで動作するため、ジョブにはmacOSのランナーを使います。
+
+## 6. CIにシークレットを渡す [#6-give-ci-its-secrets]
+
+Macのキーチェーンは、ワークスペースと一緒には移動しません。CIでは、コマンドラインツールは、シークレット変数`name`を環境変数`ECHOLOT_SECRET_NAME`から、または`--secrets`で指定した`NAME=value`形式の行のファイルから読み取ります。
+
+Alpenglowのデモのパスワードは公開されているため、通常の変数です。実際のパスワードでは次のようにします。
+
+1. ワークスペースで、たとえば`password`というシークレット変数にして、コミットします。
+2. GitHubで、リポジトリのシークレット`API_PASSWORD`を追加します（**Settings › Secrets and variables › Actions**）。
+3. ステップに渡します。
+
+   ```yaml
+         - name: Run
+           env:
+             ECHOLOT_SECRET_PASSWORD: ${{ secrets.API_PASSWORD }}
+           run: echolot run Alpenglow.echolot --env staging --reporter console --reporter junit --out results.xml
+   ```
+
+`--env`には、`.toml`を除いた環境のファイル名、または環境の名前を指定します。CIについて詳しくは[CI](/docs/cli/ci)を参照してください。
+
+## 次のステップ [#next-steps]
+
+- [仕様ファーストで設計してモックにする](/docs/tutorials/spec-first)：OpenAPI仕様に対してレスポンスをチェックします。アプリでもCIでも。
+- [ランナー](/docs/requests/runner)：データファイル、反復の並べて表示、再試行。
+- [`echolot run`](/docs/cli/run)：`--bail`、`--delay`、HTMLレポートを含むすべてのオプション。

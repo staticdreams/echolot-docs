@@ -1,0 +1,114 @@
+---
+title: "스크립트 경로"
+description: "모의 서버의 다른 경로와 명세보다 먼저 JavaScript로 요청에 응답하고, 모의 서버가 실행되는 동안 상태를 유지합니다."
+---
+
+[직접 만든 경로](/docs/mocks/routes)와 명세는 미리 작성해 둔 응답으로 응답합니다. 모의 서버가 그 이상을 해야 할 때가 있습니다. 클라이언트가
+방금 한 주문을 기억하거나, 응답을 계산하거나, 세 번째 호출에서 실패하게 하는 경우입니다. **JavaScript 경로**는 모의 서버의 요청에 가장
+먼저 응답하는 작은 핸들러입니다. 변수는 모의 서버가 실행되는 동안 유지되므로 요청 사이에 상태를 보관할 수 있습니다. 경로가 처리하지
+않은 요청은 모의 서버의 직접 만든 경로로, 그다음에는 명세로 넘어갑니다.
+
+## 경로 작성하기 [#writing-routes]
+
+모의 서버 페이지에서 모의 서버를 열고 **JavaScript 경로** 카드까지 스크롤합니다. 편집기에 경로를 작성하고 **경로 저장**을 클릭하세요.
+**되돌리기**는 저장된 내용으로 되돌립니다.
+
+<Shot id="mocks-routes" alt="주문을 목록에 보관하는 코드가 있는 모의 서버의 JavaScript 경로 카드, 편집기 아래의 Running: POST /orders, GET /orders/:id 줄, 그리고 각 주문 요청에 응답한 스크립트 경로를 표시하는 로그" />
+
+Alpenglow 명세의 모의 서버를 위한 이 예제는 클라이언트가 한 주문을 보관하고 ID로 반환합니다.
+
+```js
+let orders = []
+
+mock.post("/orders", (req, res) => {
+  const order = { id: "ord_" + (orders.length + 1), status: "pending", ...req.json() }
+  orders.push(order)
+  res.status(201).header("Location", "/v1/orders/" + order.id).json(order)
+})
+
+mock.get("/orders/:id", (req, res) => {
+  const order = orders.find(o => o.id === req.params.id)
+  return order ?? res.status(404).json({ error: "no such order" })
+})
+```
+
+저장하면 카드에 스크립트가 등록한 경로(`Running: POST /orders, GET /orders/:id`)가 나열되며, 스크립트를 불러오지 못했다면 그 이유가
+주황색으로 표시됩니다. 경로는 모의 서버의 설정 옆에 `mocks/<name>.js`로 저장되므로 작업 공간과 함께 Git에 들어갑니다.
+
+## 경로가 실행되는 시점 [#when-routes-run]
+
+- JavaScript 경로는 직접 만든 경로와 명세보다 **먼저** 응답합니다. 메서드와 경로가 일치하는 첫 번째 경로가 응답합니다.
+- 모의 서버가 명세를 제공하는 경우 경로는 **명세의 서버 경로 아래**입니다. `/v1/orders`가 아니라 `/orders`로 씁니다.
+- 아무것도 설정하지 않고 아무것도 반환하지 않는 경로는 요청을 직접 만든 경로와 명세로 **넘기며**, 그쪽이 평소처럼 응답합니다. 쿼리
+  매개변수 하나처럼 일부 요청만 처리하고 싶을 때 사용합니다.
+- 스크립트는 모의 서버가 시작될 때 한 번 실행됩니다. 최상위 변수와 `state` 객체는 모의 서버가 멈출 때까지 유지됩니다.
+- **저장하면 상태를 새로 만들어 경로를 다시 시작합니다.** 명세, 직접 만든 경로, 모의 서버 설정을 바꿔도 상태는 유지됩니다.
+- 요청은 한 번에 하나씩 처리되므로 상태가 일관되게 유지됩니다.
+
+모의 서버의 [로그](/docs/mocks#the-log)는 경로가 처리한 요청마다 경로의 이름을 표시합니다. 그 위에 포인터를 올리면
+**이 경로가 응답함** 또는 **이 경로가 넘김**(직접 만든 경로나 명세로)이 나타납니다. 경로가 `console.log`로 쓴 내용은 로그의 요청 아래에
+표시됩니다.
+
+## 경로 API [#the-routes-api]
+
+`mock`과 메서드로 경로를 등록합니다.
+
+| 함수 | 일치하는 대상 |
+| --- | --- |
+| `mock.get(path, handler)` | `GET` |
+| `mock.post`, `mock.put`, `mock.patch`, `mock.delete`, `mock.head`, `mock.options` | 해당 메서드 |
+| `mock.any(path, handler)` | 모든 메서드 |
+
+경로에서 `:name`은 구간 하나와 일치하며 그 값을 `req.params.name`에 넣습니다. `*`는 나머지 전체와 일치합니다.
+
+핸들러는 `req`와 `res`를 받습니다.
+
+| `req` | 담긴 내용 |
+| --- | --- |
+| `req.method` | 대문자 메서드. |
+| `req.path` | 명세의 서버 경로 아래의 경로. |
+| `req.params` | 경로의 `:name` 구간. |
+| `req.query` | 쿼리 매개변수. 이름마다 마지막 값. |
+| `req.headers` | 소문자 이름의 헤더. |
+| `req.body` | 텍스트로서의 본문. |
+| `req.json()` | JSON으로 파싱한 본문. 본문이 없으면 `null`. |
+
+| `res` | 하는 일 |
+| --- | --- |
+| `res.status(code)` | 상태를 설정합니다. 기본값은 `200`입니다. |
+| `res.header(name, value)` | 헤더를 추가합니다. |
+| `res.json(value)` | 값을 JSON으로 보냅니다. 따로 지정하지 않으면 `Content-Type: application/json`을 사용합니다. |
+| `res.send(text)` | 텍스트를 보냅니다. 따로 지정하지 않으면 `Content-Type: text/plain; charset=utf-8`을 사용합니다. |
+
+모든 `res` 함수는 `res`를 반환하므로 `res.status(201).json(order)`처럼 이어서 호출할 수 있습니다. 핸들러가 반환한 값은 JSON으로
+전송되므로 `return order`는 `res.json(order)`와 같습니다. 핸들러는 `async`일 수 있습니다.
+
+`state`(`mock.state`도 같습니다)는 요청 사이에 유지되는 객체로, 직접 만든 변수에 두고 싶지 않은 값을 보관할 때 사용합니다.
+
+```js
+mock.get("/me", (req, res) => {
+  state.calls = (state.calls ?? 0) + 1
+  if (state.calls % 3 === 0) return res.status(503).json({ error: "try again" })
+  // Nothing set: the routes made by hand or the spec answer this request.
+})
+```
+
+## 제한 [#limits]
+
+경로는 [요청 스크립트](/docs/requests/scripts-and-tests)와 같은 샌드박스에서 실행되며 Node가 아닙니다. 파일 시스템과 네트워크를 사용할 수
+없습니다. 요청마다 JavaScript는 2초 동안 실행될 수 있고, 스크립트가 시작되는 데에도 2초가 주어집니다. 예외를 던지는 핸들러는 오류와 함께
+`500`으로 응답하며, 오류는 로그에도 표시됩니다.
+
+## 경로 신뢰하기 [#trusting-routes]
+
+경로는 Mac에서 실행되는 코드이므로 요청 스크립트와 같은 규칙을 따릅니다. Echolot에서 직접 작성하고 저장한 경로는 실행됩니다. Git, 가져오기,
+또는 다른 앱이 파일을 편집하는 식으로 외부에서 들어온 경로는 실행되지 않습니다. 카드에 **Echolot 외부에서 온 스크립트입니다**가
+표시되며, 스크립트를 읽고 **스크립트 신뢰**를 클릭할 때까지 모의 서버가 시작되지 않습니다. Echolot 외부에서 다시 바뀌면 Echolot이 다시
+확인을 요청합니다.
+
+에이전트는 모의 서버의 경로를 읽을 수는 있지만 쓸 수는 없습니다.
+
+## 명령줄에서 [#from-the-command-line]
+
+`echolot mock -w <workspace> <mock>`은 작업 공간의 모의 서버를 모든 경로와 함께 실행합니다. `--routes <file>`은 다른 파일의 JavaScript
+경로를 실행하며, 명세 파일과도 함께 사용할 수 있습니다. [echolot mock](/docs/cli/mock)을 참고하세요.

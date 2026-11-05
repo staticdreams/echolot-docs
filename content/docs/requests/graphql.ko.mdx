@@ -1,0 +1,133 @@
+---
+title: "GraphQL"
+description: "스키마 기반 자동 완성으로 GraphQL 쿼리를 작성하고, 필드를 체크해 쿼리를 만들며, 오류, 구독, 증분 결과를 확인합니다."
+---
+
+GraphQL 요청은 쿼리, 쿼리의 변수, 쿼리를 작성하는 기준이 되는 스키마로 구성됩니다. Echolot은 스키마를 사용해 입력하는 동안 필드를 자동 완성하고, 보내기 전에 실수를
+표시하며, 응답 옆에 타입을 보여 줍니다.
+
+<Shot id="requests-graphql-query" alt="Catalog › Search products: SearchProducts 쿼리가 있는 쿼리 탭, shop.graphql과 타입 개수를 표시한 스키마 메뉴, totalCount와 nodes가 있는 JSON 응답" />
+
+## GraphQL 요청 만들기 [#create-a-graphql-request]
+
+<strong>파일 › 새로운 GraphQL 요청</strong>을 선택하거나, 사이드바의 <strong>요청</strong> 옆 <strong>+</strong> 메뉴에서 <strong>새로운 GraphQL 요청</strong>을 선택합니다. 주소 필드에 엔드포인트를 입력합니다. 데모
+상점은 `{{baseURL}}/graphql`입니다. Alpenglow 작업 공간에 준비된 요청이 하나 있습니다: <strong>Catalog › Search products</strong>.
+
+편집기의 탭은 <strong>문서</strong>, <strong>쿼리</strong>, <strong>변수</strong>, <strong>헤더</strong>, <strong>매개변수</strong>, <strong>인증</strong>, <strong>변수</strong>(요청 자체의 변수), <strong>테스트</strong>, <strong>스크립트</strong>, <strong>설정</strong>입니다. 헤더, 인증,
+테스트, 스크립트는 [HTTP 요청](/docs/requests)과 같이 동작합니다.
+
+## 쿼리와 변수 [#query-and-variables]
+
+<strong>쿼리</strong> 탭에 쿼리를 씁니다.
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } rating stock { warehouse available } }
+  }
+}
+```
+
+변수는 <strong>변수</strong> 탭에 JSON으로 씁니다. JSON 안에서 `{{variables}}`를 쓸 수 있습니다.
+
+```json
+{
+  "text": "{{searchTerm}}"
+}
+```
+
+문서에 작업이 여러 개 있으면 쿼리 위의 <strong>작업</strong>에 보낼 작업을 입력합니다. 작업이 하나인 문서에서는 비워 둡니다.
+
+<strong>보내기</strong> 또는 <kbd>⌘</kbd><kbd>R</kbd>로 보냅니다.
+
+## 요청이 전송되는 방식 [#how-the-request-is-sent]
+
+주소 앞의 <strong>GQL</strong> 배지는 메뉴입니다. <strong>보내는 방식</strong> 아래에 다음이 있습니다.
+
+| 선택 | 보내는 내용 |
+| --- | --- |
+| <strong>POST(JSON 본문)</strong> | `query`, `variables`, `operationName`을 JSON으로 담은 POST. 일반적인 방식 |
+| <strong>GET(URL에 포함)</strong> | `query`, `variables`, `operationName`을 쿼리 매개변수로. GET 요청을 캐시하는 서버용 |
+| <strong>WebSocket(graphql-transport-ws)</strong> | `graphql-transport-ws` 프로토콜을 쓰는 WebSocket. 구독용 |
+
+아래에 스위치가 두 개 있습니다.
+
+- <strong>지속 쿼리(APQ)</strong>는 쿼리 없이 쿼리의 SHA-256 해시를 먼저 보냅니다. 서버가 해시를 모른다고 응답하면 Echolot이 쿼리와 함께 다시 보내며, 서버는 그 쿼리를 보관할 수
+  있습니다.
+- <strong>모든 작업 일괄 처리</strong>는 문서의 이름 있는 모든 작업을 하나의 JSON 배열로 함께 보냅니다.
+
+## 스키마 [#the-schema]
+
+스키마 메뉴는 <strong>쿼리</strong> 탭 오른쪽에 있습니다. 스키마 파일과 타입 개수를 `shop.graphql · … types`처럼 보여 주거나 <strong>스키마 없음</strong>을 보여 줍니다.
+
+- <strong>서버에서 가져오기</strong>는 요청의 주소에 인트로스펙션 쿼리를 실행하고 그 결과를 작업 공간의 `specs/` 폴더에 파일로 보관합니다. 다시 선택하면 스키마를 새로 고칩니다.
+- <strong>스키마 사용</strong>은 작업 공간에 이미 있는 스키마 파일(`.graphql`, `.graphqls`, `.json`)을 나열하여 하나를 고르게 합니다.
+- <strong>스키마 파일 추가…</strong>는 Mac에서 SDL 파일(`.graphql`) 또는 인트로스펙션 결과(`.json`)를 가져옵니다.
+- <strong>스키마 탐색기 보기</strong>는 응답 옆에 스키마를 엽니다.
+- <strong>이 스키마 사용 중단</strong>은 요청에서 스키마를 뗍니다.
+
+`specs/`의 스키마 파일은 그 서버에 대한 모든 GraphQL 요청이 공유할 수 있으며 작업 공간과 함께 커밋할 수 있습니다. 가져오기로 스키마 파일을 교체하는데 스키마가 바뀌었으면
+<strong>스키마가 변경됨</strong>에 변경 사항이 <strong>호환 불가</strong>, <strong>위험</strong>, <strong>안전</strong>으로 나열됩니다. 필드가 제거되거나 필수 인수가 새로 생기는 경우가 그 예입니다. 호환 불가 변경은
+제거되거나 바뀐 부분을 사용하는 쿼리가 실패하게 만드는 변경입니다. 명령줄에서는 `echolot graphql diff`가 두 스키마를 같은 방식으로 비교합니다.
+[echolot graphql](/docs/cli/graphql)을 참고하십시오.
+
+스키마를 읽을 수 없으면 메뉴에 <strong>스키마 문제</strong>가 표시되고 쿼리 아래 막대에 이유가 나옵니다.
+
+## 자동 완성, 문제, 호버 [#completion-problems-and-hover]
+
+스키마가 있으면 쿼리 편집기가 입력하는 동안 도와줍니다.
+
+- <strong>자동 완성</strong>은 커서 위치에 맞는 필드, 인수, 입력 필드, 타입, 열거형 값, 변수, 지시자, 프래그먼트를 문서와 함께 제안합니다. 지원 중단된 항목은 표시됩니다.
+- <strong>문제</strong>는 입력하는 동안 밑줄로 표시됩니다. 알 수 없는 필드, 잘못된 인수 타입, 빠진 필수 인수 등입니다. 쿼리 아래 막대에 첫 번째 문제와 오류 및 경고 개수가
+  표시되며, 포인터를 올리면 전부 읽을 수 있습니다.
+- <strong>호버</strong>: 필드나 타입 위에 포인터를 올리면 시그니처와 문서, 지원 중단 여부를 볼 수 있습니다.
+- 필드나 타입을 <kbd>⌘</kbd>-클릭하면 스키마 탐색기에서 해당 타입이 열립니다.
+
+## 스키마 탐색기와 빌더 [#the-schema-explorer-and-the-builder]
+
+응답 패널의 <strong>스키마</strong> 탭은 첫 번째로 보내기 전에도 요청의 스키마를 보여 줍니다. 요청에 아직 스키마가 없으면 그곳에서 <strong>서버에서 가져오기</strong>를 선택합니다.
+
+<strong>탐색</strong>은 <strong>진입점</strong>(<strong>Query</strong>, <strong>Mutation</strong>, <strong>Subscription</strong>)에서 시작합니다. 타입을 클릭하면 필드, 입력 필드, 열거형 값, 또는 그 타입을 구현하거나 그 타입에
+속하는 타입이 지원 중단 표시와 함께 나옵니다. 뒤로 가기는 이전 타입으로 돌아갑니다. <strong>타입 및 필드 검색</strong>으로 스키마의 무엇이든 이름으로 찾을 수 있습니다.
+
+<strong>작성</strong>은 쿼리를 대신 써 줍니다. <strong>작업</strong>에서 <strong>쿼리</strong>, <strong>mutation</strong>, <strong>subscription</strong> 중 하나를 고른 다음 트리에서 필드를 체크합니다. 체크할 때마다 필드가
+쿼리 텍스트에 추가되고, 체크를 해제하면 다시 빠집니다. 주변에 직접 입력한 내용은 그대로 남습니다. 빌더는 <strong>작업</strong>에 지정된 작업이나 문서에서 해당 종류의 첫 번째 작업에
+대해 동작하며, 없으면 새로 추가합니다.
+
+<Shot id="requests-graphql-builder" alt="Search products의 작성 보기를 연 스키마 탭: search가 체크되고 nodes가 펼쳐져 있으며 sku, name, price가 체크됨. 옆의 쿼리에 같은 필드가 표시됨" />
+
+## 응답 [#responses]
+
+응답은 다른 [응답](/docs/requests/responses)과 마찬가지로 <strong>본문</strong> 탭에 JSON으로 나타납니다. Echolot은 데이터 옆에 GraphQL이 전달하는 내용도 읽습니다.
+
+- 응답 요약의 <strong>GraphQL 오류 N개</strong>: 서버가 HTTP 200이어도 `errors` 배열을 보냈습니다. 클릭하면 각 메시지와 해당 경로를 읽을 수 있습니다.
+- <strong>부분 데이터</strong>: 데이터가 오류와 함께 도착했으므로 일부 필드는 실패해서 `null`입니다.
+- <strong>확장 정보</strong>: 응답의 `extensions`. 트레이싱이나 비용 정보 같은 것입니다.
+
+<strong>테스트</strong> 탭에 `0`과 같은 <strong>GraphQL 오류</strong> 검사를 추가하면 오류가 있을 때 실행이 실패합니다. [스크립트와 테스트](/docs/requests/scripts-and-tests)를
+참고하십시오.
+
+## 구독과 증분 전달 [#subscriptions-and-incremental-delivery]
+
+구독은 끝날 때까지 결과를 계속 보냅니다.
+
+- HTTP(<strong>POST</strong> 또는 <strong>GET</strong>)에서는 작업이 구독이면 Echolot이 서버 전송 이벤트를 요청합니다.
+- <strong>WebSocket(graphql-transport-ws)</strong>에서는 Echolot이 WebSocket을 열고 요청의 헤더와 인증으로 구독을 보내며 서버의 ping에 응답합니다.
+
+`@defer` 또는 `@stream`이 있는 쿼리는 여러 부분(`multipart/mixed`)으로 도착합니다.
+
+두 경우 모두 응답 패널에 <strong>이벤트</strong> 탭이 생깁니다. 각 이벤트 또는 부분이 번호가 매겨져 순서대로 나열되며, 종류(`next`나 `part` 등), id, 오류가 함께 표시됩니다.
+`@defer`와 `@stream`에서는 맨 위의 <strong>병합된 결과</strong>가 이후 모든 부분을 적용한 첫 번째 결과를 보여 줍니다. 스트림이 실행되는 동안 이 탭은 새 이벤트를 따라가며
+<strong>수신 대기 중… 중단을 누르면 끝납니다.</strong>라고 표시합니다. <strong>취소</strong>(<kbd>⌘</kbd><kbd>.</kbd>)를 선택하면 끝납니다. 시작된 스트림은 요청의 전체 시간 초과로
+끊기지 않습니다.
+
+## 파일 업로드 [#file-uploads]
+
+`Upload` 변수가 있는 mutation은 <strong>변수</strong> 탭의 <strong>변수용 파일</strong>에 파일을 추가합니다.
+
+1. <strong>+</strong>를 선택합니다.
+2. `file`, 또는 목록의 첫 번째 항목이면 `files.0` 같은 변수를 입력합니다.
+3. 작업 공간 기준 상대 경로로 파일의 경로를 입력합니다.
+
+그러면 POST가 GraphQL 멀티파트 요청 명세를 따릅니다. `operations`에서 변수는 `null`이고, 파일은 별도의 부분에 담깁니다.

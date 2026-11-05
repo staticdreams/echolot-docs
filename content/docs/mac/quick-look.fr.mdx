@@ -1,0 +1,30 @@
+---
+title: "Coup d’œil"
+description: "Prévisualisez un espace de travail Echolot dans le Finder avec la barre d’espace, sans l’ouvrir."
+---
+
+Sélectionnez un espace de travail `.echolot` dans le Finder et appuyez sur <kbd>Space</kbd> : Coup d’œil montre ce que
+contient l’espace de travail, sans ouvrir Echolot. Utilisez-le pour retrouver le bon espace de travail parmi plusieurs,
+ou pour voir ce que contient celui d’un collègue avant de l’ouvrir.
+
+<Shot id="mac-quick-look" alt="Coup d’œil au-dessus du Finder, avec l’espace de travail Alpenglow : son nom, son fichier, la date de sa dernière modification, ses types de requêtes, ses nombres et ses environnements" />
+
+## Ce que montre l’aperçu [#what-the-preview-shows]
+
+- **Espace de travail Echolot** et le nom de l’espace de travail.
+- Le nom du fichier, et la date de la dernière modification de l’un de ses fichiers, avec le temps écoulé depuis.
+- Ses requêtes par type, les plus nombreuses d’abord, par exemple `18 HTTP · 3 GraphQL · 2 WebSocket`.
+- Le nombre de ses **Requêtes**, **Dossiers**, **Environnements**, **Variables** et **Vérifications**, ainsi que de ses
+  **Flux**, **Serveurs MCP**, **Specs** et **Mocks** s’il en a.
+- Les noms de ses environnements.
+
+L’aperçu suit l’apparence claire ou sombre de votre Mac.
+
+## Ce qu’il ne fait pas [#what-it-doesnt-do]
+
+L’aperçu ne fait que lire les fichiers de l’espace de travail. Il n’envoie rien, n’exécute aucun script et n’ouvre
+aucune connexion. Les valeurs secrètes ne sont pas dans les fichiers de l’espace de travail (elles sont dans le
+trousseau) : elles n’apparaissent donc jamais dans un aperçu.
+
+L’aperçu est fourni avec Echolot, dans les deux éditions ; il n’y a rien à installer. Pour ouvrir l’espace de travail,
+double-cliquez dessus, ou choisissez **Ouvrir avec Echolot** en haut de la fenêtre Coup d’œil.

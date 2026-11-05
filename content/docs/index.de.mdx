@@ -1,0 +1,50 @@
+---
+title: "Echolot"
+description: "Was Echolot ist, was es kann und wo du in dieser Dokumentation anfängst."
+---
+ Echolot ist eine native Mac-App zum Senden, Testen und Bauen von APIs. Es spricht HTTP/1.1, HTTP/2 und HTTP/3, GraphQL,
+gRPC, WebSocket, Server-Sent Events, Socket.IO, MQTT und MCP und zeigt genau, was über die Leitung ging: die rohen
+Bytes, jede Weiterleitung und die Zeit, die jeder Schritt gebraucht hat.
+
+Was es kann:
+
+- **Hält deine Arbeit in einfachen Dateien.** Ein Arbeitsbereich ist ein Ordner mit lesbaren TOML-Dateien, eine pro
+  Anfrage, den du in Git aufbewahren kannst. Geheime Werte bleiben im macOS-Schlüsselbund, nie in den Dateien.
+- **Testet und führt aus.** Füge jeder Anfrage Prüfungen hinzu, führe einen Ordner oder den ganzen Arbeitsbereich in der
+  Ausführung aus und lass denselben Arbeitsbereich mit dem Befehlszeilentool `echolot` in CI laufen.
+- **Entwirft und mockt.** Schreibe OpenAPI-Specs visuell oder als Text und starte lokale Mock-Server: aus einer Spec
+  oder aus Routen, die du von Hand mit Beispieldaten anlegst.
+- **Automatisiert.** Verkette Anfragen, Bedingungen und Schleifen auf einer Arbeitsfläche zu Flows und führe sie von
+  Hand, nach Zeitplan oder über einen Webhook aus.
+- **Arbeitet mit KI.** Der eingebaute Assistent sendet, testet und korrigiert Anfragen mit dem Modell, das du wählst.
+  Externe KI-Agenten können deinen Arbeitsbereich über den eigenen MCP-Server von Echolot nutzen. Alles, was Daten
+  ändert, fragt dich vorher.
+- **Liest riesige Antworten.** Bodys werden auf die Festplatte gestreamt, sodass sich eine 500 MB große JSON-Antwort
+  sofort öffnet.
+
+Echolot braucht macOS 15 oder neuer auf einem Mac mit Apple Silicon. Es hat kein Konto und keine Anmeldung.
+
+## Hier anfangen [#start-here]
+
+<Cards>
+  <Card title="Echolot installieren" href="/docs/get-started/install" description="Lade es herunter, öffne es und halte es aktuell." />
+  <Card title="Deine erste Anfrage" href="/docs/get-started/first-request" description="Von nichts zu einer gesendeten Anfrage und einer gelesenen Antwort in wenigen Minuten." />
+  <Card title="Das Fenster" href="/docs/get-started/the-window" description="Ein Rundgang durch die Seitenleiste, die Seiten, Tabs und Tastenkürzel." />
+  <Card title="Start und Sonar" href="/docs/get-started/home" description="Die Übersicht des Arbeitsbereichs und jedes Senden eines Zeitraums, nach Antwortzeit aufgetragen." />
+  <Card title="Bring mit, was du hast" href="/docs/get-started/importing" description="Importiere aus Postman, Insomnia, OpenAPI, HAR, cURL, Paw und Bruno." />
+  <Card title="Die Demo-API" href="/docs/tutorials/demo-api" description="Ein fiktiver Shop auf demo.echolot.dev zum Üben: REST, GraphQL, WebSocket, SSE und MCP." />
+  <Card title="Editionen" href="/docs/get-started/editions" description="Der Direktdownload und die Mac-App-Store-Edition im Vergleich." />
+</Cards>
+
+## Die wichtigsten Teile [#the-main-parts]
+
+<Cards>
+  <Card title="Arbeitsbereiche" href="/docs/workspaces" description="Ordner, Umgebungen, Secrets, Verlauf und Git." />
+  <Card title="Anfragen" href="/docs/requests" description="Jedes Protokoll, Auth, Antworten, Skripte, Tests und die Ausführung." />
+  <Card title="MCP-Server" href="/docs/mcp-servers" description="Jeden MCP-Server untersuchen, prüfen und aufrufen." />
+  <Card title="Specs" href="/docs/specs" description="OpenAPI-Dokumente entwerfen und Anfragen mit ihnen im Gleichschritt halten." />
+  <Card title="Mocks" href="/docs/mocks" description="Lokale Server aus Routen mit Beispieldaten oder aus einer Spec." />
+  <Card title="Flows" href="/docs/flows" description="Anfragen, Bedingungen und Schleifen, auf einer Arbeitsfläche verkettet." />
+  <Card title="Assistent" href="/docs/ai/assistant" description="Der in Echolot eingebaute KI-Agent." />
+  <Card title="Befehlszeilentool" href="/docs/cli" description="Senden, ausführen, importieren, mocken und mehr aus dem Terminal und aus CI." />
+</Cards>

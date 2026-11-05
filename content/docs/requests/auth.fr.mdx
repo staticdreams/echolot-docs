@@ -1,0 +1,265 @@
+---
+title: "Authentification"
+description: "Connectez vos requêtes avec Basic, Digest, Bearer, des clés d’API, OAuth 1.0, OAuth 2.0, la signature AWS, JWT, Hawk, Akamai EdgeGrid ou NTLM, et partagez l’authentification par les dossiers."
+---
+
+L’onglet **Auth** indique comment une requête prouve son identité. Choisissez un **Type**, remplissez ses champs, et
+Echolot ajoute les identifiants à chaque envoi de la requête. Définissez l’authentification une fois sur un dossier ou
+sur l’espace de travail, et toutes les requêtes qu’il contient peuvent l’utiliser.
+
+<Shot id="requests-http-auth-oauth" alt="L’onglet Auth de Orders with OAuth 2 : OAuth 2.0 avec l’octroi Identifiants client, l’URL du jeton, l’ID client et la portée, et la barre du jeton avec Obtenir le jeton en bas" />
+
+## Garder les identifiants hors des fichiers [#keep-credentials-out-of-files]
+
+Chaque champ accepte des `{{variables}}`. Mettez les mots de passe, jetons et clés dans des
+[variables secrètes](/docs/workspaces/secrets), qui vivent dans le trousseau, et écrivez `{{password}}` dans le champ.
+Ainsi, le fichier de la requête ne contient aucun secret et vous pouvez le commiter.
+
+Quand vous saisissez une valeur en clair dans un champ d’identifiant, un avertissement apparaît dessous : **Enregistré en
+clair dans le fichier de l’espace de travail.** Cliquez sur **Placer dans le trousseau** et Echolot stocke la valeur
+comme variable secrète de l’espace de travail et écrit `{{name}}` à sa place.
+
+Les identifiants qu’Echolot ajoute sont masqués là où la page de requête les affiche : dans les en-têtes
+**AUTOMATIQUES** et dans l’aperçu de l’URL sous la barre d’URL.
+
+## Hériter des dossiers et de l’espace de travail [#inherit-from-folders-and-the-workspace]
+
+**Hériter** est le choix par défaut. Une requête qui hérite utilise l’authentification du dossier le plus proche au-dessus
+d’elle qui en définit une, puis celle de l’espace de travail. Sous **Utilise**, l’onglet indique laquelle s’applique,
+comme `Folder “Orders”: Bearer Token`, avec un bouton qui l’ouvre : **Modifier l’authentification du dossier…** ou
+**Modifier l’authentification de l’espace de travail…**. Quand rien au-dessus ne définit d’authentification, la requête
+n’en envoie aucune.
+
+<Shot id="requests-http-auth-inherit" alt="L’onglet Auth d’une requête réglée sur Hériter : Utilise Folder “Orders”: Bearer Token, avec le bouton Modifier l’authentification du dossier…" />
+
+Une requête qui a sa propre authentification la garde, et son onglet **Auth** affiche aussi une ligne
+**Authentification de l’espace de travail** avec l’authentification de l’espace de travail et un bouton pour l’ouvrir :
+**Authentification de l’espace de travail…**, ou **Configurer l’authentification de l’espace de travail…** quand
+l’espace de travail n’en a pas encore. **Authentification de l’espace de travail…** se trouve aussi dans la palette de
+commandes (<kbd>⌘</kbd><kbd>K</kbd>).
+
+Pour définir l’authentification de nombreuses requêtes à la fois :
+
+1. Dans la barre latérale, faites un clic droit sur un dossier et choisissez **Réglages du dossier…**. Pour l’espace de
+   travail, utilisez **Authentification de l’espace de travail…** depuis l’onglet **Auth** d’une requête ou la palette
+   de commandes, ou cliquez sur le sélecteur d’espace de travail en bas de la barre latérale et choisissez
+   **Réglages de l’espace de travail…**.
+2. Ouvrez l’onglet **Auth** et choisissez un type. Un dossier peut aussi hériter ; l’espace de travail ne le peut pas.
+   Sous les réglages, l’onglet indique combien de requêtes réglées sur **Hériter** utilisent cette authentification.
+3. Pour OAuth 2.0, connectez-vous directement ici : la barre du jeton en bas fonctionne comme dans une requête (voir
+   [OAuth 2.0](#oauth-20)), et toutes les requêtes qui héritent de l’authentification utilisent ce jeton. **Obtenir le
+   jeton** enregistre d’abord l’authentification. La barre n’affiche le jeton propre au dossier ou à l’espace de travail
+   qu’une fois son authentification enregistrée : elle n’affiche donc jamais, et n’oublie jamais, un jeton qui
+   appartient à l’authentification au-dessus.
+4. Cliquez sur **Terminé**.
+
+<Shot id="workspaces-folder-auth-oauth" alt="Les réglages du dossier sur l’onglet Auth avec OAuth 2.0 choisi, son URL de jeton et son client, la barre du jeton avec Obtenir le jeton, et le nombre de requêtes qui en héritent" />
+
+Dans l’exemple Alpenglow, le dossier **Orders** définit **Jeton Bearer** avec `{{token}}`, et toutes les requêtes de
+commande en héritent. **Auth › Sign in** remplit `{{token}}` à partir de sa réponse avec une
+[capture](/docs/requests/captures).
+
+## Choisir un type [#choose-a-type]
+
+| Type | Ce que fait Echolot |
+| --- | --- |
+| **Hériter** | Utilise l’authentification du dossier ou de l’espace de travail. |
+| **Aucune auth** | N’envoie aucun identifiant, même quand un dossier en définit. |
+| **Basic** | Ajoute `Authorization: Basic …` à partir d’un nom d’utilisateur et d’un mot de passe. |
+| **Digest** | Répond au défi Digest du serveur. |
+| **Jeton Bearer** | Ajoute `Authorization: Bearer <token>`. |
+| **Clé d’API** | Ajoute une clé sous forme d’en-tête ou de paramètre de requête. |
+| **OAuth 1.0** | Signe chaque requête avec OAuth 1.0, à l’aide d’un jeton que vous avez déjà. |
+| **OAuth 2.0** | Obtient un jeton d’accès et l’envoie comme jeton Bearer, ou dans l’adresse. |
+| **Signature AWS** | Signe chaque requête avec AWS Signature Version 4. |
+| **JWT Bearer** | Signe un nouveau JSON Web Token à chaque envoi. |
+| **Hawk** | Signe chaque requête avec Hawk. |
+| **Akamai EdgeGrid** | Signe chaque requête avec EG1-HMAC-SHA256. |
+| **NTLM** | Répond au défi NTLM du serveur. |
+
+Un en-tête `Authorization` que vous ajoutez vous-même dans l’onglet **En-têtes** est envoyé à la place de celui que
+l’onglet **Auth** ajouterait.
+
+### Basic [#basic]
+
+Remplissez **Nom d’utilisateur** et **Mot de passe**. Echolot les envoie encodés en Base64 dans l’en-tête
+`Authorization`. Essayez avec **Echo › Basic auth** dans Alpenglow.
+
+### Digest [#digest]
+
+Remplissez **Nom d’utilisateur** et **Mot de passe**. Le premier envoi part sans identifiants ; quand le serveur répond
+401 avec un défi Digest, Echolot y répond une fois avec une seconde requête. Les deux apparaissent dans l’échange comme
+des étapes.
+
+### Jeton Bearer [#bearer-token]
+
+Remplissez **Jeton**, généralement `{{token}}`. **Préfixe** vaut `Bearer` par défaut ; changez-le pour un serveur qui
+veut un autre mot, ou effacez-le pour envoyer le jeton seul.
+
+### Clé d’API [#api-key]
+
+Remplissez **Clé** (le nom de l’en-tête ou du paramètre, `X-API-Key` par défaut) et **Valeur**, puis choisissez où elle
+va sous **Ajouter dans** : **En-tête** ou **Paramètre de requête**.
+
+### OAuth 2.0 [#oauth-20]
+
+Echolot obtient le jeton d’accès pour vous et l’ajoute sous la forme `Authorization: Bearer <token>`.
+
+| Champ | Signification |
+| --- | --- |
+| **Octroi** | **Code d’autorisation**, **Identifiants client**, **Code d’appareil** ou **Mot de passe (ancien)**. |
+| **URL d’autorisation** | L’endroit où vous vous connectez (Code d’autorisation). |
+| **URL d’appareil** | L’endroit d’où vient le code d’appareil (Code d’appareil). |
+| **URL du jeton** | L’endroit d’où viennent les jetons. |
+| **Nom d’utilisateur**, **Mot de passe** | La connexion propre à la personne (Mot de passe). Le mot de passe peut être placé dans le trousseau comme tout autre identifiant. |
+| **ID client**, **Secret client** | Les identifiants du client. Les clients publics laissent le secret vide. |
+| **Portée** | Les portées à demander, séparées par des espaces, comme `read write`. |
+| **Audience** | Pour les serveurs qui en veulent une. |
+| **URI de redirection** | Code d’autorisation. Vide, il est automatique : une adresse de bouclage, `http://127.0.0.1:<port>/callback`, sur un port libre. |
+| **PKCE (S256)** | Code d’autorisation. Activé par défaut. |
+| **Authentification du client** | La façon dont l’ID client et le secret parviennent à l’URL du jeton : **HTTP Basic** (par défaut) ou **Dans le corps**. |
+| **Ajouter le jeton dans** | **En-tête** (par défaut) ou **URL** : le jeton comme paramètre de requête, nommé sous **Paramètre** (`access_token` par défaut). Les adresses finissent dans les journaux et l’historique : n’utilisez URL que pour les API qui n’acceptent rien d’autre. |
+| **Préfixe d’en-tête** | Le mot avant le jeton dans l’en-tête, `Bearer` par défaut. |
+
+En bas de l’onglet, la barre du jeton indique s’il y a un jeton. Cliquez sur **Obtenir le jeton** :
+
+- **Code d’autorisation** ouvre votre navigateur sur l’URL d’autorisation. Connectez-vous-y ; Echolot intercepte la
+  redirection et affiche **Terminez la connexion dans votre navigateur…** jusqu’à ce que vous l’ayez fait.
+- **Code d’appareil** affiche **Se connecter sur un autre appareil** avec un code. Cliquez sur **Ouvrir** (avec le nom
+  d’hôte de la page), saisissez-y le code et approuvez ; Echolot attend avec **En attente d’approbation…**.
+- **Identifiants client** interroge directement l’URL du jeton. Vous n’avez pas besoin de cliquer sur **Obtenir le
+  jeton** pour cet octroi : le premier envoi obtient un jeton tout seul.
+- **Mot de passe (ancien)** envoie le nom d’utilisateur et le mot de passe à l’URL du jeton, et ne demande pas non plus
+  de clic : le premier envoi obtient un jeton. Utilisez-le uniquement pour d’anciennes API qui l’exigent. Cet octroi est
+  obsolète parce que le mot de passe lui-même quitte votre Mac : préférez Code d’autorisation quand le serveur le
+  propose.
+
+Echolot ne propose pas l’octroi implicite, lui aussi obsolète. La plupart des serveurs qui l’offrent encore offrent aussi
+Code d’autorisation, ce en quoi un octroi implicite importé est converti ; vérifiez que le serveur l’accepte.
+
+Dès qu’il y a un jeton, la barre indique **Jeton d’accès dans le trousseau**, avec son type, sa date d’expiration, s’il
+**se renouvelle automatiquement** et sa portée. **Obtenir un nouveau jeton** le remplace ; **Oublier** le supprime.
+
+Comment les jetons sont conservés et utilisés :
+
+- Les jetons sont stockés dans le trousseau, jamais dans les fichiers de l’espace de travail.
+- Un jeton appartient à la requête, au dossier ou à l’espace de travail qui définit l’authentification, et à
+  l’environnement et aux réglages pour lesquels il a été émis : changer d’environnement, ou modifier l’URL du jeton,
+  l’ID client, la portée ou un autre réglage qui détermine à qui le jeton est destiné, utilise ou obtient un jeton à part
+  et n’envoie jamais un jeton émis pour autre chose. Les requêtes qui héritent d’OAuth d’un dossier partagent ses jetons.
+  **Oublier** supprime les jetons de tous les environnements.
+- Quand un jeton a expiré, l’envoi suivant le renouvelle avec son jeton de renouvellement. Un jeton Identifiants client
+  ou Mot de passe est obtenu de nouveau. Sinon, l’envoi s’arrête avec **Cette requête a besoin d’un jeton OAuth :
+  obtenez-en un dans l’onglet Auth d’abord.** ou **Le jeton OAuth a expiré et n’a pas pu être renouvelé : obtenez-en un
+  nouveau dans l’onglet Auth.**
+
+Pour essayer, envoyez **Auth › Orders with OAuth 2** dans Alpenglow : elle utilise Identifiants client contre l’API de
+démo.
+
+#### Avancé [#advanced]
+
+La plupart des serveurs n’en ont pas besoin ; c’est donc replié sous **Avancé**. La section s’ouvre d’elle-même quand
+quelque chose y est défini.
+
+<Shot id="requests-http-auth-oauth-advanced" alt="La section Avancé d’OAuth 2.0 : Renouveler automatiquement, l’URL de renouvellement, et les tableaux de paramètres Demande d’autorisation, Demande de jeton et Demande de renouvellement" />
+
+- **Renouveler automatiquement** est activé par défaut. Désactivez-le pour envoyer un jeton expiré tel quel et voir
+  comment l’API y répond. Un premier jeton est quand même obtenu pour Identifiants client et Mot de passe.
+- **URL de renouvellement** sert aux serveurs dont le endpoint de renouvellement n’est pas l’URL du jeton. Vide, c’est
+  l’URL du jeton.
+- **Demande d’autorisation**, **Demande de jeton** et **Demande de renouvellement** ajoutent des paramètres pour les
+  serveurs qui veulent plus que les champs standard : `access_type = offline` chez Google (pour qu’il fournisse un jeton
+  de renouvellement), `resource` pour Azure AD, un tenant ou une version d’API. Chaque ligne a une clé, une valeur (les
+  variables fonctionnent, les secrets peuvent donc rester dans le trousseau) et, pour les demandes de jeton et de
+  renouvellement, l’endroit où elle va : **Corps**, **En-tête** ou **URL**. Un paramètre du même nom qu’un paramètre
+  standard le remplace. Les paramètres de la demande d’autorisation vont dans l’adresse de connexion, ou dans la demande
+  d’autorisation d’appareil pour Code d’appareil. Ils ne remplacent jamais le `state` ni le défi PKCE.
+
+### OAuth 1.0 [#oauth-10]
+
+Pour les API qui utilisent encore OAuth 1.0 : NetSuite, Magento et Adobe Commerce, les endpoints v1.1 de X, ou les liens
+d’application de Jira ou Confluence Server, entre autres. Echolot signe chaque requête avec un jeton que vous avez déjà.
+Il n’exécute pas le flux à trois branches qui permet d’en obtenir un, et Postman non plus.
+
+<Shot id="requests-http-auth-oauth1" alt="L’onglet Auth avec OAuth 1.0 : la méthode de signature, la clé et le secret consommateur, le jeton d’accès et le secret du jeton, et Ajouter dans En-tête" />
+
+1. Choisissez la **Méthode de signature** : **HMAC-SHA1** (la plus courante), **HMAC-SHA256**, **HMAC-SHA512**,
+   **RSA-SHA1**, **RSA-SHA256**, **RSA-SHA512** ou **PLAINTEXT**.
+2. Remplissez **Clé consommateur**, puis **Secret consommateur**, ou pour RSA une **Clé privée** (collez-la, ou cliquez
+   sur **Choisir un fichier PEM…** pour la placer directement dans le trousseau).
+3. Remplissez **Jeton d’accès** et, sauf pour RSA, **Secret du jeton**. Laissez-les vides pour une requête faite avant
+   qu’il y ait un jeton.
+4. Sous **Ajouter dans**, choisissez **En-tête** (`Authorization: OAuth …`, par défaut), **URL** ou **Corps**. **Corps**
+   signe dans un corps de formulaire, ou dans l’adresse pour une requête qui n’en a pas.
+5. **Avancé** contient **Realm**, **URL de rappel** et **Vérificateur** (pour les étapes du flux à trois branches que
+   vous faites à la main), **Ajouter oauth_version="1.0"** (activé par défaut) et **Inclure le hachage du corps dans la
+   signature** (`oauth_body_hash`, pour les corps qui ne sont pas des formulaires).
+
+Chaque requête est signée à l’envoi, avec un nouvel horodatage et un nouveau nonce, sur la méthode, l’adresse, sa query
+string et les champs d’un corps de formulaire.
+
+### Signature AWS [#aws-signature]
+
+Remplissez **ID de clé d’accès**, **Clé d’accès secrète**, **Région** (`us-east-1` par défaut) et **Service**
+(`execute-api` par défaut ; `s3`, `lambda`, `es`, etc.). **Jeton de session** ne sert que pour les identifiants
+temporaires. Chaque requête est signée à l’envoi, avec l’heure, l’hôte et le corps avec lesquels elle part.
+
+### JWT Bearer [#jwt-bearer]
+
+Echolot signe un nouveau jeton à chaque envoi.
+
+1. Choisissez l’**Algorithme** : **HS256**, **HS384** ou **HS512** (HMAC avec un secret), **RS256**, **RS384**,
+   **RS512**, **PS256**, **PS384** ou **PS512** (clé privée RSA), ou **ES256** ou **ES384** (clé privée à courbe
+   elliptique).
+2. Pour HMAC, remplissez **Secret** ; cochez **Secret en Base64** quand le fournisseur vous l’a donné ainsi. Pour une
+   clé privée, collez-la dans **Clé privée**, ou cliquez sur **Choisir un fichier PEM…** : la clé va directement dans le
+   trousseau et le champ y fait référence par son nom. Les clés peuvent être au format PEM PKCS #8, PKCS #1 ou SEC 1.
+3. Écrivez les **Claims** en JSON. Ils peuvent contenir des variables : `{"sub": "{{userID}}"}`.
+4. Ajoutez des **Champs d’en-tête** comme `kid` si le serveur en a besoin. `alg` et `typ` sont définis pour vous.
+5. **Ajouter « iat » (émis le)** est activé par défaut. **Expire après** ajoute `exp` à ce nombre de secondes dans le
+   futur (300 par défaut) ; 0 n’en ajoute aucun. Les claims que vous définissez vous-même dans le JSON sont conservés
+   tels qu’écrits.
+6. Sous **Ajouter dans**, choisissez **En-tête** (avec un **Préfixe**, `Bearer` par défaut) ou **Paramètre de requête**
+   (avec un nom de **Paramètre**, `token` par défaut).
+
+### Hawk [#hawk]
+
+Remplissez **ID** et **Clé**, choisissez l’**Algorithme** (**SHA-256** ou **SHA-1**), et ajoutez **Données d’app (ext)**
+si le serveur le veut. Cochez **Inclure le hachage du corps dans la signature** pour inclure le hachage de la charge.
+Chaque requête est signée avec l’heure, un nonce, la méthode, le chemin, l’hôte et le port.
+
+### Akamai EdgeGrid [#akamai-edgegrid]
+
+Remplissez **Jeton client**, **Secret client** et **Jeton d’accès**. **En-têtes à signer** est une liste séparée par des
+virgules, généralement vide. **Octets du corps signés** limite la quantité du corps d’un POST qui est hachée (131072 par
+défaut).
+
+### NTLM [#ntlm]
+
+Remplissez **Nom d’utilisateur** et **Mot de passe**, ainsi que **Domaine** et **Poste de travail** si votre serveur en a
+besoin. Echolot parle NTLMv2 : il répond au défi du serveur sur la même connexion, et les 401 restent dans l’échange
+comme des étapes.
+
+NTLM authentifie une connexion, pas une requête : il nécessite donc HTTP/1.1. Avec la version HTTP sur
+**Automatique**, Echolot utilise HTTP/1.1 pour les requêtes NTLM ; avec **HTTP/2** ou **HTTP/3** choisi, l’envoi est
+refusé. Voir [Réglages de la requête](/docs/requests/settings#http-version).
+
+## Les identifiants restent avec leur origine [#credentials-stay-with-their-origin]
+
+Quand une redirection mène à une autre origine (un autre schéma, hôte ou port), Echolot n’y emporte pas vos
+identifiants. Il abandonne :
+
+- les en-têtes `Authorization`, `Proxy-Authorization` et `Cookie`,
+- les en-têtes de clé d’API courants (`X-API-Key`, `Api-Key`, `Apikey`, `X-Auth-Token`, `X-Access-Token`,
+  `Private-Token`, `X-Functions-Key`), l’en-tête qu’utilise votre authentification **Clé d’API**, et tout en-tête dont
+  la valeur contient une variable secrète,
+- les signatures Digest, AWS Signature, OAuth 1.0, Hawk, EdgeGrid et NTLM, ainsi que le certificat client choisi pour
+  le premier hôte.
+
+Les certificats et le proxy du nouvel hôte s’appliquent à l’étape qui y mène. Voir
+[Réglages de la requête](/docs/requests/settings#redirects).
+
+## Environnements protégés [#protected-environments]
+
+**Obtenir le jeton** envoie aussi une requête. Quand l’environnement de la fenêtre est protégé, il demande d’abord
+confirmation, comme **Envoyer**. Voir [Environnements protégés](/docs/workspaces/protected-environments).

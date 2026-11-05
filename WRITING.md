@@ -68,3 +68,56 @@ Put one where it helps the reader find something, not on every heading:
 
 Use the Alpenglow shop and the demo API (`https://demo.echolot.dev`, see `/docs/tutorials/demo-api`) for examples,
 so readers can try them. Don't use real companies' APIs or anyone's real data.
+
+## Translations
+
+The docs come in English and seven more languages: German `de`, Spanish `es`, French `fr`, Japanese `ja`, Korean
+`ko`, Russian `ru` and Simplified Chinese `zh`. English is the source: write or change an English page first, then
+bring the translations along. A page with no translation yet shows in English, so languages can lag a page behind.
+
+### Files
+
+A translation sits beside the English page: `content/docs/requests/auth.mdx` has `auth.de.mdx`, `auth.fr.mdx` and so
+on. A folder's sidebar title is `meta.<code>.json` beside `meta.json` (translate `title`; keep `pages` as it is).
+`whats-new.<code>.mdx` is made by `bun tools/sync-whats-new.ts`, from the app's own translated release notes: don't
+write it.
+
+### What a translation keeps
+
+- Front matter: `title` and `description`, translated, in double quotes when they hold a colon.
+- The page's structure: the same headings (number and level), tables, lists, steps, callouts, cards and examples, in
+  the same order. Don't add, drop or merge anything. Headings get the English anchor automatically
+  (`bun tools/check-l10n.ts --fix <code>` writes `[#english-anchor]` after each heading), so links to a heading keep
+  working: link as the English page does, `[x](/docs/ai/assistant#the-one-time-permission)`. The site adds the
+  language's prefix to `/docs/...` links itself.
+- Code, inline `code`, file names, variables (`{{baseURL}}`), `<kbd>` keys, URLs, `<Shot id>`, component names and
+  props, and the product and protocol names the glossary lists. Code blocks stay as they are; only comments in them
+  may be translated.
+- The Alpenglow workspace's own names, which are data and stay English everywhere: its folders (Auth, Catalog, Orders,
+  Echo, Realtime, Inventory…), requests (List products, Sign in…), environments and flows.
+
+### What a translation changes
+
+- All prose, table cells, link text, `alt` texts of `<Shot>`, callout and card titles, `<Edition>` text.
+- The app's labels, in **bold**, are the app's own words in that language, not a fresh translation. The labels each
+  page uses are in `.work/l10n/labels.<code>.json` (made by `bun tools/labels.ts build`); look any other up with
+  `bun tools/labels.ts find <code> "Allow for This Session"`, or search the English side with
+  `bun tools/labels.ts find <code> --like "allow for"`. Menu paths keep ` › ` between the parts: **Datei › Neue
+  Anfrage**. A bold phrase that isn't an app label (emphasis, a heading-like lead-in) is translated as prose.
+- macOS's own words follow Apple's German, Spanish, French, Japanese, Korean, Russian or Chinese: the **Help** menu
+  (Hilfe, Ayuda, Aide, ヘルプ, 도움말, Справка, 帮助), System Settings, Finder, Keychain (Schlüsselbund…) and so on. Each
+  language's glossary in the app repository (`Echolot/docs/Localization-Glossary-<language>.md`) fixes the terms and the
+  style; follow it.
+- The voice of the English pages carries over: plain, second person, present tense, no marketing. It reads as if
+  written in the language, not translated from English.
+
+### Checking
+
+`bun tools/check-l10n.ts [--fix] [<code>…] [--pages=a,b]` checks translations against the English pages (structure,
+`<Shot>` ids, links, code, MDX that compiles) and warns about labels the app words differently. Fix every error. Look
+at every warning: a label may be correct in the page's grammar and still differ from the catalog's form.
+
+Japanese, Korean and Chinese run text straight into `**bold**` (`**保存…**を選びます`), which CommonMark does not close
+next to punctuation and a letter. After `check-l10n.ts`, run `bun tools/check-bold.ts --fix ja ko zh`: it finds the
+bold that would show as asterisks and writes `<strong>…</strong>` for it. (Run `check-l10n.ts` first: it reads `**`.)
+`bun tools/sync-whats-new.ts` rewrites every language's What's new from the app's release notes.

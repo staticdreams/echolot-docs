@@ -1,0 +1,90 @@
+---
+title: "gRPC"
+description: ".proto 파일이나 서버의 리플렉션으로 설명되는 gRPC 서비스를 JSON으로 작성하고 표시되는 메시지로 호출합니다."
+---
+
+gRPC 요청은 서비스의 메서드 하나를 호출합니다. 메시지는 JSON으로 작성합니다. Echolot은 서비스 설명을 사용해 메시지를 인코딩하고 HTTP/2로 보내며, 응답을 호출 상태와
+함께 JSON으로 보여 줍니다.
+
+<Shot id="requests-grpc-message" alt="Inventory › Reserve stock: inventory.proto, Inventory 서비스, Reserve 메서드(unary), JSON 메시지가 있는 메시지 탭과 상태 OK 및 메시지 하나가 있는 응답" />
+
+<Callout title="Alpenglow로 시험해 보기">
+  **Inventory** 폴더의 요청은 `localhost:50051`의 gRPC 서버를 호출합니다. 서버는 문서 저장소의 `examples/servers` 폴더에 있습니다(`bun run grpc`).
+</Callout>
+
+## gRPC 요청 만들기 [#create-a-grpc-request]
+
+**파일 › 새로운 gRPC 요청**을 선택하거나, 사이드바의 **요청** 옆 **+** 메뉴에서 **새로운 gRPC 요청**을 선택합니다. 주소는 `http://localhost:50051`(Alpenglow에서는
+`{{grpcURL}}`)처럼 경로 없는 서버 주소입니다.
+
+편집기의 탭은 **문서**, **메시지**, **헤더**, **인증**, **변수**, **테스트**, **스크립트**, **설정**입니다. 헤더는 호출의 메타데이터입니다. gRPC 호출은 항상
+POST이므로 배지에는 메서드 대신 **gRPC**가 표시됩니다.
+
+## 서비스 설명 [#describe-the-service]
+
+**메시지** 탭은 서비스가 설명되어 있는 곳을 지정하는 것으로 시작합니다.
+
+- 작업 공간의 `specs/` 폴더에 있는 `.proto` 파일. 예: `specs/inventory.proto`. import는 파일 옆에서 읽으며, 잘 알려진 `google.protobuf` 타입은 파일이
+  필요 없습니다. `.proto` 파일은 명세 페이지에서 추가하고 편집합니다. [proto 파일](/docs/specs/proto-files)을 참고하십시오.
+- **서버 리플렉션**: Echolot이 서버에 서비스를 물어봅니다. 서버가 리플렉션 서비스를 제공해야 합니다. 리플렉션 호출은 요청의 헤더, 인증, 변수와 함께 요청의 주소로
+  갑니다.
+
+**불러오기**를 선택해 서비스를 읽습니다. 그런 다음 서비스와 메서드를 고릅니다. 메서드 옆에 Echolot이 그 종류인 **unary**, **server streaming**,
+**client streaming**, **bidirectional streaming**을 표시합니다.
+
+<Callout>
+  명세 페이지에서 `.proto` 파일로 시작하는 편이 더 빠릅니다. 개요에 모든 메서드가 나열되고, 각 메서드의 버튼이 예시 메시지가 있는 gRPC 요청을 만들어 줍니다.
+</Callout>
+
+## 메시지 작성 [#write-the-message]
+
+메시지는 protobuf의 JSON 매핑을 따르는 JSON이며 `{{variables}}`를 쓸 수 있습니다.
+
+```json
+{
+  "sku": "TNT-MH-2P",
+  "quantity": 1,
+  "order_id": "{{orderId}}"
+}
+```
+
+**예시**는 메시지를 메서드 입력의 모든 필드가 예시 값으로 채워진 것으로 바꿉니다. 중첩된 메시지도 포함되며, 이를 출발점으로 삼을 수 있습니다.
+
+JSON 매핑에서 64비트 정수는 문자열, bytes는 Base64, 열거형은 이름, 맵은 객체이며, `Timestamp`, `Duration`, `FieldMask`, 래퍼, `Struct`, `Any`는 일반적인
+JSON 형태를 가집니다. 메시지 타입에 없는 키는 거부되므로 오타가 그냥 지나가지 않습니다.
+
+## 호출 종류 [#call-kinds]
+
+| 종류 | 작성하는 메시지 | 응답 |
+| --- | --- | --- |
+| Unary | JSON 객체 하나 | JSON 객체 하나 |
+| Server streaming | JSON 객체 하나 | 서버가 보낸 모든 메시지의 JSON 배열 |
+| Client streaming | 메시지의 JSON 배열 | JSON 객체 하나 |
+| Bidirectional streaming | 메시지의 JSON 배열 | 서버가 보낸 모든 메시지의 JSON 배열 |
+
+서버 스트리밍 호출인 **Inventory › Watch stock**에서는 메시지에 지켜볼 제품을 지정하며, 응답은 서버가 보낸 재고 수준의 목록입니다.
+
+## 상태, 메타데이터, 트레일러 [#status-metadata-and-trailers]
+
+gRPC는 호출이 어떻게 진행되었는지를 메시지 뒤 트레일러로 도착하는 상태로 알려 줍니다. 응답 요약에 그 상태가 표시됩니다. `OK`는 초록색으로, 그 밖에는 `NOT_FOUND (5)`처럼
+상태와 코드가 빨간색으로 표시되며, 받은 메시지 수와 압축 방식도 함께 나옵니다. 응답의 **헤더** 탭에는 응답 헤더가 표시됩니다.
+
+테스트에서 상태를 검사하려면 **테스트** 탭에 **gRPC 상태** 검사를 추가합니다. 기본값은 `OK`와 같음이며 이름(`NOT_FOUND`)이나 코드(`5`)를 받습니다.
+[스크립트와 테스트](/docs/requests/scripts-and-tests)를 참고하십시오.
+
+## 압축과 기한 [#compression-and-deadline]
+
+주소 앞의 **gRPC** 배지는 메뉴입니다.
+
+- **메시지 압축**: **없음**, **gzip**, **deflate**. 압축된 응답은 이 설정과 관계없이 항상 읽습니다.
+- **기한**: **기한 없음**, 또는 500 ms, 1 s, 5 s, 30 s. 기한은 서버에 전달되며, 기한을 넘겨 실행되는 호출은 `DEADLINE_EXCEEDED`로 끝납니다.
+
+## TLS와 인증서 [#tls-and-certificates]
+
+`http://` 주소는 TLS 없이 HTTP/2로 서버를 호출합니다. `https://` 주소는 TLS를 사용하며 작업 공간의 인증서 규칙을 따르므로 사용자 지정 CA 인증서와 클라이언트
+인증서도 동작합니다. [요청 설정](/docs/requests/settings)을 참고하십시오.
+
+## 명령줄에서 [#from-the-command-line]
+
+`echolot grpc describe`는 서버의 서비스와 메서드를 나열하고, `echolot grpc call`은 호출을 수행하며 상태가 `OK`가 아니면 종료 코드 1로 끝납니다.
+[echolot grpc](/docs/cli/grpc)를 참고하십시오.

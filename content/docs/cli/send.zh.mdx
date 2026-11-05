@@ -1,0 +1,154 @@
+---
+title: "echolot send"
+description: "在终端发送一个请求（URL 或存储的请求），并读取它的正文、标头、耗时和传输字节。"
+---
+
+`echolot send` 发送一个请求，并将响应正文写入标准输出。你可以像给 curl 那样给它一个 URL，也可以给它工作区中存储的请求的路径，它会像 App 那样发送：
+包括变量、认证、脚本和检查。它还能打开 WebSocket 和 Socket.IO 会话，并监听事件流。
+
+```sh
+echolot send [<options>] <url>
+```
+
+`<url>` 是一个 URL，或工作区的 `requests` 文件夹中存储的请求文件（`.req.toml`、`.gql.toml` 或 `.mcp.toml`）的路径。
+
+## 发送 URL [#send-a-url]
+
+```sh
+echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P
+```
+
+正文输出到标准输出，所以你可以通过管道传给其他命令（`| jq .`），或用 `-o` 写入文件。除非你要求，否则不会打印其他内容：
+
+- `-i` 在正文之前打印状态行和标头。
+- `-v` 将耗时打印到标准错误：DNS、连接、TLS、等待和传输，以及正文的大小和哈希、远程地址、TLS 版本、选用的协议和服务器的证书。解码过的正文（gzip、Brotli、zstd）会显示解码前后的大小。
+- `--wire` 将按传输捕获到的、实际发送和接收的字节打印到标准错误。
+
+带正文和标头的请求：
+
+```sh
+echolot send https://demo.echolot.dev/echo/anything -X POST \
+  -H 'Content-Type: application/json' \
+  -d '{"sku": "TNT-MH-2P"}' -v
+```
+
+```text
+── body ── decoded zstd 257 → 418 bytes
+── timing ──
+DNS          79.61 ms
+Connect      15.65 ms
+TLS          28.70 ms
+Waiting      19.75 ms
+Transfer      0.53 ms
+Total       146.36 ms
+Body      418 bytes, sha256 01facf0b2388ca67…
+Remote    [2606:4700:3031::6815:3cf1]:443
+── tls ── TLS 1.3, ALPN h2
+CN=echolot.dev
+  issuer CN=WE1,O=Google Trust Services,C=US, valid until 30 Jan 2027
+Alt-Svc   the server offers HTTP/3 (h3 on port 443); --http3 uses it, and so do later requests on Automatic in the same run
+```
+
+`-H` 会保留你的标头的顺序和大小写。`--data-file` 从文件中以流的方式发送正文，而不是读入内存，因此适用于大文件上传。`--raw` 不发送任何你没写的标头：没有 `Host`、
+没有 `Content-Length`、没有 `Accept-Encoding`。
+
+## 发送存储的请求 [#send-a-saved-request]
+
+给出请求文件的路径。Echolot 会找到它所在的工作区，用你选取的环境解析 `{{variables}}`，运行请求的脚本和检查，并打印结果：
+
+```sh
+echolot send Alpenglow.echolot/requests/catalog/get-product.req.toml -i
+```
+
+```text
+HTTP/2 200 OK
+content-type: application/json; charset=utf-8
+etag: W/"TNT-MH-2P-1"
+…
+
+{
+  "sku": "TNT-MH-2P",
+  "name": "Matterhorn 2P Tent",
+  …
+}
+── tests ──
+✓ Status equals 200
+✓ JSON value $.sku equals {{productId}}
+2 passed
+```
+
+- `-e staging` 或 `--env staging` 使用 `environments/staging.toml` 中的环境来解析。
+- 机密变量来自 `ECHOLOT_SECRET_<NAME>` 变量，在 Mac 上也可来自钥匙串。参见[机密](/docs/cli#secrets)。
+- 脚本记录的内容显示在 `── console ──` 下，检查和 `pm.test` 的结果显示在 `── tests ──` 下，均输出到标准错误。检查失败会使退出码为 1。
+- 无法解析的变量会在请求发出之前作为警告打印。
+- `-X`、`-H`、`-d` 和 `--data-file` 用于 URL；存储的请求则发送其文件中写明的内容。`--timeout`、`--http1.1`、`--http2`、`--http3`、`--raw`、`-k`、`--listen`、代理和证书选项对两者都适用。
+
+## 事件流、WebSocket 和 Socket.IO [#event-streams-websocket-and-socketio]
+
+**服务器发送事件。** `text/event-stream` 响应会在到达时以流的方式输出到标准输出。`--listen` 指定监听多久：默认 10 秒，`0` 表示一直监听到服务器结束该流。
+
+```sh
+echolot send https://demo.echolot.dev/v1/orders/events --listen 0
+```
+
+**WebSocket。** `ws://` 或 `wss://` URL 会打开一个会话。你输入（或通过管道传入）的每一行，以及 `-d`，都会作为文本消息发送；到达的消息每条打印一行，二进制消息以 Base64 打印。
+输入结束后，Echolot 会监听 `--listen` 秒，然后关闭。`--subprotocol` 提供一个子协议，可以给出多次。`-i` 或 `-v` 会将升级响应打印到标准错误。
+
+```sh
+echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolot.dev/v1/orders --listen 5
+```
+
+**Socket.IO。** `--socketio` 在 `http(s)://` 或 `ws(s)://` URL 上使用 Socket.IO。每个输入行是一个事件：先是它的名称，然后是它的 JSON 参数（`chat {"text": "hi"}`；数组表示多个参数）。
+事件以 `name [arguments]` 打印，确认以 `ack id [arguments]` 打印。
+
+```sh
+echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+```
+
+可以拿来试验的服务器，参见 [Socket.IO 请求](/docs/requests/socket-io)。
+
+## 选项 [#options]
+
+| 选项 | 含义 |
+| --- | --- |
+| `-e`、`--env <env>` | 用来解析存储的请求的环境：不带 `.toml` 的文件名。 |
+| `-X`、`--request <method>` | HTTP 方法；允许任何记号。默认 `GET`。 |
+| `-H`、`--header <header>` | 以 `'Name: value'` 形式给出的标头。可重复；保留顺序和大小写。 |
+| `-d`、`--data <data>` | 内联给出的请求正文。 |
+| `--data-file <file>` | 从此文件以流的方式发送请求正文。 |
+| `-o`、`--output <file>` | 将正文写入此文件，而不是标准输出。 |
+| `--raw` | 原始模式：完全不发送自动标头。 |
+| `-k`、`--insecure` | 跳过 TLS 证书验证。 |
+| `-i`、`--include` | 在正文之前打印状态行和标头。 |
+| `-v`、`--verbose` | 将耗时明细打印到标准错误。 |
+| `--wire` | 将实际发送和接收的字节打印到标准错误。 |
+| `--listen <seconds>` | 结束事件流之前监听的秒数；`0` 表示一直监听到服务器结束。默认 10。 |
+| `--timeout <seconds>` | 整个交换的超时时间。默认 60。 |
+| `--http1.1` | 只使用 HTTP/1.1 发送。 |
+| `--http2` | 只使用 HTTP/2 发送：TLS 上用 ALPN，纯 HTTP 上用先验知识。 |
+| `--http3` | 只使用 HTTP/3 发送，基于 QUIC：仅限 `https://`，不支持代理；macOS 27 及更高版本，以及 Linux。 |
+| `--subprotocol <name>` | 用于 `ws://` 和 `wss://` URL：要提供的子协议。可重复。 |
+| `--socketio` | 使用 Socket.IO；每个输入行是 `event [JSON arguments]`。 |
+| `--namespace <namespace>` | 用于 `--socketio`：要加入的命名空间。默认：URL 的路径，否则为 `/`。 |
+| `--auth <json>` | 用于 `--socketio`：认证负载，一个 JSON 对象。 |
+| `--socketio-version <version>` | 用于 `--socketio`：服务器的 Socket.IO 版本，`4`（也适用于 3）或 `2`。默认 4。 |
+| `--socketio-path <path>` | 用于 `--socketio`：服务器监听的位置。默认 `/socket.io/`。 |
+| `--proxy <url>` | 通过此代理发送：`http://host:port`、`https://…`、`socks5://user:password@host:port`。 |
+| `--no-proxy` | 直接连接，忽略 `HTTP_PROXY` 等变量。 |
+| `--cacert <file>` | 同时信任此 PEM 文件中的 CA 证书。可重复。 |
+| `--cert <file>` | 发送此客户端证书：PEM 文件（配合 `--key`）或 `.p12`/`.pfx` 文件。 |
+| `--key <file>` | 客户端证书的 PEM 私钥，用于证书文件中不含私钥的情况。 |
+| `--pass <passphrase>` | 密钥或 PKCS#12 文件的口令。建议改用环境变量 `ECHOLOT_CERT_PASSPHRASE`。 |
+
+不带 `--http1.1`、`--http2` 或 `--http3` 时，Echolot 选取版本的方式与 App 的**自动**设置相同。这几个选项只能选一个。
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | 响应状态低于 400，且每项检查都通过。 |
+| `1` | 没有响应（会打印原因），或检查或测试失败。 |
+| `22` | 响应状态为 400 或更高。正文仍会写出。 |
+| `64` | 选项有误、不是 URL 的 URL，或工作区之外的文件。 |
+
+调用 `pm.execution.skipRequest()` 的预请求脚本不会发送任何内容，并以 0 退出。

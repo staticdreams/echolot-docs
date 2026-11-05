@@ -51,6 +51,18 @@
     "width": 1200,
     "height": 775
   },
+  "get-started-home": {
+    "width": 1200,
+    "height": 775
+  },
+  "get-started-home-sonar": {
+    "width": 956,
+    "height": 504
+  },
+  "get-started-tour": {
+    "width": 1200,
+    "height": 775
+  },
   "get-started-welcome": {
     "width": 820,
     "height": 500
@@ -107,9 +119,21 @@
     "width": 1200,
     "height": 775
   },
+  "requests-http-auth-inherit": {
+    "width": 552,
+    "height": 144
+  },
   "requests-http-auth-oauth": {
     "width": 522,
     "height": 665
+  },
+  "requests-http-auth-oauth-advanced": {
+    "width": 552,
+    "height": 664
+  },
+  "requests-http-auth-oauth1": {
+    "width": 552,
+    "height": 580
   },
   "requests-http-body-json": {
     "width": 522,
@@ -274,6 +298,10 @@
   "workspaces-export-sheet": {
     "width": 560,
     "height": 424
+  },
+  "workspaces-folder-auth-oauth": {
+    "width": 620,
+    "height": 600
   },
   "workspaces-folder-settings": {
     "width": 620,

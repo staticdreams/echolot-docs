@@ -1,0 +1,105 @@
+---
+title: "echolot spec"
+description: "Analiza documentos OpenAPI con el linter en CI y mantén al día una carpeta que sigue una especificación."
+---
+
+`echolot spec` lleva al terminal dos cosas de la [página Especificaciones](/docs/specs): el linter y el vínculo entre
+una especificación y la carpeta de solicitudes creada a partir de ella.
+
+| Subcomando | Qué hace |
+| --- | --- |
+| `echolot spec lint` | Analiza con el linter un documento OpenAPI o Swagger; sale con 1 si tiene errores (o avisos, con `--strict`). |
+| `echolot spec check` | Lista lo que cambió en la especificación que sigue una carpeta; sale con 1 si la carpeta no está al día. |
+| `echolot spec apply` | Aplica los cambios de la especificación a la carpeta, conservando las ediciones hechas en el espacio de trabajo. |
+
+## echolot spec lint [#echolot-spec-lint]
+
+```sh
+echolot spec lint <file> [--strict] [--hints]
+```
+
+`<file>` es la especificación, en YAML o JSON. Los archivos a los que remite con `$ref` se leen desde su lado.
+
+```sh
+echolot spec lint Alpenglow.echolot/specs/alpenglow.yaml
+```
+
+```text
+0 errors, 0 warnings.
+```
+
+Cada problema es una línea en la salida estándar, con el archivo, la línea y la columna, la gravedad, el mensaje y la
+regla entre corchetes, para que los editores y el CI puedan señalarlo. El recuento va a la salida de error estándar:
+
+```text
+api.yaml:2:1: error: info needs a version (of the API, such as 1.0.0). [info]
+api.yaml:7:7: error: GET /x documents no responses. [responses]
+api.yaml:6:5: hint: GET /x has no operationId; code generators and agents name it from one. [operation-id]
+2 errors, 0 warnings.
+```
+
+| Opción | Significado |
+| --- | --- |
+| `--strict` | Falla también con los avisos. |
+| `--hints` | Lista además las sugerencias: buenas prácticas, como operationIds y descripciones. Las sugerencias nunca hacen fallar. |
+
+Las reglas son las mismas que en la página Especificaciones; mira [editar especificaciones](/docs/specs/editing).
+
+## echolot spec check [#echolot-spec-check]
+
+```sh
+echolot spec check [--workspace <workspace>] <folder> [--refresh]
+```
+
+Una carpeta creada al importar una especificación, o vinculada a una en la app, sigue esa especificación. `check`
+compara la carpeta con la especificación tal como está ahora y lista cada operación `added`, `changed` (con los campos)
+o `removed`. Un cambio en algo que editaste en el espacio de trabajo lo dice: esas ediciones se conservan.
+
+```sh
+echolot spec check -w Shop.echolot pets
+```
+
+```text
+added    POST /pets
+changed  GET /pets/{id}  (parameters, responses)
+removed  DELETE /pets/{id}
+3 changes, 12 unchanged.
+```
+
+| Opción | Significado |
+| --- | --- |
+| `-w`, `--workspace <folder>` | La carpeta del espacio de trabajo. Predeterminado: la carpeta actual. |
+| `--refresh` | Vuelve a obtener antes la especificación desde su URL. |
+
+`<folder>` es la ruta de la carpeta vinculada, como `pets`. Usa `check` en CI para hacer fallar una compilación cuando
+las solicitudes se han quedado atrás respecto a la especificación.
+
+## echolot spec apply [#echolot-spec-apply]
+
+```sh
+echolot spec apply [--workspace <workspace>] <folder> [--operation <operation> ...]
+```
+
+Escribe los cambios de la especificación en la carpeta: las operaciones nuevas se convierten en solicitudes, las
+cambiadas se actualizan y las eliminadas se quitan. Lo que editaste en una solicitud se conserva. También se conserva
+una solicitud que editaste cuya operación ya no está en la especificación, y deja de seguir la especificación. Cada línea
+dice lo que ocurrió:
+
+```text
+added    pets/create-pet
+updated  pets/get-pet  kept edits to headers
+removed  pets/delete-pet
+```
+
+| Opción | Significado |
+| --- | --- |
+| `-w`, `--workspace <folder>` | La carpeta del espacio de trabajo. Predeterminado: la carpeta actual. |
+| `--operation <operation>` | Solo esta operación, como `"GET /pets"`. Repetible; todos los cambios si se omite. |
+
+## Códigos de salida [#exit-codes]
+
+| Código | Cuándo |
+| --- | --- |
+| `0` | `lint`: sin errores (y sin avisos, con `--strict`). `check`: la carpeta está al día. `apply`: aplicado. |
+| `1` | `lint`: errores, o avisos con `--strict`. `check`: hay cambios que aplicar. |
+| `64` | Una opción incorrecta, o una carpeta que no sigue una especificación. |

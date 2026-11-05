@@ -1,0 +1,182 @@
+---
+title: "키보드 단축키"
+description: "메뉴와 페이지에서 사용하는 Echolot의 모든 키보드 단축키를 사용하는 위치별로 정리했습니다."
+---
+
+메뉴의 모든 동작에는 단축키가 옆에 표시됩니다. 이 페이지는 그 단축키와 함께 페이지나 목록에서 동작하는 키를 모았습니다. <kbd>⌘</kbd>는
+Command, <kbd>⌥</kbd>는 Option, <kbd>⇧</kbd>는 Shift, <kbd>⌃</kbd>는 Control입니다.
+
+## 작업 공간과 파일 [#workspaces-and-files]
+
+| 동작 | 키 | 메뉴 |
+| --- | --- | --- |
+| 새로운 요청 | <kbd>⌘</kbd><kbd>N</kbd> | 파일 |
+| 새로운 폴더 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd> | 파일(사이드바에 요청이 표시될 때) |
+| 새로운 작업 공간… | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd> | 파일 |
+| 작업 공간 열기… | <kbd>⌘</kbd><kbd>O</kbd> | 파일 |
+| 작업 공간 전환… | <kbd>⌘</kbd><kbd>P</kbd> | 파일 |
+| 탭 닫기 | <kbd>⌘</kbd><kbd>W</kbd> | 파일 |
+| 윈도우 닫기 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd> | 파일 |
+| 가져오기… | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>I</kbd> | 파일 |
+| 작업 공간 내보내기… | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>E</kbd> | 파일 |
+| 복제 | <kbd>⌘</kbd><kbd>D</kbd> | 편집 |
+| 실행 취소, 실행 복귀 | <kbd>⌘</kbd><kbd>Z</kbd>, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>Z</kbd> | 편집 |
+| 설정 | <kbd>⌘</kbd><kbd>,</kbd> | Echolot |
+
+<kbd>⌘</kbd><kbd>W</kbd>는 화면에 있는 탭을 닫으며 작업 공간 윈도우를 닫지는 않습니다. <kbd>⇧</kbd><kbd>⌘</kbd><kbd>W</kbd>는 윈도우를
+닫습니다. 설정 같은 다른 윈도우에서는 <kbd>⌘</kbd><kbd>W</kbd>가 윈도우를 닫습니다.
+
+파일 메뉴의 **새로운 GraphQL 요청**, **새로운 WebSocket 요청**, **새로운 Socket.IO 요청**, **새로운 MQTT 요청**, **새로운 gRPC 요청**
+항목과 **폴더 내보내기…**, **이름 변경**에는 단축키가 없습니다.
+
+## 탭 [#tabs]
+
+| 동작 | 키 | 메뉴 |
+| --- | --- | --- |
+| 다음 탭 보기 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> | 탭 |
+| 이전 탭 보기 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> | 탭 |
+| 닫은 탭 다시 열기 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> | 탭 |
+
+## 페이지와 패널 [#pages-and-panels]
+
+| 동작 | 키 | 메뉴 |
+| --- | --- | --- |
+| 요청 | <kbd>⌘</kbd><kbd>1</kbd> | 보기 |
+| MCP 서버 | <kbd>⌘</kbd><kbd>2</kbd> | 보기 |
+| 명세 | <kbd>⌘</kbd><kbd>3</kbd> | 보기 |
+| 모의 서버 | <kbd>⌘</kbd><kbd>4</kbd> | 보기 |
+| 플로 | <kbd>⌘</kbd><kbd>5</kbd> | 보기 |
+| 홈 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd> | 보기 |
+| 테스트 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> | 보기 |
+| 실행 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd> | 보기 |
+| 환경 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd> | 보기 |
+| 기록 | <kbd>⌘</kbd><kbd>Y</kbd> | 보기 |
+| 사이드바 보기, 사이드바 가리기 | <kbd>⌘</kbd><kbd>B</kbd> | 보기 |
+| 어시스턴트 보기, 어시스턴트 가리기 | <kbd>⌘</kbd><kbd>J</kbd> | 보기 |
+| 변수 보기, 변수 가리기 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>V</kbd> | 보기 |
+| 명령 팔레트… | <kbd>⌘</kbd><kbd>K</kbd> | 요청 |
+
+<kbd>⌘</kbd><kbd>1</kbd>부터 <kbd>⌘</kbd><kbd>5</kbd>까지는 사이드바의 모듈을 전환하고, 그 모듈이 마지막으로 표시하던 것으로
+돌아갑니다. [윈도우](/docs/get-started/the-window)를 참고하세요.
+
+## 요청과 응답 [#requests-and-responses]
+
+| 동작 | 키 | 메뉴 |
+| --- | --- | --- |
+| 보내기 | <kbd>⌘</kbd><kbd>R</kbd> 또는 <kbd>⌘</kbd><kbd>↩</kbd> | 요청 |
+| 취소 | <kbd>⌘</kbd><kbd>.</kbd> | 요청 |
+| cURL로 복사 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> | 요청 |
+| 코드 생성… | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>G</kbd> | 요청 |
+| 본문에서 찾기 | <kbd>⌘</kbd><kbd>F</kbd> | 요청 |
+| 다음 일치 항목, 이전 일치 항목 | <kbd>⌘</kbd><kbd>G</kbd>, <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> | (찾기 막대에서) |
+
+[보호된 환경](/docs/workspaces/protected-environments)이 활성화되어 있는 동안 이 항목은 <strong>&lt;환경&gt;에 보내기…</strong>로 표시되며 먼저 확인을
+요청합니다. 그곳에서는 **취소**가 기본 버튼이므로 <kbd>↩</kbd>로 실수로 보내는 일이 없습니다.
+
+요청 메뉴의 <strong>교환을 HAR로 내보내기…</strong>에는 단축키가 없습니다.
+
+## 코드 크기 [#code-size]
+
+| 동작 | 키 | 메뉴 |
+| --- | --- | --- |
+| 코드 확대 | <kbd>⌘</kbd><kbd>+</kbd> | 보기 |
+| 코드 축소 | <kbd>⌘</kbd><kbd>-</kbd> | 보기 |
+| 실제 코드 크기 | <kbd>⌘</kbd><kbd>0</kbd> | 보기 |
+
+보기 메뉴의 **긴 줄 자동 줄 바꿈**과 **패널 › 패널 크기 재설정**에는 단축키가 없습니다.
+
+## 텍스트 편집 [#editing-text]
+
+| 동작 | 키 | 위치 |
+| --- | --- | --- |
+| 제안 | <kbd>⌃</kbd><kbd>Space</kbd> | 코드 편집기: 본문, 스크립트, 쿼리 |
+| 변수 또는 동적 값 삽입 | `{{` 입력 | 변수를 받는 필드와 편집기 |
+| 굵게, 기울임꼴 | <kbd>⌘</kbd><kbd>B</kbd>, <kbd>⌘</kbd><kbd>I</kbd> | 요청 또는 폴더의 문서 편집기 |
+
+## 세션 [#sessions]
+
+| 동작 | 키 | 위치 |
+| --- | --- | --- |
+| 메시지 보내기 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | WebSocket: 메시지 입력란 |
+| 이벤트 전송 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | Socket.IO: 이벤트 입력란 |
+| 메시지 게시 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd> | MQTT: 페이로드 입력란 |
+
+## 사이드바 [#the-sidebar]
+
+| 동작 | 키 |
+| --- | --- |
+| 선택 항목 이동 | <kbd>↑</kbd>, <kbd>↓</kbd> |
+| 폴더 열기 | <kbd>→</kbd> |
+| 폴더 닫기, 또는 위의 폴더로 이동 | <kbd>←</kbd> |
+| 선택 항목 이름 변경 | <kbd>↩</kbd> |
+| 이름 변경 중단 | <kbd>Esc</kbd> |
+| 요청을 휴지통으로 이동 | <kbd>⌫</kbd>(먼저 확인을 요청) |
+
+<kbd>⌫</kbd>는 요청 하나에만 동작합니다. 폴더나 여러 항목을 삭제하는 키는 없습니다. 컨텍스트 메뉴의 **휴지통으로 이동…**(또는 **항목 N개를
+휴지통으로 이동…**)을 사용하세요. 먼저 확인을 요청합니다. MCP 서버 페이지에서는 <kbd>⌫</kbd>가 선택한 서버를 삭제할지 묻습니다.
+
+## 목록 [#lists]
+
+| 동작 | 키 | 위치 |
+| --- | --- | --- |
+| 선택 항목 이동 | <kbd>↑</kbd>, <kbd>↓</kbd> | 기록, 응답 헤더, 명령 팔레트, 빠른 보내기 |
+| 선택한 교환 열기 | <kbd>↩</kbd> | 기록 |
+| 훑어보기, 그리고 닫기 | <kbd>Space</kbd>, <kbd>Esc</kbd> | 기록, 응답 헤더 |
+| 강조 표시된 명령 실행 | <kbd>↩</kbd> | 명령 팔레트 |
+| 선택한 요청 보내기 | <kbd>↩</kbd> | 빠른 보내기 |
+| 닫기 | <kbd>Esc</kbd> | 명령 팔레트, 빠른 보내기 |
+
+## 실행과 모의 서버 [#runner-and-mocks]
+
+| 동작 | 키 | 위치 |
+| --- | --- | --- |
+| 실행, 또는 **&lt;환경&gt;에서 실행…** | <kbd>⌘</kbd><kbd>R</kbd> | 실행 |
+| 중단 | <kbd>⌘</kbd><kbd>.</kbd> | 실행 |
+| 모의 서버 시작 | <kbd>⌘</kbd><kbd>R</kbd> | 모의 서버 |
+
+## 플로 [#flows]
+
+| 동작 | 키 |
+| --- | --- |
+| 실행, 또는 **&lt;환경&gt;에서 실행…** | <kbd>⌘</kbd><kbd>R</kbd> |
+| 실행 중단 | <kbd>⌘</kbd><kbd>.</kbd> |
+| 블록 추가 | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd> |
+| 선택한 블록 복제 | <kbd>⌘</kbd><kbd>D</kbd> |
+| 맞춤: 플로 전체 보기 | <kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd> |
+| 블록 복사, 잘라내기, 붙여넣기(블록 사이의 연결 포함) | <kbd>⌘</kbd><kbd>C</kbd>, <kbd>⌘</kbd><kbd>X</kbd>, <kbd>⌘</kbd><kbd>V</kbd> |
+| 선택 항목 삭제 | <kbd>⌫</kbd> |
+| 해당 방향에서 가장 가까운 블록 선택 | <kbd>↑</kbd>, <kbd>↓</kbd>, <kbd>←</kbd>, <kbd>→</kbd> |
+| 선택 해제 | <kbd>Esc</kbd> |
+| 선택 상자 그리기 | <kbd>⇧</kbd> 또는 <kbd>⌘</kbd>을 누른 채 캔버스에서 드래그 |
+
+빈 캔버스를 그냥 드래그하면 이동합니다. [플로](/docs/flows)를 참고하세요.
+
+## 어시스턴트 [#assistant]
+
+| 동작 | 키 |
+| --- | --- |
+| 어시스턴트 보기 또는 가리기 | <kbd>⌘</kbd><kbd>J</kbd> |
+| 어시스턴트 중단 | <kbd>⌘</kbd><kbd>.</kbd> |
+
+## 빠른 보내기 [#quick-send]
+
+| 동작 | 키 |
+| --- | --- |
+| 어느 앱에서든 빠른 보내기 열기 | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> |
+
+빠른 보내기는 **설정 › 일반**에서 켜기 전에는 꺼져 있으며, 그곳에서 다른 단축키를 기록할 수도 있습니다. [빠른 보내기](/docs/mac/quick-send)를
+참고하세요.
+
+## 설정과 도움말 [#settings-and-help]
+
+| 동작 | 키 | 위치 |
+| --- | --- | --- |
+| 설정 검색 | <kbd>⌘</kbd><kbd>F</kbd> | 설정 |
+| Echolot 문서 | <kbd>⌘</kbd><kbd>?</kbd> | 도움말 메뉴 |
+
+**이 페이지에 대한 도움말**은 맨 앞 윈도우에 있는 페이지에 대한 문서 페이지를 엽니다.
+
+## 시트와 대화상자 [#sheets-and-dialogs]
+
+<kbd>↩</kbd>는 기본 버튼을 선택하고 <kbd>Esc</kbd>는 취소합니다. 무언가를 삭제하는 대화상자의 빨간색 버튼에는 키가 없으므로 항상 직접
+클릭해야 합니다.

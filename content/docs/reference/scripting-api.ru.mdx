@@ -1,0 +1,349 @@
+---
+title: "Scripting API"
+description: "Всё, чем могут пользоваться скрипты перед запросом и тестовые скрипты: объект pm, expect, помощники JSON Schema и библиотеки, а также то, чего там нет."
+---
+
+Скрипты — это JavaScript, который выполняется перед отправкой запроса (скрипты перед запросом) или после получения
+ответа (тестовые скрипты). Они используют API `pm` из Postman, поэтому скрипты из коллекций Postman запускаются без
+изменений. На этой странице перечислено всё. О том, как писать их в приложении и читать результаты, см.
+[скрипты и тесты](/docs/requests/scripts-and-tests).
+
+## Где выполняются скрипты [#where-scripts-run]
+
+- Скрипты запроса находятся на его вкладке **Скрипты** и сохраняются как `<slug>.pre.js` и `<slug>.test.js` рядом с
+  запросом. Скрипты есть и у папок, и у рабочего пространства (`_folder.pre.js`, `_folder.test.js`); см.
+  [файлы рабочего пространства](/docs/reference/workspace-files#_foldertoml).
+- Для каждого запроса сначала выполняется скрипт рабочего пространства, затем скрипты папок снаружи внутрь, затем
+  собственный скрипт запроса. Все скрипты одного события работают в одной песочнице.
+- У вызовов MCP скриптов нет.
+- Скрипты, пришедшие извне Echolot (импорт, Git, другой редактор), выполняются, только когда вы им доверитесь:
+  **Доверять скриптам**, после того как прочитаете их через **Просмотреть скрипты…**.
+- Утилита командной строки тоже запускает скрипты — в [`echolot run`](/docs/cli/run) и [`echolot send`](/docs/cli/send).
+
+## Песочница [#the-sandbox]
+
+Скрипты выполняются в изолированном движке JavaScript (QuickJS) внутри Echolot: без файловой системы, без собственной
+сети и без модулей Node.js. Единственный выход наружу — `pm.sendRequest`, который отправляет запрос через Echolot.
+
+| Ограничение | Значение |
+| --- | --- |
+| Время работы JavaScript для всех скриптов одного события | 5 секунд |
+| Память | 128 МБ |
+| Ожидание каждого ответа на `pm.sendRequest` | 30 секунд |
+| Тело ответа, которое видит скрипт | Первые 32 МБ |
+
+Скрипт, который выбрасывает исключение или превышает ограничение, считается ошибкой скрипта, а она засчитывается как
+непройденный тест.
+
+## pm.test [#pmtest]
+
+```js
+pm.test("Status is 200", () => {
+  pm.response.to.have.status(200);
+});
+
+pm.test("Has products", () => {
+  const body = pm.response.json();
+  pm.expect(body.items).to.be.an("array").that.is.not.empty;
+});
+```
+
+| Форма | Что значит |
+| --- | --- |
+| `pm.test(name, fn)` | Именованный тест. Проходит, если `fn` завершается без исключения. |
+| `pm.test(name, async () => { … })` | Тест, который возвращает промис, проходит, когда промис выполняется. |
+| `pm.test(name, done => { … })` | Тест с аргументом проходит, когда вызывает `done()`, и падает при `done(error)` или если не вызывает его вовсе. |
+| `pm.test.skip(name, fn)` | Пропущенный тест: он в списке, но не учитывается. |
+| `tests[name] = condition` | Старая форма: проходит, если условие истинно. |
+
+Тесты в скриптах перед запросом тоже учитываются.
+
+## pm.expect [#pmexpect]
+
+`pm.expect(value)` (или `expect(value)`) — утверждение в стиле Chai. Сообщения о сбоях читаются так же, как у Chai:
+`expected 401 to equal 200`.
+
+**Слова-связки**, которые улучшают читаемость и ничего не делают: `to`, `be`, `been`, `is`, `that`, `which`, `and`,
+`has`, `have`, `with`, `at`, `of`, `same`, `but`, `does`, `still`, `also`.
+
+**Флаги:** `not` (отрицание), `deep` (сравнение по значению), `nested` (пути с точками в `property`), `own`, `any`,
+`all`, `ordered`.
+
+| Утверждение | Проходит, когда |
+| --- | --- |
+| `.equal(x)`, `.equals`, `.eq` | Значение равно `x` (`===`; с `deep` — по значению). |
+| `.eql(x)`, `.eqls` | Значение глубоко равно `x`. |
+| `.above(n)`, `.gt`, `.greaterThan` | Значение больше `n`. |
+| `.least(n)`, `.gte`, `.greaterThanOrEqual` | Значение не меньше `n`. |
+| `.below(n)`, `.lt`, `.lessThan` | Значение меньше `n`. |
+| `.most(n)`, `.lte`, `.lessThanOrEqual` | Значение не больше `n`. |
+| `.within(a, b)` | Значение между `a` и `b`, включая оба. |
+| `.closeTo(x, delta)`, `.approximately` | Значение отличается от `x` не более чем на `delta`. |
+| `.a(type)`, `.an(type)` | Тип значения — `type`: `string`, `number`, `boolean`, `object`, `array`, `null`, `undefined`, `regexp`, `date`, `error`, `function`. |
+| `.instanceof(C)`, `.instanceOf` | Значение — экземпляр `C`. |
+| `.include(x)`, `.includes`, `.contain`, `.contains` | Строка содержит `x`, в массиве есть `x`, в объекте есть ключи и значения `x`. |
+| `.ok` | Значение истинно. |
+| `.true`, `.false`, `.null`, `.undefined`, `.NaN` | Значение именно такое. |
+| `.exist`, `.exists` | Значение не `null` и не `undefined`. |
+| `.empty` | В строке или массиве нет элементов, в объекте — ключей, в Map или Set — записей. |
+| `.finite` | Значение — конечное число. |
+| `.property(name)`, `.property(name, value)` | У объекта есть свойство, при заданном значении — с этим значением. Дальше продолжается со значением свойства. Также `.ownProperty`, `.haveOwnProperty`. |
+| `.lengthOf(n)`, `.length(n)` | `length` значения (или размер Map или Set) равен `n`. |
+| `.match(regex)`, `.matches` | Строка соответствует регулярному выражению. |
+| `.string(s)` | Строка содержит `s`. |
+| `.keys(…)`, `.key` | У объекта именно эти ключи (с `any` — один из них; после `include` — как минимум эти). |
+| `.members(array)` | В массиве те же элементы (с `include` — как минимум эти; с `ordered` — в этом порядке). |
+| `.oneOf(array)` | Значение — один из элементов массива. |
+| `.satisfy(fn)`, `.satisfies` | `fn(value)` возвращает true. |
+| `.throw()`, `.throws`, `.Throw` | Функция выбрасывает исключение (если заданы, — с сообщением, которое содержит строку или соответствует регулярному выражению, либо определённого класса). |
+| `.jsonSchema(schema)` | Значение соответствует JSON Schema. См. [JSON Schema](#json-schema). |
+
+Для ответа `expect` принимает и утверждения Postman об ответе:
+`pm.expect(pm.response).to.have.status(200)`, `.header(name)`, `.jsonBody(…)`, `.body(…)`, `.responseTime(…)`, а также
+`pm.expect(pm.response).to.be.ok`, `.success`, `.json` и остальные, перечисленные ниже.
+
+## pm.response [#pmresponse]
+
+В тестовых скриптах — ответ.
+
+| Член | Что значит |
+| --- | --- |
+| `code` | Код состояния: `200`. |
+| `status` | Поясняющая фраза: `"OK"`. Также `reason()`. |
+| `headers` | Заголовки в виде [списка](#lists). `pm.response.headers.get("Content-Type")`. |
+| `responseTime` | Время в миллисекундах. |
+| `responseSize` | Размер тела в байтах. Также `size()`, который возвращает `{ body, header, total }`. |
+| `text()` | Тело как текст. |
+| `json(reviver)` | Тело, разобранное как JSON; выбрасывает исключение, если это не JSON. |
+
+**Утверждения об ответе:** `pm.response.to.have.…` и `pm.response.to.not.have.…`:
+
+| Утверждение | Проходит, когда |
+| --- | --- |
+| `status(200)`, `status("OK")` | Код равен 200 или фраза — OK. Также `statusCode(n)`, `statusReason(text)`. |
+| `header(name)`, `header(name, value)` | Заголовок есть, при заданном значении — с этим значением. |
+| `body()`, `body(text)`, `body(regex)`, `body(object)` | Тело не пустое, равно тексту, соответствует выражению или является этим JSON. |
+| `jsonBody()`, `jsonBody(path)`, `jsonBody(path, value)`, `jsonBody(object)` | Тело — JSON, в нём есть путь с точками, с этим значением, или оно равно объекту. |
+| `responseTime(ms)` | Ответ занял не более `ms`. |
+
+`pm.response.to.be.…`:
+
+| Свойство | Проходит, когда код |
+| --- | --- |
+| `info` | от 100 до 199 |
+| `success` | от 200 до 299 |
+| `ok` | 200 |
+| `accepted` | 202 |
+| `redirection` | от 300 до 399 |
+| `clientError` | от 400 до 499 |
+| `serverError` | 500 или больше |
+| `error` | 400 или больше |
+| `badRequest`, `unauthorized` (или `unauthorised`), `forbidden`, `notFound`, `rateLimited` | 400, 401, 403, 404, 429 |
+| `json`, `html`, `xml`, `text` | (`Content-Type` содержит это слово) |
+| `withBody` | (тело не пустое) |
+
+## pm.request [#pmrequest]
+
+Запрос. В скрипте перед запросом то, что вы в нём измените, и будет отправлено.
+
+| Член | Что значит |
+| --- | --- |
+| `url` | URL в виде объекта; см. ниже. `String(pm.request.url)` — это текст. |
+| `method` | Метод; его можно изменить. |
+| `headers` | Заголовки в виде [списка](#lists). |
+| `body` | Тело: `{ mode: "raw", raw: "…" }` или `undefined`. |
+| `name`, `id` | Название запроса и его путь в рабочем пространстве. |
+| `addHeader(item)`, `removeHeader(name)`, `upsertHeader(item)` | Изменяют заголовки. Элемент — `{ key, value }` или `"Name: value"`. |
+| `addQueryParams(params)`, `removeQueryParams(names)` | Изменяют параметры запроса: `"a=1&b=2"`, `{ key, value }` или массивы таких значений. |
+| `to.have.header(name, value)` | Утверждение о заголовках запроса. |
+
+```js
+pm.request.headers.upsert({ key: "X-Request-Id", value: pm.variables.replaceIn("{{$guid}}") });
+pm.request.url.addQueryParams("per_page=50");
+```
+
+У объекта `url` есть `protocol`, `host` (массив меток), `port`, `path` (массив сегментов), `query` (список), `hash`, а
+также `getHost()`, `getPath()`, `getQueryString()`, `getPathWithQuery()`, `getRemote()`, `update(text)`,
+`addQueryParams(…)`, `removeQueryParams(…)`, `toString()`. URL, который вы не меняете, сохраняет свой точный текст,
+включая `{{variables}}`; Echolot подставляет их после скриптов.
+
+## Переменные [#variables]
+
+| Область | Что это |
+| --- | --- |
+| `pm.environment` | Переменные активного окружения. `pm.environment.name` — его название. |
+| `pm.collectionVariables` | Переменные рабочего пространства. |
+| `pm.globals` | Глобальные переменные. |
+| `pm.iterationData` | Текущая строка прогона на данных. Только чтение. |
+| `pm.variables` | Все области сразу, ближайшая первой. `set` и `unset` меняют только локальные значения. |
+
+У каждой области есть `get(name)`, `has(name)`, `set(name, value)`, `unset(name)`, `clear()`, `toObject()` и
+`replaceIn(text)`. `set` превращает объекты в текст JSON.
+
+`pm.variables.get` ищет в таком порядке: локальные значения, строка данных, переменные папки и запроса, окружение,
+рабочее пространство, глобальные переменные.
+
+```js
+// Pre-request: sign the body
+const signature = CryptoJS.HmacSHA256(pm.request.body.raw, pm.environment.get("apiSecret")).toString();
+pm.request.headers.upsert({ key: "X-Signature", value: signature });
+
+// Test: keep the new order's ID for the next requests
+pm.collectionVariables.set("orderId", pm.response.json().id);
+```
+
+**Что сохраняет `set`.** Значения, которые задают скрипты, — это «текущие значения» Postman: они живут, пока открыто
+окно в приложении или выполняется команда в командной строке, и при разрешении запросов важнее сохранённых значений
+своей области. В файлы рабочего пространства они не записываются никогда. Чтобы сохранить значение из ответа,
+используйте [захват из ответа](/docs/requests/captures). Локальные значения из `pm.variables.set` забываются, когда
+начинается прогон.
+
+`replaceIn(text)` подставляет `{{variables}}` из перечисленных выше областей. Из динамических значений он знает
+`{{$guid}}`, `{{$randomUUID}}`, `{{$timestamp}}`, `{{$isoTimestamp}}` и `{{$randomInt}}`; все остальные `{{$…}}`
+остаются как есть, чтобы Echolot подставил их при отправке запроса.
+
+## pm.info [#pminfo]
+
+| Член | Что значит |
+| --- | --- |
+| `eventName` | `"prerequest"` или `"test"`. |
+| `iteration` | Итерация прогона, начиная с 0. |
+| `iterationCount` | Сколько итераций в прогоне. |
+| `requestName` | Название запроса. |
+| `requestId` | Путь запроса в рабочем пространстве. |
+
+## pm.sendRequest [#pmsendrequest]
+
+Отправляет из скрипта другой запрос через Echolot: прокси, сертификаты и cookie действуют, как для любого запроса.
+
+```js
+pm.sendRequest("https://demo.echolot.dev/v1/categories", (error, response) => {
+  if (error) { console.error(error); return; }
+  pm.collectionVariables.set("firstCategory", response.json().items[0].id);
+});
+
+// or with a promise
+pm.sendRequest({
+  url: pm.variables.replaceIn("{{baseURL}}/auth/token"),
+  method: "POST",
+  header: { "Content-Type": "application/json" },
+  body: { mode: "raw", raw: JSON.stringify({ email: "heidi@alpenglow.ch", password: pm.environment.get("password") }) }
+}).then(response => {
+  pm.environment.set("token", response.json().access_token);
+});
+```
+
+- Первый аргумент — URL или объект с `url`, `method` (по умолчанию `GET`), `header` (массив `{ key, value }`, объект
+  или список) и `body`.
+- `body` — строка, `{ mode: "raw", raw }`, `{ mode: "urlencoded", urlencoded: [{ key, value }] }` или
+  `{ mode: "graphql", graphql: { query, variables } }`. Два последних задают `Content-Type`, если вы его не указали.
+- `{{variables}}` в URL подставляются с учётом окружения запроса.
+- Колбэк получает `(error, response)`; `response` похож на `pm.response`. Без колбэка возвращается промис.
+- У запроса нет собственной авторизации (авторизация рабочего пространства не применяется), и скрипты он не
+  запускает.
+- `pm.sendRequest` агента проходит через одобрения агента, как другие его отправки.
+
+## Управление прогоном [#controlling-a-run]
+
+| Вызов | Что делает |
+| --- | --- |
+| `pm.execution.setNextRequest(name)` | В прогоне: следующим продолжить с этого запроса. `null` завершает прогон. Также `pm.setNextRequest`, `postman.setNextRequest`. |
+| `pm.execution.skipRequest()` | В скрипте перед запросом: не отправлять этот запрос. |
+
+## pm.cookies [#pmcookies]
+
+Cookie этого обмена: те, что отправил запрос, и те, что установил ответ. Это [список](#lists) с
+`pm.cookies.get(name)`, `has(name)`, `toObject()` и `one(name)`, который возвращает `{ name, key, value }`.
+
+## Списки [#lists]
+
+Заголовки, параметры запроса и cookie — это списки свойств Postman:
+
+| Метод | Что делает |
+| --- | --- |
+| `get(key)` | Значение; регистр ключей не учитывается. |
+| `one(key)` | Весь элемент, `{ key, value, disabled }`. |
+| `has(key)`, `has(key, value)` | Есть ли он (с этим значением). |
+| `add(item)`, `append(item)`, `upsert(item)` | Добавляют элемент или добавляют либо заменяют его. |
+| `remove(key)`, `remove(fn)`, `clear()` | Удаляют элементы. |
+| `toObject()`, `all()`, `count()`, `idx(i)` | Элементы в виде объекта, в виде массива, их количество, элемент по индексу. |
+| `each(fn)`, `map(fn)`, `filter(fn)`, `find(fn)` | Перебирают элементы. |
+| `toString()` | Строки вида `Name: value`. |
+
+## console [#console]
+
+`console.log`, `info`, `warn`, `error`, `debug` и `trace` пишут в **Консоль** запроса, а в командной строке — под
+`── console ──`. Объекты выводятся как JSON.
+
+## Таймеры [#timers]
+
+`setTimeout`, `setInterval` и `setImmediate` выполняют свои функции после скрипта, в порядке их задержек, не ожидая
+по-настоящему. `setInterval` срабатывает один раз. `clearTimeout` и остальные отменяют.
+
+## JSON Schema [#json-schema]
+
+Три способа, все на собственном валидаторе JSON Schema в Echolot:
+
+```js
+const schema = {
+  type: "object",
+  required: ["sku", "price"],
+  properties: { sku: { type: "string" }, price: { type: "object" } }
+};
+
+// Chai
+pm.expect(pm.response.json()).to.have.jsonSchema(schema);
+
+// ajv
+const Ajv = require("ajv");
+const validate = new Ajv().compile(schema);
+pm.test("Matches the schema", () => pm.expect(validate(pm.response.json()), JSON.stringify(validate.errors)).to.be.true);
+
+// tv4
+pm.test("Matches the schema", () => pm.expect(tv4.validate(pm.response.json(), schema)).to.be.true);
+```
+
+| Помощник | Что в нём |
+| --- | --- |
+| `require("ajv")` | Класс: `new Ajv(options)`, `validate(schema, data)`, `compile(schema)` (функция с `.errors`), `addSchema(schema, key)`, `getSchema(key)`, `errorsText(errors)` и `errors`. `addFormat` и `addKeyword` принимаются и ничего не делают. |
+| `tv4` (также `require("tv4")`) | `validate(data, schema)` с `tv4.error`, `validateResult(data, schema)`, `validateMultiple(data, schema)`. |
+| `.jsonSchema(schema)` | Утверждение Chai, показанное выше. |
+
+Проверка по JSON Schema работает и без скрипта: это проверка **JSON Schema** на вкладке **Тесты**.
+
+## Библиотеки [#libraries]
+
+| Название | Что в ней |
+| --- | --- |
+| `CryptoJS` (также `require("crypto-js")`) | `MD5`, `SHA1`, `SHA256`, `SHA384`, `SHA512`, `HmacMD5`, `HmacSHA1`, `HmacSHA256`, `HmacSHA384`, `HmacSHA512`; `enc.Hex`, `enc.Utf8`, `enc.Base64`, `enc.Latin1`; `lib.WordArray.create(bytes)` и `lib.WordArray.random(n)`. У результатов есть `toString(encoder)`. |
+| `_` (также `require("lodash")`) | Функции lodash, которыми пользуются для коллекций: `each`/`forEach`, `map`, `filter`, `reject`, `find`, `findIndex`, `some`, `every`, `reduce`, `includes`/`contains`, `get`, `has`, `set`, `keys`, `values`, `size`, проверки `is…` (`isArray`, `isString`, `isEmpty`, `isEqual` и остальные), `startsWith`, `endsWith`, `trim`, `toLower`, `toUpper`, `capitalize`, `parseInt`, `toNumber`, `toString`, `first`/`head`, `last`, `tail`, `initial`, `uniq`, `flatten`, `compact`, `concat`, `range`, `times`, `sortBy`, `groupBy`, `keyBy`, `countBy`, `pick`, `omit`, `assign`/`extend`, `clone`, `cloneDeep`, `merge`, `random`, `sample`, `sum`, `max`, `min`, `noop`, `identity`, `now`, `uniqueId`. |
+| `require("uuid")` | `v4()` — случайный UUID. |
+| `btoa`, `atob` (также `require("btoa")`, `require("atob")`) | Base64 для текста в Latin-1 и обратно. |
+
+## Старые глобальные объекты Postman [#the-old-postman-globals]
+
+Скрипты из старых коллекций используют их, и они работают:
+
+| Глобальный объект | Что это |
+| --- | --- |
+| `tests["name"] = condition` | Тест. |
+| `responseBody`, `responseCode` (`code`, `name`, `detail`), `responseHeaders`, `responseTime` | Ответ. |
+| `request` (`url`, `method`, `headers`, `data`, `name`, `description`) | Запрос. |
+| `environment`, `globals`, `data`, `iteration` | Переменные в виде объектов, строка данных, итерация. |
+| `postman.setEnvironmentVariable`, `getEnvironmentVariable`, `clearEnvironmentVariable`, `clearEnvironmentVariables` | Окружение. |
+| `postman.setGlobalVariable`, `getGlobalVariable`, `clearGlobalVariable`, `clearGlobalVariables` | Глобальные переменные. |
+| `postman.getResponseHeader(name)`, `postman.getResponseCookie(name)`, `postman.setNextRequest(name)` | Ответ и прогон. |
+| `"text".has("x")` | Содержит ли строка другую. |
+
+## Чего там нет [#what-is-not-there]
+
+- Другие модули: `require` чего-либо, не перечисленного выше (`cheerio`, `xml2js`, `moment`, собственные модули
+  Node), выбрасывает «The module … is not available in Echolot scripts.»
+- Настоящее ожидание: таймеры работают без задержки, а `fetch` и `XMLHttpRequest` отсутствуют. Используйте
+  `pm.sendRequest`.
+- Файлы и процессы: скрипты не могут читать и записывать файлы или запускать программы.
+- `pm.visualizer.set` принимается, так что скрипты, которые его используют, работают, но Echolot визуализацию не
+  показывает.
+- `xml2Json`, `pm.require` и библиотека пакетов Postman, а также `pm.vault`.
+- Секреты в файлах: скрипты читают секретные переменные, как любые другие, но то, что они задают через `set`, никогда
+  не попадает в файлы рабочего пространства.

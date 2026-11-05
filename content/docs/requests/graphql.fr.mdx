@@ -1,0 +1,159 @@
+---
+title: "GraphQL"
+description: "Écrivez des requêtes GraphQL avec complétion depuis le schéma, construisez-les en cochant des champs, et lisez les erreurs, les abonnements et les résultats incrémentaux."
+---
+
+Une requête GraphQL contient une query, ses variables et le schéma contre lequel elle est écrite. Echolot se sert du
+schéma pour compléter les champs pendant la saisie, signaler les erreurs avant l’envoi et afficher les types à côté de
+la réponse.
+
+<Shot id="requests-graphql-query" alt="Catalog › Search products : l’onglet Query avec la query SearchProducts, le menu de schéma indiquant shop.graphql et son nombre de types, et la réponse JSON avec totalCount et nodes" />
+
+## Créer une requête GraphQL [#create-a-graphql-request]
+
+Choisissez **Fichier › Nouvelle requête GraphQL**, ou **Nouvelle requête GraphQL** dans le menu **+** à côté de
+**Requêtes** dans la barre latérale. Saisissez le endpoint dans le champ d’adresse : pour la boutique de démonstration,
+`{{baseURL}}/graphql`. L’espace de travail Alpenglow en a une toute prête : **Catalog › Search products**.
+
+L’éditeur a ces onglets : **Docs**, **Query**, **Variables**, **En-têtes**, **Paramètres**, **Auth**, **Variables**
+(les variables propres à la requête), **Tests**, **Scripts** et **Réglages**. Les en-têtes, l’authentification, les
+tests et les scripts fonctionnent comme pour les [requêtes HTTP](/docs/requests).
+
+## Query et variables [#query-and-variables]
+
+Écrivez la query dans l’onglet **Query** :
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } rating stock { warehouse available } }
+  }
+}
+```
+
+et ses variables en JSON dans l’onglet **Variables**. Les `{{variables}}` fonctionnent à l’intérieur du JSON :
+
+```json
+{
+  "text": "{{searchTerm}}"
+}
+```
+
+Quand le document contient plusieurs opérations, saisissez celle à envoyer dans **Opération**, au-dessus de la query.
+Laissez le champ vide pour un document qui n’a qu’une opération.
+
+Envoyez avec **Envoyer** ou <kbd>⌘</kbd><kbd>R</kbd>.
+
+## Comment la requête est envoyée [#how-the-request-is-sent]
+
+Le badge **GQL** devant l’adresse est un menu. Sous **Envoyer via** :
+
+| Choix | Ce qu’il envoie |
+| --- | --- |
+| **POST (corps JSON)** | Un POST avec `query`, `variables` et `operationName` en JSON. La méthode habituelle |
+| **GET (dans l’URL)** | `query`, `variables` et `operationName` comme paramètres de requête, pour les serveurs qui mettent en cache les requêtes GET |
+| **WebSocket (graphql-transport-ws)** | Un WebSocket avec le protocole `graphql-transport-ws`, pour les abonnements |
+
+Deux interrupteurs en dessous :
+
+- **Requêtes persistées (APQ)** envoie d’abord le hachage SHA-256 de la query, sans la query. Quand le serveur répond
+  qu’il ne connaît pas ce hachage, Echolot renvoie la requête avec la query, pour que le serveur la conserve.
+- **Regrouper toutes les opérations** envoie toutes les opérations nommées du document ensemble, sous forme d’un seul
+  tableau JSON.
+
+## Le schéma [#the-schema]
+
+Le menu du schéma se trouve à droite de l’onglet **Query**. Il affiche le fichier de schéma et son nombre de types,
+comme `shop.graphql · … types`, ou **Aucun schéma**.
+
+- **Récupérer depuis le serveur** exécute la query d’introspection sur l’adresse de la requête et garde le résultat
+  dans un fichier du dossier `specs/` de l’espace de travail. Choisissez-le de nouveau pour actualiser le schéma.
+- **Utiliser le schéma** liste les fichiers de schéma déjà présents dans l’espace de travail (`.graphql`, `.graphqls` et
+  `.json`), pour en choisir un.
+- **Ajouter un fichier de schéma…** prend un fichier SDL (`.graphql`) ou un résultat d’introspection (`.json`) sur votre
+  Mac.
+- **Afficher l’explorateur de schéma** ouvre le schéma à côté de la réponse.
+- **Ne plus utiliser ce schéma** retire le schéma de la requête.
+
+Un fichier de schéma dans `specs/` peut être partagé par toutes les requêtes GraphQL visant ce serveur, et commité avec
+l’espace de travail. Quand une récupération remplace un fichier de schéma et que le schéma a changé, **Le schéma a
+changé** liste les changements en **Incompatible**, **Dangereux** et **Sûr**, comme un champ supprimé ou un nouvel
+argument obligatoire. Les changements incompatibles sont ceux qui font échouer les queries utilisant ce qui a été
+supprimé ou modifié. En ligne de commande, `echolot graphql diff` compare deux schémas de la même façon : voir
+[echolot graphql](/docs/cli/graphql).
+
+Quand le schéma ne peut pas être lu, le menu affiche **Problème de schéma**, et la barre sous la query en donne la
+raison.
+
+## Complétion, problèmes et survol [#completion-problems-and-hover]
+
+Avec un schéma, l’éditeur de query vous aide pendant la saisie :
+
+- La **Complétion** propose les champs, arguments, champs d’entrée, types, valeurs d’enum, variables, directives et
+  fragments qui conviennent à l’endroit du curseur, avec leur documentation. Les éléments obsolètes sont signalés.
+- Les **Problèmes** sont soulignés pendant la saisie : champs inconnus, mauvais types d’argument, arguments
+  obligatoires manquants et plus encore. La barre sous la query montre le premier et compte les erreurs et les
+  avertissements ; pointez-la pour les lire tous.
+- Le **Survol** d’un champ ou d’un type affiche sa signature et sa documentation, et indique s’il est obsolète.
+- Un clic avec <kbd>⌘</kbd> sur un champ ou un type ouvre son type dans l’explorateur de schéma.
+
+## L’explorateur de schéma et le constructeur [#the-schema-explorer-and-the-builder]
+
+L’onglet **Schéma** du volet de réponse montre le schéma de la requête, même avant le premier envoi. Si la requête n’a
+pas encore de schéma, choisissez-y **Récupérer depuis le serveur**.
+
+**Explorer** commence aux **Points d’entrée** (**Query**, **Mutation** et **Subscription**). Cliquez sur un type pour
+voir ses champs, ses champs d’entrée, ses valeurs d’enum, ou les types qui l’implémentent ou qui lui appartiennent, les
+éléments obsolètes étant signalés. **Retour** revient au type précédent. **Rechercher des types et des champs** trouve
+n’importe quoi dans le schéma par son nom.
+
+**Construire** écrit la query à votre place. Choisissez **query**, **mutation** ou **subscription** sous
+**Opération**, puis cochez des champs dans l’arborescence : chaque case cochée ajoute le champ au texte de la query, et
+la décocher le retire. Ce que vous avez tapé autour reste. Le constructeur travaille sur l’opération nommée dans
+**Opération**, ou sur la première opération de ce type dans le document ; s’il n’y en a aucune, il en ajoute une.
+
+<Shot id="requests-graphql-builder" alt="L’onglet Schéma sur Construire pour Search products, avec search coché et nodes ouvert, sku, name et price cochés, et la query à côté montrant les mêmes champs" />
+
+## Réponses [#responses]
+
+La réponse apparaît dans l’onglet **Corps** sous forme de JSON, comme toute [réponse](/docs/requests/responses). Echolot
+lit aussi ce que GraphQL dit à côté des données :
+
+- **N erreurs GraphQL** dans le résumé de la réponse : le serveur a envoyé un tableau `errors`, même avec un HTTP 200.
+  Cliquez dessus pour lire chaque message et le chemin auquel il se rapporte.
+- **Données partielles** : des données sont revenues avec des erreurs, si bien que certains champs valent `null` parce
+  qu’ils ont échoué.
+- **Extensions** : les `extensions` de la réponse, comme des informations de traçage ou de coût.
+
+Ajoutez dans l’onglet **Tests** une vérification **Erreurs GraphQL** égale à `0` pour qu’une exécution échoue dans ce
+cas. Voir [scripts et tests](/docs/requests/scripts-and-tests).
+
+## Abonnements et livraison incrémentale [#subscriptions-and-incremental-delivery]
+
+Un abonnement continue d’envoyer des résultats jusqu’à sa fin :
+
+- Via HTTP (**POST** ou **GET**), Echolot demande des server-sent events quand l’opération est un abonnement.
+- Via **WebSocket (graphql-transport-ws)**, Echolot ouvre le WebSocket, envoie l’abonnement avec les en-têtes et
+  l’authentification de la requête, et répond aux pings du serveur.
+
+Une query avec `@defer` ou `@stream` revient en plusieurs parties (`multipart/mixed`).
+
+Dans les deux cas, le volet de réponse reçoit un onglet **Événements** : chaque événement ou partie dans l’ordre,
+numéroté, avec son type (comme `next` ou `part`), son id et ses erreurs. Pour `@defer` et `@stream`, **Résultat
+fusionné** en haut montre le premier résultat avec toutes les parties suivantes appliquées. L’onglet suit les nouveaux
+événements pendant que le flux tourne, avec **À l’écoute… Arrêter y met fin.** Choisissez **Annuler**
+(<kbd>⌘</kbd><kbd>.</kbd>) pour y mettre fin. Un flux qui a démarré n’est pas coupé par le délai d’attente total de la
+requête.
+
+## Envoi de fichiers [#file-uploads]
+
+Pour une mutation avec une variable `Upload`, ajoutez le fichier sous **Fichiers pour les variables** dans l’onglet
+**Variables** :
+
+1. Choisissez **+**.
+2. Saisissez la variable, comme `file`, ou `files.0` pour le premier élément d’une liste.
+3. Saisissez le chemin du fichier, relatif à l’espace de travail.
+
+Le POST suit alors la spécification GraphQL multipart request : la variable vaut `null` dans `operations`, et le fichier
+part dans une partie à part.

@@ -1,0 +1,60 @@
+---
+title: "echolot validate"
+description: "実行前にワークスペースをチェックします：すべてのファイルが読み込め、すべてのリクエストが選んだ環境で解決できることを確認します。"
+---
+
+`echolot validate` は、ワークスペースのすべてのファイルを読み込み、何も送信せずにすべてのリクエストを解決します。CIの最初や、コミットの前に実行すると、
+壊れたファイル、ある環境で欠けている変数、スキーマに合わなくなったGraphQLクエリを見つけられます。
+
+```sh
+echolot validate [<workspace>] [--env <env>]
+```
+
+`<workspace>` はワークスペースのフォルダです。省略するとカレントフォルダです。
+
+## ワークスペースをチェックする [#check-a-workspace]
+
+```sh
+echolot validate Alpenglow.echolot
+```
+
+```text
+auth/who-am-i: note: {{token}} is captured from a response during the run
+auth/client-credentials: note: the OAuth 2.0 token comes from the token URL (client credentials) when the request is sent
+orders/list-orders: note: {{token}} is captured from a response during the run
+orders/create-order: note: {{token}} is captured from a response during the run
+orders/get-order: note: {{token}} is captured from a response during the run
+orders/cancel-order: note: {{token}} is captured from a response during the run
+29 requests, 3 environments: no problems
+```
+
+問題は1つにつき1行で、標準エラーに、リクエストのパスから始めて出力されます。実行中に生成されるもの（OAuthのクライアント認証情報のトークン、キャプチャされた変数、
+ほかのリクエストのレスポンス）は事前にはわからないため、注記として表示されるだけで、問題には数えられません。最後の行は標準出力に書き出され、リクエスト数、環境数、問題の数を示します。
+
+チェックされる内容：
+
+- ワークスペースのすべてのファイルが読み込めること：解析できるTOML、Echolotが認識する値（認証タイプなど）、より新しいバージョンのEcholotで保存されたファイルがないこと。
+- すべてのリクエストが環境で解決できること：すべての `{{variable}}` と動的な値に値が入ること。
+- スキーマを指定しているGraphQLリクエストが、そのスキーマに照らしてチェックされること。問題ごとに行と列が示されます。非推奨フィールドなどの警告は失敗になりません。
+
+## オプション [#options]
+
+| オプション | 意味 |
+| --- | --- |
+| `-e`、`--env <env>` | 解決に使う環境：ファイル名から `.toml` を除いたもの、または環境の名前。 |
+
+実行に使う環境ごとに1回ずつ検証します。
+
+```sh
+echolot validate Alpenglow.echolot --env staging
+```
+
+シークレット変数は実行時と同じように解決されます：`ECHOLOT_SECRET_<NAME>` 変数から、Macではキーチェーンからも取得されます。[シークレット](/docs/cli#secrets)を参照してください。
+
+## 終了コード [#exit-codes]
+
+| コード | 条件 |
+| --- | --- |
+| `0` | 問題なし。注記は数えません。 |
+| `1` | 問題が1つ以上あるか、ワークスペースを読み込めませんでした。 |
+| `64` | 存在しない環境。 |

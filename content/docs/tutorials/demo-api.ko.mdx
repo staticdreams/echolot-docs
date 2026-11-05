@@ -1,0 +1,88 @@
+---
+title: "데모 API"
+description: "demo.echolot.dev의 가상 아웃도어 용품점 Alpenglow로, Echolot의 모든 기능을 시험해 볼 수 있습니다."
+---
+
+<strong>https://demo.echolot.dev</strong>는 Echolot을 배우기 위해 만든 API입니다. 취리히와 베른에 있는 아웃도어 용품점 Alpenglow입니다. 비공개인 것은 없으며,
+보내는 내용은 저장되지 않습니다. `GET https://demo.echolot.dev/`는 모든 엔드포인트를 나열합니다.
+
+## 로그인 [#sign-in]
+
+데모 계정은 `heidi@alpenglow.ch`이고 암호는 `alpenglow`입니다.
+
+```http
+POST https://demo.echolot.dev/v1/auth/token
+Content-Type: application/json
+
+{ "email": "heidi@alpenglow.ch", "password": "alpenglow" }
+```
+
+응답에는 `access_token`(JWT, 1시간 유효)이 들어 있습니다. `Authorization: Bearer <token>` 형식으로 `/v1/me`와 `/v1/orders`에 보냅니다. 같은 엔드포인트는
+OAuth 2 클라이언트 자격 증명도 받습니다. 클라이언트 ID는 `alpenglow-demo`, 클라이언트 시크릿은 `demo-secret`입니다.
+
+## 숍 [#the-shop]
+
+| 엔드포인트 | 동작 |
+| --- | --- |
+| `GET /v1/products` | 상품 목록. `q`, `category`, `tag`, `in_stock=true`, `sort`(`name`, `price`, `-price`, `rating`), `page`, `per_page`를 쓸 수 있습니다. 페이지 이동 정보는 `Link`와 `X-Total-Count` 헤더에 있습니다. |
+| `GET /v1/products/{sku}` | `TNT-MH-2P` 같은 상품 하나. `ETag`가 있습니다(`If-None-Match`를 보내면 304). |
+| `GET /v1/products/export` | 상품 40,000개, 약 14 MB: 큰 응답에서 뷰어를 시험해 볼 수 있습니다. |
+| `GET /v1/categories` | 상품 수가 포함된 카테고리. |
+| `GET /v1/me` | 로그인한 사용자. |
+| `GET /v1/orders` | Heidi의 주문. `?status=shipped`. |
+| `POST /v1/orders` | `{"lines": [{"sku": "TNT-MH-2P", "quantity": 1}]}`. `Location`과 함께 201로 응답하고, 문제가 있으면 무엇이 잘못되었는지와 함께 422로 응답하며, 같은 `Idempotency-Key`에는 같은 주문을 다시 돌려줍니다. |
+| `GET /v1/orders/{id}` | `ord_7Hk2Lw` 같은 주문 하나. |
+| `DELETE /v1/orders/{id}` | 취소: 204, 이미 배송되었으면 409. 실제로 바뀌는 것은 없습니다. |
+
+오류는 무엇이 잘못되었는지 알려 주는 문제 세부 정보(`application/problem+json`)로 옵니다. 숍의 OpenAPI 명세는 `https://demo.echolot.dev/openapi.yaml`에 있습니다.
+
+## GraphQL [#graphql]
+
+`POST https://demo.echolot.dev/v1/graphql`이며 인트로스펙션을 지원하므로 Echolot이 입력하는 동안 필드를 완성해 줍니다. 스키마는 `/shop.graphql`에 있습니다.
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } stock { warehouse available } }
+  }
+}
+```
+
+## 실시간 이벤트 [#live-events]
+
+- **WebSocket** `wss://demo.echolot.dev/v1/orders`: 1.5초마다 주문 이벤트가 옵니다. `{"op": "subscribe", "channel": "orders"}`, `{"op": "ping"}`을 보내거나,
+  `id`가 있는 아무 JSON이나 보내면 확인 응답을 받습니다. 세션은 3분간 유지되며, 메시지는 최대 8 KB, 10초에 최대 20개입니다.
+- **서버 전송 이벤트** `GET https://demo.echolot.dev/v1/orders/events`: 1초 간격으로 이벤트 20개가 온 뒤 `end`가 옵니다. `Last-Event-ID`를 보내면 이어서 받을 수
+  있습니다.
+
+## MCP [#mcp]
+
+`https://demo.echolot.dev/mcp`는 Streamable HTTP를 쓰는 MCP 서버입니다. MCP 서버 페이지에서 추가하면 도구(`search_catalog`, `get_product`, `order_status`),
+리소스 하나, 프롬프트 하나를 시험해 볼 수 있습니다.
+
+## Echo [#echo]
+
+요청 편집기를 시험해 볼 수 있는 엔드포인트입니다.
+
+| 엔드포인트 | 동작 |
+| --- | --- |
+| `/echo/anything` | 보낸 메서드, 쿼리, 헤더, 본문을 돌려줍니다. |
+| `/echo/headers` | 보낸 헤더를 돌려줍니다. |
+| `/echo/status/{code}` | 해당 상태로 응답합니다. |
+| `/echo/delay/{seconds}` | 최대 5초 기다린 뒤 에코합니다. |
+| `/echo/redirect/{n}` | 리디렉션 `n`번 뒤 `/echo/anything`. |
+| `/echo/cookies`, `/echo/cookies/set?name=value`, `/echo/cookies/delete?name` | 쿠키를 보여 주고, 설정하고, 삭제합니다. |
+| `/echo/basic-auth/{user}/{password}` | Basic 인증이 일치하면 200, 아니면 401. |
+| `/echo/bearer` | 아무 Bearer 토큰이면 200, 아니면 401. |
+| `/echo/bytes/{n}` | 무작위 바이트 `n`개, 최대 1 MB. |
+| `/echo/xml`, `/echo/html` | XML 문서와 HTML 페이지. |
+
+## 제한 [#limits]
+
+데모는 공유되므로 주소별로 제한이 있습니다. 분당 요청 120개, 내보내기, `bytes`, `delay`, WebSocket, SSE는 분당 10개입니다. 제한을 넘으면
+`Retry-After`와 함께 `429 Too Many Requests`가 옵니다. 본문은 최대 64 KB입니다.
+
+gRPC, Socket.IO, MQTT는 여기서 실행할 수 없습니다. 해당 튜토리얼에서는 Mac에서 직접 실행하는 작은 서버를 사용합니다.
+
+데모 API의 소스는 [문서 저장소](https://github.com/staticdreams/echolot-docs/tree/main/demo-api)에 있습니다.

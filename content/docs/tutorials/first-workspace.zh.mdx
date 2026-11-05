@@ -1,0 +1,122 @@
+---
+title: "你的第一个工作区"
+description: "针对演示 API 从零创建工作区，包含请求、文件夹、环境、机密和 Git。"
+---
+
+在本教程中，你将为 Alpenglow 商店创建自己的工作区：文件夹中的两个请求，保存服务器地址的环境，存放在钥匙串中的密码，以及管理这一切的 Git 仓库。
+
+- **用时：** 15 分钟。
+- **你需要：** Echolot，最后一部分还需要 Git（在“终端”中运行 `git --version`；macOS 会提示安装）。
+- **你将学到：** 工作区在磁盘上是如何组织的，以及为什么可以放心提交。
+
+## 1. 创建工作区 [#1-make-the-workspace]
+
+1. 在**欢迎使用 Echolot** 窗口中选取**新建工作区…**。在工作区窗口中，选取**文件 › 新建工作区…**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>）。
+2. 在**新建工作区**面板中，把它命名为 `Alpenglow Shop`，并选择一个文件夹，例如 `~/Projects`。Echolot 会加上 `.echolot` 扩展名。
+3. 选取**创建**。
+
+随后会打开一个窗口，显示**此工作区为空**。在磁盘上，`Alpenglow Shop.echolot` 是一个文件夹，其中有 `workspace.toml` 和一个空的 `requests` 文件夹。在访达中它看起来像一个文件，双击它即可打开工作区。
+
+## 2. 发送第一个请求 [#2-send-your-first-request]
+
+1. 在空白页面上选取**新建请求**，或者**文件 › 新建请求**（<kbd>⌘</kbd><kbd>N</kbd>）。请求会出现在边栏中，名称处于可编辑状态。
+2. 输入 `List products`，然后按 <kbd>↩</kbd>。
+3. 方法保持为 **GET**。在 URL 栏中输入：
+
+   ```text
+   https://demo.echolot.dev/v1/products?category=tents
+   ```
+
+   查询参数也会显示在**参数**标签页中，你可以在那里把它当作表格来编辑。
+4. 选取**发送**（<kbd>⌘</kbd><kbd>R</kbd>，或 <kbd>⌘</kbd><kbd>↩</kbd>）。
+
+响应窗格会显示 `200 OK`、耗时和大小。**正文**标签页中是 JSON 格式的商品。把它的视图切换为 **JSON 树**，可以折叠和展开列表。[响应页面](/docs/requests/responses)介绍了每个标签页。
+
+没有“存储”命令：Echolot 会在你停止输入片刻后存储请求。边栏底部显示**已全部存储**。
+
+## 3. 把请求放入文件夹 [#3-put-requests-in-a-folder]
+
+1. 选取**文件 › 新建文件夹**（<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>），输入 `Catalog`，然后按 <kbd>↩</kbd>。
+2. 把 **List products** 拖到 **Catalog** 上。
+3. 右键点按 **Catalog**，选取**新建请求**。把它命名为 `Get product`。
+4. 把它的 URL 设为 `https://demo.echolot.dev/v1/products/TNT-MH-2P`，然后发送。
+
+你会得到一顶帐篷，Matterhorn 2P，以及它在苏黎世和伯尔尼的价格和库存。每个请求都是一个单独的文件：`requests/catalog/get-product.req.toml`。文件夹还可以为其中的所有请求提供认证、变量和脚本；参见[文件夹](/docs/workspaces/folders)。
+
+## 4. 把地址移入环境 [#4-move-the-address-into-an-environment]
+
+把服务器地址输入到每个请求中，会让切换服务器变得困难。请改为把它放进环境。
+
+1. 选取**视图 › 环境**（<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>），或者打开页面标题栏中的环境菜单，选取**管理环境…**。
+2. 选取 **+**（**添加环境**）。会出现一个**新环境**。把它的**名称**改为 `Demo`。
+3. 选取**添加变量**。把**名称**设为 `baseURL`，把**值**设为 `https://demo.echolot.dev/v1`。
+4. 添加第二个名为 `Local` 的环境，把 `baseURL` 设为 `http://localhost:8787/v1`。那是在你自己的 Mac 上运行的演示 API；本教程不需要它在运行。
+5. 在页面标题栏的环境菜单中选取 **Demo**。
+6. 回到 **List products**，把它的 URL 改为 `{{baseURL}}/products?category=tents`。对 **Get product** 也这样做：`{{baseURL}}/products/TNT-MH-2P`。
+
+输入 `{{` 时，会弹出列表提示你的变量。在 URL 中，`{{baseURL}}` 显示为一个标记；把指针停在上面可查看它在当前环境中的值。再次发送这两个请求：它们仍然发往演示 API。选取 **Local** 后，它们就会改为发往你的 Mac，其他什么都不用改。
+
+<Shot id="tutorials-first-workspace-environment" alt="“环境”页面，选中了一个环境：它的 baseURL 和 wsURL 变量，以及一个机密密码" />
+
+## 5. 保管好密码 [#5-keep-a-password-secret]
+
+登录商店需要密码。密码绝不能写入你要提交的文件。
+
+1. 在**环境**页面选择 **Demo**，然后选取**添加变量**。
+2. 把它命名为 `password`，并勾选它的**密钥**框。值栏会变成密码栏，并显示**未在这台 Mac 上设置**。
+3. 输入 `alpenglow`，然后按 <kbd>↩</kbd>（或选取**存储**）。钥匙图标表示该值已存入钥匙串。
+4. 创建文件夹 `Auth`，并在其中创建请求 `Sign in`。把它的方法设为 **POST**，URL 设为 `{{baseURL}}/auth/token`。
+5. 在**正文**标签页中选取 **JSON**，然后输入：
+
+   ```json
+   { "email": "heidi@alpenglow.ch", "password": "{{password}}" }
+   ```
+
+6. 发送。
+
+响应是 `200 OK`，并带有 `access_token`。对于 JSON 正文，Echolot 会自动添加 `Content-Type: application/json`。看一下 `environments/demo.toml`：`password` 变量在其中，带有 `secret = true`，但没有值。值只保存在这台 Mac 的钥匙串中，所以每个打开该工作区的人都要设置自己的；参见[机密](/docs/workspaces/secrets)。
+
+[下一篇教程](/docs/tutorials/chain-requests)会把这个令牌用于需要它的请求。
+
+## 6. 把工作区放入 Git [#6-put-the-workspace-in-git]
+
+Echolot 自己没有 Git 命令：工作区是普通的 TOML 文件，所以你可以像对待代码一样使用 Git。
+
+1. 在边栏底部打开工作区菜单，选取**在访达中显示**。把 `Alpenglow Shop.echolot` 文件夹拖到“终端”的图标上，或者用 `cd` 进入它。
+2. 运行：
+
+   ```sh
+   git init
+   git add .
+   git commit -m "Alpenglow Shop: catalog and sign-in"
+   ```
+
+你提交的内容：
+
+```text
+Alpenglow Shop.echolot/
+├── workspace.toml
+├── environments/
+│   ├── demo.toml
+│   └── local.toml
+└── requests/
+    ├── _folder.toml
+    ├── auth/
+    │   ├── _folder.toml
+    │   ├── sign-in.req.toml
+    │   └── sign-in.body.json
+    └── catalog/
+        ├── _folder.toml
+        ├── get-product.req.toml
+        └── list-products.req.toml
+```
+
+其中没有任何机密，也不需要 `.gitignore`：响应和历史记录保存在工作区之外，位于 Echolot 自己的储存空间中。每个文件每次都以同样的方式写入，所以 diff 只会显示你改动的部分。
+
+别人拉取更改时，已打开的窗口会自动更新。如果某个文件在磁盘上改变，而你对它有未存储的编辑，会出现一个提示栏：**此请求已在磁盘上更改**，可选取**使用文件中的版本**或**保留我的版本**。详见 [Git 与团队](/docs/workspaces/git-and-teams)。
+
+## 后续步骤 [#next-steps]
+
+- [串联请求](/docs/tutorials/chain-requests)：把 **Sign in** 得到的令牌发送给每个需要它的请求。
+- [受保护的环境](/docs/workspaces/protected-environments)：让 Echolot 在每次发送到重要服务器之前先询问。
+- [工作区文件](/docs/reference/workspace-files)：每个文件和字段。

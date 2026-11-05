@@ -1,0 +1,116 @@
+---
+title: "Echtzeit"
+description: "Verfolge Live-Bestellereignisse der Demo-API über WebSocket und Server-Sent Events, chatte dann über Socket.IO und lies Sensoren über MQTT auf Servern auf deinem Mac."
+---
+
+Echtzeit-APIs halten eine Verbindung offen und senden Nachrichten in beide Richtungen. In diesem Tutorial verfolgst du den
+Bestell-Feed des Demo-Shops über einen WebSocket und als Server-Sent Events, sprichst dann über Socket.IO mit dem Support
+des Shops und liest über MQTT Lagertemperaturen, nebeneinander.
+
+- **Dauer:** 20 Minuten.
+- **Du brauchst:** den [Arbeitsbereich Alpenglow](/docs/tutorials#the-alpenglow-workspace) mit gewählter
+  **Keine Umgebung**. Für Socket.IO und MQTT die [lokalen Server](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt):
+  Führe `bun run realtime` in `examples/servers` aus.
+- **Du lernst:** Verbinden, gesicherte Nachrichten, das Live-Protokoll, Event-Streams, Namespaces und Bestätigungen,
+  Abonnements, QoS und beibehaltene Nachrichten.
+
+## 1. WebSocket: der Bestell-Feed [#1-websocket-the-order-feed]
+
+1. Öffne **Realtime › Order updates**. Ihre URL ist `{{wsURL}}/orders`, also `wss://demo.echolot.dev/v1/orders`.
+2. Wähle **Verbinden** (<kbd>⌘</kbd><kbd>R</kbd>). Der Knopf wird zu **Trennen**.
+3. Der Tab **Nachrichten** der Antwort füllt sich: ein Link-Symbol für die offene Verbindung, das `hello` des Servers,
+   dann alle 1,5 Sekunden ein Bestellereignis, etwa `{"event": "order.created", "order": "ord_9Tq3Vb", …}`. Gesendete
+   Nachrichten haben einen Pfeil nach oben, empfangene einen grünen Pfeil nach unten. **Mehr** klappt eine lange
+   JSON-Nachricht auf.
+4. Im Tab **Nachrichten** der Anfrage enthält die gesicherte Nachricht **Subscribe** `{"op":"subscribe","channel":"orders"}`.
+   Wähle ihr **Senden**. Der Server antwortet `{"op": "subscribed", "channel": "orders"}`.
+5. Tippe in den Composer unten: `{"id": 42, "text": "hello"}` und wähle **Senden** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>).
+   Der Server bestätigt sie mit `{"op": "ack", "id": 42}`. Wähle **+**, um die Nachricht für später zu sichern.
+6. Grenze das Protokoll mit **Alle**, **Gesendet** und **Empfangen** ein oder tippe `shipped` in **Nachrichten filtern**.
+7. Wähle **Trennen**. Das Protokoll endet mit **Von Echolot geschlossen**.
+
+Die Demo schließt eine Sitzung nach drei Minuten (`1000 Demo sessions last 3 minutes`) und schließt sie mit `1008`, wenn du
+mehr als 20 Nachrichten in zehn Sekunden sendest. Gesicherte Nachrichten mit angehaktem **In Durchläufen senden** werden
+der Reihe nach nach dem Verbinden gesendet, wenn die Anfrage in der Ausführung oder im Befehlszeilentool läuft. Mehr unter
+[WebSocket und SSE](/docs/requests/websocket-and-sse).
+
+<Shot id="tutorials-realtime-websocket" alt="Order updates verbunden: links die gesicherten Nachrichten Subscribe und Ping, rechts das Live-Protokoll der gesendeten und empfangenen Nachrichten" />
+
+## 2. Server-Sent Events: derselbe Feed als Stream [#2-server-sent-events-the-same-feed-as-a-stream]
+
+1. Öffne **Realtime › Order events**. Es ist eine einfache HTTP-Anfrage, `GET {{baseURL}}/orders/events`, mit dem Header
+   `Accept: text/event-stream`.
+2. Wähle **Senden**. Die Antwort öffnet sich im Tab **Ereignisse**: **Empfang läuft … „Stoppen“ beendet ihn.**
+3. Jede Sekunde kommt ein Ereignis, jedes in einer eigenen Karte, betitelt mit seiner Nummer und seinem Namen, etwa
+   **1. order.created**, darunter **id 1**. Nach 20 Ereignissen sendet der Server `end` und schließt den Stream.
+4. Um früher zu stoppen, wähle **Abbrechen** (<kbd>⌘</kbd><kbd>.</kbd>).
+
+Um nach einem Ereignis fortzusetzen, füge den Header `Last-Event-ID` mit der letzten ID hinzu, die du gesehen hast, etwa
+`15`, und sende erneut. Der Server sendet 16 bis 20. Wenn du `Last-Event-ID` im Tab **Header** tippst, wird `{{lastEventId}}`
+als Wert angeboten; gib dieser Variablen einen Wert oder tippe die Zahl.
+
+## 3. Socket.IO: der Support [#3-socketio-the-support-desk]
+
+Starte zuerst die lokalen Server (`bun run realtime`). Sie geben
+`Alpenglow realtime: Socket.IO on http://localhost:3001/support, MQTT on mqtt://localhost:1883` aus.
+
+1. Öffne **Realtime › Support chat**. Ihre URL ist `{{realtimeURL}}`, `http://localhost:3001`. In ihrem Tab **Ereignisse**
+   ist der **Namespace** `/support`; das Methodenmenü der URL-Leiste legt die Version des **Servers** fest (Socket.IO 4).
+2. Wähle **Verbinden**. Drei Ereignisse kommen: `welcome` mit dem Namen des Mitarbeiters und der Warteschlange, `typing`,
+   dann `message`: „Grüezi! How can I help with your order?“
+3. Das gesicherte Ereignis **Say hello** sendet `message` mit `{"text":"Grüezi!"}`. Hake sein Feld **Ack** an, damit der
+   Server um eine Bestätigung gebeten wird, und wähle **Senden**.
+4. Das Protokoll zeigt die Bestätigung, `{"id": "msg_31", "delivered": true}`, und einen Moment später Heidis Antwort:
+   „Your Matterhorn 2P ships tomorrow from Bern.“
+5. Um ein Ereignis zu senden, das du nicht gesichert hast, tippe seinen Namen in das Feld **Ereignis** des Composers und
+   seine Argumente als JSON und wähle **Senden** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>).
+
+Jede Protokollzeile nennt den Namespace, das Ereignis und, wenn es eine gibt, die Nummer der Bestätigung.
+**Ereignisse filtern** grenzt das Protokoll ein. Ein Server, der dich bittet, eines seiner Ereignisse zu bestätigen, bekommt in dieser
+Zeile einen Knopf **Bestätigen**. Eine Auth-Payload wie `{"token": "{{token}}"}` kommt in das Feld **Auth** des Tabs
+**Ereignisse**. Siehe [Socket.IO](/docs/requests/socket-io).
+
+## 4. MQTT: Lagersensoren [#4-mqtt-warehouse-sensors]
+
+Dieselben lokalen Server betreiben einen MQTT-Broker auf `localhost:1883`, der alle 1,5 Sekunden die Temperaturen dreier
+Lager veröffentlicht.
+
+1. Öffne **Realtime › Warehouse sensors**. Ihre URL ist `mqtt://{{mqttHost}}`, und das **Protokoll** im Methodenmenü ist
+   **MQTT 3.1.1**.
+2. Ihr Tab **Abonnieren** hat das Abonnement `warehouses/+/temperature` mit **QoS 1**, mit angehaktem
+   **Beim Verbinden abonnieren**. `+` passt auf eine Ebene des Topics.
+3. Wähle **Verbinden**. Nachrichten kommen für `warehouses/zurich/temperature`, `warehouses/bern/temperature` und
+   `warehouses/chur/temperature`, etwa `{"celsius": 6.1, "humidity": 44, …}`.
+4. Zeige mit dem Menü **Alle Topics** nur ein Lager.
+5. Tippe im Composer von **Abonnieren** `warehouses/status`, lass **QoS 0** und wähle **Abonnieren**. Sofort kommt eine
+   Nachricht, `{"online": 3}`, als beibehalten markiert: Der Broker hat sie für alle aufbewahrt, die später abonnieren.
+6. Setze im Tab **Veröffentlichen** das Topic auf `warehouses/bern/door`, die Payload auf `{"open": true}` und wähle
+   **Veröffentlichen** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>). Abonniere `warehouses/#`, um sie zurückkommen zu sehen: `#`
+   passt auf jede Ebene darunter.
+
+Der Tab **Verbindung** enthält die **Client-ID**, die Einstellung Clean Session, **Keep-Alive** und ein Will. Benutzername
+und Passwort eines Brokers kommen als Basic-Auth in den Tab **Auth**; halte das Passwort in einer geheimen Variablen. Auch
+das Befehlszeilentool spricht MQTT:
+
+```sh
+echolot mqtt subscribe mqtt://localhost 'warehouses/#' --count 5
+```
+
+Siehe [MQTT](/docs/requests/mqtt) und [`echolot mqtt`](/docs/cli/mqtt).
+
+## 5. Nebeneinander [#5-side-by-side]
+
+Jede Anfrage hat ihren eigenen Tab. Lass **Order updates**, **Support chat** und **Warehouse sensors** in drei Tabs offen
+und verbinde jede: Jede Verbindung bleibt offen, während du zwischen ihnen wechselst. Wenn eine Sitzung endet, behält
+Echolot sie mit dem ganzen Nachrichtenprotokoll im Verlauf, sodass du sie später noch einmal lesen kannst
+(<kbd>⌘</kbd><kbd>Y</kbd>).
+
+Die lokalen Server bedienen auch gRPC: Führe `bun run grpc` aus und sende die Anfragen in **Inventory**. **Watch stock**
+streamt ein Dutzend Lagerbestände und endet. Siehe [gRPC](/docs/requests/grpc).
+
+## Nächste Schritte [#next-steps]
+
+- [WebSocket und SSE](/docs/requests/websocket-and-sse): Subprotokolle, binäre Nachrichten, Prüfungen für Sitzungen.
+- [Socket.IO](/docs/requests/socket-io) und [MQTT](/docs/requests/mqtt): alle Einstellungen.
+- [Eine API testen und in CI ausführen](/docs/tutorials/test-in-ci): Sitzungen laufen auch in der Ausführung und senden
+  dabei ihre gesicherten Nachrichten.

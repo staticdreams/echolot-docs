@@ -1,0 +1,162 @@
+---
+title: "Votre premier espace de travail"
+description: "Créez un espace de travail de zéro avec l’API de démo, avec des requêtes, un dossier, un environnement, un secret et Git."
+---
+
+Dans ce tutoriel, vous créez votre propre espace de travail pour la boutique Alpenglow : deux requêtes dans un dossier,
+un environnement qui contient l’adresse du serveur, un mot de passe gardé dans le trousseau et un dépôt Git pour le
+tout.
+
+- **Durée :** 15 minutes.
+- **Il vous faut :** Echolot, et Git pour la dernière partie (`git --version` dans Terminal ; macOS propose de
+  l’installer).
+- **Vous apprenez :** comment un espace de travail est organisé sur le disque, et pourquoi on peut le valider sans
+  risque.
+
+## 1. Créer l’espace de travail [#1-make-the-workspace]
+
+1. Dans la fenêtre **Bienvenue dans Echolot**, choisissez **Nouvel espace de travail…**. Depuis une fenêtre d’espace de
+   travail, choisissez **Fichier › Nouvel espace de travail…** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>).
+2. Dans le panneau **Nouvel espace de travail**, nommez-le `Alpenglow Shop` et choisissez un dossier, comme `~/Projects`.
+   Echolot ajoute l’extension `.echolot`.
+3. Cliquez sur **Créer**.
+
+Une fenêtre s’ouvre avec **Cet espace de travail est vide**. Sur le disque, `Alpenglow Shop.echolot` est un dossier qui
+contient `workspace.toml` et un dossier `requests` vide. Dans le Finder, il ressemble à un seul fichier, et un
+double-clic l’ouvre comme espace de travail.
+
+## 2. Envoyer votre première requête [#2-send-your-first-request]
+
+1. Choisissez **Nouvelle requête** sur la page vide, ou **Fichier › Nouvelle requête** (<kbd>⌘</kbd><kbd>N</kbd>). La
+   requête apparaît dans la barre latérale avec son nom prêt à être modifié.
+2. Saisissez `List products` et appuyez sur <kbd>↩</kbd>.
+3. Laissez la méthode sur **GET**. Dans le champ URL, saisissez :
+
+   ```text
+   https://demo.echolot.dev/v1/products?category=tents
+   ```
+
+   Le paramètre de requête apparaît aussi dans l’onglet **Paramètres**, où vous pouvez le modifier sous forme de
+   tableau.
+4. Choisissez **Envoyer** (<kbd>⌘</kbd><kbd>R</kbd>, ou <kbd>⌘</kbd><kbd>↩</kbd>).
+
+Le volet de réponse affiche `200 OK`, la durée et la taille. L’onglet **Corps** contient les produits en JSON. Passez
+son affichage sur **Arbre JSON** pour replier et déplier la liste. La [page des réponses](/docs/requests/responses)
+explique chaque onglet.
+
+Il n’y a pas de commande Enregistrer : Echolot enregistre une requête un instant après que vous avez arrêté de saisir.
+Le bas de la barre latérale indique **Tout est enregistré**.
+
+## 3. Ranger les requêtes dans un dossier [#3-put-requests-in-a-folder]
+
+1. Choisissez **Fichier › Nouveau dossier** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>), saisissez `Catalog` et appuyez sur
+   <kbd>↩</kbd>.
+2. Faites glisser **List products** sur **Catalog**.
+3. Faites un clic droit sur **Catalog** et choisissez **Nouvelle requête**. Nommez-la `Get product`.
+4. Définissez son URL sur `https://demo.echolot.dev/v1/products/TNT-MH-2P` et envoyez-la.
+
+Vous obtenez une tente, la Matterhorn 2P, avec son prix et son stock à Zurich et à Berne. Chaque requête est son propre
+fichier : `requests/catalog/get-product.req.toml`. Les dossiers peuvent aussi porter l’authentification, des variables
+et des scripts pour toutes les requêtes qu’ils contiennent ; voir [dossiers](/docs/workspaces/folders).
+
+## 4. Déplacer l’adresse dans un environnement [#4-move-the-address-into-an-environment]
+
+Saisir l’adresse du serveur dans chaque requête rend le changement de serveur pénible. Placez-la plutôt dans un
+environnement.
+
+1. Choisissez **Présentation › Environnements** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>), ou ouvrez le menu des
+   environnements dans l’en-tête de page et choisissez **Gérer les environnements…**.
+2. Cliquez sur **+** (**Ajouter un environnement**). Un **Nouvel environnement** apparaît. Changez son **Nom** en
+   `Demo`.
+3. Cliquez sur **Ajouter une variable**. Définissez **Nom** sur `baseURL` et **Valeur** sur
+   `https://demo.echolot.dev/v1`.
+4. Ajoutez un second environnement nommé `Local` avec `baseURL` défini sur `http://localhost:8787/v1`. C’est l’API de
+   démo exécutée sur votre propre Mac ; il n’est pas nécessaire qu’elle tourne pour ce tutoriel.
+5. Dans le menu des environnements de l’en-tête de page, choisissez **Demo**.
+6. Revenez à **List products** et changez son URL en `{{baseURL}}/products?category=tents`. Faites de même pour
+   **Get product** : `{{baseURL}}/products/TNT-MH-2P`.
+
+Pendant que vous saisissez `{{`, une liste propose vos variables. Dans l’URL, `{{baseURL}}` s’affiche comme un jeton ;
+laissez le pointeur dessus pour voir sa valeur dans l’environnement actuel. Envoyez de nouveau les deux requêtes : elles
+atteignent toujours l’API de démo. Choisissez **Local** et elles iraient vers votre Mac, sans autre changement.
+
+<Shot id="tutorials-first-workspace-environment" alt="La page Environnements avec un environnement sélectionné : ses variables baseURL et wsURL, et un mot de passe secret" />
+
+## 5. Garder un mot de passe secret [#5-keep-a-password-secret]
+
+Se connecter à la boutique demande un mot de passe. Un mot de passe ne doit jamais aller dans un fichier que vous
+validez.
+
+1. Sur la page **Environnements**, sélectionnez **Demo** et cliquez sur **Ajouter une variable**.
+2. Nommez-la `password` et cochez sa case **Secret**. Le champ de valeur devient un champ de mot de passe qui indique
+   **Non défini sur ce Mac**.
+3. Saisissez `alpenglow` et appuyez sur <kbd>↩</kbd> (ou cliquez sur **Enregistrer**). Une icône de clé indique que la
+   valeur est dans le trousseau.
+4. Créez un dossier `Auth` et une requête `Sign in` dedans. Définissez sa méthode sur **POST** et son URL sur
+   `{{baseURL}}/auth/token`.
+5. Dans l’onglet **Corps**, choisissez **JSON** et saisissez :
+
+   ```json
+   { "email": "heidi@alpenglow.ch", "password": "{{password}}" }
+   ```
+
+6. Envoyez-la.
+
+La réponse est `200 OK` avec un `access_token`. Echolot ajoute de lui-même `Content-Type: application/json` pour un
+corps JSON. Regardez `environments/demo.toml` : la variable `password` s’y trouve avec `secret = true` et sans valeur. La
+valeur ne vit que dans le trousseau de ce Mac, donc chaque personne qui ouvre l’espace de travail définit la sienne ;
+voir [secrets](/docs/workspaces/secrets).
+
+Le [tutoriel suivant](/docs/tutorials/chain-requests) utilise ce jeton pour les requêtes qui en ont besoin.
+
+## 6. Mettre l’espace de travail dans Git [#6-put-the-workspace-in-git]
+
+Echolot n’a pas de commandes Git à lui : un espace de travail est fait de simples fichiers TOML, vous utilisez donc Git
+comme pour du code.
+
+1. En bas de la barre latérale, ouvrez le menu de l’espace de travail et choisissez **Afficher dans le Finder**. Faites
+   glisser le dossier `Alpenglow Shop.echolot` sur l’icône de Terminal, ou faites un `cd` dedans.
+2. Exécutez :
+
+   ```sh
+   git init
+   git add .
+   git commit -m "Alpenglow Shop: catalog and sign-in"
+   ```
+
+Ce que vous avez validé :
+
+```text
+Alpenglow Shop.echolot/
+├── workspace.toml
+├── environments/
+│   ├── demo.toml
+│   └── local.toml
+└── requests/
+    ├── _folder.toml
+    ├── auth/
+    │   ├── _folder.toml
+    │   ├── sign-in.req.toml
+    │   └── sign-in.body.json
+    └── catalog/
+        ├── _folder.toml
+        ├── get-product.req.toml
+        └── list-products.req.toml
+```
+
+Rien là-dedans n’est secret, et rien n’a besoin d’un `.gitignore` : les réponses et l’historique sont conservés en
+dehors de l’espace de travail, dans le stockage propre d’Echolot. Chaque fichier est écrit de la même façon à chaque
+fois, si bien qu’un diff ne montre que ce que vous avez changé.
+
+Quand quelqu’un d’autre récupère des modifications, une fenêtre ouverte les prend en compte d’elle-même. Si un fichier
+change sur le disque alors que vous avez des modifications non enregistrées dessus, une barre indique
+**Cette requête a changé sur le disque** : choisissez **Utiliser la leur** ou **Garder les miennes**. Plus de détails dans
+[Git et équipes](/docs/workspaces/git-and-teams).
+
+## Étapes suivantes [#next-steps]
+
+- [Enchaîner des requêtes](/docs/tutorials/chain-requests) : envoyez le jeton de **Sign in** à toutes les requêtes qui
+  en ont besoin.
+- [Environnements protégés](/docs/workspaces/protected-environments) : faites en sorte qu’Echolot demande avant chaque
+  envoi vers un serveur important.
+- [Fichiers de l’espace de travail](/docs/reference/workspace-files) : chaque fichier et chaque champ.

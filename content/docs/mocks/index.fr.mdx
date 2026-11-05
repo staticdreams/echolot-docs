@@ -1,0 +1,171 @@
+---
+title: "Mocks"
+description: "Des serveurs mock locaux faits de routes écrites à la main, avec des données fictives, ou d’une spec OpenAPI ; choisissez ce qu’ils répondent, vérifiez les requêtes et partagez-les sur le réseau."
+---
+
+Un mock est un serveur, sur un port de votre Mac, qui répond comme une API. Les front-ends, les apps et les tests peuvent
+l’utiliser avant que l’API n’existe, ou pendant que la vraie est en panne. Un mock répond à partir de deux sources, seules
+ou ensemble :
+
+- **Des routes que vous créez à la main** : une méthode, un chemin, et le JSON, le XML ou le texte qu’il répond. Les corps
+  peuvent contenir des données fictives (`{{$randomFullName}}`, `{{$randomEmail}}`) qui changent à chaque requête, et des
+  éléments de la requête (`{{request.params.id}}`). Aucune spec n’est nécessaire. Voir
+  [routes et données fictives](/docs/mocks/routes).
+- **Une spec OpenAPI** : chaque opération répond avec les réponses que la spec documente, ses exemples ou un corps généré
+  à partir de ses schémas. Les requêtes qui ne respectent pas la spec reçoivent un `400` qui explique pourquoi : le mock
+  vous dit donc aussi quand un client envoie quelque chose d’incorrect.
+
+Pour des réponses qui demandent du code ou un état, un mock peut aussi avoir des
+[routes en JavaScript](/docs/mocks/scripted-routes).
+
+Ouvrez la page avec **Mocks** dans le sélecteur de module de la barre latérale, ou avec <kbd>⌘</kbd><kbd>4</kbd>.
+
+<Shot id="mocks-running" alt="Un mock en cours d’exécution de la boutique de démo Alpenglow : son adresse en haut avec Utiliser dans un environnement et Arrêter, la carte Réglages avec sa spec, la carte Routes avec deux routes créées à la main, et en bas le journal des requêtes traitées, par les routes et par la spec" />
+
+## Créer un mock [#creating-a-mock]
+
+Cliquez sur **+** dans l’en-tête **Mocks** de la barre latérale, ou utilisez les boutons de la page vide :
+
+- **Nouveau mock** crée un mock de routes. Il démarre avec une route, `GET /users`, qui répond avec cinq utilisateurs
+  fictifs : vous pouvez le démarrer et voir ce qu’un corps peut faire. Modifiez-la ou ajoutez les vôtres ; voir
+  [routes et données fictives](/docs/mocks/routes).
+- **Mock de** *spec* (dans le menu **+**, ou **Mock d’une spec** sur la page vide) crée un mock d’une spec de
+  l’espace de travail, par exemple **Mock de Alpenglow demo shop**.
+
+Le nouveau mock prend le premier port libre à partir de `4010`. Ses réglages et ses routes sont un fichier du dossier
+`mocks` de l’espace de travail : une équipe partage donc ses mocks par Git.
+
+Un mock de routes peut aussi servir une spec, et un mock de spec peut avoir des routes : **Servir une spec** dans la carte
+**Réglages** en ajoute une, **Changer** › **Ne plus servir la spec** la retire.
+
+## Démarrer et arrêter [#starting-and-stopping]
+
+Cliquez sur **Démarrer** (<kbd>⌘</kbd><kbd>R</kbd>). La barre en haut indique l’adresse du mock, par exemple
+`http://127.0.0.1:4010`. Quand le mock sert une spec dont l’URL de serveur comporte un chemin
+(`https://demo.echolot.dev/v1`), l’adresse se termine par ce chemin (`http://127.0.0.1:4010/v1`) et le mock répond en
+dessous ; les requêtes peuvent aussi omettre ce chemin. Le bouton de copie à côté de l’adresse la copie.
+
+Essayez-le depuis Terminal :
+
+```sh
+curl http://127.0.0.1:4010/users
+```
+
+**Arrêter** l’arrête. La barre latérale indique quels mocks tournent : un point vert, et le port à côté du titre de la
+spec ou du nombre de routes (`Alpenglow demo shop · :4010`, `3 routes · stopped`). Faites un clic droit sur un mock pour
+**Démarrer** ou **Arrêter** et **Supprimer…**. Supprimer demande d’abord confirmation ; le fichier de réglages va dans la
+corbeille et la spec reste.
+
+Les mocks tournent tant que la fenêtre de leur espace de travail est ouverte. Un mock en cours d’exécution prend en compte
+les changements de ses routes, de sa spec et de ses réglages sans s’arrêter. Un port qu’un autre programme utilise ne peut
+pas être pris : Echolot vous le dit ; choisissez un autre port.
+
+### Envoyer des requêtes au mock [#sending-requests-to-the-mock]
+
+- **Créer des requêtes** dans la carte **Routes** crée un dossier de requêtes qui appellent les routes du mock, avec
+  `{{baseUrl}}` réglé sur l’adresse du mock. Voir [requêtes à partir de routes](/docs/mocks/routes#requests-from-routes).
+- **Utiliser dans un environnement** (pendant que le mock tourne) crée un environnement nommé `Mock: <name>` dont
+  `{{baseUrl}}` est l’adresse du mock, et le rend actif. Les requêtes qui commencent par `{{baseUrl}}`, comme celles que
+  [Générer les requêtes](/docs/specs#requests-that-follow-the-spec) crée à partir d’une spec, vont alors au mock
+  jusqu’à ce que vous choisissiez un autre environnement. Voir [Environnements](/docs/workspaces/environments).
+
+## Réglages [#settings]
+
+| Réglage | Ce qu’il fait |
+| --- | --- |
+| **Nom** | Le nom du mock dans la barre latérale. |
+| **Spec** | La spec qu’il sert, ou **Aucune : seules ses routes répondent**. **Ouvrir** ouvre la spec sur la page Specs ; **Servir une spec** et **Changer** en choisissent une ou arrêtent de la servir. |
+| **Port** | Le port sur lequel il écoute, de 1 à 65535. |
+| **Répondre aux autres appareils du réseau** | Écoute sur toutes les interfaces réseau, pour tester depuis un téléphone ou un conteneur. Désactivé : seul ce Mac y accède. |
+| **Délai** | Millisecondes d’attente avant chaque réponse, jusqu’à 60 000, pour essayer une API lente. |
+| **Échecs** | Le pourcentage de requêtes qui reçoivent un `500` injecté, pour voir comment un client s’en sort. |
+| **Vérifications** | Avec une spec : **Refuser les requêtes qui ne respectent pas la spec (400 avec les raisons)**. Activé par défaut. |
+
+## Quelle réponse reçoit une requête [#which-response-a-request-gets]
+
+Une requête va au premier de ces éléments qui a une réponse pour sa méthode et son chemin :
+
+1. Les [routes en JavaScript](/docs/mocks/scripted-routes) du mock. Une route qui ne définit rien transmet la requête.
+2. Ses [routes créées à la main](/docs/mocks/routes). Une route peut avoir plusieurs réponses ; une requête peut en demander
+   une par son nom ou son état, des règles sur la requête en choisissent d’autres, et sinon c’est la réponse par défaut de
+   la route qui répond.
+3. Les opérations de la spec, comme ci-dessous.
+
+Les segments de chemin littéraux l’emportent sur les paramètres : `/pets/mine` est choisi avant `/pets/{id}`, pour les
+routes comme pour les opérations.
+
+Pour une opération de la spec, le mock choisit la réponse dans cet ordre :
+
+1. Ce que la requête demande : un en-tête `Prefer: code=404, example=empty`, ou les en-têtes `x-mock-response-code` et
+   `x-mock-response-name` de Postman.
+2. La réponse choisie pour l’opération dans la carte **Réponses de la spec**.
+3. La première réponse de succès de l’opération.
+
+La carte **Réponses de la spec** liste chaque opération avec un menu : **Premier succès**, ou l’un des états documentés,
+et pour un état qui a plusieurs exemples, l’exemple. Le choix est enregistré avec le mock.
+
+Le corps est l’exemple nommé de la réponse (celui qui est demandé, ou le premier), son unique `example`, ou à défaut un
+corps généré à partir de son schéma : des données fictives adaptées au type, au format et au nom de chaque champ (une
+adresse e-mail pour un champ de format `email`), dans les limites du schéma, régénérées à chaque requête. Un champ nommé
+comme un paramètre de chemin le reprend. Quand la spec documente plusieurs types de média, l’en-tête `Accept` de la requête
+en choisit un. Les en-têtes documentés et le type de contenu sont envoyés eux aussi. Un `204`, un `304` et les réponses à
+`HEAD` n’ont pas de corps.
+
+Autres réponses que donne le mock :
+
+| État | Quand |
+| --- | --- |
+| `400` | Le mock sert une spec, les vérifications sont activées et la requête ne la respecte pas : un paramètre de chemin, de requête, d’en-tête ou de cookie manquant ou du mauvais type, un type de contenu incorrect, ou un corps qui ne correspond pas à son JSON Schema. Le corps liste chaque raison. |
+| `404` | Aucune route et aucune opération n’a ce chemin. |
+| `405` | Le chemin existe, mais pas avec cette méthode. L’en-tête `Allow` liste les méthodes qu’il accepte, routes et spec confondues. |
+| `413` | Le corps de la requête dépasse 32 Mo. |
+| `500` | Un échec injecté (voir **Échecs**). |
+| `501` | L’opération ne documente aucune réponse pour l’état demandé. |
+
+Les navigateurs peuvent appeler le mock depuis une page sur un autre port : il répond aux requêtes preflight et envoie les
+en-têtes CORS.
+
+## Le journal [#the-log]
+
+Le bas de la page liste les requêtes auxquelles le mock sélectionné a répondu, la plus récente d’abord : l’heure, l’état,
+la méthode et le chemin, la réponse utilisée (le nom de la réponse d’une route, le nom d’un exemple de la spec, ou
+`generated` quand le corps vient du schéma) et le temps que cela a pris. Les problèmes sont sur les lignes sous une
+requête : là où elle ne respectait pas la spec, ou une valeur fictive que le corps d’une route n’a pas pu produire.
+Placez le pointeur sur une requête pour voir le corps de la réponse, le corps de la requête et le type de contenu ;
+**Copier la réponse** copie le corps. **Effacer** vide le journal.
+
+Là où le modèle intégré d’Apple est disponible, le bouton à côté de **Effacer** résume le journal.
+
+## Enregistrer des exemples dans la spec [#saving-examples-into-the-spec]
+
+Pour les opérations d’une spec, la spec est la seule source de ce que le mock répond : une vraie réponse que vous avez
+obtenue y est donc enregistrée comme exemple. Dans l’[historique](/docs/workspaces/history), faites un clic droit sur un
+échange d’une requête qui suit la spec et choisissez **Enregistrer comme exemple de mock…**. Donnez-lui un nom, par
+exemple `two tents`, et cliquez sur **Enregistrer**.
+
+La réponse devient un exemple nommé de la réponse de son opération dans la spec que suit la requête. Choisissez-le dans la
+carte **Réponses de la spec**, ou demandez-le avec `Prefer: example=two tents`.
+
+Pour un chemin que la spec n’a pas, ou pour un mock sans spec, créez une [route](/docs/mocks/routes) et collez le corps.
+
+## Partager sur le réseau [#sharing-on-the-network]
+
+Activez **Répondre aux autres appareils du réseau** pour accéder au mock depuis un téléphone, une tablette ou un conteneur.
+Les autres appareils utilisent l’adresse de votre Mac sur le réseau local, avec le port du mock.
+
+La première fois, macOS peut demander si Echolot peut trouver des appareils sur votre réseau local et s’y connecter.
+Autorisez-le, sinon les autres appareils ne peuvent pas joindre le mock. Vous pouvez changer la réponse plus tard dans
+**Réglages Système › Confidentialité et sécurité › Réseau local**.
+
+Toute personne sur le réseau peut alors appeler le mock. Désactivez le partage quand vous n’en avez pas besoin.
+
+## En ligne de commande [#from-the-command-line]
+
+`echolot mock alpenglow.yaml` sert un fichier de spec, et `echolot mock -w <workspace> <mock>` sert un mock d’un espace de
+travail avec ses réglages et ses routes, avec ou sans spec, pour la CI ou un conteneur. Voir
+[echolot mock](/docs/cli/mock). [`echolot fake`](/docs/cli/fake) génère des données fictives à partir des mêmes modèles,
+pour des fixtures et des données de départ.
+
+Les agents peuvent démarrer des mocks et lire leurs journaux via le serveur MCP d’Echolot et, quand l’ensemble d’outils
+**Mocks** est activé, créer des mocks, ajouter et modifier des routes, générer des données fictives et créer des requêtes
+à partir de routes. Voir [Agents](/docs/ai/agents).

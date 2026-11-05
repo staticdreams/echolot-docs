@@ -1,0 +1,94 @@
+---
+title: "Environnements protégés"
+description: "Marquez un environnement comme Production comme protégé, pour que chaque envoi vers lui demande d’abord confirmation, de votre part comme de celle des agents."
+---
+
+Un environnement protégé demande confirmation avant que quoi que ce soit lui soit envoyé. Marquez votre environnement de
+production comme protégé, et un <kbd>⌘</kbd><kbd>R</kbd> accidentel, une exécution ou l’appel d’un agent ne peuvent pas
+l’atteindre sans que quelqu’un dise oui. Les environnements protégés sont marqués en rouge partout où ils
+apparaissent.
+
+## Protéger un environnement [#protect-an-environment]
+
+1. Ouvrez la page [Environnements](/docs/workspaces/environments) (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>).
+2. Sélectionnez l’environnement.
+3. Activez **Protégé** à côté de son nom.
+
+La ligne de l’environnement et son point dans le menu des environnements passent au rouge, avec un bouclier. Dans le
+fichier, c’est une seule ligne : le choix est donc partagé avec tous ceux qui ouvrent l’espace de travail :
+
+```toml
+name = "Production"
+protected = true
+```
+
+Dans Alpenglow, **Production** est protégé.
+
+## Ce qui demande d’abord confirmation [#what-asks-first]
+
+Tant qu’un environnement protégé est actif, ces actions demandent confirmation avant de partir :
+
+| Ce que vous lancez | Où |
+| --- | --- |
+| L’envoi d’une requête de n’importe quel type, méthodes sûres comme `GET` comprises | La page de la requête : **Envoyer**, **Requête › Envoyer** (<kbd>⌘</kbd><kbd>R</kbd>), <kbd>⌘</kbd><kbd>↩</kbd> |
+| La connexion d’une session WebSocket, Socket.IO, MQTT ou autre | La page de la requête : **Connecter** |
+| Les messages d’une session ouverte avant que vous passiez à l’environnement protégé | La page de la requête |
+| Une exécution | L’[Exécution](/docs/requests/runner) : **Exécuter**, une fois par exécution |
+| L’exécution d’un flux | La page [Flux](/docs/flows) : **Exécuter** |
+| L’Envoi rapide | Le panneau [Envoi rapide](/docs/mac/quick-send) |
+| Les actions Raccourcis | L’app [Raccourcis](/docs/mac/shortcuts) affiche la question |
+| Les appels, vérifications et surveillances | La page [Serveurs MCP](/docs/mcp-servers) |
+| L’obtention d’un jeton OAuth 2.0, la récupération d’un schéma GraphQL, la réflexion gRPC | La page de la requête |
+
+Les boutons le disent avant que vous cliquiez : **Envoyer** devient **Envoyer à Production…**, **Connecter** devient
+**Se connecter à Production…**, et **Exécuter** devient **Exécuter dans Production…**, en rouge.
+
+<Shot id="workspaces-protected-send-button" alt="Catalog › List products avec Production actif : le bouton Envoyer indique Envoyer à Production… en rouge" />
+
+## La question [#the-question]
+
+La question nomme l’environnement et montre ce qui partirait : la méthode et l’adresse résolue, secrets masqués. Par
+exemple :
+
+> **Envoyer à Production ?**
+>
+> Production est protégé. Chaque envoi demande d’abord une confirmation.
+>
+> GET https://api.alpenglow.example/v1/products?category=tents&in_stock=true&sort=-price&per_page=10
+
+- **Annuler** est le bouton par défaut : <kbd>↩</kbd> annule, et <kbd>Esc</kbd> aussi. Rien n’arrive par accident dans un
+  environnement protégé.
+- **Envoyer** (ou **Connecter**, ou **Exécuter**) envoie. Cliquez dessus avec la souris.
+- **Ne plus demander jusqu’au changement d’environnement** arrête les questions dans cette fenêtre jusqu’à ce que vous
+  choisissiez un autre environnement. Echolot ne le garde qu’en mémoire : ce n’est jamais écrit sur le disque, et cela
+  prend fin quand vous changez d’environnement, fermez la fenêtre ou quittez l’app.
+
+<Shot id="workspaces-protected-send-question" alt="La question Envoyer à Production ? au-dessus de la page de la requête, avec Annuler comme bouton par défaut et la case Ne plus demander jusqu’au changement d’environnement" />
+
+## Ce que font les agents à la place [#what-agents-do-instead]
+
+Les agents IA ne passent jamais seuls un environnement protégé. Chaque envoi vers lui, quelle que soit sa méthode et
+quelles que soient les règles des agents de l’espace de travail, vous interroge dans la feuille d’approbation de
+l’agent. La feuille indique : « L’environnement est protégé : chaque envoi demande d’abord, quels que soient la méthode
+et les règles. » **Autoriser une fois** n’y est pas le bouton par défaut, donc <kbd>↩</kbd> n’approuve pas.
+**Autoriser pour cette session** laisse repartir le même appel sans demander jusqu’à la fermeture de la fenêtre ;
+**Refuser** le refuse.
+
+Cela vaut pour l’[Assistant](/docs/ai/assistant) intégré et pour les [agents externes](/docs/ai/agents) via le serveur
+MCP d’Echolot. Les règles des agents d’un espace de travail ne peuvent jamais autoriser d’emblée les envois vers des
+environnements protégés. Quand `echolot mcp serve` s’exécute sans interface, sans personne à qui demander, ces envois
+sont refusés.
+
+## La ligne de commande [#the-command-line]
+
+`echolot run`, `echolot send` et les autres commandes ne demandent rien : choisir `--env production` en ligne de commande
+vaut décision. Gardez les identifiants de production hors des secrets de votre CI si la CI ne doit jamais atteindre la
+production.
+
+## Conseils [#tips]
+
+- Protégez chaque environnement qui pointe vers de vraies données, pas seulement Production.
+- [Echo](/docs/ai/echo), l’écran d’état, affiche un rappel rouge tant qu’un environnement protégé est actif.
+- Pour travailler un moment sur la production sans les questions, utilisez
+  **Ne plus demander jusqu’au changement d’environnement** plutôt que de désactiver **Protégé** : la protection reste en
+  place pour vos collègues et les agents.

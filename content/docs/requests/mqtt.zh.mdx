@@ -1,0 +1,94 @@
+---
+title: "MQTT"
+description: "连接到 MQTT 3.1.1 或 5.0 Broker，按 QoS 订阅主题，发布消息并在日志中跟踪它们。"
+---
+
+MQTT 请求连接到 Broker，订阅主题过滤器并发布消息。它在你工作期间保持连接，日志会显示你所关注主题上的每条消息。Echolot 支持 MQTT 3.1.1 和 5.0。
+
+<Shot id="requests-mqtt-log" alt="Realtime › Warehouse sensors 已连接到本地 Broker：订阅标签页中有 QoS 1 的 warehouses/+/temperature，以及按主题列出温度读数的消息日志" />
+
+<Callout title="用 Alpenglow 试一试">
+  **Realtime › Warehouse sensors** 连接到 `localhost` 上的本地 Broker，它来自文档仓库的 `examples/servers` 文件夹（`bun run realtime`）。
+</Callout>
+
+## 连接 [#connect]
+
+1. 选取 **文件 › 新建 MQTT 请求**，或在边栏中 **请求** 旁边的 **+** 菜单里选取 **新建 MQTT 请求**。
+2. 输入 Broker 的地址。
+3. 在地址前面 **MQTT** 标记的菜单中选取协议：**MQTT 5.0**（默认）或 **MQTT 3.1.1**。
+4. 选取 **连接**（<kbd>⌘</kbd><kbd>R</kbd>）。连接期间它显示 **断开连接**。
+
+| 地址 | 连接方式 | 默认端口 |
+| --- | --- | --- |
+| `mqtt://broker` | TCP | 1883 |
+| `mqtts://broker` | TLS | 8883 |
+| `ws://broker` | WebSocket，路径为 `/mqtt`，除非地址自带路径 | 与任何 `ws://` 地址相同 |
+| `wss://broker` | 基于 TLS 的 WebSocket，路径为 `/mqtt`，除非地址自带路径 | 与任何 `wss://` 地址相同 |
+
+地址中可以使用 `{{variables}}`：Alpenglow 的传感器请求使用 `mqtt://{{mqttHost}}`。
+
+编辑器有这些标签页：**文档**、**订阅**、**发布**、**连接**、**认证**、**变量**、**测试**、**脚本** 和 **设置**。TLS 验证、代理和证书等设置的适用方式与 [HTTP 请求](/docs/requests/settings)相同。
+
+## 用户名和密码 [#user-name-and-password]
+
+MQTT 的用户名和密码就是请求在 **认证** 标签页上的 **Basic** 认证。把密码放在[机密变量](/docs/workspaces/secrets)中，例如 `{{mqttPassword}}`，这样它会留在钥匙串里，不进入请求文件。
+和任何认证一样，它可以一次性设置在文件夹或工作区上。其他类型的认证不适用于 MQTT。
+
+## 连接设置 [#the-connection]
+
+**连接** 标签页包含 CONNECT 的其余部分：
+
+| 字段 | 作用 |
+| --- | --- |
+| **客户端 ID** | 客户端的 ID，可以使用 `{{variables}}`。留空则使用 `echolot-` 加一个随机后缀 |
+| **全新开始**（5.0）或 **清除会话**（3.1.1） | 不带 Broker 为这个客户端 ID 保留的订阅和消息而开始。默认开启 |
+| **保持连接** | 两次 ping 之间的秒数；0 表示不 ping。默认 60 |
+| **遗嘱** | **连接断开时发布遗嘱消息**，包括 **遗嘱主题**、**遗嘱载荷**、QoS 和 **保留**：这个客户端不告而别地离开时，Broker 发布的消息 |
+
+## 订阅 [#subscribe]
+
+**订阅** 标签页列出请求订阅的主题过滤器：
+
+1. 在底部的字段中输入过滤器，例如 `warehouses/+/temperature`。`+` 匹配一个层级，`#` 匹配其余所有层级，如 `logs/#`。
+2. 选取 **QoS 0**、**QoS 1** 或 **QoS 2**。
+3. 选取 **订阅** 订阅一次，或选取 **+** 把过滤器与请求一起存储。
+
+勾选了 **连接时订阅** 的已存储过滤器，会在请求每次连接时订阅：在应用中、在运行中、通过命令行以及为智能体。连接期间，每个已存储的过滤器都有 **订阅** 和 **取消订阅** 按钮。
+在 MQTT 5.0 中，**No Local** 会排除这个客户端自己发布的消息。
+
+## 发布 [#publish]
+
+**发布** 标签页用来发送消息：
+
+1. 输入主题和载荷。两者中都可以使用 `{{variables}}`。
+2. 选取 QoS，并勾选 **保留**，要求 Broker 为之后的订阅者保留这条消息。
+3. 选取 **发布**。
+
+选取 **+** 可把消息与请求一起存储。勾选了 **在运行中发布** 的已存储消息，会在请求无人操作地运行时按顺序发布。[运行器](/docs/requests/runner)和命令行会连接、
+订阅已启用的过滤器、发布已启用的消息、监听 10 秒，然后关闭。
+
+## 消息日志 [#the-message-log]
+
+响应窗格的 **消息** 标签页显示会话：收到和发布的消息、订阅，以及 Broker 的确认，最新的在最后，每条都附有时间和大小。
+
+- 消息显示它的主题、QoS、是否被保留，以及数据包 ID。
+- **所有主题** 把日志缩小到某一个主题。
+- **全部**、**已发送** 和 **已接收** 按方向过滤；**过滤消息** 按文本查找消息。
+- **更多** 以美化格式显示 JSON 载荷。
+- 第一行说明哪个客户端 ID 以哪种协议连接，以及 Broker 是否保留了之前的会话。当 Broker 断开连接时，日志会用 MQTT 的原因说明为什么。
+
+QoS 1 和 2 的投递在两个方向上都会替你确认。
+
+连接关闭时，会话保存在[历史记录](/docs/workspaces/history)中，日志作为响应正文，所以对 **正文** 的检查也适用于它。
+
+## MQTT 5.0 [#mqtt-50]
+
+Broker 的原因码会按名称显示在日志中，也会在连接被拒绝时显示，例如 `Success` 或 `Not authorized`，两个版本都是如此。选取 **MQTT 5.0** 后：
+
+- 订阅上的 **No Local** 会排除这个客户端自己的消息。
+- **全新开始** 取代 3.1.1 的 **清除会话**。
+- 已存储的消息可以带内容类型（请求文件中的 `content-type`），它作为 Content Type 属性发送。
+
+## 通过命令行 [#from-the-command-line]
+
+`echolot mqtt subscribe` 和 `echolot mqtt publish` 在终端中与 Broker 通信，密码放在 `ECHOLOT_MQTT_PASSWORD` 中。见 [echolot mqtt](/docs/cli/mqtt)。

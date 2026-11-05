@@ -1,0 +1,153 @@
+---
+title: "GraphQL"
+description: "Escribe consultas GraphQL con autocompletado a partir del esquema, constrúyelas marcando campos, y lee errores, suscripciones y resultados incrementales."
+---
+
+Una solicitud GraphQL contiene una consulta, sus variables y el esquema con el que está escrita. Echolot usa el esquema
+para completar campos mientras escribes, para señalar errores antes de enviar y para mostrar los tipos junto a la
+respuesta.
+
+<Shot id="requests-graphql-query" alt="Catalog › Search products: la pestaña Consulta con la consulta SearchProducts, el menú del esquema con shop.graphql y su número de tipos, y la respuesta JSON con totalCount y nodes" />
+
+## Crea una solicitud GraphQL [#create-a-graphql-request]
+
+Elige **Archivo › Nueva solicitud GraphQL**, o **Nueva solicitud GraphQL** en el menú **+** junto a **Solicitudes** en la
+barra lateral. Escribe el endpoint en el campo de dirección: para la tienda de demostración, `{{baseURL}}/graphql`. El
+espacio de trabajo Alpenglow trae una preparada: **Catalog › Search products**.
+
+El editor tiene estas pestañas: **Docs**, **Consulta**, **Variables**, **Cabeceras**, **Parámetros**, **Autenticación**,
+**Variables** (las variables propias de la solicitud), **Pruebas**, **Scripts** y **Ajustes**. Las cabeceras, la
+autenticación, las pruebas y los scripts funcionan como en las [solicitudes HTTP](/docs/requests).
+
+## Consulta y variables [#query-and-variables]
+
+Escribe la consulta en la pestaña **Consulta**:
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } rating stock { warehouse available } }
+  }
+}
+```
+
+y sus variables como JSON en la pestaña **Variables**. Las `{{variables}}` funcionan dentro del JSON:
+
+```json
+{
+  "text": "{{searchTerm}}"
+}
+```
+
+Cuando el documento contiene varias operaciones, escribe la que quieres enviar en **Operación**, encima de la consulta.
+Déjalo vacío si el documento tiene una sola operación.
+
+Envía con **Enviar** o con <kbd>⌘</kbd><kbd>R</kbd>.
+
+## Cómo se envía la solicitud [#how-the-request-is-sent]
+
+La insignia **GQL** antes de la dirección es un menú. Bajo **Enviar como**:
+
+| Opción | Qué envía |
+| --- | --- |
+| **POST (cuerpo JSON)** | Un POST con `query`, `variables` y `operationName` como JSON. La forma habitual |
+| **GET (en la URL)** | `query`, `variables` y `operationName` como parámetros de consulta, para los servidores que guardan en caché las solicitudes GET |
+| **WebSocket (graphql-transport-ws)** | Un WebSocket con el protocolo `graphql-transport-ws`, para suscripciones |
+
+Dos interruptores debajo:
+
+- **Consultas persistentes (APQ)** envía primero el hash SHA-256 de la consulta, sin la consulta. Cuando el servidor
+  responde que no conoce el hash, Echolot vuelve a enviar con la consulta, para que el servidor pueda guardarla.
+- **Agrupar todas las operaciones** envía juntas todas las operaciones con nombre del documento, como un solo array JSON.
+
+## El esquema [#the-schema]
+
+El menú del esquema está a la derecha de la pestaña **Consulta**. Muestra el archivo de esquema y su número de tipos,
+como `shop.graphql · … types`, o **Sin esquema**.
+
+- **Obtener del servidor** ejecuta la consulta de introspección contra la dirección de la solicitud y guarda el
+  resultado como un archivo en la carpeta `specs/` del espacio de trabajo. Elígelo de nuevo para actualizar el esquema.
+- **Usar esquema** lista los archivos de esquema que ya están en el espacio de trabajo (`.graphql`, `.graphqls` y
+  `.json`), para elegir uno.
+- **Añadir un archivo de esquema…** toma un archivo SDL (`.graphql`) o un resultado de introspección (`.json`) de tu Mac.
+- **Mostrar el explorador del esquema** abre el esquema junto a la respuesta.
+- **Dejar de usar este esquema** quita el esquema de la solicitud.
+
+Un archivo de esquema en `specs/` puede compartirse entre todas las solicitudes GraphQL contra ese servidor, y subirse al
+repositorio con el espacio de trabajo. Cuando una descarga sustituye un archivo de esquema y el esquema ha cambiado,
+**El esquema ha cambiado** lista los cambios como **Incompatibles**, **Peligrosos** y **Seguros**, como un campo
+eliminado o un argumento obligatorio nuevo. Los cambios incompatibles son los que hacen fallar a las consultas que usan lo
+que se eliminó o se cambió. En la línea de comandos, `echolot graphql diff` compara dos esquemas de la misma manera:
+consulta [echolot graphql](/docs/cli/graphql).
+
+Cuando el esquema no se puede leer, el menú muestra **Problema del esquema**, y la barra bajo la consulta dice el motivo.
+
+## Autocompletado, problemas e información al pasar el puntero [#completion-problems-and-hover]
+
+Con un esquema, el editor de consultas te ayuda mientras escribes:
+
+- El **autocompletado** ofrece campos, argumentos, campos de entrada, tipos, valores de enumeración, variables,
+  directivas y fragmentos que encajan donde está el cursor, con su documentación. Los obsoletos se marcan.
+- **Problemas**: se subrayan mientras escribes: campos desconocidos, tipos de argumento incorrectos, argumentos
+  obligatorios que faltan y más. La barra bajo la consulta muestra el primero y cuenta los errores y las advertencias;
+  pasa el puntero por ella para leerlos todos.
+- Pasa el puntero por un campo o un tipo para ver su firma y su documentación, y si está obsoleto.
+- Haz clic en un campo o un tipo con <kbd>⌘</kbd> pulsada para abrir su tipo en el explorador del esquema.
+
+## El explorador del esquema y el constructor [#the-schema-explorer-and-the-builder]
+
+La pestaña **Esquema** del panel de respuesta muestra el esquema de la solicitud, incluso antes del primer envío. Si la
+solicitud aún no tiene esquema, elige ahí **Obtener del servidor**.
+
+**Explorar** empieza en los **Puntos de entrada** (**Query**, **Mutation** y **Subscription**). Haz clic en un tipo para
+ver sus campos, campos de entrada, valores de enumeración, o los tipos que lo implementan o que pertenecen a él, con las
+obsolescencias marcadas. Atrás vuelve al tipo anterior. **Buscar tipos y campos** encuentra cualquier cosa del esquema por
+nombre.
+
+**Construir** escribe la consulta por ti. Elige **consulta**, **mutation** o **subscription** en **Operación** y marca
+campos en el árbol: cada marca añade el campo al texto de la consulta, y desmarcarlo lo quita de nuevo. Lo que escribiste
+alrededor se queda. El constructor trabaja sobre la operación indicada en **Operación**, o sobre la primera operación de
+ese tipo en el documento; si no hay ninguna, añade una.
+
+<Shot id="requests-graphql-builder" alt="La pestaña Esquema en Construir para Search products, con search marcado y nodes abierto, sku, name y price marcados, y la consulta al lado con los mismos campos" />
+
+## Respuestas [#responses]
+
+La respuesta aparece en la pestaña **Cuerpo** como JSON, como cualquier [respuesta](/docs/requests/responses). Echolot
+también lee lo que GraphQL dice junto a los datos:
+
+- **N errores de GraphQL** en el resumen de la respuesta: el servidor envió un array `errors`, incluso con HTTP 200. Haz
+  clic para leer cada mensaje y la ruta a la que pertenece.
+- **Datos parciales**: llegaron datos junto con errores, así que algunos campos son `null` porque fallaron.
+- **Extensiones**: las `extensions` de la respuesta, como la información de trazas o de coste.
+
+Añade una comprobación **Errores de GraphQL** igual a `0` en la pestaña **Pruebas** para que una ejecución falle por
+ellos. Consulta [scripts y pruebas](/docs/requests/scripts-and-tests).
+
+## Suscripciones y entrega incremental [#subscriptions-and-incremental-delivery]
+
+Una suscripción sigue enviando resultados hasta que termina:
+
+- Por HTTP (**POST** o **GET**), Echolot pide eventos enviados por el servidor cuando la operación es una suscripción.
+- Por **WebSocket (graphql-transport-ws)**, Echolot abre el WebSocket, envía la suscripción con las cabeceras y la
+  autenticación de la solicitud, y responde a los pings del servidor.
+
+Una consulta con `@defer` o `@stream` llega en partes (`multipart/mixed`).
+
+En ambos casos, el panel de respuesta incluye una pestaña **Eventos**: cada evento o parte en orden, numerado, con su tipo
+(como `next` o `part`), su id y sus errores. Para `@defer` y `@stream`, **Resultado combinado** en la parte superior
+muestra el primer resultado con todas las partes posteriores aplicadas. La pestaña sigue los eventos nuevos mientras el
+stream está activo, con **Escuchando… Detener lo termina.** Elige **Cancelar** (<kbd>⌘</kbd><kbd>.</kbd>) para
+terminarlo. Un stream que ya ha empezado no se corta por el tiempo de espera total de la solicitud.
+
+## Subida de archivos [#file-uploads]
+
+Para una mutation con una variable `Upload`, añade el archivo en **Archivos para variables** en la pestaña **Variables**:
+
+1. Elige **+**.
+2. Escribe la variable, como `file`, o `files.0` para el primer elemento de una lista.
+3. Escribe la ruta del archivo, relativa al espacio de trabajo.
+
+El POST sigue entonces la especificación GraphQL multipart request: la variable es `null` en `operations`, y el archivo va
+en una parte propia.

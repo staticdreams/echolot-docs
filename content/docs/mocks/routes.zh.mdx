@@ -1,0 +1,176 @@
+---
+title: "路由和示例数据"
+description: "手动创建模拟服务器的路由，用 JSON、XML 或文本响应、每次请求都会变化的示例数据、选择响应的规则，以及根据路由创建的请求。"
+---
+
+路由就是一个方法、一个路径，以及模拟服务器在那里的应答。当还没有规范、需要几个端点来开发或测试，或需要让某个路径的应答不同于规范时，可以手动创建路由。正文按发送时的样子书写，可以是 JSON、XML 或文本，并且可以包含每次请求都会重新生成的示例数据。
+
+手动创建的路由在模拟服务器的 [JavaScript 路由](/docs/mocks/scripted-routes)之后、规范的操作（如果它根据规范提供服务）之前应答。参见[请求得到哪个响应](/docs/mocks#which-response-a-request-gets)。
+
+## 创建路由 [#making-a-route]
+
+在[模拟服务器页面](/docs/mocks)中，用**新建模拟服务器**创建一个（它自带一个 `GET /users` 路由，含五个示例用户），或打开任一模拟服务器。**路由**卡片列出它的路由：
+
+- 复选框可关闭路由而不删除它；关闭的路由不会应答。
+- 点按路由，即可在列表下方编辑它。
+- **添加路由**会在所选路由之后添加一个新路由。
+- 右键点按路由可选择**复制**、**创建请求**、**拷贝地址**（模拟服务器运行时）、**上移**、**下移**和**删除路由**。
+
+每次更改都会立即存储，运行中的模拟服务器也会立即采用。**编辑 › 撤销**可以撤销任何更改，包括删除路由。当两个已开启的路由方法和路径相同时，卡片会发出警告：只有第一个会应答。
+
+<Shot id="mocks-route-editor" alt="路由 GET /users/{id} 的编辑器：它的方法、路径和摘要，响应 200 OK（默认）和 404 Not found，以及 OK 响应的内容类型、值为 {{$randomUUID}} 的 X-Request-Id 标头，和包含 request.params.id 与示例值的 JSON 正文" />
+
+### 方法、路径和摘要 [#method-path-and-summary]
+
+- **路由**：方法（**GET**、**POST**、**PUT**、**PATCH**、**DELETE**、**HEAD**、**OPTIONS**，或代表所有方法的 **ANY**）和路径。`HEAD` 请求会交给 **GET** 路由，但不带正文。
+- **路径参数**写成 `{id}` 或 `:id`，路径的每一段一个：`/users/{id}`、`/files/{name}.json`。`:id` 会存储为 `{id}`。含字面段的路由优先于含参数的路由，因此 `/users/me` 会先于 `/users/{id}` 应答。
+- **摘要**说明路由的用途。根据该路由创建的请求会以它为名称。
+
+## 响应 [#responses]
+
+一个路由有一个或多个响应。**响应**下的标签用于在它们之间切换；**+** 添加一个。每个响应包含：
+
+| 字段 | 含义 |
+| --- | --- |
+| **名称** | 请求和规则引用它的名称，例如 `OK` 或 `Not found`。名称在一个路由内唯一。 |
+| **状态** | 状态码，范围 100 到 999。 |
+| **Content-Type** | 发送的 `Content-Type`，例如 `application/json` 或 `application/xml`；旁边的菜单列出常见类型。留空则不发送。它还决定正文中的值如何转义。 |
+| **标头** | 随响应发送的标头。与正文一样，值中可以包含示例数据和请求的各个部分。 |
+| **规则** | 在什么情况下由这个响应而不是默认响应应答。参见[选择响应](#choosing-a-response)。 |
+| **正文** | 发送的内容；JSON、XML 和 HTML 有行号和颜色。 |
+
+带勾号的响应是路由的**默认**响应；在另一个响应上选择**设为默认**可更改它。垃圾桶按钮会删除响应。
+
+### 选择响应 [#choosing-a-response]
+
+对路由的请求按以下顺序得到响应：
+
+1. 它所要求的响应：`Prefer: example=Not found` 或 `Prefer: code=404` 标头，或 Postman 的 `x-mock-response-name` 和 `x-mock-response-code` 标头。
+2. 第一个所有规则都成立的响应。
+3. 路由的默认响应：你用**设为默认**设定的响应，无论它的规则如何。在你没有指定默认响应的路由上，如果第一个响应的规则不成立，就会让位给第一个没有规则的响应，因此排在最前面的“已发货订单返回 409”不会应答所有其他订单。
+
+**规则**检查请求的某一部分：
+
+| 规则 | 名称 | 示例 |
+| --- | --- | --- |
+| **路径参数** | 路径中的参数 | `id` 为 `0` |
+| **查询参数** | 查询参数 | `page` 为 `*` |
+| **标头** | 标头，不区分大小写 | `X-Role` 为 `admin` |
+| **正文字段** | 指向 JSON 正文的键路径，列表项用数字表示；留空表示整个正文 | `user.plan` 为 `pro`，`items.0.sku` 为 `TNT-MH-2P` |
+
+值就是该部分必须具有的文本。`*` 表示任何值，只要有值即可；空值表示该部分必须不存在。包含多条规则的响应只有在每条都成立时才会应答。没有名称的规则会被跳过，直到你给它一个名称。
+
+例如，`GET /users/{id}` 路由默认以 `200` 应答一个用户，另有一个 `404` 响应，规则为**路径参数** `id` 为 `0`：
+
+```sh
+curl -i http://127.0.0.1:4010/users/42    # 200, the user
+curl -i http://127.0.0.1:4010/users/0     # 404
+```
+
+<Shot id="mocks-route-rule" alt="GET /users/{id} 的 404 Not found 响应，带有“设为默认”，以及它的规则：路径参数 id 为 0" />
+
+## 含示例数据的正文 [#bodies-with-fake-data]
+
+正文或标头值中 `{{ }}` 里的任何内容，都会在请求到来时填入，因此每个请求都可以得到新的数据。正文的其余部分原样发送。
+
+```json
+{
+  "id": "{{request.params.id}}",
+  "name": "{{$randomFullName}}",
+  "email": "{{$randomEmail}}",
+  "company": "{{$randomCompanyName}}",
+  "joined": "{{$randomDatePast}}"
+}
+```
+
+### 示例值 [#fake-values]
+
+`{{$randomFirstName}}`、`{{$randomEmail}}`、`{{$randomCity}}`、`{{$randomPrice}}`、`{{$randomUUID}}` 以及大约 120 个其他值：姓名和职业、互联网、地址、电话号码、公司、金融、产品、日期、单词、乱数假文、文件、图像和数据库。这些名称就是 Postman 的动态变量，因此为 Postman 编写的模板在这里同样适用。有些接受参数：`{{$randomInt(1, 100)}}`、`{{$randomPrice(5, 50)}}`、`{{$randomLoremWords(5)}}`、`{{$randomElement(active, paused, closed)}}`。[动态值](/docs/reference/dynamic-values#fake-data)列出了全部。
+
+正文上方的**插入值**会在光标处放入一个示例值：**示例数据**按分组列出它们。
+
+相同的值也可用于请求，在每次发送时生成。参见[动态值](/docs/requests/dynamic-values)。
+
+### 请求的各个部分 [#parts-of-the-request]
+
+| 标记 | 含义 |
+| --- | --- |
+| `{{request.params.id}}` | 路径参数。 |
+| `{{request.query.page}}` | 查询参数；没有时为空。 |
+| `{{request.headers.X-Trace}}` | 标头，不区分大小写。 |
+| `{{request.body.user.name}}` | JSON 正文的某个字段，按键路径取值（列表项用 `items.0.sku`）。文本按原样；数字、`true`、`false`、对象和列表按 JSON。 |
+| `{{request.body}}` | 整个正文，作为文本。 |
+| `{{request.method}}` | 方法，例如 `POST`。 |
+| `{{request.path}}` | 路径，例如 `/users/42`。 |
+
+**插入值 › 请求**中列出了它们，并带有该路由自己的路径参数。
+
+### 列表 [#lists]
+
+`{{#repeat 10}}` … `{{/repeat}}` 会把两者之间的内容写这么多次；`{{#repeat 2 8}}` 则写两个数之间的某个次数，每次请求随机选取。在 JSON 正文中，各项之间会自动加上逗号。在其内部，`{{@number}}` 是从 1 开始的项序号，`{{@index}}` 是从 0 开始的。repeat 可以嵌套。
+
+```json
+[
+  {{#repeat 5}}
+  {
+    "id": {{@number}},
+    "name": "{{$randomProductName}}",
+    "price": {{$randomPrice}}
+  }
+  {{/repeat}}
+]
+```
+
+单独占一行的 `{{#repeat}}` 或 `{{/repeat}}` 不会留下空行。
+
+### 转义 [#escaping]
+
+值会按其所在位置转义，因此带引号的名称不会破坏你的 JSON：
+
+- 在 JSON 正文中（`Content-Type` 含 `json`），字符串内的值按 JSON 转义。引号之外的值，例如 `{{$randomInt}}` 或 `{{@number}}`，按原样放入。
+- 在 XML 和 HTML 中（`Content-Type` 含 `xml` 或 `html`），所有位置的 `&`、`<`、`>` 和引号都会被转义。
+- 三重花括号从不转义：`{{{request.body}}}` 会把请求的 JSON 正文按 JSON 放入。
+
+```json
+{ "received": {{{request.body}}}, "at": "{{$isoTimestamp}}" }
+```
+
+Echolot 不认识的标记会保持你写的样子。无法生成的值，例如 `{{$randomInt(9, 1)}}`，同样保持原样，[日志](/docs/mocks#the-log)会说明原因。正文最大为 16 MB，一个 repeat 最多 10,000 项。
+
+正文不会读取其他任何内容：不读取工作区的变量、环境、机密或文件，因此在网络上应答的模拟服务器不会泄露其中任何一项。
+
+### 固定数据：生成 [#fixed-data-generate]
+
+`{{ }}` 中的值每次请求都给出新数据。要每次都用相同的数据应答，请点按正文上方的**生成…**：
+
+- 选择**生成列表：正文为其中一项**后，正文会变成包含这么多**项目数**的 JSON 列表，每一项都由正文生成。
+- 不选择时，正文中的值只会填入一次。
+
+**生成**会用结果替换正文；**编辑 › 撤销**可恢复模板。在“终端”中，[`echolot fake`](/docs/cli/fake) 可以做同样的事。
+
+## 根据路由创建请求 [#requests-from-routes]
+
+**路由**卡片中的**创建请求**会创建一个以模拟服务器命名的文件夹，其中为每个已开启的路由创建一个请求；路由的上下文菜单中的**创建请求**则只为该路由创建一个。Echolot 会打开第一个请求。
+
+- 文件夹有一个变量 `baseUrl`，设为模拟服务器的地址，每个 URL 都以它开头：`{{baseUrl}}/users/{{id}}`。以后把 `baseUrl` 指向真实 API，同样的请求就会发到那里。
+- 路径参数会变成请求变量，值为 `1`，除非默认响应的某条路径规则指定了值。
+- 请求以路由的摘要命名。
+- 路由的请求正文会随请求一起带上。
+
+### 路由的请求正文 [#the-request-body-of-a-route]
+
+路由底部的**请求正文**保存一个正文及其 **Content-Type**，供根据该路由创建的请求使用，例如 `POST /users` 接受的 JSON。它不会改变模拟服务器的应答；针对正文字段的规则读取的是请求实际发送的内容。
+
+## 使用智能体 [#with-agents]
+
+当**模拟服务器**工具集开启时，智能体和[助手](/docs/ai/assistant)也可以创建路由。直接说出你的需求：
+
+- “创建一个模拟服务器，带有列出、读取和创建订单的路由，使用示例数据，然后启动它。”
+- “当 id 为 0 时，给 `GET /users/{id}` 添加一个 404。”
+- “为模拟服务器的路由创建请求。”
+
+它们使用 `create_mock`（带名称和路由，无需规范）、`save_mock_route`、`delete_mock_route`、`generate_fake_data`、`list_fake_values` 和 `create_requests_from_mock`。`save_mock_route` 还可以把[历史记录](/docs/workspaces/history)中的响应变成路由；所复制的内容与智能体读取的一切一样会被遮蔽。智能体删除路由前会先询问你。参见[智能体](/docs/ai/agents)。
+
+## 在工作区中 [#in-the-workspace]
+
+路由存放在模拟服务器的文件 `mocks/<name>.toml` 中，形式为 `[[routes]]` 及其 `[[routes.responses]]`：在差异中可读，并通过 Git 共享。参见[工作区文件](/docs/reference/workspace-files#mocks)。

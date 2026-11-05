@@ -1,0 +1,68 @@
+---
+title: "홈과 Sonar"
+description: "홈은 작업 공간의 개요이며, Sonar 카드는 지난 1시간, 하루, 일주일, 한 달 동안의 모든 전송을 응답에 걸린 시간별로 표시합니다."
+---
+
+<strong>홈</strong>은 작업 공간 윈도우가 처음 보여 주는 페이지입니다. 작업 공간에 무엇이 있는지, 무엇을 살펴봐야 하는지, 요청이 어떻게 응답해 왔는지를 알려 줍니다.
+사이드바의 <strong>홈</strong> 버튼이나 <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd>로 엽니다.
+
+<Shot id="get-started-home" alt="홈: 인사말, 작업 공간의 개수, 핑과 수치가 있는 Sonar 카드, 최근 요청, 최근 응답, 테스트, 환경 카드" />
+
+## 홈에 표시되는 내용 [#what-home-shows]
+
+위에서 아래로 다음과 같습니다.
+
+- <strong>인사말과 한 문장의 소식.</strong> 실패 중인 검사가 몇 개인지, 저장되지 않은 변경 사항이 있는 요청이 몇 개인지를 알려 주고, 그 밖에는
+  <strong>기다리고 있는 항목이 없습니다.</strong>라고 표시합니다. 요청이 없는 새 작업 공간에서는 컬렉션을 가져오거나 첫 요청을 만들라고 안내합니다.
+- <strong>작업 공간</strong>: 이름과 폴더, 그리고 <strong>요청</strong>, <strong>폴더</strong>, <strong>환경</strong>, <strong>변수</strong>, <strong>검사</strong>의 개수.
+- 아래에서 설명하는 <strong>Sonar</strong>.
+- <strong>최근 요청</strong>(<strong>새로운 요청</strong> 포함), <strong>최근 응답</strong>, <strong>테스트</strong>(검사가 있는 요청 수와 실패 중인 요청, <strong>모두 보기</strong> 포함), <strong>환경</strong>(<strong>관리</strong> 포함, 보호된
+  환경에는 표시).
+
+카드에서 요청이나 응답을 클릭하면 열립니다.
+
+## Sonar [#sonar]
+
+Sonar는 소나가 반향을 그리듯, 기간 내의 모든 전송을 핑으로 그립니다. 시간은 가로로 흐르며, 왼쪽의 기간 시작부터 오른쪽의 <strong>지금</strong>까지입니다. 깊이는 응답에
+걸린 시간입니다. 빠른 응답은 표면 가까이에 머물고 느린 응답은 가라앉습니다. 한눈에 API가 빨랐는지, 어디서 느려졌는지, 실패한 것이 있는지 알 수 있습니다.
+
+<Shot id="get-started-home-sonar" alt="Sonar 카드: 상태별로 색이 다른 핑, 표층·중층·심층 구역, 가장 느린 응답 아래의 해저, 그 아래의 수치 다섯 개" />
+
+### 차트 읽기 [#reading-the-chart]
+
+- <strong>구역.</strong> 깊이 눈금은 로그 단위이므로 빠른 쪽과 느린 쪽이 모두 잘 보입니다. <strong>표층</strong>은 250 ms 미만, <strong>중층</strong>은 250 ms에서 1초, <strong>심층</strong>은 1초 초과입니다.
+- <strong>핑의 색</strong>은 상태의 종류입니다. 카드 헤더의 범례에 <strong>2xx</strong>, <strong>3xx</strong>, <strong>4xx</strong>, <strong>5xx · 실패</strong>가 나와 있으며, 마지막 항목은 응답이 전혀 없는 전송도
+  나타냅니다.
+- <strong>해저</strong>는 각 시간 구간에서 가장 느린 응답 아래에 음영으로 표시되는 바닥입니다. 응답에 따라 오르내립니다.
+- <strong>오른쪽의 선</strong>은 현재를 나타냅니다. 홈이 표시되는 동안 전송이 끝나면 해당 핑에서 물결이 퍼집니다(<strong>동작 줄이기</strong>가 켜져 있으면 표시되지 않습니다).
+- <strong>차트 아래의 막대</strong>는 기간 내의 전송이 구역별로 어떻게 나뉘는지 퍼센트로 보여 줍니다.
+
+핑에 포인터를 올리면 해당 요청이 표시됩니다. 보낸 시각, 상태와 시간, 메서드와 이름입니다. 클릭하면 해당 응답이 표시된 상태로 요청이 열립니다. 열 대상이 없으면
+(요청이 삭제되었거나 저장된 적이 없거나, 전송에 응답이 없을 때) 툴팁에 <strong>클릭하여 기록에서 찾기</strong>라고 표시되고, 클릭하면 [기록](/docs/workspaces/history)이
+요청 이름으로 검색된 상태로 열립니다.
+
+### 기간 선택 [#choosing-the-period]
+
+카드 헤더의 컨트롤에서 <strong>1시간</strong>, <strong>24시간</strong>, <strong>7일</strong>(기본값), <strong>30일</strong> 중에서 고릅니다. 차트와 수치가 여기에 맞춰집니다. 전송이 없는 기간에는 요청을 보내면
+그 요청의 반향이 여기에 나타난다고 안내합니다.
+
+### 수치 [#the-figures]
+
+차트 위에 수치 다섯 개가 있으며, 각각 직전의 같은 기간과 나란히 표시됩니다("지난주보다 +12%").
+
+| 수치 | 집계 대상 |
+| --- | --- |
+| <strong>전송</strong> | 기간 내에 보낸 요청. |
+| <strong>정상 응답</strong> | 400 미만의 상태로 응답받은 전송의 비율과 퍼센트 포인트 변화. |
+| <strong>시간 중앙값</strong> | 응답 시간의 중앙값과 <strong>p95</strong>: 전송 100건 중 95건이 이보다 빨랐습니다. |
+| <strong>250 ms 미만</strong> | 표층에 있는 전송의 비율. |
+| <strong>1초 초과</strong> | 심층에 있던 전송 수와 그중 실패한 수. |
+
+카드가 좁으면 처음 세 개만 표시됩니다.
+
+### Sonar가 집계하는 대상 [#what-sonar-counts]
+
+- 수치는 작업 공간의 [기록](/docs/workspaces/history)에 아직 남아 있는 모든 전송을 집계합니다. 지웠거나 기록의 한도 때문에 제거된 전송은 더 이상 집계되지
+  않습니다. 차트에는 가장 최근 전송이 그려집니다.
+- Sonar는 HTTP, GraphQL, gRPC, MCP 요청을 보낸 주체(사용자, 실행, 플로, 에이전트)에 관계없이 집계합니다. WebSocket, Socket.IO, MQTT 세션은 원하는 만큼
+  열려 있을 수 있으므로 응답 시간이 없고 그려지지 않습니다.

@@ -1,0 +1,184 @@
+---
+title: "Тестирование API и запуск в CI"
+description: "Добавьте проверки в запросы, запустите их в Прогоне, а затем запустите то же рабочее пространство инструментом командной строки в GitHub Actions с отчётом JUnit."
+---
+
+Проверки превращают запросы в тесты: каждая отправка сообщает, что прошло, а что нет. В этом руководстве вы добавите
+проверки в запросы Alpenglow, запустите папки в Прогоне, а затем будете запускать то же рабочее пространство при каждом
+push командой `echolot run` в GitHub Actions.
+
+- **Время:** 20 минут.
+- **Вам понадобится:** [рабочее пространство Alpenglow](/docs/tutorials#the-alpenglow-workspace) и репозиторий GitHub,
+  в который можно делать push, — для последней части.
+- **Вы узнаете:** про проверки, Прогон и его отчёты, `echolot run` и секреты в CI.
+
+## 1. Посмотрите, какие проверки есть у запроса [#1-look-at-the-checks-a-request-has]
+
+1. Откройте **Catalog › List products** и выберите его вкладку **Тесты**.
+2. В нём четыре проверки: **Статус** равно `200`, **Значение JSON** `$.items.length` больше `0`, **Заголовок**
+   `Content-Type` содержит `json`, а **Время ответа (мс)** меньше `1000`.
+3. Отправьте его. Вкладка сообщит **Пройдено: 4**, а на вкладке **Тесты** ответа будет `4/4` и каждая проверка в разделе
+   **Проверки**.
+
+## 2. Добавьте свои проверки [#2-add-your-own-checks]
+
+1. На вкладке **Тесты** откройте **Добавить тест** и выберите **Значение JSON**.
+2. Задайте путь `$.items[0].price.currency`, сравнение **равно** и ожидаемое значение `CHF`.
+3. Снова откройте **Добавить тест** и выберите **Размер (байты)**, **меньше**, `65536`.
+4. Отправьте. Шесть проверок проходят.
+
+Два более быстрых способа добавить проверки:
+
+- В **JSON-дереве** ответа щёлкните значение правой кнопкой и выберите **Добавить проверку**. Проверка берёт путь и
+  значение оттуда.
+- **Создать из ответа…** предлагает проверки по последнему ответу, включая **JSON Schema** тела.
+
+Теперь посмотрите на сбой: измените проверку времени ответа на **меньше** `1` и отправьте. Вкладка сообщит **1 из 6 с ошибкой**, а на вкладке **Тесты** ответа под непройденной проверкой будет видно, что пришло. Верните `1000`.
+
+Для проверок, которым нужен код, напишите тестовый скрипт с `pm.test()` на вкладке **Скрипты**; см.
+[скрипты и тесты](/docs/requests/scripts-and-tests).
+
+<Shot id="tutorials-ci-tests-tab" alt="Вкладка «Тесты» запроса List products с проверками, все пройдены после отправки" />
+
+## 3. Запустите папки в Прогоне [#3-run-folders-in-the-runner]
+
+1. Щёлкните папку **Catalog** правой кнопкой и выберите **Запустить папку**. Откроется страница **Прогон** и по порядку
+   выполнит все запросы папки.
+2. В статистике видны **Запросы**, **Пройдено**, **Ошибка**, **Непройденные проверки** и **Длительность**, а карточка
+   **Результаты** перечисляет каждый запрос с его статусом, временем и непройденными проверками.
+3. Чтобы настроить прогон самостоятельно, выберите **Вид › Прогон** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd>). В карточке
+   **Запустить**:
+   - **Что**: **Всё рабочее пространство**, одна из **Папки** или **Один запрос**. Выберите **Auth**, запустите,
+     затем **Orders**: запросы Orders отправляют токен, который сохранил **Sign in**.
+   - **Окружение**, **Итерации** (попробуйте `3`), **Задержка** между запросами в миллисекундах, **Повторы** для
+     запроса с ошибкой и **Остановиться на первой ошибке**.
+   - **Данные**: **Выбрать CSV или JSON…** запускает один раз на каждую строку, а столбцы строки становятся
+     переменными.
+4. Нажмите **Запустить** (<kbd>⌘</kbd><kbd>R</kbd>).
+5. Откройте **Сохранить отчёт** и выберите **JUnit XML…**, **JSON…**, **HTML…** или **HAR (все обмены)…**.
+
+Прогон всего рабочего пространства запускает также **Realtime** и **Inventory**. Их запросы Socket.IO, MQTT и gRPC
+завершаются ошибкой, если [локальные серверы](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt) не
+запущены. Подробнее — в разделе [Прогон](/docs/requests/runner).
+
+<Shot id="tutorials-ci-runner" alt="Страница «Прогон» после запуска папки Catalog, все проверки пройдены" />
+
+## 4. Запустите из Терминала [#4-run-it-from-terminal]
+
+1. Установите инструмент командной строки: выберите **Echolot › Установить инструмент командной строки…** или включите
+   его в **Настройки › Основные**. Он помещает `echolot` в ваш `PATH`.
+
+   <Edition only="appstore">
+     В версию из App Store инструмент командной строки не входит. Скачайте `echolot-<version>-macos.zip` со страницы
+     [релизов](https://github.com/staticdreams/echolot-public/releases), распакуйте и положите `echolot` в папку из
+     вашего `PATH`. См. [инструмент командной строки](/docs/cli).
+   </Edition>
+
+2. Проверьте, что каждый файл читается и каждая переменная разрешается:
+
+   ```sh
+   echolot validate Alpenglow.echolot
+   ```
+
+   Он выведет `29 requests, 3 environments: no problems`.
+3. Запустите три папки, которым нужно только демо-API:
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders
+   ```
+
+   ```text
+   ✓ POST   auth/sign-in  200 142 ms
+       ✓ Status equals 200
+       ✓ JSON value $.access_token exists
+   ✓ GET    auth/who-am-i  200 87 ms
+       ✓ Status equals 200
+   …
+   All 13 requests passed  18/18 checks passed · 1.35 s
+   ```
+
+   `--folder` принимает имя файла папки или запроса (`auth`, `catalog/list-products`). Код выхода — `1`, если запрос
+   не получил ответа или проверка не прошла, так что скрипты и CI могут по нему остановиться.
+4. Запишите отчёт JUnit в дополнение к выводу в консоль:
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders \
+     --reporter junit --out results.xml --reporter console
+   ```
+
+   Каждый запрос становится `testsuite`, а каждая проверка — `testcase`. Все параметры описаны на странице
+   [`echolot run`](/docs/cli/run).
+
+## 5. Запустите в GitHub Actions [#5-run-it-in-github-actions]
+
+1. Закоммитьте `Alpenglow.echolot` в свой репозиторий.
+2. Добавьте `.github/workflows/api.yml`:
+
+   ```yaml
+   name: API checks
+   on: [push, pull_request]
+
+   jobs:
+     api:
+       runs-on: macos-15
+       steps:
+         - uses: actions/checkout@v4
+
+         - name: Install the Echolot CLI
+           env:
+             GH_TOKEN: ${{ github.token }}
+           run: |
+             gh release download --repo staticdreams/echolot-public --pattern 'echolot-*-macos.zip' --dir "$RUNNER_TEMP"
+             unzip -q "$RUNNER_TEMP"/echolot-*-macos.zip -d "$RUNNER_TEMP/echolot"
+             echo "$RUNNER_TEMP/echolot" >> "$GITHUB_PATH"
+
+         - name: Validate
+           run: echolot validate Alpenglow.echolot
+
+         - name: Run
+           run: >
+             echolot run Alpenglow.echolot
+             --folder auth --folder catalog --folder orders
+             --reporter console --reporter junit --out results.xml
+
+         - name: Keep the report
+           if: always()
+           uses: actions/upload-artifact@v4
+           with:
+             name: echolot-results
+             path: results.xml
+   ```
+
+3. Сделайте push. Шаг **Run** выводит те же строки, что и на вашем Mac, а задание завершается ошибкой, если проверка не
+   проходит. Файл JUnit прикладывается к запуску как `echolot-results`; любое действие для отчётов JUnit может показать
+   его таблицей.
+
+Инструмент командной строки работает на macOS с чипом Apple, поэтому для задания нужен раннер macOS.
+
+## 6. Передайте CI его секреты [#6-give-ci-its-secrets]
+
+Связка ключей на вашем Mac вместе с рабочим пространством не путешествует. В CI инструмент командной строки читает
+секретную переменную `name` из переменной окружения `ECHOLOT_SECRET_NAME` или из файла со строками `NAME=value`, указанного
+через `--secrets`.
+
+Демо-пароль Alpenglow публичный, поэтому это обычная переменная. Для настоящего пароля:
+
+1. Сделайте его секретной переменной в рабочем пространстве, скажем `password`, и закоммитьте.
+2. В GitHub добавьте секрет репозитория `API_PASSWORD` (**Settings › Secrets and variables › Actions**).
+3. Передайте его шагу:
+
+   ```yaml
+         - name: Run
+           env:
+             ECHOLOT_SECRET_PASSWORD: ${{ secrets.API_PASSWORD }}
+           run: echolot run Alpenglow.echolot --env staging --reporter console --reporter junit --out results.xml
+   ```
+
+`--env` принимает имя файла окружения без `.toml` или его имя. Подробнее о CI — в разделе [CI](/docs/cli/ci).
+
+## Дальше [#next-steps]
+
+- [Спецификация в первую очередь и мок](/docs/tutorials/spec-first): сверяйте ответы со спецификацией OpenAPI — в
+  приложении и в CI.
+- [Прогон](/docs/requests/runner): файлы данных, итерации рядом, повторы.
+- [`echolot run`](/docs/cli/run): все параметры, включая `--bail`, `--delay` и отчёт HTML.

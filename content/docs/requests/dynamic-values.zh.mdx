@@ -1,0 +1,115 @@
+---
+title: "动态值"
+description: "用发送时才算出的值填充请求，例如时间戳、UUID、哈希、编码、文件，以及来自其他请求及其响应的值。"
+---
+
+动态值是 Echolot 在每次发送请求时现算的标记：当前时间、新的 UUID、对正文的签名，或来自另一个请求最近一次响应的值。你像写变量一样写它，只是前面加一个 `$`：
+`{{$uuid}}`、`{{$sha256('{{password}}')}}`。动态值在变量能用的任何地方都能用：URL、参数、标头、正文、表单字段和认证字段。
+
+本页介绍如何添加和编辑它们。每个动态值及其参数，都列在[动态值参考](/docs/reference/dynamic-values)中。
+
+## 从列表中添加 [#add-one-from-the-list]
+
+1. 在任何接受变量的字段中输入 `{{`。会打开一个列表，先是当前范围内的变量，然后是按类别分组的动态值。
+2. 继续输入以缩小范围：`uuid`、`time`、`hmac`。每一项都会说明它给出什么。
+3. 用 <kbd>↑</kbd> 和 <kbd>↓</kbd> 移动，按 <kbd>↩</kbd> 或 <kbd>⇥</kbd> 插入；<kbd>Esc</kbd> 关闭列表。
+
+带参数的值在你插入时会立即打开它的编辑器，这样你在表单中填写参数，而不必手动输入。要在不输入 `{{` 的情况下打开列表，请右键点按字段并选取 **插入变量或值…**。
+
+在字段中，动态值显示为一个带易读标签的胶囊标记：值的标题（`HMAC-SHA256`），对于响应值则是请求及其读取的内容（`Sign in › $.access_token`）。下面的文本保持原样。
+
+<Shot id="requests-http-token-editor" alt="JSONPath 筛选响应值的标记编辑器：请求 Sign in、JSONPath $.access_token、“先发送”设为“尚无响应时”，以及来自最近一次响应的值" />
+
+## 编辑标记 [#edit-a-token]
+
+连按两下胶囊标记，或右键点按它并选取 **编辑标记…**。标记编辑器随即打开：
+
+- 顶部的按钮说明这个标记是什么，并可以更改它：变量或动态值。
+- 各字段是该值的参数。请求参数是按文件夹列出工作区请求的菜单；查询参数（JSONPath、XPath、标头名称）带一个按钮，列出最近一次响应包含的内容，这样你可以选取值，而不必输入它的路径。
+- **值** 显示这个标记在当前环境下给出什么，或者 **无法使用当前环境解析** 及其原因。
+- 对于变量，**使用其他变量** 把它换成另一个，**改用响应值** 把它变成响应值。
+- **移除** 删除该标记；**完成** 保留你的更改。
+
+## 快速查看 [#quick-look]
+
+将指针停留在胶囊标记上，无需打开它就能看到它给出什么：值（机密会被遮蔽，并标有 **密钥**）、它的来源，以及它的写法。对于动态值，快速查看会说明它们何时计算：
+时间和随机值显示 **每次发送时重新生成；上面是一个示例。** 它的按钮是 **编辑…**、**拷贝值** 和 **所有变量…**，后者会打开变量面板。
+
+## 手动编写 [#writing-them-by-hand]
+
+```text
+{{$name}}                       no arguments
+{{$name('text', 42)}}           text in single or double quotes, numbers as they are
+{{$base64(user)}}               a bare name is a variable
+{{$base64('{{user}}:{{pass}}')}} variables inside text
+{{$sha256("{{$requestBody('')}}")}} a dynamic value inside another one
+```
+
+带引号的参数中的标记，必须为它自己的参数使用另一种引号：参数用单引号的标记，外面要用双引号，如最后一行所示。
+
+## 可以使用什么 [#what-you-can-use]
+
+| 类别 | 示例 | 给出 |
+| --- | --- | --- |
+| **响应** | `{{$response('auth/sign-in', '$.access_token')}}`、`{{$responseHeader('orders/create-order', 'Location')}}`、`{{$responseStatus('auth/sign-in')}}` | 来自另一个请求最近一次响应的值。 |
+| **请求** | `{{$requestHeader('', 'Content-Type')}}`、`{{$requestURL('auth/sign-in')}}`、`{{$requestJSONPath('', '$.lines[0].sku')}}` | 本请求（第一个参数为空）或另一个请求的各个部分，按它们将被发送的样子。 |
+| **编码** | `{{$base64('heidi:alpenglow')}}`、`{{$urlEncode('a b&c')}}`、`{{$jsonEscape('say "hi"')}}`、`{{$basicAuth('heidi', '{{password}}')}}`、`{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`、`{{$newline}}` | 编码或解码后的文本、转义、Basic 认证值、已签名的 JWT。 |
+| **哈希和签名** | `{{$sha256("{{$requestBody('')}}")}}`、`{{$hmacSha256('{{key}}', 'message', 'base64')}}`、`{{$md5('text')}}` | 哈希和 HMAC，除非要求 `base64` 或 `base64url`，否则为十六进制。 |
+| **时间** | `{{$timestamp}}`、`{{$timestampMs}}`、`{{$isoTimestamp}}`、`{{$httpDate}}`、`{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | 发送时间，可以是 Unix 秒或毫秒、ISO 8601、HTTP 日期或你自己的格式，可按秒偏移并指定时区。 |
+| **随机** | `{{$uuid}}`、`{{$randomInt(1, 6)}}`、`{{$randomString(16)}}`、`{{$randomHex(8)}}` | 每次发送都生成新的随机值。`$guid` 和 `$randomUUID` 是 `$uuid` 的其他名称。 |
+| **示例数据** | `{{$randomFullName}}`、`{{$randomEmail}}`、`{{$randomCity}}`、`{{$randomPrice}}`、`{{$randomLoremSentence}}`、`{{$randomDatePast}}` | 虚构的姓名、地址、公司、价格、日期、lorem ipsum 等，每次发送都是新的，沿用 Postman 的名称。列表把它们分组放在子菜单中。见[示例数据](/docs/reference/dynamic-values#fake-data)。 |
+| **文本** | `{{$lowercase('{{name}}')}}`、`{{$uppercase('chf')}}`、`{{$trim('{{code}}')}}` | 变换后的文本。 |
+| **文件和系统** | `{{$file('data/order.json')}}`、`{{$env('HOME')}}` | 文件的内容（相对于工作区的路径或绝对路径），或 Echolot 进程的环境变量。 |
+
+`$env` 对智能体不可用：当 AI 智能体发送请求时，你 Mac 的环境变量不会进入其中。
+
+Alpenglow 示例在 **Orders › Create order** 中用到了一个：它的 `Idempotency-Key` 标头是 `{{$uuid}}`，所以每个订单都是新的。
+
+## 来自其他请求响应的值 [#values-from-other-requests-responses]
+
+**响应** 类的值读取另一个已存储请求的最近一次响应。第一个参数是该请求在工作区中的路径，即它的文件夹和文件中的名称：**Auth › Sign in** 对应 `auth/sign-in`。
+
+| 值 | 读取 |
+| --- | --- |
+| `$response(request, query)` | 任何内容，由查询的形式决定：`$.token`（JSONPath）、`/feed/entry[1]/id`（XPath）、`header:Location`、`cookie:session`、`regex:token=(\w+)`、`jq:.data.token`、`keypath:data.items.0.id`。 |
+| `$responseJSONPath`、`$responseKeyPath`、`$responseJq`、`$responseXPath`、`$responseRegex` | 用相应类型的查询读取正文。正则表达式给出它的第一个分组（如果有的话）。 |
+| `$responseHeader`、`$responseCookie` | 一个标头，或响应设置的一个 Cookie。 |
+| `$responseStatus`、`$responseBody`、`$responseBodyLength` | 状态码、作为文本的正文、以字节计的大小。 |
+
+当某个值所读取的请求还没有响应时，Echolot 会先发送它。URL 栏下方的那一行会在你发送之前就说明这一点：**先发送“Sign in”**。可选的最后一个参数决定何时这样做；在标记编辑器中它是 **先发送**：
+
+| 参数 | 在编辑器中 | 会发生什么 |
+| --- | --- | --- |
+| （无）或 `'if-missing'` | **尚无响应时** | 只有另一个请求没有响应时才发送它。 |
+| `'fresh'` | **每次** | 每次发送本请求之前都发送它（在运行器中每次运行一次）。 |
+| `'latest'` | **从不：使用最近的响应** | 从不发送它；使用它最近的响应。 |
+
+```text
+{{$response('auth/sign-in', '$.access_token', 'fresh')}}
+```
+
+互相循环读取的请求会被拒绝，并列出涉及的请求。
+
+要把响应中的值保留在每个请求都能读取的变量里，而不是指向某一个请求，请使用[响应捕获](/docs/requests/captures)。
+
+## 来自本请求的值 [#values-from-this-request]
+
+**请求** 类的值读取一个请求将被发送的样子，其变量和认证已经填入。对于正在发送的请求，把第一个参数留空：`{{$requestHeader('', 'X-Request-Id')}}`。Echolot 只计算你所要的那一部分，
+所以标头可以对正文签名：
+
+```text
+X-Signature: {{$hmacSha256('{{signingKey}}', "{{$requestBody('')}}")}}
+```
+
+## jq [#jq]
+
+jq 过滤器可用于 `$responseJq`、`$requestJq` 和 `$response(…, 'jq:…')`，无需安装任何东西。有多个结果的过滤器会每行给出一个：
+
+```text
+{{$responseJq('catalog/list-products', '.items[0].sku')}}
+{{$responseJq('catalog/list-products', '[.items[].price.amount] | add')}}
+```
+
+## 值无法解析时 [#when-a-value-doesnt-resolve]
+
+无法计算的标记（缺少变量、没有响应又无法发送的请求、什么也没找到的 JSONPath）会按原样发送，URL 栏下方的那一行显示 **1 个问题**。点按它可查看是哪一个。标记编辑器和快速查看会给出同样的说明。

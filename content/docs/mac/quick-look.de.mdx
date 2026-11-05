@@ -1,0 +1,30 @@
+---
+title: "Übersicht"
+description: "Zeige einen Echolot-Arbeitsbereich im Finder mit der Leertaste an, ohne ihn zu öffnen."
+---
+
+Wähle im Finder einen `.echolot`-Arbeitsbereich aus und drücke <kbd>Space</kbd>: Die Übersicht (Quick Look) zeigt, was
+der Arbeitsbereich enthält, ohne Echolot zu öffnen. So findest du den richtigen Arbeitsbereich unter mehreren oder
+siehst, was der Arbeitsbereich eines Teammitglieds enthält, bevor du ihn öffnest.
+
+<Shot id="mac-quick-look" alt="Die Übersicht über dem Finder mit dem Arbeitsbereich Alpenglow: Name, Datei, Zeitpunkt der letzten Änderung, Anfragearten, Anzahlen und Umgebungen" />
+
+## Was die Vorschau zeigt [#what-the-preview-shows]
+
+- **Echolot-Arbeitsbereich** und den Namen des Arbeitsbereichs.
+- Den Dateinamen und wann sich zuletzt eine seiner Dateien geändert hat, samt Zeitangabe.
+- Die Anfragen nach Art, die häufigste zuerst, etwa `18 HTTP · 3 GraphQL · 2 WebSocket`.
+- Die Anzahl seiner **Anfragen**, **Ordner**, **Umgebungen**, **Variablen** und **Prüfungen** sowie seiner **Flows**,
+  **MCP-Server**, **Specs** und **Mocks**, sofern er welche hat.
+- Die Namen seiner Umgebungen.
+
+Die Vorschau folgt dem hellen oder dunklen Erscheinungsbild deines Macs.
+
+## Was sie nicht tut [#what-it-doesnt-do]
+
+Die Vorschau liest nur die Dateien des Arbeitsbereichs. Sie sendet nichts, führt keine Skripte aus und öffnet keine
+Verbindungen. Geheime Werte liegen nicht in den Dateien des Arbeitsbereichs (sie sind im Schlüsselbund gesichert),
+deshalb erscheinen sie nie in einer Vorschau.
+
+Die Vorschau gehört zu Echolot, in beiden Editionen; du musst nichts installieren. Um den Arbeitsbereich zu öffnen,
+doppelklicke ihn oder wähle oben im Fenster der Übersicht **Mit „Echolot“ öffnen**.

@@ -1,0 +1,163 @@
+---
+title: "Ajouter des serveurs"
+description: "Ajoutez des serveurs MCP via HTTP ou comme commandes locales, importez-les depuis d’autres apps et connectez-vous avec OAuth."
+---
+
+Un serveur MCP est soit joignable via HTTP, soit un programme qu’Echolot démarre sur votre Mac et avec lequel il
+communique via stdio. Vous pouvez en saisir un vous-même, ou importer les serveurs qu’une autre app connaît déjà.
+
+## Ajouter un serveur [#adding-a-server]
+
+Dans l’en-tête **Serveurs** de la barre latérale, cliquez sur **+** et choisissez **Ajouter un serveur MCP…**. Sur une
+page Serveurs MCP vide, le bouton **Ajouter un serveur MCP…** fait la même chose.
+
+<Shot id="mcp-add-server" alt="La feuille Ajouter un serveur MCP pour un serveur GitHub, avec le menu Transport ouvert : Commande locale (stdio) ou HTTP (Streamable HTTP) ; en dessous, les arguments, un répertoire de travail facultatif et la section Environnement" />
+
+Donnez un **Nom** au serveur, choisissez un **Transport**, remplissez les champs en dessous et cliquez sur **Ajouter**.
+Echolot enregistre le serveur, le sélectionne et le vérifie. **Modifier…** dans l’en-tête du serveur (ou son menu
+contextuel) ouvre la même feuille ; **Enregistrer** conserve les changements et vérifie de nouveau le serveur. Les
+modifications peuvent être annulées avec **Édition › Annuler**.
+
+### Via HTTP [#over-http]
+
+Choisissez **HTTP (Streamable HTTP)**.
+
+| Champ | Ce qu’il contient |
+| --- | --- |
+| **URL** | Le point d’accès du serveur, comme `https://demo.echolot.dev/mcp`. Les points d’accès MCP se terminent souvent par `/mcp`. |
+| **En-têtes** | Des en-têtes envoyés avec chaque message, comme `Authorization` avec `Bearer {{token}}`. Cliquez sur **Ajouter** pour une ligne ; la case désactive une ligne sans la supprimer. |
+| **OAuth** | Seulement pour les serveurs qui se connectent avec OAuth et dont le serveur d’autorisation ne peut pas enregistrer Echolot de lui-même. Voir [Se connecter avec OAuth](#signing-in-with-oauth). |
+
+Les serveurs qui parlent encore l’ancien transport HTTP+SSE n’ont besoin d’aucun réglage particulier : saisissez leur
+URL ici, et Echolot se rabat sur HTTP+SSE quand Streamable HTTP est refusé. Une URL qui se termine par `/sse` est
+d’abord essayée en HTTP+SSE.
+
+### Comme commande locale (stdio) [#as-a-local-command-stdio]
+
+Choisissez **Commande locale (stdio)**.
+
+| Champ | Ce qu’il contient |
+| --- | --- |
+| **Commande** | Le programme à démarrer, comme `npx`, `uvx`, `node` ou le chemin complet d’un binaire. |
+| **Arguments** | Ses arguments, séparés par des espaces, comme `-y @modelcontextprotocol/server-everything`. Mettez entre guillemets doubles un argument qui contient des espaces. |
+| **Répertoire de travail** | L’endroit où le programme démarre. Facultatif. |
+| **Environnement** | Des variables d’environnement pour le programme, comme `GITHUB_TOKEN` avec `{{github_token}}`. |
+
+Echolot démarre le programme avec le `PATH` de votre shell de connexion : `npx`, `uvx` et les outils installés avec
+Homebrew, nvm, mise ou Volta sont donc trouvés même quand vous avez ouvert Echolot depuis le Finder ou le Dock. Si une
+vérification indique que **Démarrage du serveur** a échoué, elle suggère de vérifier que la commande est installée et
+dans le `PATH`, ou d’en donner le chemin complet. La sortie d’erreur du programme se trouve dans la carte **Messages**.
+
+<Edition only="direct">
+  Les serveurs locaux (stdio) fonctionnent dans le téléchargement direct. L’édition App Store ne peut pas démarrer de
+  programmes : elle conserve le serveur dans l’espace de travail et affiche **S’exécute comme programme local** à sa
+  place. Le téléchargement direct et l’outil en ligne de commande `echolot` l’exécutent. Les serveurs MCP via HTTP
+  fonctionnent dans les deux éditions.
+</Edition>
+
+## À vérifier avant l’exécution [#review-before-running]
+
+Un serveur local qui vient des fichiers de l’espace de travail (le commit d’un collègue, par exemple) ou d’un import n’a
+pas été démarré sur ce Mac. Echolot affiche **À vérifier avant l’exécution** avec la **Commande**, les **Arguments**, le
+**Répertoire de travail** et l’environnement exacts, et ne démarre rien tant que vous n’avez pas cliqué sur
+**Faire confiance et vérifier**.
+
+Votre approbation concerne cette commande exacte sur ce Mac, et n’est jamais écrite dans l’espace de travail. Si la
+commande, ses arguments ou son environnement changent, Echolot redemande. Les serveurs que vous ajoutez ou modifiez
+vous-même comptent comme approuvés, puisque vous les avez écrits.
+
+## Valeurs et secrets [#values-and-secrets]
+
+Chaque champ peut utiliser des `{{variables}}`, résolues depuis l’[environnement](/docs/workspaces/environments) actif
+quand Echolot se connecte. Gardez les jetons et les clés dans des [variables secrètes](/docs/workspaces/secrets) et
+désignez-les par leur nom : `Bearer {{token}}`, `{{github_token}}`. Les valeurs secrètes restent dans le trousseau et ne
+sont jamais écrites dans l’espace de travail : le fichier du serveur peut donc être validé dans un commit sans risque.
+
+## Importer des serveurs depuis d’autres apps [#importing-servers-from-other-apps]
+
+Echolot lit les listes de serveurs MCP de Claude Desktop, Claude Code, Cursor, VS Code, Windsurf et Codex.
+
+<Edition only="direct">
+  Le téléchargement direct trouve ces fichiers de lui-même. Quand il en trouve, un encadré **Trouvés sur ce Mac** au bas
+  de la barre latérale liste chaque app avec un bouton **Importer**. Le menu **+** les liste aussi sous **Importer
+  depuis**, et **Choisir le fichier de configuration…** accepte n’importe quel autre fichier. Fermez l’encadré avec sa
+  **×** ; l’import reste dans le menu **+**.
+</Edition>
+
+<Edition only="appstore">
+  L’édition App Store ne peut pas lire d’elle-même les fichiers d’autres apps. Sous **+** › **Importer depuis**,
+  choisissez l’app (par exemple **Cursor…**) : un panneau d’ouverture démarre dans le dossier de cette app, et vous
+  choisissez le fichier. **Choisir le fichier de configuration…** accepte n’importe quel autre fichier.
+</Edition>
+
+| App | Fichier |
+| --- | --- |
+| Claude Desktop | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Code | `~/.claude.json`, ou le `.mcp.json` d’un projet |
+| Cursor | `~/.cursor/mcp.json` |
+| VS Code | `~/Library/Application Support/Code/User/mcp.json`, ou le `.vscode/mcp.json` d’un projet |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` |
+| Codex | `~/.codex/config.toml` |
+
+Vous pouvez aussi déposer l’un de ces fichiers sur la fenêtre, ou le choisir dans **Fichier › Importer…** : Echolot
+reconnaît la configuration d’un client MCP comme n’importe quel autre [import](/docs/get-started/importing).
+
+Ce que fait un import :
+
+- Chaque serveur du fichier devient un serveur de l’espace de travail, local ou HTTP comme dans l’original.
+- Les secrets littéraux (un jeton dans un en-tête `Authorization`, une clé dans une variable d’environnement qui a l’air
+  secrète) sont déplacés dans des variables secrètes de l’espace de travail, et le serveur les désigne par leur nom.
+  Le rapport d’import nomme ces variables, jamais les valeurs.
+- Les espaces réservés deviennent des valeurs Echolot : `${env:NAME}` et `${NAME}` lisent la variable d’environnement
+  `NAME` quand Echolot se connecte, et le `${input:id}` de VS Code devient la variable `{{id}}`. Le rapport indique
+  quelles variables ajouter.
+- Le `bearer_token_env_var` de Codex devient un en-tête `Authorization: Bearer` qui lit cette variable d’environnement.
+- Un serveur désactivé dans l’original est importé, avec une remarque dans le rapport. Un serveur sans commande ni URL
+  est ignoré.
+- Les serveurs locaux importés vous attendent dans [À vérifier avant l’exécution](#review-before-running).
+
+## Se connecter avec OAuth [#signing-in-with-oauth]
+
+Quand un serveur répond qu’il a besoin d’OAuth, Echolot affiche **Connexion requise** en haut de la page, avec le
+**Serveur d’autorisation** et la façon dont Echolot obtient un client :
+
+| **Client** indique | Signification |
+| --- | --- |
+| **Echolot s’enregistre lui-même** | Le serveur d’autorisation accepte lui-même les nouveaux clients. Rien à configurer. |
+| **Depuis les réglages OAuth du serveur** | Vous avez saisi un ID client dans la section **OAuth** du serveur. |
+| **Nécessite un identifiant client (Modifier…)** | Le serveur d’autorisation n’enregistre pas de clients. Enregistrez-en un là-bas, puis saisissez-le sous **Modifier…** › **OAuth**. |
+
+Cliquez sur **Se connecter…**. Echolot ouvre votre navigateur, attend que la connexion revienne sur `127.0.0.1`, et
+vérifie de nouveau le serveur. Le jeton va dans le trousseau, jamais dans l’espace de travail. La carte indique alors
+**Connecté**, avec le serveur d’autorisation, les portées, la date d’expiration du jeton et, si Echolot s’est enregistré
+lui-même, **Enregistré par Echolot**. Un jeton expiré qui peut être renouvelé l’est au prochain appel.
+
+**Se déconnecter** oublie le jeton et le client qu’Echolot a enregistré. Le jeton lui-même reste valide chez le serveur
+jusqu’à son expiration.
+
+La section **OAuth** de la feuille du serveur sert aux cas que la découverte ne peut pas traiter :
+
+| Champ | Valeur par défaut quand il est vide |
+| --- | --- |
+| **ID client** | Enregistré automatiquement. |
+| **Secret client** | Aucun. Utilisez une variable secrète, comme `{{client_secret}}`. |
+| **Portées** | Comme le demande le serveur. |
+| **URI de redirection** | `http://127.0.0.1:<any port>/callback`. |
+
+Laissez la section vide pour tout découvrir automatiquement. Un en-tête `Authorization` dans **En-têtes** l’emporte sur
+OAuth.
+
+L’outil en ligne de commande se connecte avec `echolot mcp sign-in`, en partageant l’élément du trousseau avec l’app sur
+un Mac, ou en affichant la connexion sous forme de secret pour la CI. Voir [echolot mcp](/docs/cli/mcp).
+
+## Quand une vérification échoue [#when-a-check-fails]
+
+La carte **Problème de connexion** nomme l’étape qui a échoué et suggère une solution :
+
+| Étape | Causes courantes |
+| --- | --- |
+| **Démarrage du serveur** | La commande n’est pas installée ou n’est pas dans le `PATH`. Exécutez-la dans Terminal pour voir pourquoi elle s’arrête ; sa sortie d’erreur se trouve dans **Messages**. |
+| **Serveur joignable** | Rien n’écoute sur cet hôte et ce port, ou le chemin de l’URL est faux (les points d’accès MCP sont souvent `/mcp`). |
+| **Autorisation** | Personne n’est connecté, les identifiants ne sont pas autorisés, ou le serveur veut un en-tête `Authorization`. |
+| **Réactivité** | Le serveur n’a pas répondu à `ping`. Il est peut-être occupé ou ne suit pas la spécification. |
+| **Outils** | Une ou plusieurs définitions d’outils sont invalides ; l’étape les nomme. |

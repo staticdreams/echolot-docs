@@ -1,0 +1,587 @@
+---
+title: "Файлы рабочего пространства"
+description: "Формат рабочего пространства по файлам и по ключам — чтобы читать диффы, писать файлы вручную и генерировать их."
+---
+
+Рабочее пространство — это папка с расширением `.echolot` с обычными файлами TOML внутри: по одному на запрос,
+окружение, MCP-сервер, мок и сценарий. В Finder оно выглядит как один документ; в Терминале, Git и вашем редакторе это
+обычная папка. Echolot каждый раз записывает каждый файл одинаково (ключи в фиксированном порядке, значения по
+умолчанию не пишутся), поэтому изменение в приложении даёт небольшое изменение в диффе. См.
+[Git и команды](/docs/workspaces/git-and-teams).
+
+```text
+Alpenglow.echolot/
+  workspace.toml                     рабочее пространство: ID, название, переменные, авторизация, агенты, прокси, сертификаты
+  environments/
+    staging.toml                     одно окружение
+  requests/
+    _folder.toml                     порядок верхнего уровня
+    _folder.pre.js                   скрипт рабочего пространства перед запросом (и _folder.test.js)
+    auth/
+      _folder.toml                   папка: название, порядок, документация, переменные, авторизация
+      sign-in.req.toml               HTTP-запрос
+      sign-in.body.json              его тело
+      sign-in.pre.js                 его скрипт перед запросом
+      sign-in.test.js                его тестовый скрипт
+    catalog/
+      search-products.gql.toml       запрос GraphQL
+      search-products.graphql        его запрос на языке GraphQL
+  mcp-servers/
+    alpenglow-mcp.toml               MCP-сервер
+  specs/
+    alpenglow.yaml                   документ OpenAPI
+    shop.graphql                     схема GraphQL
+    inventory.proto                  файл protobuf
+  mocks/
+    shop.toml                        мок-сервер: настройки и маршруты
+    shop.js                          его маршруты на JavaScript
+  flows/
+    place-test-order.flow.toml       сценарий
+  assistant/
+    checking-orders.md               общий разговор с Ассистентом, для чтения
+    checking-orders.json             он же, чтобы открыть в приложении
+```
+
+## Правила для каждого файла [#rules-for-every-file]
+
+- Файлы — TOML 1.0 в кодировке UTF-8.
+- Каждый начинается с `echolot = 1` — версии формата. Файл с большим номером сохранён более новым Echolot; об этом
+  Echolot сообщает вместо того, чтобы открыть его.
+- Имена файлов — **slug**: строчные буквы, цифры и дефисы, не более 80 символов, составленные из названия элемента
+  (`Sign in` превращается в `sign-in`). Само название хранится в ключе `name`.
+- Пути между элементами — это их slug, соединённые через `/`, относительно `requests/`: `auth/sign-in`, `orders`.
+- Текстовые поля могут содержать `{{variables}}` и [динамические значения](/docs/reference/dynamic-values).
+- Списки сущностей — массивы таблиц TOML (`[[headers]]`). Всё, у чего `enabled = false`, сохраняется, но выключено; без
+  этого ключа включено.
+
+## Что никогда не попадает в файлы [#what-never-goes-in-the-files]
+
+- **Секретные значения.** Секретная переменная записывается по имени с `secret = true` и без значения; значение
+  хранится в Связке ключей на вашем Mac. В полях, где нужен секрет (пароль, пароль прокси, секрет клиента), должна
+  стоять `{{variable}}`, которая является секретом. Echolot предлагает перенести введённый вами пароль в Связку ключей,
+  а при импорте делает это сам. См. [секреты](/docs/workspaces/secrets).
+- Токены OAuth и входы в MCP: в Связке ключей.
+- Значения, которые скрипты задают через `pm.environment.set` и подобное: они живут, пока открыто окно или выполняется
+  команда.
+- История и ответы: в Application Support на вашем Mac, по одной истории на рабочее пространство. См.
+  [историю](/docs/workspaces/history).
+- Ваша собственная раскладка: расположение областей и их размеры, открытые вкладки, выбранное вами окружение.
+
+Поэтому рабочее пространство можно безопасно коммитить и передавать. Каждый участник команды задаёт свои секретные
+значения сам.
+
+## workspace.toml [#workspacetoml]
+
+```toml
+# Echolot workspace. Requests live in requests/, one file each.
+echolot = 1
+id = "0b7d4c1e-2f6a-4e38-9c51-7a1e3d9b5f20"
+name = "Alpenglow"
+
+[[variables]]
+name = "baseURL"
+value = "https://demo.echolot.dev/v1"
+
+[[variables]]
+name = "token"
+secret = true
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `id` | ID рабочего пространства. Секреты в Связке ключей принадлежат ему, поэтому копии с тем же ID используют их совместно. Экспортированная копия получает новый ID. |
+| `name` | Название рабочего пространства. |
+| `[[variables]]` | Переменные рабочего пространства. См. [переменные](#variables). |
+| `[auth]` | Авторизация для каждого запроса, который её наследует. См. [авторизацию](#auth). По умолчанию её нет. |
+| `[agents]` | Правила для ИИ-агентов. См. [агентов](#agents). |
+| `[proxy]` | Собственный прокси рабочего пространства вместо прокси приложения. |
+| `[[certificates]]` | Сертификаты CA, которым нужно доверять, и клиентские сертификаты, которые нужно отправлять, по хостам. |
+
+### Прокси [#proxy]
+
+| Ключ | Что значит |
+| --- | --- |
+| `mode` | `manual` (по умолчанию), `system`, `environment` (семейство `HTTPS_PROXY`) или `none`. |
+| `url` | Прокси: `http://host:port`, `https://…` или `socks5://host:port`. |
+| `username`, `password` | Учётные данные для прокси. Пароль записывайте как секретную `{{variable}}`. |
+| `bypass` | Хосты, к которым обращаться напрямую, массивом. |
+
+### Сертификаты [#certificates]
+
+Каждая таблица `[[certificates]]` — правило для одного хоста:
+
+| Ключ | Что значит |
+| --- | --- |
+| `host` | Хост, для которого это правило. |
+| `trust` | Файлы PEM с сертификатами CA, которым нужно доверять, массивом. |
+| `certificate` | Клиентский сертификат: файл PEM или файл `.p12`/`.pfx`. |
+| `key` | Ключ PEM клиентского сертификата, если в файле сертификата его нет. |
+| `passphrase` | Парольная фраза ключа или файла PKCS#12. Записывайте её как секретную `{{variable}}`. |
+
+### Агенты [#agents]
+
+`[agents]` задаёт, что ИИ-агентам разрешено делать в этом рабочем пространстве через MCP-сервер Echolot и Ассистента.
+См. [агентов](/docs/ai/agents).
+
+```toml
+[agents]
+allowed-hosts = ["demo.echolot.dev"]
+max-requests = 200
+max-requests-per-minute = 30
+
+[agents.rules]
+unsafe-send = "ask"
+destructive = "refuse"
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `enabled` | `false` отключает агентов для рабочего пространства: они ничего из него не получают. По умолчанию `true`. |
+| `allowed-hosts` | Хосты, которые считаются собственными для рабочего пространства, помимо тех, что используют его запросы. |
+| `max-requests` | Сколько запросов всего может отправить один сеанс агента. |
+| `max-requests-per-minute` | Сколько запросов в минуту может отправить один сеанс агента. |
+| `[agents.rules]` | Правило для каждого вида действий: `allow`, `ask` или `refuse`. |
+
+Виды действий: `read`, `safe-send`, `unsafe-send`, `protected-send`, `new-host`, `workspace-write` и `destructive`.
+Более строгое правило действует всегда. Более мягкое действует, только когда вы ему доверитесь (приложение спросит;
+командной строке нужен `--trust-workspace-policy`). Для `protected-send` и `new-host` нельзя задать `allow`.
+
+## environments/ [#environments]
+
+По одному файлу на окружение; имя файла — его slug, который используется в `--env`.
+
+```toml
+echolot = 1
+name = "Production"
+protected = true
+
+[[variables]]
+name = "baseURL"
+value = "https://api.alpenglow.example/v1"
+
+[[variables]]
+name = "password"
+secret = true
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `name` | Название окружения. |
+| `protected` | `true` делает его [защищённым окружением](/docs/workspaces/protected-environments): каждая отправка сначала спрашивает разрешения. |
+| `[[variables]]` | Его переменные. |
+
+### Переменные [#variables]
+
+Одинаково в `workspace.toml`, окружениях, папках и запросах:
+
+| Ключ | Что значит |
+| --- | --- |
+| `name` | Имя переменной, используется как `{{name}}`. |
+| `value` | Её значение. У секрета не пишется. |
+| `secret` | `true` для секрета: значение хранится в Связке ключей. |
+| `enabled` | `false` отключает её. |
+
+## requests/ [#requests]
+
+В папке `requests` лежит дерево, которое вы видите в боковой панели. Каждая вложенная папка — папка дерева, каждый файл
+запроса — запрос. Вид запроса определяется суффиксом файла:
+
+| Суффикс | Вид |
+| --- | --- |
+| `.req.toml` | HTTP, включая Server-Sent Events |
+| `.gql.toml` | GraphQL |
+| `.grpc.toml` | gRPC |
+| `.ws.toml` | WebSocket |
+| `.sio.toml` | Socket.IO |
+| `.mqtt.toml` | MQTT |
+| `.mcp.toml` | Вызов MCP-сервера |
+
+Рядом с запросом, с тем же slug:
+
+| Файл | Что в нём |
+| --- | --- |
+| `<slug>.body.<ext>` | Тело запроса в его собственном формате: `.json`, `.xml`, `.txt`, `.html`, `.graphql` или `.form.txt`. |
+| `<slug>.graphql` | Запрос GraphQL-запроса. |
+| `<slug>.pre.js` | Скрипт перед запросом. |
+| `<slug>.test.js` | Тестовый скрипт. |
+
+### _folder.toml [#foldertoml]
+
+Он есть у каждой папки, а также у самой `requests/` — для верхнего уровня.
+
+```toml
+echolot = 1
+name = "Auth"
+order = ["sign-in", "who-am-i", "client-credentials"]
+docs = "Send \"Sign in\" first: it captures the access token into {{token}}."
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `name` | Название папки. В `requests/_folder.toml` его нет. |
+| `order` | Slug содержимого папки в том порядке, который используют боковая панель и прогоны. Всё, что не перечислено, идёт следом, по slug. |
+| `docs` | Документация папки в Markdown. |
+| `spec` | Спецификация, которой следует папка, например `specs/alpenglow.yaml`. |
+| `spec-url` | Откуда эта спецификация загружается, если она пришла по URL. |
+| `agent-tools` | `true` предлагает запросы папки агентам как инструменты. |
+| `[[variables]]` | Переменные папки, для всего, что в ней. |
+| `[auth]` | Авторизация папки для всего, что в ней и наследует её. По умолчанию — наследовать. |
+
+Рядом `_folder.pre.js` и `_folder.test.js` — скрипты папки; в `requests/` это скрипты рабочего пространства. Они
+выполняются для каждого запроса внутри, от скрипта рабочего пространства вниз до собственного скрипта запроса. У
+папки, которая следует спецификации, есть ещё `_spec-lock.json` — то, что она в последний раз взяла из
+спецификации; пусть им занимается Echolot.
+
+### Ключи любого запроса [#keys-of-every-request]
+
+```toml
+echolot = 1
+name = "Sign in"
+method = "POST"
+url = "{{baseURL}}/auth/token"
+
+[body]
+syntax = "json"
+file = "sign-in.body.json"
+
+[[headers]]
+name = "Content-Type"
+value = "application/json"
+
+[[assertions]]
+target = "status"
+check = "equals"
+expected = "200"
+
+[[captures]]
+variable = "token"
+from = "json"
+path = "$.access_token"
+scope = "workspace"
+secret = true
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `name` | Название запроса. |
+| `url` | URL вместе со строкой запроса. Есть у всех видов, кроме вызовов MCP. |
+| `docs` | Документация запроса в Markdown. |
+| `spec-operation` | Операция спецификации, из которой он создан, например `POST /auth/token`. |
+| `[[headers]]` | `name`, `value` и `enabled = false` для выключенного заголовка. |
+| `[[disabled-params]]` | Выключенные параметры запроса: `name`, `value`. Включённые находятся в URL. |
+| `[[disabled-form-fields]]` | Выключенные поля формы: `name`, `value`. |
+| `[[variables]]` | Собственные переменные запроса. |
+| `[[assertions]]` | Его проверки. |
+| `[[captures]]` | Значения, которые он сохраняет в переменные после каждого ответа. |
+| `[auth]` | Его авторизация. По умолчанию наследуется от папки. |
+| `[settings]` | Настройки, отличающиеся от настроек приложения. |
+
+### HTTP-запросы (.req.toml) [#http-requests-reqtoml]
+
+| Ключ | Что значит |
+| --- | --- |
+| `method` | Метод: `GET`, `POST` или любой токен. По умолчанию `GET`. |
+| `[body]` | Тело; если не указано, тела нет. |
+
+Таблица `[body]` принимает одну из трёх форм:
+
+| Форма | Ключи |
+| --- | --- |
+| Текст | `syntax`: `json`, `xml`, `text`, `html`, `graphql` или `form` (поля формы в URL-кодировке). `file`: файл тела рядом с запросом. |
+| Файл, передаваемый потоком с диска | `stream-from`: путь к файлу. |
+| Multipart | `syntax = "multipart"` и таблица `[[body.parts]]` на каждую часть: `name`, затем `value` (текст) или `file` (путь), `content-type`, `enabled`. |
+
+### Запросы GraphQL (.gql.toml) [#graphql-requests-gqltoml]
+
+```toml
+echolot = 1
+name = "Search products"
+url = "{{baseURL}}/graphql"
+operation = "SearchProducts"
+schema = "specs/shop.graphql"
+query-file = "search-products.graphql"
+graphql-variables = """
+{
+  "text": "ultralight"
+}"""
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `query-file` | Файл с запросом рядом с запросом, `<slug>.graphql`. |
+| `operation` | Операция, которую нужно выполнить, если в запросе их несколько. |
+| `graphql-variables` | Переменные GraphQL в виде текста JSON. В старых файлах называется `variables`. |
+| `schema` | Схема, по которой запрос проверяется и дополняется: файл в `specs/`. |
+| `transport` | `post` (по умолчанию), `get` или `websocket` для подписок. |
+| `persisted-queries` | `true` сначала отправляет только SHA-256 запроса, а сам запрос — если сервер его не знает (автоматические сохранённые запросы). |
+| `batch` | `true` отправляет документ с несколькими операциями одним массивом, по записи на операцию. |
+| `[[uploads]]` | Загрузки файлов: `variable` (переменная, в которую попадает файл) и `path`. |
+
+### Запросы gRPC (.grpc.toml) [#grpc-requests-grpctoml]
+
+| Ключ | Что значит |
+| --- | --- |
+| `proto` | Файл `.proto` с описанием сервиса, например `specs/inventory.proto`. |
+| `reflection` | `true` вместо этого запрашивает рефлексию сервера. |
+| `service` | Сервис, например `alpenglow.inventory.v1.Inventory`. |
+| `rpc` | Метод, например `Reserve`. |
+| `message` | Сообщение в виде текста JSON; для метода с потоком от клиента — массив сообщений. |
+| `deadline-ms` | Крайний срок в миллисекундах. |
+| `compression` | `gzip` или `deflate` для отправляемых сообщений. |
+
+### Запросы WebSocket (.ws.toml) [#websocket-requests-wstoml]
+
+| Ключ | Что значит |
+| --- | --- |
+| `subprotocols` | Субпротоколы, которые нужно предложить, массивом. |
+| `[[messages]]` | Сохранённые сообщения: `name`, `text`, `enabled`. |
+
+### Запросы Socket.IO (.sio.toml) [#socketio-requests-siotoml]
+
+| Ключ | Что значит |
+| --- | --- |
+| `version` | Версия Socket.IO на сервере: `4` (по умолчанию), `3` или `2`. |
+| `path` | Где сервер слушает. По умолчанию `/socket.io/`. |
+| `namespace` | Пространство имён, к которому нужно подключиться, например `/support`. |
+| `socket-auth` | Данные авторизации в виде текста JSON. |
+| `[[emits]]` | Сохранённые события: `name`, `event`, `arguments` (текст JSON), `ack = true`, чтобы запросить подтверждение, `enabled`. |
+
+### Запросы MQTT (.mqtt.toml) [#mqtt-requests-mqtttoml]
+
+| Ключ | Что значит |
+| --- | --- |
+| `version` | `5` (по умолчанию) или `3.1.1`. |
+| `client-id` | ID клиента; если пусто, случайный. |
+| `clean-start` | `false` просит брокера сохранить сеанс. По умолчанию `true`. |
+| `keep-alive` | Секунд между пингами. По умолчанию 60. |
+| `[will]` | Последняя воля: `topic`, `payload`, `qos`, `retain`. |
+| `[[subscriptions]]` | `filter`, `qos` (по умолчанию 0), `no-local`, `enabled`. |
+| `[[messages]]` | Сохранённые сообщения для публикации: `name`, `topic`, `payload`, `qos`, `retain`, `content-type`, `enabled`. |
+
+Имя пользователя и пароль — это авторизация Basic запроса.
+
+### Вызовы MCP (.mcp.toml) [#mcp-calls-mcptoml]
+
+```toml
+echolot = 1
+name = "search_catalog"
+server = "alpenglow-mcp"
+tool = "search_catalog"
+arguments = """
+{
+  "query": "ultralight tent",
+  "limit": 3
+}"""
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `server` | Slug сервера в `mcp-servers/`. |
+| `tool`, `resource`, `prompt` или `method` | Что вызывать: инструмент по имени, ресурс по URI, промпт по имени или метод JSON-RPC напрямую. Один из них. |
+| `arguments` | Аргументы в виде текста JSON. |
+
+### Проверки [#assertions]
+
+| Ключ | Что значит |
+| --- | --- |
+| `target` | Что проверяется: `status`, `header`, `json`, `body`, `time` (миллисекунды), `size` (байты), `schema` (JSON Schema), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status`. |
+| `name` | Для `header`: имя заголовка. |
+| `path` | Для `json`: JSONPath, например `$.items.length`. |
+| `check` | `equals`, `not-equals`, `contains`, `not-contains`, `less-than`, `at-most`, `greater-than`, `at-least`, `exists`, `not-exists`, `matches` (регулярное выражение), `is-type`, `is-one-of`, `matches-schema`. |
+| `expected` | Значение для сравнения; для проверок, которым оно не нужно, не пишется. |
+| `enabled` | `false` отключает её. |
+
+О том, какие проверки доступны для каждого объекта, см. [скрипты и тесты](/docs/requests/scripts-and-tests).
+
+### Захваты [#captures]
+
+| Ключ | Что значит |
+| --- | --- |
+| `variable` | Переменная, в которую сохраняется значение. |
+| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status` или `body`. |
+| `path` | Где находится значение: JSONPath, XPath, имя заголовка или cookie. Не используется для `status` и `body`. |
+| `scope` | `environment` (по умолчанию: активное окружение) или `workspace`. |
+| `secret` | `true` сохраняет значение как секрет, в Связке ключей. |
+| `enabled` | `false` отключает его. |
+
+Ответ с кодом 400 и выше или отсутствующее значение оставляют переменную как была. См.
+[захваты](/docs/requests/captures).
+
+### Настройки [#settings]
+
+| Ключ | Что значит |
+| --- | --- |
+| `timeout` | Секунд на весь обмен. |
+| `raw` | `true` не отправляет автоматические заголовки. |
+| `verify-tls` | `false` пропускает проверку сертификата. |
+| `follow-redirects` | `false` останавливается на перенаправлении. |
+| `max-redirects` | Сколько перенаправлений выполнять. |
+| `decompress` | `false` оставляет тело в том виде, в каком его закодировал сервер. |
+| `cookies` | `false` не отправляет и не сохраняет cookie. |
+| `http-version` | `automatic`, `http1`, `http2` или `http3`. |
+| `stream-limit` | Секунд слушать поток событий или сеанс. |
+
+См. [настройки запроса](/docs/requests/settings).
+
+### Авторизация [#auth]
+
+У `[auth]` есть `type` и ключи этого типа. Запрос или папка без `[auth]` наследуют авторизацию; по умолчанию в
+рабочем пространстве её нет.
+
+| `type` | Ключи |
+| --- | --- |
+| `inherit` | Нет: взять авторизацию папки. |
+| `none` | Нет: без авторизации, даже если она есть у папки. |
+| `basic`, `digest` | `username`, `password` |
+| `bearer` | `token`; `prefix`, если не `Bearer` |
+| `api-key` | `name`, `value`, `in` (`header` или `query`) |
+| `oauth2` | `grant` (`authorization-code`, `client-credentials`, `device-code`), `authorization-url`, `token-url`, `device-authorization-url`, `client-id`, `client-secret`, `scope`, `audience`, `redirect-uri`; `pkce = false`, чтобы выключить PKCE; `client-authentication = "body"`, чтобы отправлять учётные данные клиента в теле, а не через Basic; `header-prefix`, если не `Bearer` |
+| `aws-signature` | `access-key-id`, `secret-access-key`, `session-token`, `region`, `service` |
+| `jwt` | `algorithm` (`HS256`, `HS384`, `HS512`, `RS256`, `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`), `secret`, `secret-base64`, `payload`, `header`, `issued-at = false`, чтобы не включать `iat`, `expires-in` (секунды, по умолчанию 300), `in` (`header` или `query`), `prefix`, `query-name` (по умолчанию `token`) |
+| `hawk` | `id`, `key`, `algorithm` (`sha256` или `sha1`), `ext`, `payload-hash` |
+| `edgegrid` | `client-token`, `client-secret`, `access-token`, `max-body` (по умолчанию 131072), `headers-to-sign` |
+| `ntlm` | `username`, `password`, `domain`, `workstation` |
+
+Записывайте каждый пароль, токен и ключ как секретную `{{variable}}`. См. [авторизацию](/docs/requests/auth).
+
+## mcp-servers/ [#mcp-servers]
+
+По одному файлу на MCP-сервер; имя файла — slug, на который ссылаются вызовы MCP.
+
+```toml
+echolot = 1
+name = "Alpenglow MCP"
+transport = "http"
+url = "https://demo.echolot.dev/mcp"
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `name` | Название сервера. |
+| `transport` | `http` (Streamable HTTP) или `stdio` (программа, которую запускает Echolot). |
+| `url` | Для `http`: конечная точка. |
+| `[[headers]]` | Для `http`: `name`, `value`, `enabled`. |
+| `command` | Для `stdio`: программа, которую нужно запустить. |
+| `arguments` | Для `stdio`: её аргументы массивом. |
+| `working-directory` | Для `stdio`: папка, в которой она запускается. |
+| `[[environment]]` | Для `stdio`: переменные окружения, `name`, `value`, `enabled`. |
+| `[oauth]` | Настройки клиента для сервера, где вход выполняется через OAuth: `client-id`, `client-secret`, `scope`, `redirect-uri`. |
+
+См. [добавление серверов](/docs/mcp-servers/adding-servers).
+
+## specs/ [#specs]
+
+Файлы спецификаций как есть: документы OpenAPI (`.yaml`, `.yml`, `.json`), схемы GraphQL (SDL в `.graphql` или
+результат интроспекции в JSON) и файлы protobuf (`.proto`). Echolot правит их на месте и сохраняет ваше форматирование.
+Запросы и моки называют их по пути, например `specs/alpenglow.yaml`. См. [спецификации](/docs/specs).
+
+## mocks/ [#mocks]
+
+По одному файлу на мок-сервер, а рядом с ним — его маршруты на JavaScript.
+
+```toml
+echolot = 1
+name = "Shop"
+spec = "specs/alpenglow.yaml"
+port = 4010
+delay = 200
+
+[[scenarios]]
+operation = "GET /products/{sku}"
+status = "404"
+
+[[routes]]
+id = "e5f6a7b8"
+method = "GET"
+path = "/users/{id}"
+summary = "One user"
+
+[[routes.responses]]
+name = "OK"
+status = 200
+content-type = "application/json"
+headers = [{ name = "X-Request-Id", value = "{{$randomUUID}}" }]
+body = """
+{
+  "id": "{{request.params.id}}",
+  "name": "{{$randomFullName}}"
+}"""
+
+[[routes.responses]]
+name = "Not found"
+status = 404
+content-type = "application/json"
+rules = [{ source = "path", name = "id", value = "0" }]
+body = """{ "error": "no user {{request.params.id}}" }"""
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `name` | Название мока. |
+| `spec` | Спецификация, которую он обслуживает. Без неё отвечают только маршруты мока. |
+| `port` | Порт. По умолчанию 4010. |
+| `share-on-network` | `true` отвечает на всех сетевых интерфейсах, а не только на этом Mac. |
+| `delay` | Миллисекунд перед каждым ответом. |
+| `failure-rate` | Процент запросов, на которые подставляется ответ 500, от 0 до 100. |
+| `validate-requests` | `false` отвечает на запросы, нарушающие спецификацию. По умолчанию `true`. |
+| `[[scenarios]]` | Ответ, выбранный для операции спецификации: `operation` (например, `GET /pets`), `status`, `example` (имя примера). |
+| `[[routes]]` | Маршрут, созданный вручную: `id` (не меняется, пока меняется маршрут), `method` (или `ANY`), `path` (`{id}` для параметра), `summary`, `enabled = false` для выключенного маршрута, `response` (имя ответа по умолчанию; если не указано, первый), `request-content-type` и `request-body` (что отправляют созданные из него запросы). |
+| `[[routes.responses]]` | Один ответ маршрута выше: `name`, `status`, `content-type`, `headers` (`name` и `value`), `rules` (`source` — `path`, `query`, `header` или `body`; `name`; `value`, где `*` означает любое, а пустое — отсутствие) и `body`. |
+
+В `mocks/<slug>.js` хранятся маршруты мока на JavaScript, которые отвечают раньше маршрутов, созданных вручную, и
+спецификации. Для операций спецификации ответы в моке никогда не хранятся: примеры попадают в спецификацию. См.
+[моки](/docs/mocks), [маршруты и тестовые данные](/docs/mocks/routes) и
+[маршруты на JavaScript](/docs/mocks/scripted-routes).
+
+## flows/ [#flows]
+
+По одному файлу на сценарий, `<slug>.flow.toml`. Echolot записывает блоки, связи и заметки в фиксированном порядке,
+поэтому перемещение блока меняет две строки.
+
+```toml
+echolot = 1
+name = "Place a test order"
+description = "Places an order, then asks a person whether to keep it."
+
+[mcp]
+tool = "place_test_order"
+description = "Places a test order on the demo shop, asking a person before keeping it."
+
+[[blocks]]
+id = "signin"
+kind = "request"
+title = "Sign in"
+position = [330, 250]
+
+[blocks.settings]
+request = "auth/sign-in"
+
+[[wires]]
+from = "start.run"
+to = "signin.run"
+```
+
+| Ключ | Что значит |
+| --- | --- |
+| `name`, `description` | Название сценария и то, что он делает. |
+| `[mcp]` | Предлагает сценарий агентам как инструмент: `tool` (его имя) и `description`. |
+| `[schedule]` | Запускает его по расписанию: `every-minutes` или `cron` (например, `"0 6 * * *"`). |
+| `[webhook]` | Запускает его, когда приходит запрос: `method` (по умолчанию `POST`) и `path`. |
+| `[[inputs]]` | Его входные данные: `name`, `type` (`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
+| `[[blocks]]` | Его блоки: `id`, `kind`, `title`, `position` (`[x, y]` на холсте), `paused`, `color` и `[blocks.settings]` с настройками этого вида. |
+| `[[wires]]` | Связи: `from` и `to`, каждая в виде `block.port`. |
+| `[[groups]]` | Группы блоков: `title`, `blocks` (их ID), `color`. |
+| `[[notes]]` | Заметки на холсте: `text`, `frame` (`[x, y, width, height]`). |
+
+Виды блоков и их настройки описаны на странице [блоки](/docs/flows/blocks).
+
+## assistant/ [#assistant]
+
+Разговоры с [Ассистентом](/docs/ai/assistant), которыми вы делитесь в рабочем пространстве: `<slug>.md` — для чтения в
+любом редакторе, `<slug>.json` — чтобы Echolot мог открыть их снова.
+
+## Другие файлы [#other-files]
+
+Файлы, которых Echolot не знает, остаются нетронутыми, так что в рабочем пространстве могут лежать README,
+`.gitignore` или файлы с данными. Данные, которые сохраняет агент или сценарий (например, `exports/products.csv`),
+попадают туда, куда их попросили записать, внутри рабочего пространства.

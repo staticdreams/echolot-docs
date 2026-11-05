@@ -1,0 +1,164 @@
+---
+title: "Diseñar primero la especificación y simularla"
+description: "Trae o diseña una especificación OpenAPI, valídala, sirve un mock de ella, envía solicitudes al mock y comprueba las respuestas reales con la especificación."
+---
+
+Diseñar primero la especificación significa que el documento OpenAPI va antes que el código: os ponéis de acuerdo sobre
+la API, la probáis con un mock y comprobáis el servidor real con el mismo documento cuando exista. En este tutorial
+añades la especificación de la tienda Alpenglow a un espacio de trabajo, diseñas un endpoint que la tienda todavía no
+tiene, sirves ambos desde un mock en tu Mac y compruebas las respuestas de la API real con la especificación.
+
+- **Tiempo:** 20 minutos.
+- **Necesitas:** Echolot y un espacio de trabajo, como el de [Tu primer espacio de trabajo](/docs/tutorials/first-workspace)
+  o uno nuevo y vacío.
+- **Aprendes:** la página Especificaciones, la validación, las solicitudes que siguen una especificación, los mocks y la
+  comprobación **Especificación OpenAPI**.
+
+## 1. Añade la especificación [#1-add-the-spec]
+
+La tienda de demostración publica su especificación en `https://demo.echolot.dev/openapi.yaml`.
+
+1. Guárdala en tu Mac. En Terminal:
+
+   ```sh
+   curl -o ~/Downloads/openapi.yaml https://demo.echolot.dev/openapi.yaml
+   ```
+
+   O abre la dirección en Safari y elige **Archivo › Guardar como…**.
+2. En la ventana del espacio de trabajo, cambia a **Especificaciones** (<kbd>⌘</kbd><kbd>3</kbd>).
+3. Elige **Añadir archivo de especificación…** (en la página vacía, o en el menú **+** de la barra lateral) y selecciona
+   `openapi.yaml`. Una copia va a la carpeta `specs` del espacio de trabajo.
+
+La especificación se abre en el editor **Visual**: sus servidores, sus endpoints agrupados por ruta o etiqueta y sus
+esquemas. El selector de la barra de herramientas alterna entre **Visual** y **Código**. Los dos editan el mismo texto, y
+el texto es lo que se guarda.
+
+<Callout title="Empezar desde cero">
+  Elige **Nueva especificación** en su lugar. Obtienes un documento OpenAPI 3.1 titulado **Nueva API** con un endpoint,
+  `GET /items`, para renombrar y ampliar. El resto de este tutorial funciona igual.
+</Callout>
+
+## 2. Diseña un endpoint que la tienda no tiene [#2-design-an-endpoint-the-shop-doesnt-have]
+
+La tienda quiere una lista de sus sucursales. Diséñala antes de que nadie la escriba.
+
+1. En el editor **Visual**, elige **Añadir endpoint**.
+2. En **Nuevo endpoint**, deja **Método** en **GET**, escribe la ruta `/stores`, el resumen `List stores` y la etiqueta
+   `Catalog`. Elige **Añadir endpoint**. Echolot añade la operación con una respuesta `200` para empezar.
+3. En el editor del endpoint, pon **ID de operación** en `listStores`.
+4. Elige **Mostrar en el código**. Sustituye las `responses` del endpoint por un cuerpo y un ejemplo:
+
+   ```yaml
+         responses:
+           '200':
+             description: The shop's stores.
+             content:
+               application/json:
+                 schema:
+                   type: array
+                   items:
+                     type: object
+                     required: [id, city]
+                     properties:
+                       id: { type: string }
+                       city: { type: string }
+                       address: { type: string }
+                 example:
+                   - { id: zrh, city: Zürich, address: Bahnhofstrasse 1 }
+                   - { id: brn, city: Bern, address: Spitalgasse 4 }
+   ```
+
+Las ediciones se guardan a medida que las haces, y <kbd>⌘</kbd><kbd>Z</kbd> las deshace. Las ediciones visuales cambian
+solo las líneas de la entrada que tocas, así que el resto del archivo, comentarios incluidos, queda como lo escribiste.
+Más en [editar especificaciones](/docs/specs/editing).
+
+<Shot id="tutorials-spec-visual-editor" alt="La página Especificaciones en el editor Visual con un endpoint de la especificación de Alpenglow seleccionado" />
+
+## 3. Valida la especificación [#3-lint-the-spec]
+
+El botón de problemas de la barra de herramientas muestra una marca verde y **Sin problemas**, o un recuento de errores y
+avisos.
+
+1. Púlsalo. La ventana emergente **Problemas** dice que el documento cumple la especificación OpenAPI y que se resuelven
+   todas las referencias.
+2. Rompe algo para ver un problema: en **Código**, cambia `$ref: '#/components/schemas/Product'` en una línea por
+   `'#/components/schemas/Produkt'`. El botón se pone rojo. Púlsalo y elige el problema: el editor salta a su línea.
+3. Deshaz el cambio (<kbd>⌘</kbd><kbd>Z</kbd>).
+
+La misma validación se ejecuta en CI con la herramienta de línea de comandos. `--strict` falla también con los avisos, y
+`--hints` añade consejos, como los ID de operación que faltan:
+
+```sh
+echolot spec lint specs/openapi.yaml --strict
+```
+
+## 4. Crea solicitudes que sigan la especificación [#4-make-requests-that-follow-the-spec]
+
+1. En la barra de herramientas de Especificaciones, elige **Generar solicitudes**. Aparece una carpeta
+   **Alpenglow demo shop** bajo **Solicitudes**, con una carpeta por etiqueta (**Catalog**, **Auth**, **Orders**) y una solicitud por
+   cada endpoint, **List stores** incluida.
+2. Mira **Catalog › List products**. Su URL es `{{baseUrl}}/products`. Su pestaña **Pruebas** ya tiene dos
+   comprobaciones sacadas de la especificación: **Estado** es igual a `200` y un **JSON Schema** del cuerpo documentado.
+
+La carpeta sigue a la especificación. Cuando la especificación cambie más adelante, el menú **Solicitudes** de la barra de
+herramientas de Especificaciones ofrece **Buscar cambios en “Alpenglow demo shop”…**: lista lo que es nuevo, lo que
+cambió y lo que ya no está en la especificación y lo aplica sin sobrescribir tus propios cambios en las solicitudes.
+Consulta [sincronización con OpenAPI](/docs/specs).
+
+Las solicitudes generadas empiezan con `{{baseUrl}}` (con `rl` en minúsculas). Le darás un valor en los dos pasos
+siguientes.
+
+## 5. Sirve un mock de la especificación [#5-serve-a-mock-of-the-spec]
+
+1. Cambia a **Mocks** (<kbd>⌘</kbd><kbd>4</kbd>). Abre el menú **+** y elige **Mock de Alpenglow demo shop**.
+2. Elige **Inicio** (<kbd>⌘</kbd><kbd>R</kbd>). La barra de herramientas muestra un punto verde y la dirección,
+   `http://127.0.0.1:4010/v1`: el primer puerto libre desde el 4010 y la ruta base del servidor de la especificación.
+3. Elige **Usar en un entorno**. Echolot crea un entorno **Mock: Alpenglow demo shop** cuyo `{{baseUrl}}` es la dirección
+   del mock, y lo elige.
+
+La tarjeta **Ajustes** contiene el **Puerto** del mock, **Responder a otros dispositivos de la red**, un **Retraso** antes
+de cada respuesta, una proporción de **Fallos** (500 inyectados) y **Comprobaciones**:
+**Rechazar solicitudes que incumplan la especificación (400 con los motivos)**. El mock se ejecuta mientras la ventana está abierta.
+
+<Shot id="tutorials-spec-mock-running" alt="La página Mocks con el mock de Alpenglow demo shop en marcha en 127.0.0.1:4010, sus ajustes y un registro de solicitudes" />
+
+## 6. Envía solicitudes al mock [#6-send-requests-to-the-mock]
+
+1. De vuelta en **Solicitudes**, envía **Catalog › List stores**. El mock responde `200` con las dos sucursales de tu
+   ejemplo. La pestaña **Cabeceras** muestra `Server: Echolot mock`.
+2. Envía **Catalog › List products**. El mock no tiene ejemplo para ella, así que genera un cuerpo a partir del esquema: la
+   forma correcta con valores de relleno. Se superan las dos comprobaciones de la solicitud.
+3. En **Parámetros** de **List products**, añade `sort` con el valor `cheapest` y envía. El mock la rechaza: `400` con
+   `query “sort”: not one of the allowed values`. La especificación permite `name`, `price`, `-price` y `rating`. Quita
+   el parámetro.
+4. En **Get a product**, añade la cabecera `Prefer: code=404` y envía. El mock responde con el problema `404` documentado.
+   Quita la cabecera.
+
+El **REGISTRO** de la página Mocks lista cada solicitud que el mock respondió, con la operación con la que coincidió y
+cualquier problema. En la tarjeta **Respuestas** puedes hacer que una operación responda con otro estado o ejemplo
+documentado en todas las solicitudes. Las rutas con JavaScript para respuestas que necesitan estado están en
+[rutas con script](/docs/mocks/scripted-routes).
+
+## 7. Comprueba la API real con la especificación [#7-check-the-real-api-against-the-spec]
+
+1. En la página **Entornos**, añade un entorno `Demo` con una variable `baseUrl` igual a
+   `https://demo.echolot.dev/v1` y elígelo en la cabecera de la página.
+2. Abre **List products**, abre **Añadir prueba** en su pestaña **Pruebas** y elige **Especificación OpenAPI**. No hay
+   nada que rellenar: comprueba el cuerpo con el esquema que la especificación documenta para el estado que llegó.
+3. Envíala. Se superan las tres comprobaciones: la tienda real coincide con su especificación.
+4. Envía **List stores**. La tienda real responde `404`: el endpoint existe solo en la especificación. Ese es el sentido de
+   diseñar primero la especificación: el mock te deja construir contra ella desde ya.
+
+Para ejecutar las mismas comprobaciones en CI, ejecuta la carpeta con [`echolot run`](/docs/cli/run) y sirve el mock allí
+con `echolot mock`:
+
+```sh
+echolot mock specs/openapi.yaml --port 4010
+```
+
+## Siguientes pasos [#next-steps]
+
+- [Especificaciones a partir del tráfico](/docs/specs/specs-from-traffic): escribe una especificación a partir de
+  solicitudes que ya envías.
+- [Mocks](/docs/mocks): ejemplos guardados del historial, retrasos, fallos y uso compartido en la red.
+- [`echolot spec`](/docs/cli/spec): `check` hace fallar CI cuando una carpeta va por detrás de su especificación.

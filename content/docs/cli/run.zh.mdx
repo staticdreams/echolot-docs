@@ -1,0 +1,165 @@
+---
+title: "echolot run"
+description: "运行工作区、其中的部分文件夹或请求，或一个 Postman 集合，带检查、数据文件和报告。"
+---
+
+`echolot run` 按顺序发送工作区的请求，运行它们的脚本和检查，并报告哪些通过了。它就是没有窗口的[运行器](/docs/requests/runner)，专为 CI 而设。
+它还能原样运行 Postman 集合，无需导入。
+
+```sh
+echolot run [<options>] <source>
+```
+
+`<source>` 是一个工作区文件夹（其中有 `workspace.toml` 的那个）或一个 Postman 集合文件。
+
+## 运行工作区 [#run-a-workspace]
+
+```sh
+echolot run Alpenglow.echolot --folder auth/sign-in --folder catalog
+```
+
+```text
+catalog, auth/sign-in
+
+✓ POST   auth/sign-in  200 150 ms
+    ✓ Status equals 200
+    ✓ JSON value $.access_token exists
+✓ GET    catalog/list-products  200 74 ms
+    ✓ Status equals 200
+    ✓ JSON value $.items.length is greater than 0
+    ✓ Header Content-Type contains json
+    ✓ Response time (ms) is less than 1000
+✓ GET    catalog/search  200 69 ms
+    ✓ Status equals 200
+✓ GET    catalog/get-product  200 70 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ GET    catalog/categories  200 73 ms
+    ✓ Status equals 200
+✓ GQL    catalog/search-products  200 37 ms
+✓ GET    catalog/export  200 410 ms
+    ✓ Status equals 200
+
+All 7 requests passed  11/11 checks passed · 0.90 s
+```
+
+- 不带 `--folder` 时，运行全部内容。`--folder` 接受文件夹（`catalog`）或请求（`auth/sign-in`），写成 `requests/` 下由 slug 组成的路径，可以给出多次。请求按工作区的顺序运行。
+- `--env` 接受不带 `.toml` 的环境文件名（`staging`）或它的名称（`Staging`）。
+- 每个请求的检查及其 `pm.test` 结果都会计入。请求没有得到响应或检查失败时即为失败；此时运行以 1 退出。
+- 捕获到变量中的响应、来自 OAuth 2 客户端凭据的令牌，以及脚本设置的值，都会像在 App 中一样延续到本次运行的后续请求。脚本的值只在本次运行中有效，绝不会写入文件。
+
+<Callout type="warn">
+  没有钥匙串时（在 CI 中、在 Linux 上，或使用 `ECHOLOT_KEYCHAIN=0`），捕获到**机密**变量中的响应不会保留给下一个请求。在 Alpenglow 中，**Sign in** 将 `{{token}}`
+  捕获为机密，所以在这样的运行中，**Who am I** 和 Orders 文件夹会得到 401。对于这类运行，请自己设置 `ECHOLOT_SECRET_TOKEN`，或捕获到非机密的变量中。
+</Callout>
+
+## 数据驱动的运行 [#data-driven-runs]
+
+`--data` 会让数据文件的每一行各运行一遍全部内容：
+
+- 带标题行的 CSV 文件：每一列是该行的一个变量。
+- 包含对象数组的 JSON 文件：每个键是一个变量。
+
+```sh
+echolot run Alpenglow.echolot --folder catalog/get-product --data skus.csv
+```
+
+```text
+catalog/get-product · skus.csv, 2 rows
+
+✓ #1 GET    catalog/get-product  200 133 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ #2 GET    catalog/get-product  200 88 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+
+All 2 requests passed  4/4 checks passed · 0.22 s
+```
+
+脚本通过 `pm.iterationData` 读取该行。没有数据文件时，`--iterations` 会重复运行。`--concurrency` 让指定数量的迭代并行运行；一个迭代的脚本所设置的内容只属于它自己。
+
+## 报告 [#reports]
+
+`--reporter` 选取报告，可以给出多次。`--out` 为每个非 `console` 的报告指定文件，顺序与 `--reporter` 选项相同；没有文件的报告输出到标准输出。
+
+| 报告器 | 它写出什么 |
+| --- | --- |
+| `console` | 上面那样的行，在终端中带颜色。没有给出 `--reporter` 时的默认值。 |
+| `junit` | JUnit XML：每个请求一个测试套件，每项检查一个测试用例。大多数 CI 系统都能读取。 |
+| `json` | 整个运行的 JSON：每个请求及其状态、耗时、大小、尝试次数和每项检查的结果。 |
+| `html` | 可在浏览器中打开的报告。 |
+| `har` | 本次运行的每次交换，格式为 HTTP Archive。 |
+
+```sh
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out results.xml \
+  --reporter html --out report.html
+```
+
+一次有检查失败的运行的 JUnit 报告：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Alpenglow" tests="4" failures="1" errors="0" time="0.377" timestamp="2026-11-01T09:23:04Z">
+  <testsuite name="auth/sign-in" tests="2" failures="0" errors="0" skipped="0" time="0.155">
+    <testcase name="Status equals 200" classname="auth.sign-in" time="0"/>
+    <testcase name="JSON value $.access_token exists" classname="auth.sign-in" time="0"/>
+  </testsuite>
+  <testsuite name="auth/who-am-i" tests="1" failures="1" errors="0" skipped="0" time="0.083">
+    <testcase name="Status equals 200" classname="auth.who-am-i" time="0">
+      <failure message="expected “200”, got “401”" type="AssertionFailure"/>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+每份报告都会遮盖机密值，包括 URL、标头、检查消息和日志中的，所以报告可以放心地作为 CI 制品保留。
+
+## 运行 Postman 集合 [#run-a-postman-collection]
+
+```sh
+echolot run shop.postman_collection.json --env-file staging.postman_environment.json --data users.csv
+```
+
+集合会原样运行：Echolot 将它读入一个事后丢弃的临时工作区，其凭据只保留在内存中。它的预请求脚本和测试脚本会运行，与 Newman 一样。`--env-file` 接受 Postman 环境文件；
+`--env` 用于工作区。`--folder` 可以指定集合中的文件夹，不必带上集合自己的顶层文件夹。
+
+要继续使用某个集合，请改为[导入它](/docs/cli/import-export)。
+
+## 选项 [#options]
+
+| 选项 | 含义 |
+| --- | --- |
+| `-e`、`--env <env>` | 环境：不带 `.toml` 的文件名，或它的名称。 |
+| `--env-file <file>` | 配合集合使用的 Postman 环境文件。 |
+| `--folder <path>` | 要运行的文件夹或请求，例如 `users` 或 `users/list-users`。可重复；省略时运行全部。 |
+| `-d`、`--data <file>` | 带标题行的 CSV 文件或对象的 JSON 数组：每行一次迭代。 |
+| `-n`、`--iterations <n>` | 没有数据文件时，将全部内容运行多少次。默认 1。 |
+| `--delay <ms>` | 请求之间等待的毫秒数。默认 0。 |
+| `--retries <n>` | 请求失败时额外的尝试次数。默认 0。 |
+| `--bail` | 在第一个失败的请求处停止。 |
+| `--concurrency <n>` | 并行运行的迭代数；1 表示逐个运行。默认 1。 |
+| `--reporter <name>` | `console`、`junit`、`json`、`html` 或 `har`。可重复；省略时为 `console`。 |
+| `-o`、`--out <file>` | 每个非 console 报告器的文件，顺序与 `--reporter` 相同；缺失时输出到标准输出。 |
+| `--secrets <file>` | 包含机密值的 `NAME=value` 行文件，作为 `ECHOLOT_SECRET_<NAME>` 变量的补充。 |
+| `-k`、`--insecure` | 跳过 TLS 证书验证。 |
+| `--proxy <url>` | 通过此代理发送：`http://host:port`、`https://…`、`socks5://user:password@host:port`。 |
+| `--no-proxy` | 直接连接，忽略 `HTTP_PROXY` 等变量。 |
+| `--cacert <file>` | 同时信任此 PEM 文件中的 CA 证书。可重复。 |
+| `--cert <file>` | 发送此客户端证书：PEM 文件（配合 `--key`）或 `.p12`/`.pfx` 文件。 |
+| `--key <file>` | 客户端证书的 PEM 私钥，用于证书文件中不含私钥的情况。 |
+| `--pass <passphrase>` | 密钥或 PKCS#12 文件的口令。建议改用 `ECHOLOT_CERT_PASSPHRASE`。 |
+| `--timeout <seconds>` | 每个请求的超时时间。默认 60。 |
+| `--no-color` | 纯文本的控制台输出。设置了 `NO_COLOR` 或输出不是终端时也是如此。 |
+
+## 退出码 [#exit-codes]
+
+| 退出码 | 何时 |
+| --- | --- |
+| `0` | 每个请求都得到了响应，每项检查都通过。 |
+| `1` | 有请求失败：没有响应，或检查失败。 |
+| `64` | 选项有误、来源既不是工作区也不是 Postman 集合、环境未知，或数据文件没有行。 |
+
+完整的流水线参见 [CI](/docs/cli/ci)，机密值的来源参见[机密](/docs/cli#secrets)。

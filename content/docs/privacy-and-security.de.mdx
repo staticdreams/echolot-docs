@@ -1,0 +1,156 @@
+---
+title: "Datenschutz und Sicherheit"
+description: "Wo Echolot deine Daten und Secrets aufbewahrt, was es sendet und an wen – und was dich vorher fragt."
+---
+
+Echolot hat kein Konto und keine Cloud. Deine Anfragen bleiben in Dateien auf deinem Mac, Secrets bleiben im
+Schlüsselbund, und nichts über dich oder deine Arbeitsbereiche verlässt den Mac, es sei denn, du sendest es oder
+schaltest etwas ein. Diese Seite listet, was Echolot tut – und nur das.
+
+## Deine Dateien [#your-files]
+
+- **Arbeitsbereiche** sind Ordner mit TOML-Dateien in Klartext, wo immer du sie sicherst. Echolot lädt sie nie hoch.
+- **Die eigenen Daten von Echolot** (gespeicherte Antwort-Bodys, Verlauf, Absturzberichte, Unterhaltungen mit dem
+  Assistenten) liegen auf diesem Mac in `~/Library/Application Support/Echolot`.
+  **Einstellungen › Über › Antworten und Verlauf › Im Finder anzeigen** öffnet den Ordner. Die App-Store-Edition hält
+  sie in ihrem eigenen Container; siehe [Editionen](/docs/get-started/editions).
+- **Persönliche Entscheidungen**, etwa die Anordnung der Bereiche sowie die Skripte und Server, denen du vertraut hast,
+  werden in den Einstellungen der App auf diesem Mac gespeichert, nie im Arbeitsbereich.
+
+## Secrets bleiben im Schlüsselbund [#secrets-stay-in-the-keychain]
+
+Geheime Werte kommen nie in Dateien des Arbeitsbereichs, sodass du einen Arbeitsbereich in Git einchecken kannst.
+
+- **Secret-Variablen** liegen nur in deinem Anmelde-Schlüsselbund. Die Datei nennt die Variable; ihr Wert steht im
+  Schlüsselbund. Siehe [Secrets](/docs/workspaces/secrets).
+- **Importe** verschieben Passwörter, Tokens und Schlüssel, die sie in Auth- und Anmelde-Headern finden, in
+  Secret-Variablen, und der Importbericht nennt sie, nie ihre Werte. Siehe [Importieren](/docs/get-started/importing).
+- **Exporte** schreiben nie geheime Werte: Secret-Variablen gehen nur mit ihrem Namen hinaus, und der Exportbericht
+  zählt alle Anmeldedaten, die im Klartext in eine Anfrage getippt wurden.
+- **Erfassungen von Antwortwerten**, die ein Token in einer Secret-Variablen speichern, schreiben es nur in den
+  Schlüsselbund.
+- **Modellschlüssel** für den Assistenten, **MCP-Anmelde-Tokens** und das **Proxy-Passwort** liegen ebenfalls im
+  Schlüsselbund. Ein Proxy-Passwort oder eine Zertifikat-Passphrase, die als Klartext eingetippt wurde, zeigt eine
+  Warnung mit **In den Schlüsselbund verschieben**.
+- Das Befehlszeilentool liest dieselben Einträge im Schlüsselbund. macOS fragt einmal, bevor eine andere App oder die
+  andere Edition einen Eintrag liest; wähle **Immer erlauben**.
+
+## Anmeldedaten bleiben bei ihrem Server [#credentials-stay-with-their-server]
+
+Führt eine Weiterleitung zu einem anderen Origin (anderes Schema, anderer Host oder anderer Port), entfernt Echolot die
+Anmeldedaten, bevor es ihr folgt: `Authorization`, `Cookie`, gängige API-Key-Header, den Header der API-Key-Auth und
+jeden Header mit einem Secret sowie die Einstellungen für Digest, AWS und Client-Zertifikate. Ein Secret, das du für
+einen Server festgelegt hast, wird nie durch eine Weiterleitung an einen anderen weitergegeben.
+
+## Antwort-Bodys auf der Festplatte [#response-bodies-on-disk]
+
+Antworten werden auf die Festplatte gestreamt, und jedes Senden bleibt im Verlauf auf diesem Mac.
+**Einstellungen › Speicher** legt fest, wie viel und wie es gespeichert wird:
+
+| Einstellung | Bedeutung |
+| --- | --- |
+| **Antwort-Bodys auf der Festplatte verschlüsseln** | Bodys, Mitschnitte der Übertragung und formatierte Kopien werden mit einem Schlüssel aus deinem Anmelde-Schlüsselbund verschlüsselt, sodass im Speicherordner von Echolot nichts von einer Antwort ohne ihn lesbar ist. Gespeicherte Bodys werden im Hintergrund verschlüsselt; schaltest du es aus, werden sie entschlüsselt. |
+| **Antwort-Bodys behalten bis** | Oberhalb dieser Größe werden die am längsten nicht benutzten Bodys entfernt. Bodys, die in einem Tab offen sind, bleiben immer erhalten. |
+| **Verlauf pro Anfrage** | Wie viele Antworten jede Anfrage behält. |
+
+Solange die Verschlüsselung an ist, findet die Verlaufssuche Anfragen nach Name, Adresse und Headern, nicht nach dem,
+was ihre Bodys sagen: Der Suchindex des Verlaufs ist nicht verschlüsselt, deshalb enthält er keinen Body-Text, und das
+Einschalten der Verschlüsselung entfernt den Body-Text, den er hatte. Arbeitsbereiche sind nicht betroffen. Siehe
+[Speicher und Verschlüsselung](/docs/workspaces/storage-and-encryption).
+
+## Geschützte Umgebungen [#protected-environments]
+
+Markiere eine Umgebung als geschützt (etwa Production), und jedes Senden, das du startest, während sie aktiv ist, fragt
+vorher: das **Senden** einer Anfrage (das dann **An Production senden …** lautet), Verbindungen, Durchläufe der
+Ausführung, manuelle Flow-Durchläufe, Schnellversand und Aktionen der Kurzbefehle, MCP-Aufrufe und -Prüfungen,
+**Token holen**, das Abrufen von Schemas und gRPC-Reflection. Die Frage nennt die Umgebung und zeigt, was hinausgehen
+würde, mit maskierten Secrets.
+
+**Abbrechen** ist die Standardtaste, damit <kbd>Return</kbd> nie versehentlich an eine geschützte Umgebung sendet, und
+auch <kbd>Esc</kbd> bricht ab. **Nicht mehr fragen, bis ich die Umgebung wechsle** hört in diesem Fenster auf zu fragen,
+bis sich seine Umgebung ändert; das wird nie gesichert. Agenten fragen immer. Siehe
+[Geschützte Umgebungen](/docs/workspaces/protected-environments).
+
+<Shot id="privacy-protected-send" alt="Die Frage vor dem Senden an die geschützte Umgebung Production, die die Umgebung und die Anfrage nennt, die hinausgehen würde, mit „Abbrechen“ als Standardtaste" />
+
+## Skripte und lokale Programme [#scripts-and-local-programs]
+
+- **Skripte** (Skripte vor der Anfrage und Test-Skripte) laufen in einer Sandbox in Echolot. Ein Skript kann Anfragen
+  nur über Echolot senden, mit denselben Regeln wie deine eigenen Sendevorgänge.
+- Skripte laufen erst, wenn du ihnen **auf diesem Mac** vertraust. Skripte, die du in Echolot schreibst, sind
+  vertrauenswürdig. Skripte, die von anderswo kommen (ein Import, ein `git pull`, eine Änderung außerhalb von Echolot),
+  halten das Senden an, bis du **Skripte prüfen …** wählst und ihnen vertraust. Das Vertrauen wird nach dem Inhalt der
+  Skripte außerhalb des Arbeitsbereichs gespeichert, sodass ein Arbeitsbereich seinen eigenen Skripten nie vertrauen
+  kann.
+- **MCP-Server, die als lokales Programm laufen**, starten erst, nachdem du ihren Befehl auf der Seite „MCP-Server“
+  genehmigt hast (**Vertrauen und prüfen**). Jede Änderung am Befehl, an seinen Argumenten oder an seiner Umgebung fragt
+  erneut.
+
+## Der Assistent und Modellanbieter [#the-assistant-and-model-providers]
+
+Der Assistent und, wenn du sie einschaltest, die KI-Kommentare von Echo nutzen den Modellanbieter, den du unter
+**Einstellungen › Assistent** wählst.
+
+- Modellschlüssel bleiben auf diesem Mac im Schlüsselbund und werden nur an die eigene Adresse des Anbieters gesendet.
+- **Die erste Nachricht an einen Anbieter fragt, bevor etwas gesendet wird**, einmal pro Anbieter (ein kompatibler
+  Server nach seinem Host). Die Frage sagt, was an ihn geht: beim Assistenten deine Nachrichten, die Daten des
+  Arbeitsbereichs, die der Assistent liest, und die Ergebnisse seiner Tools. Geheime Werte werden nie gesendet.
+- Die KI-Kommentare von Echo senden nur kurze Fakten darüber, was passiert ist (eine Art Anfrage, ein Statuscode, eine
+  Dauer): nie Namen, Adressen, Header, Bodys, Variablen oder Secrets.
+- Das Modell von Apple auf dem Gerät und Server auf diesem Mac (etwa Ollama) fragen nie: Nichts verlässt den Mac.
+- **Einstellungen › Assistent › Darf deine Daten erhalten** listet die Anbieter auf, die du erlaubt hast, jeden mit
+  **Entziehen**. Ein Anbieter, dem du die Erlaubnis entzogen hast, fragt beim nächsten Mal erneut.
+- Der Assistent fragt dich, bevor er Daten ändert oder einen neuen Host erreicht, und arbeitet mit denselben Tools und
+  Regeln wie externe Agenten.
+
+Siehe [Der Assistent](/docs/ai/assistant).
+
+## Externe KI-Agenten [#external-ai-agents]
+
+Agenten wie Claude Code, Cursor oder Codex können einen Arbeitsbereich über den MCP-Server von Echolot nutzen, aber nur,
+wenn du sie lässt.
+
+- **Standardmäßig aus.** **Einstellungen › Agenten › Agenten geöffnete Arbeitsbereiche nutzen lassen** schaltet es ein,
+  und jeder Arbeitsbereich kann Agenten in **Arbeitsbereichseinstellungen › Agenten** ausschalten.
+- **Nur auf diesem Mac.** Der Server lauscht auf Standardeingabe und -ausgabe oder auf `127.0.0.1` mit einem Token. Aus
+  dem Netzwerk erreicht ihn nichts.
+- **Du genehmigst.** Standardmäßig laufen Lesezugriffe und sichere Sendevorgänge; Sendevorgänge, die Daten ändern
+  könnten, neue Hosts und Änderungen am Arbeitsbereich fragen dich (**Ablehnen**, **Einmal erlauben**,
+  **Für diese Sitzung erlauben**). Geschützte Umgebungen und neue Hosts fragen immer.
+- **Secrets erreichen einen Agenten nie.** Agenten verweisen mit Namen auf Secrets. Alles, was ein Agent zurückbekommt,
+  auch Fehler, hat geheime Werte entfernt, wie geschrieben, in JSON, prozentcodiert und als Base64. Verlauf, den ein
+  Agent liest, hat maskierte Anmeldedaten.
+- **Nie angeboten.** Die Agentenrichtlinie, Proxy, Zertifikate, Auth und Skripte sind keine Tools, die Agenten nutzen
+  können.
+- **Jeder Aufruf wird aufgezeichnet.** Der Verlauf zeigt, wer jede Anfrage gesendet hat, Agenten mit Namen, und
+  **Agenten** im Fenster listet die letzten Aufrufe.
+
+Siehe [Externe Agenten](/docs/ai/agents) und [KI-Agenten sicher mit deinem Arbeitsbereich arbeiten
+lassen](/docs/tutorials/agents-safely).
+
+## Nutzungsdaten und Absturzberichte [#usage-data-and-crash-reports]
+
+Beides findest du unter **Einstellungen › Datenschutz**: Nutzungsdaten sind standardmäßig aus, Absturzberichte, die auf
+diesem Mac bleiben, sind an.
+
+- **Anonyme Nutzungsdaten teilen.** Wenn es an ist, sagt Echolot seinen Entwicklern, welche Funktionen genutzt werden
+  (eine Anfrage senden, ein Durchlauf, eine MCP-Prüfung), mit kleinen Fakten wie der Art der Anfrage und dem
+  Statuscode, und meldet Fehler mit ihren Stacktraces. Nie URLs, Header, Bodys, Variablen, Secrets oder Antworten. Die
+  Daten gehen an PostHog, den Analysedienst, den Echolot nutzt.
+- **Absturzberichte sammeln.** Standardmäßig an. macOS übergibt Echolot beim nächsten Start seine Absturz- und
+  Hängeberichte, und Echolot sichert sie auf diesem Mac, damit du sie einem Fehlerbericht anhängen kannst. Sie enthalten
+  nur Stacktraces und werden nirgendwohin gesendet. **Im Finder anzeigen** öffnet sie.
+
+## Verbindungen, die Echolot von selbst aufbaut [#connections-echolot-makes-on-its-own]
+
+Außer den Anfragen, die du sendest, verbindet sich Echolot nur hierfür mit dem Netzwerk:
+
+| Was | Wann | Was gesendet wird |
+| --- | --- | --- |
+| **Update-Suche** (Direktdownload) | Einmal am Tag, wenn **Automatisch nach Updates suchen** an ist, oder wenn du **Nach Updates suchen …** wählst | Fragt GitHub nach der Liste der Releases. GitHub sieht die Version der App und deine IP-Adresse. |
+| **Beta-Status** (Direktdownload, Beta-Builds) | Beim Start und einmal am Tag | Lädt eine kleine signierte Datei von GitHub Pages, ohne Cookies oder gespeicherte Anmeldedaten. Sie kann einen Beta-Build vorzeitig beenden oder verlängern. |
+| **Bildvorschauen** in Antwortbäumen | Nur wenn der Zeiger auf einer Bildadresse in einem JSON- oder XML-Baum ruht | Lädt dieses Bild wie ein Browser, ohne Cookies oder gespeicherte Anmeldedaten, höchstens 10 MB. Es wird nicht im Verlauf aufgezeichnet und führt keine Skripte aus. |
+| **Nutzungsdaten** | Nur wenn eingeschaltet | Siehe oben. |
+| **Dein Modellanbieter** | Nur wenn du den Assistenten oder die KI-Kommentare von Echo nutzt, nachdem du es erlaubt hast | Siehe oben. |
+
+Die App-Store-Edition sucht weder nach Updates noch prüft sie den Beta-Status: Die Updates übernimmt der App Store.

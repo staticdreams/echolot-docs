@@ -29,6 +29,8 @@ then the workspace's. Under **Uses**, the tab says which one applies, such as `F
 button that opens it: **Edit Folder Auth…** or **Edit Workspace Auth…**. When nothing above sets auth, the request
 sends none.
 
+<Shot id="requests-http-auth-inherit" alt="The Auth tab of a request set to Inherit: Uses Folder “Orders”: Bearer Token, with the Edit Folder Auth… button" />
+
 A request with auth of its own keeps it, and its **Auth** tab also shows a **Workspace auth** row with the workspace's
 auth and a button to open it: **Workspace Auth…**, or **Set Up Workspace Auth…** when the workspace has none yet.
 **Workspace Auth…** is in the command palette too (<kbd>⌘</kbd><kbd>K</kbd>).
@@ -45,6 +47,8 @@ To set auth for many requests at once:
    first. The bar shows the folder's or workspace's own token only once its auth is saved, so it never shows or
    forgets a token that belongs to the auth above.
 4. Click **Done**.
+
+<Shot id="workspaces-folder-auth-oauth" alt="Folder Settings on the Auth tab with OAuth 2.0 chosen, its token URL and client, the token bar with Get Token, and the count of requests that inherit it" />
 
 In the Alpenglow example, the **Orders** folder sets **Bearer Token** with `{{token}}`, and every order request
 inherits it. **Auth › Sign in** fills `{{token}}` from its response with a
@@ -147,6 +151,8 @@ To try it, send **Auth › Orders with OAuth 2** in Alpenglow: it uses Client Cr
 Most servers need none of this, so it's folded away under **Advanced**. It opens by itself when something in it is
 set.
 
+<Shot id="requests-http-auth-oauth-advanced" alt="The Advanced section of OAuth 2.0: Refresh automatically, the Refresh URL, and the Authorization request, Token request and Refresh request parameter tables" />
+
 - **Refresh automatically** is on by default. Turn it off to send an expired token as it is, and see how the API
   answers one. A first token is still fetched for Client Credentials and Password.
 - **Refresh URL** is for servers whose refresh endpoint isn't the token URL. Empty means the token URL.
@@ -162,6 +168,8 @@ set.
 For APIs that still use OAuth 1.0: NetSuite, Magento and Adobe Commerce, X's v1.1 endpoints, and Jira or Confluence
 Server application links, among others. Echolot signs each request with a token you already have. It doesn't run the
 three-legged flow that gets one, and Postman doesn't either.
+
+<Shot id="requests-http-auth-oauth1" alt="The Auth tab with OAuth 1.0: the signature method, consumer key and secret, access token and token secret, and Add to Header" />
 
 1. Choose the **Signature method**: **HMAC-SHA1** (the most common), **HMAC-SHA256**, **HMAC-SHA512**,
    **RSA-SHA1**, **RSA-SHA256**, **RSA-SHA512** or **PLAINTEXT**.

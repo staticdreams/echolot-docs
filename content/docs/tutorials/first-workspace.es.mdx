@@ -1,0 +1,152 @@
+---
+title: "Tu primer espacio de trabajo"
+description: "Crea un espacio de trabajo desde cero con la API de demostración, con solicitudes, una carpeta, un entorno, un secreto y Git."
+---
+
+En este tutorial creas un espacio de trabajo propio para la tienda Alpenglow: dos solicitudes en una carpeta, un entorno
+que guarda la dirección del servidor, una contraseña guardada en el llavero y un repositorio de Git para todo ello.
+
+- **Tiempo:** 15 minutos.
+- **Necesitas:** Echolot y, para la última parte, Git (`git --version` en Terminal; macOS se ofrece a instalarlo).
+- **Aprendes:** cómo se organiza un espacio de trabajo en el disco y por qué es seguro confirmarlo en Git.
+
+## 1. Crea el espacio de trabajo [#1-make-the-workspace]
+
+1. En la ventana **Te damos la bienvenida a Echolot**, elige **Nuevo espacio de trabajo…**. Desde la ventana de un
+   espacio de trabajo, elige **Archivo › Nuevo espacio de trabajo…** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>N</kbd>).
+2. En el panel **Nuevo espacio de trabajo**, ponle el nombre `Alpenglow Shop` y elige una carpeta, como `~/Projects`.
+   Echolot añade la extensión `.echolot`.
+3. Pulsa **Crear**.
+
+Se abre una ventana con **Este espacio de trabajo está vacío**. En el disco, `Alpenglow Shop.echolot` es una carpeta que
+contiene `workspace.toml` y una carpeta `requests` vacía. En el Finder parece un solo archivo, y al hacer doble clic se
+abre el espacio de trabajo.
+
+## 2. Envía tu primera solicitud [#2-send-your-first-request]
+
+1. Elige **Nueva solicitud** en la página vacía, o **Archivo › Nueva solicitud** (<kbd>⌘</kbd><kbd>N</kbd>). La
+   solicitud aparece en la barra lateral con su nombre listo para editar.
+2. Escribe `List products` y pulsa <kbd>↩</kbd>.
+3. Deja el método en **GET**. En el campo de la URL, escribe:
+
+   ```text
+   https://demo.echolot.dev/v1/products?category=tents
+   ```
+
+   El parámetro de consulta también aparece en la pestaña **Parámetros**, donde puedes editarlo como una tabla.
+4. Elige **Enviar** (<kbd>⌘</kbd><kbd>R</kbd>, o <kbd>⌘</kbd><kbd>↩</kbd>).
+
+El panel de respuesta muestra `200 OK`, el tiempo y el tamaño. La pestaña **Cuerpo** contiene los productos en JSON.
+Cambia su vista a **Árbol JSON** para plegar y desplegar la lista. La [página de respuestas](/docs/requests/responses)
+explica todas las pestañas.
+
+No hay ningún comando Guardar: Echolot guarda una solicitud un momento después de que dejes de escribir. El pie de la
+barra lateral dice **Todo guardado**.
+
+## 3. Pon las solicitudes en una carpeta [#3-put-requests-in-a-folder]
+
+1. Elige **Archivo › Nueva carpeta** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>N</kbd>), escribe `Catalog` y pulsa <kbd>↩</kbd>.
+2. Arrastra **List products** sobre **Catalog**.
+3. Haz clic derecho en **Catalog** y elige **Nueva solicitud**. Llámala `Get product`.
+4. Pon su URL en `https://demo.echolot.dev/v1/products/TNT-MH-2P` y envíala.
+
+Obtienes una tienda de campaña, la Matterhorn 2P, con su precio y su stock en Zúrich y Berna. Cada solicitud es su propio
+archivo: `requests/catalog/get-product.req.toml`. Las carpetas también pueden llevar autenticación, variables y scripts
+para todas las solicitudes que contienen; consulta [carpetas](/docs/workspaces/folders).
+
+## 4. Mueve la dirección a un entorno [#4-move-the-address-into-an-environment]
+
+Escribir la dirección del servidor en cada solicitud dificulta cambiar de servidor. Ponla mejor en un entorno.
+
+1. Elige **Vista › Entornos** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>E</kbd>), o abre el menú de entornos de la cabecera de la
+   página y elige **Gestionar entornos…**.
+2. Elige **+** (**Añadir entorno**). Aparece un **Nuevo entorno**. Cambia su **Nombre** a `Demo`.
+3. Elige **Añadir variable**. Pon **Nombre** en `baseURL` y **Valor** en `https://demo.echolot.dev/v1`.
+4. Añade un segundo entorno llamado `Local` con `baseURL` igual a `http://localhost:8787/v1`. Es la API de demostración
+   ejecutándose en tu propio Mac; no hace falta que esté en marcha para este tutorial.
+5. En el menú de entornos de la cabecera de la página, elige **Demo**.
+6. Vuelve a **List products** y cambia su URL a `{{baseURL}}/products?category=tents`. Haz lo mismo con
+   **Get product**: `{{baseURL}}/products/TNT-MH-2P`.
+
+Mientras escribes `{{`, una lista te ofrece tus variables. En la URL, `{{baseURL}}` aparece como un token; deja el puntero
+encima para ver su valor en el entorno actual. Envía las dos solicitudes de nuevo: siguen llegando a la API de
+demostración. Si eliges **Local**, irían a tu Mac, sin ningún otro cambio.
+
+<Shot id="tutorials-first-workspace-environment" alt="La página Entornos con un entorno seleccionado: sus variables baseURL y wsURL, y una contraseña secreta" />
+
+## 5. Mantén secreta una contraseña [#5-keep-a-password-secret]
+
+Iniciar sesión en la tienda requiere una contraseña. Una contraseña nunca debe ir a un archivo que confirmes en Git.
+
+1. En la página **Entornos**, selecciona **Demo** y elige **Añadir variable**.
+2. Llámala `password` y marca su casilla **Secreto**. El campo del valor pasa a ser un campo de contraseña que dice
+   **Sin definir en este Mac**.
+3. Escribe `alpenglow` y pulsa <kbd>↩</kbd> (o elige **Guardar**). Un icono de llave indica que el valor está en el
+   llavero.
+4. Crea una carpeta `Auth` y en ella una solicitud `Sign in`. Pon su método en **POST** y su URL en
+   `{{baseURL}}/auth/token`.
+5. En la pestaña **Cuerpo**, elige **JSON** y escribe:
+
+   ```json
+   { "email": "heidi@alpenglow.ch", "password": "{{password}}" }
+   ```
+
+6. Envíala.
+
+La respuesta es `200 OK` con un `access_token`. Echolot añade `Content-Type: application/json` por sí solo para un cuerpo
+JSON. Mira `environments/demo.toml`: la variable `password` está ahí con `secret = true` y sin valor. El valor vive solo
+en el llavero de este Mac, así que cada persona que abra el espacio de trabajo define el suyo; consulta
+[secretos](/docs/workspaces/secrets).
+
+El [siguiente tutorial](/docs/tutorials/chain-requests) usa ese token para las solicitudes que lo necesitan.
+
+## 6. Pon el espacio de trabajo en Git [#6-put-the-workspace-in-git]
+
+Echolot no tiene comandos de Git propios: un espacio de trabajo son archivos TOML normales, así que usas Git igual que
+con el código.
+
+1. Al pie de la barra lateral, abre el menú del espacio de trabajo y elige **Mostrar en el Finder**. Arrastra la carpeta
+   `Alpenglow Shop.echolot` al icono de Terminal, o entra en ella con `cd`.
+2. Ejecuta:
+
+   ```sh
+   git init
+   git add .
+   git commit -m "Alpenglow Shop: catalog and sign-in"
+   ```
+
+Lo que has confirmado:
+
+```text
+Alpenglow Shop.echolot/
+├── workspace.toml
+├── environments/
+│   ├── demo.toml
+│   └── local.toml
+└── requests/
+    ├── _folder.toml
+    ├── auth/
+    │   ├── _folder.toml
+    │   ├── sign-in.req.toml
+    │   └── sign-in.body.json
+    └── catalog/
+        ├── _folder.toml
+        ├── get-product.req.toml
+        └── list-products.req.toml
+```
+
+Nada de ello es secreto, y nada necesita un `.gitignore`: las respuestas y el historial se guardan fuera del espacio de
+trabajo, en el almacenamiento propio de Echolot. Cada archivo se escribe siempre del mismo modo, así que un diff muestra
+solo lo que has cambiado.
+
+Cuando otra persona trae cambios, una ventana abierta los recoge sola. Si un archivo cambia en el disco mientras tienes
+ediciones sin guardar en él, una barra dice **Esta solicitud ha cambiado en el disco**: elige **Usar los suyos** o
+**Conservar los míos**. Más en [Git y equipos](/docs/workspaces/git-and-teams).
+
+## Siguientes pasos [#next-steps]
+
+- [Encadenar solicitudes](/docs/tutorials/chain-requests): envía el token de **Sign in** a todas las solicitudes que lo
+  necesitan.
+- [Entornos protegidos](/docs/workspaces/protected-environments): haz que Echolot pregunte antes de cada envío a un
+  servidor que importa.
+- [Archivos del espacio de trabajo](/docs/reference/workspace-files): cada archivo y cada campo.

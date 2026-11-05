@@ -1,0 +1,81 @@
+---
+title: "Inicio y Sonar"
+description: "Inicio es el resumen de un espacio de trabajo; su tarjeta Sonar dibuja cada envío de la última hora, día, semana o mes según lo que tardó la respuesta."
+---
+
+**Inicio** es la página con la que arranca la ventana de un espacio de trabajo. Te dice qué hay en el espacio de
+trabajo, qué necesita una mirada y cómo han respondido tus solicitudes. Ábrelo con el botón **Inicio** de la barra
+lateral o con <kbd>⇧</kbd><kbd>⌘</kbd><kbd>H</kbd>.
+
+<Shot id="get-started-home" alt="Inicio: el saludo, los recuentos del espacio de trabajo, la tarjeta Sonar con sus pings y cifras, y las tarjetas de solicitudes recientes, últimas respuestas, pruebas y entornos" />
+
+## Qué muestra Inicio [#what-home-shows]
+
+De arriba abajo:
+
+- **Un saludo y una frase de novedades.** Dice cuántas comprobaciones están fallando o cuántas solicitudes tienen
+  cambios sin guardar y, si no, **No tienes nada pendiente.** Un espacio de trabajo nuevo sin solicitudes te invita a
+  importar una colección o a crear la primera solicitud.
+- **El espacio de trabajo**: su nombre y su carpeta, con los recuentos de **Solicitudes**, **Carpetas**, **Entornos**,
+  **Variables** y **Comprobaciones**.
+- **Sonar**, más abajo.
+- **Solicitudes recientes**, con **Nueva solicitud**; **Últimas respuestas**; **Pruebas**, con cuántas solicitudes
+  tienen comprobaciones y cuáles fallan, y **Ver todo**; y **Entornos**, con **Gestionar** y una marca en los
+  protegidos.
+
+Haz clic en una solicitud o en una respuesta de una tarjeta para abrirla.
+
+## Sonar [#sonar]
+
+Sonar dibuja cada envío de un periodo como un ping, igual que un sonar dibuja ecos. El tiempo corre hacia la derecha,
+desde el inicio del periodo a la izquierda hasta **ahora** a la derecha. La profundidad es lo que tardó la respuesta:
+una respuesta rápida se queda cerca de la superficie y una lenta se hunde. De un vistazo sabes si la API ha ido rápida,
+dónde se ralentizó y si algo falló.
+
+<Shot id="get-started-home-sonar" alt="La tarjeta Sonar: pings coloreados según el estado, las zonas de superficie, media agua y profundo, el lecho marino bajo las respuestas más lentas y cinco cifras debajo" />
+
+### Cómo leer el gráfico [#reading-the-chart]
+
+- **Las zonas.** La escala de profundidad es logarítmica, así que tanto el extremo rápido como el lento se leen bien.
+  **SUPERFICIE** es todo lo que está por debajo de 250 ms, **MEDIO** va de 250 ms a 1 s y **PROFUNDO** es más de 1 s.
+- **El color de un ping** es la clase de su estado. La leyenda de la cabecera de la tarjeta los nombra: **2xx**,
+  **3xx**, **4xx** y **5xx · con error**, que también vale para un envío que no obtuvo ninguna respuesta.
+- **El lecho marino** es el fondo sombreado bajo las respuestas más lentas de cada tramo de tiempo. Sube y baja con
+  ellas.
+- **La línea de la derecha** marca el ahora. Cuando termina un envío mientras Inicio está a la vista, una onda se
+  expande desde su ping (no con **Reducir movimiento** activado).
+- **La barra bajo el gráfico** muestra, en porcentaje, cómo se reparten los envíos del periodo entre las zonas.
+
+Apunta a un ping para ver su solicitud: cuándo se envió, su estado y su tiempo, su método y su nombre. Haz clic para
+abrir la solicitud con esa respuesta a la vista. Cuando no hay nada que abrir (la solicitud se eliminó o nunca se
+guardó, o el envío no obtuvo respuesta), la ayuda dice **Haz clic para encontrarlo en el historial**, y el clic abre el
+[Historial](/docs/workspaces/history) buscando el nombre de la solicitud.
+
+### Elegir el periodo [#choosing-the-period]
+
+El control de la cabecera de la tarjeta elige **1 h**, **24 h**, **7 d** (el predeterminado) o **30 d**. El gráfico y
+las cifras lo siguen. Un periodo sin envíos dice que el eco de una solicitud aparece aquí cuando envías una.
+
+### Las cifras [#the-figures]
+
+Cinco cifras están sobre el gráfico, cada una junto a la del mismo periodo anterior («+12 % respecto a la semana
+anterior»):
+
+| Cifra | Qué cuenta |
+| --- | --- |
+| **Envíos** | Solicitudes enviadas en el periodo. |
+| **Respuesta correcta** | La proporción de envíos respondidos con un estado inferior a 400, con la variación en puntos porcentuales. |
+| **Mediana** | El tiempo de respuesta central, con el **p95**: 95 de cada 100 envíos fueron más rápidos. |
+| **Menos de 250 ms** | La proporción de envíos en la superficie. |
+| **Más de 1 s** | Cuántos envíos fueron profundos y cuántos de ellos fallaron. |
+
+En una tarjeta estrecha solo se ven las tres primeras.
+
+### Qué cuenta Sonar [#what-sonar-counts]
+
+- Las cifras cuentan todos los envíos que siguen en el [historial](/docs/workspaces/history) del espacio de trabajo.
+  Los envíos que borraste, o que los límites del historial eliminaron, ya no cuentan. El gráfico dibuja los más
+  recientes.
+- Sonar cuenta las solicitudes HTTP, GraphQL, gRPC y MCP, las envíe quien las envíe: tú, Ejecución, un flujo o un
+  agente. Las sesiones de WebSocket, Socket.IO y MQTT se quedan abiertas el tiempo que quieras, así que no tienen
+  tiempo de respuesta y no se dibujan.

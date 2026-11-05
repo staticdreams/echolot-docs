@@ -1,0 +1,207 @@
+---
+title: "故障排除"
+description: "人们最常遇到的问题、Echolot 对每个问题显示的信息、出现的原因以及该怎么办。"
+---
+
+发送失败时，响应窗格会显示**没有回音**，并用平实的话说明出了什么问题，以及接下来可以尝试什么。**再试一次**会再发送一次。原始错误保留在**传输**视图中。请在下面找到对应的信息。
+
+<Shot id="troubleshooting-no-echo" alt="一次失败的发送：响应窗格显示“没有回音”，以及“连接被拒绝：localhost:9 上没有任何服务在监听”，旁边有“再试一次”按钮" />
+
+## 连接 [#connecting]
+
+<Accordions type="single">
+<Accordion title="连接被拒绝：… 上没有任何服务在监听">
+
+服务器所在的机器作出了应答，但没有任何程序在该端口上接受连接。
+
+- 检查服务器是否在运行，以及是否在地址中的端口上。监听 `3000` 的本地服务器无法通过 `localhost:8080` 访问。
+- 检查变量填入之后的地址：把指针停在 `{{variable}}` 标签上查看它的值，并在页面标题栏中检查当前使用的是哪个环境。
+- Docker 或虚拟机中的服务器需要把端口发布到 Mac 上。
+
+</Accordion>
+<Accordion title="找不到主机 …">
+
+这个名称无法解析成地址。检查拼写、你的网络和 VPN。只存在于公司网络内部的主机，需要连上该网络或它的 VPN。
+
+</Accordion>
+<Accordion title="… 未能及时应答 / 未能及时连接到 …">
+
+**未能及时应答**表示连接已建立，但响应所用的时间超过了请求的超时。如果服务器很慢，请在请求的**设置**标签页中调高**超时**。**未能及时连接到 …** 表示连接本身没有打开：可能是防火墙、VPN，或服务器已宕机。
+
+</Accordion>
+<Accordion title="… 在应答前关闭了一个保持打开的连接">
+
+Echolot 会复用已打开的连接。服务器恰好在请求发出时关闭了一个连接，没有任何响应返回。
+
+对于可能被发送两次的请求（GET 和其他安全或幂等的方法，或带有 `Idempotency-Key` 标头的请求），Echolot 会自动在新连接上重试一次。对于其他请求，例如 POST，则不会重试，因为服务器可能已经处理了该请求：再次发送之前请先检查。
+
+</Accordion>
+<Accordion title="无法访问 … / … 重置了连接">
+
+**无法访问**表示网络没有通往服务器的路由：检查 Wi-Fi、网络和 VPN。**重置了连接**表示服务器或中间的某个环节断开了连接，常见原因是防火墙，或服务器拒绝该协议（例如把纯 HTTP 发到了 HTTPS 端口）。
+
+</Accordion>
+<Accordion title="来自 demo.echolot.dev 的 429 Too Many Requests">
+
+[演示 API](/docs/tutorials/demo-api) 是共用的，每个地址每分钟限 120 个请求，大型、慢速和流式端点（导出、`bytes`、`delay`、WebSocket 和 SSE）每分钟限 10 个。等待 `Retry-After` 响应标头中的秒数后再发送。对着演示 API 进行多次迭代的运行器运行很快就会达到限制；请调低迭代次数。
+
+</Accordion>
+</Accordions>
+
+## TLS 和证书 [#tls-and-certificates]
+
+<Accordions type="single">
+<Accordion title="… 的证书不受信任">
+
+服务器的证书是自签名的、已过期，或不是由你的 Mac 信任的机构签发的。信息中会说明是哪一种。
+
+- 对于公司或开发用的机构，请在**工作区设置 › 证书**中为该主机添加它的 CA 证书，而不要关闭检查。见[请求设置](/docs/requests/settings)。
+- 仅对于开发服务器，可在请求的**设置**标签页中关闭**验证 TLS 证书**。
+
+</Accordion>
+<Accordion title="… 的证书属于另一个主机名">
+
+证书有效，但写的是另一个主机。请使用证书所对应的主机名，或在服务器上修正证书。
+
+</Accordion>
+<Accordion title="与 … 的安全连接失败（TLS 握手）">
+
+与服务器的 TLS 握手失败。冒号后面的文字是 TLS 库自己给出的原因。常见的原因是服务器要求客户端证书：请在**工作区设置 › 证书**中为该主机添加一个。
+
+</Accordion>
+<Accordion title="客户端证书文件 … 不存在 / 不是 PEM 证书">
+
+证书设置指向的文件已被移动，或者是另一种格式的文件。请在**工作区设置 › 证书**中重新选择文件；Echolot 读取 PEM 证书。
+
+</Accordion>
+</Accordions>
+
+## 代理 [#proxies]
+
+<Accordions type="single">
+<Accordion title="请求没有经过我的代理，或经过了不该经过的代理">
+
+由**设置 › 网络 › 代理**决定：
+
+| 选项 | 含义 |
+| --- | --- |
+| **系统设置** | 使用系统设置 › 网络中的 HTTP、HTTPS 和 SOCKS 代理，以及它们的例外。不使用自动代理配置（PAC）。 |
+| **无** | 每个请求都直接连接。 |
+| **手动** | 你输入的 HTTP、HTTPS 和 SOCKS5 代理，包括**用户名**、**密码**（保存在钥匙串中）和用于跳过代理的主机的**直接连接到**。 |
+
+工作区可以在**工作区设置 › 代理**中设置自己的代理，它优先于 App 的设置。如果你的公司使用 PAC 文件，请在**手动**下输入其中的代理。命令行工具读取 `HTTPS_PROXY`、`HTTP_PROXY` 和 `NO_PROXY`。
+
+</Accordion>
+<Accordion title="代理 … 需要凭据（407）">
+
+代理需要你登录。请在**设置 › 网络**或工作区的代理设置中，为代理添加**用户名**和**密码**。
+
+</Accordion>
+<Accordion title="代理 … 拒绝连接到 … / SOCKS 代理 … 无法连接到 …">
+
+代理本身正常，但不愿或无法访问那台服务器：它的规则拦截了该服务器，或者从代理所在的位置看服务器已宕机。如果服务器在本地或内部，请把它添加到**直接连接到**。
+
+</Accordion>
+</Accordions>
+
+## HTTP/3 [#http3]
+
+<Accordions type="single">
+<Accordion title="HTTP/3 需要 macOS 27 或更高版本">
+
+HTTP/3 在 macOS 27 及更高版本上可用。在较旧的 macOS 上，请在请求的**设置**标签页中选择 **HTTP/2** 或**自动**。
+
+</Accordion>
+<Accordion title="HTTP/3 不经过代理 / 暂时无法使用自定义 CA 文件或客户端证书">
+
+Echolot 不会通过代理（包括系统代理，与浏览器一样）、自定义 CA 文件或客户端证书发送 HTTP/3。请为该请求选择 **HTTP/2** 或**自动**。选择**自动**时，Echolot 只会在服务器提供 HTTP/3 且没有任何阻碍的情况下自行切换到 HTTP/3，并在 QUIC 连接无法打开时回退到 TCP。
+
+</Accordion>
+</Accordions>
+
+## MCP 服务器 [#mcp-servers]
+
+<Accordions type="single">
+<Accordion title="本地（stdio）MCP 服务器无法启动">
+
+服务器的检查把**服务器已启动**显示为失败。
+
+- **先批准它**。只有在你于“MCP 服务器”页面用**信任并检查**批准之后，Echolot 才会启动本地服务器的命令。在此之前，调用会显示 `Echolot 此前未启动过 MCP 服务器“…”。请在“MCP 服务器”页面查看其命令，并先信任它。`命令、参数或环境的更改会再次询问。
+- **找不到命令**。修复提示写着 `检查“npx”是否已安装并位于 PATH 中，或者提供其完整路径。` Echolot 以你的登录 shell 的 PATH 启动服务器，因此在新的终端窗口中能用的 `npx`、`uvx` 以及版本管理器的 shim，在 Echolot 中也能用。如果该命令只有在你的 shell 交互式地做了某些事之后才能用，请提供它的完整路径（在终端中用 `which npx` 查找）。
+- **启动后又停止**。在终端中运行同一条命令，看看原因；服务器的错误输出也在消息日志中。
+
+见[添加服务器](/docs/mcp-servers/adding-servers)。
+
+</Accordion>
+<Accordion title="“…”是作为本地程序运行的 MCP 服务器，而 Echolot 在此无法启动程序">
+
+你使用的是 Mac App Store 版，它无法在你的 Mac 上启动程序。服务器仍保留在工作区中。如果服务器支持 HTTP，请通过 HTTP 添加它，用命令行工具运行它（`echolot mcp check -- <command>`），或使用直接下载版。见[版本](/docs/get-started/editions)。
+
+</Accordion>
+<Accordion title="HTTP MCP 服务器因“授权”或“服务器可访问”失败">
+
+检查的修复提示行会说明该怎么做：对要求 OAuth 的服务器，是**登录**；对要求令牌的服务器，是 `Authorization` 标头；对于 404，则是正确的路径（MCP 端点通常是 `/mcp`）。
+
+</Accordion>
+</Accordions>
+
+## 文件和脚本 [#files-and-scripts]
+
+<Accordions type="single">
+<Accordion title="Echolot 无权读取“…”">
+
+在 Mac App Store 版中，Echolot 只有在你选择了工作区之外的文件之后才能读取它。当正文从文件流式读取、表单部分、客户端证书，或路径是在 Echolot 之外写入的 `.proto` 文件时，就会出现这种情况。请在失败的响应上选择**允许访问…**，选取该文件，然后再次发送；Echolot 会记住它。
+
+在直接下载版中，这条信息表示该文件自身的权限不允许你读取它。
+
+</Accordion>
+<Accordion title="这会运行 Echolot 尚未在这台 Mac 上运行过的脚本">
+
+请求、它的文件夹或工作区中有来自别处的脚本：导入、`git pull`，或在 Echolot 之外的编辑。只有在你信任它们之后才会运行。请选择**查看脚本…**，阅读它们，然后信任。见[脚本和测试](/docs/requests/scripts-and-tests)。
+
+</Accordion>
+<Accordion title="无法存储请求">
+
+Echolot 无法写入请求的文件：磁盘已满、文件夹是只读的，或者工作区被移动了。**重试**会再试一次；**继续编辑**会把你的编辑保留在标签页中，该标签页会一直保持打开，直到它们存储成功。
+
+</Accordion>
+<Accordion title="此请求已在磁盘上更改">
+
+你在标签页中有未存储的编辑时，另一个 App 或 Git 更改了该文件。**使用文件中的版本**会放弃你的编辑并载入该文件；**保留我的版本**会保留你的编辑并覆盖该文件。
+
+</Accordion>
+<Accordion title="macOS 要求访问某个钥匙串项">
+
+该项由另一份 Echolot、另一个版本或命令行工具创建。macOS 会对每一项询问一次；请选择**始终允许**。
+
+</Accordion>
+</Accordions>
+
+## App 和命令行工具 [#the-app-and-the-command-line-tool]
+
+<Accordions type="single">
+<Accordion title="此 Beta 版已过期">
+
+直接下载版已发布的 Beta 构建在发布 30 天后过期，如果开发者提前结束某个构建，则会更早。请从 [echolot.dev](https://echolot.dev) 下载最新版本并覆盖安装：你的工作区会原样打开。如果提示说这台 Mac 的日期似乎不对，则表示时钟比 Echolot 已经见过的某个日期晚了一天以上：请在系统设置中设置日期和时间。见[安装](/docs/get-started/install#beta-builds-expire)。
+
+</Accordion>
+<Accordion title="echolot: command not found">
+
+命令行工具还不在你的 PATH 中。请选择 **Echolot › 安装命令行工具…**，然后打开一个**新的**终端窗口（已打开的窗口保留着旧的 PATH）。**设置 › 通用 › 命令行工具**显示链接的位置；如果它显示警告，说明链接指向的 Echolot 副本已被移动：请选择**重新安装**。在 App Store 版中，请单独安装该工具；见[命令行工具](/docs/cli)。
+
+</Accordion>
+<Accordion title="命令行工具或 CI 中的机密为空">
+
+没有钥匙串时（Linux、CI，或 `ECHOLOT_KEYCHAIN=0`），工具会从名为 `ECHOLOT_SECRET_<NAME>` 的环境变量读取机密，例如机密变量 `password` 对应 `ECHOLOT_SECRET_PASSWORD`。请在 CI 的机密设置中设置它们。见 [CI](/docs/cli/ci)。
+
+</Accordion>
+<Accordion title="Echolot 无法在 … 创建存储">
+
+Echolot 无法创建它的储存文件夹，通常是因为可用空间或权限不足。在你重新启动 Echolot 之前，响应会保存在临时文件夹中。请腾出一些空间或修正文件夹的权限（**设置 › 关于 › 响应和历史记录 › 在访达中显示**会显示它的位置），然后重新启动。
+
+</Accordion>
+</Accordions>
+
+## 仍然没有解决 [#still-stuck]
+
+**帮助 › 报告错误**会在 GitHub 上打开一个新的 issue，并填好你的 Echolot 和 macOS 版本。如果 Echolot 崩溃了，请附上它的报告：**设置 › 隐私 › 收集崩溃报告**（默认开启）会把报告保存在这台 Mac 上，**在访达中显示**会打开该文件夹。

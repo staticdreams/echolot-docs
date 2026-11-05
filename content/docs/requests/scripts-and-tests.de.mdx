@@ -1,0 +1,292 @@
+---
+title: "Skripte und Tests"
+description: "Jede Antwort ohne Code im Tab „Tests“ prüfen oder mit JavaScript in Pre-Request- und Test-Skripten."
+---
+
+Tests sagen dir, ob eine Antwort so ist, wie du sie erwartest. Echolot bietet dir zwei Wege, sie zu schreiben:
+Prüfungen, die du im Tab **Tests** einer Anfrage einrichtest, ganz ohne Code, und Skripte in JavaScript, die vor dem
+Senden einer Anfrage und nach der Antwort laufen. Beide laufen nach jedem Senden, in der
+[Ausführung](/docs/requests/runner) und in der Befehlszeile.
+
+## Prüfungen im Tab „Tests“ [#checks-in-the-tests-tab]
+
+<Shot id="requests-tests-tab" alt="Der Tab „Tests“ von List products mit vier Prüfungen, jede mit grünem Häkchen: Status ist gleich 200, JSON-Wert $.items.length ist größer als 0, Header Content-Type enthält json, Antwortzeit ist kleiner als 1000" />
+
+1. Öffne eine Anfrage, zum Beispiel **Catalog › List products** im Alpenglow-Arbeitsbereich.
+2. Wähle den Tab **Tests**.
+3. Wähle **Test hinzufügen** und wähle, was geprüft werden soll.
+4. Wähle im Menü daneben einen Vergleich und tippe den erwarteten Wert.
+5. Sende die Anfrage. Jede Prüfung zeigt ein grünes Häkchen oder ein rotes Kreuz, und eine fehlgeschlagene sagt darunter
+   warum.
+
+Prüfungen werden mit der Anfrage gesichert und laufen von da an bei jeder Antwort. Das Kästchen am Anfang einer Zeile
+schaltet eine Prüfung aus, ohne sie zu entfernen; der Minus-Knopf entfernt sie. Das Badge des Tabs „Tests“ zählt die
+Prüfungen, und unten im Tab steht, wie viele bestanden haben, etwa **4 bestanden** oder **1 von 4 fehlgeschlagen**.
+
+Der erwartete Wert ist eine Vorlage, also funktionieren `{{variables}}` darin: **Catalog › Get product** prüft, dass
+`$.sku` gleich `{{productId}}` ist.
+
+### Was du prüfen kannst [#what-you-can-check]
+
+| Prüfung | Was sie liest | Vergleiche |
+| --- | --- | --- |
+| **Status** | Den Statuscode | ist gleich, ist nicht gleich, ist kleiner als, ist größer als, ist einer von |
+| **Header** | Einen Antwort-Header, nach Namen | existiert, existiert nicht, ist gleich, ist nicht gleich, enthält, enthält nicht, passt zu Regex |
+| **JSON-Wert** | Den Wert an einem JSONPath in einem JSON-Body | existiert, existiert nicht, ist gleich, ist nicht gleich, enthält, enthält nicht, ist kleiner als, ist höchstens, ist größer als, ist mindestens, passt zu Regex, ist vom Typ, ist einer von |
+| **Body** | Den ganzen Body als Text | enthält, enthält nicht, ist gleich, passt zu Regex |
+| **Antwortzeit (ms)** | Die Gesamtdauer des Austauschs in Millisekunden | ist kleiner als, ist höchstens, ist größer als, ist mindestens |
+| **Größe (Byte)** | Die Größe des Body in Byte | ist kleiner als, ist höchstens, ist größer als, ist mindestens |
+| **JSON Schema** | Den Body, gegen ein JSON Schema, das du einfügst | entspricht |
+| **GraphQL-Fehler** | Das `errors`-Array einer GraphQL-Antwort | ist gleich, ist kleiner als, ist größer als (ihre Anzahl); enthält, enthält nicht (ihre Meldungen) |
+| **MCP-Fehler** | Ob ein MCP-Aufruf fehlgeschlagen ist: `true` oder `false` | ist gleich |
+| **Ausgabeschema des Tools** | Den `structuredContent` des Ergebnisses eines MCP-Tools, gegen das eigene `outputSchema` des Tools | entspricht |
+| **OpenAPI-Spec** | Den Body, gegen das Schema der verknüpften OpenAPI-Spec für den Status der Antwort | entspricht |
+| **gRPC-Status** | Den Status eines gRPC-Aufrufs, nach Namen oder Code | ist gleich, ist nicht gleich, ist einer von |
+
+Eine neue Prüfung beginnt mit einem sinnvollen Wert: **Status** ist gleich `200`, **Antwortzeit (ms)** ist kleiner als
+`1000`, **GraphQL-Fehler** ist gleich `0`, **MCP-Fehler** ist gleich `false`, **gRPC-Status** ist gleich `OK` und
+**JSON Schema** mit `{"type": "object"}`.
+
+### Wie Werte verglichen werden [#how-values-compare]
+
+- **ist gleich** vergleicht Zahlen als Zahlen, also ist `200` gleich `200.0`, und ignoriert Leerzeichen um den Wert.
+- **ist einer von** nimmt eine durch Kommas getrennte Liste: `200, 201, 204`.
+- **passt zu Regex** besteht, wenn der reguläre Ausdruck irgendwo im Wert passt.
+- **ist vom Typ** nimmt `object`, `array`, `string`, `number`, `integer`, `boolean` oder `null`.
+- Die Zahlenvergleiche brauchen auf beiden Seiten Zahlen; alles andere schlägt mit einer entsprechenden Meldung fehl.
+
+### JSON-Werte [#json-values]
+
+Der Pfad ist ein JSONPath aus Schlüsseln und Indizes, der mit `$` beginnt: `$.items[0].sku`,
+`$.data.search.totalCount`. Ein negativer Index zählt vom Ende: `$.items[-1]`. Hänge `.length` an, um die Elemente eines
+Arrays oder die Schlüssel eines Objekts zu zählen: `$.items.length` ist größer als `0`. Echolot liest nur den Teil des
+Body auf dem Weg zum Wert, daher funktionieren JSON-Prüfungen bei Bodys jeder Größe.
+
+**Body** mit **enthält** oder **enthält nicht** funktioniert ebenfalls bei Bodys jeder Größe. Die anderen
+Body-Vergleiche sowie **JSON Schema** und **GraphQL-Fehler** lesen den ganzen Body und hören bei 50 MB auf.
+
+### Prüfungen für andere Arten von Anfragen [#checks-for-other-kinds-of-request]
+
+- **GraphQL**: Server antworten auf Fehler mit Status 200, füge also **GraphQL-Fehler** ist gleich `0` hinzu, um sie zu
+  erkennen. Nutze **enthält**, um zu prüfen, dass eine bestimmte Meldung zurückkommt.
+- **MCP-Aufrufe**: **MCP-Fehler** ist gleich `false` besteht, wenn der Aufruf erfolgreich war. Es schlägt bei einem als
+  Fehler markierten Ergebnis und bei einem JSON-RPC-Fehler fehl, und die Meldung zeigt, was der Server gesagt hat.
+  **Ausgabeschema des Tools** prüft ein Tool-Ergebnis gegen das Schema, das das Tool deklariert; es schlägt fehl, wenn
+  das Tool keines deklariert. Siehe [MCP-Anfragen](/docs/requests/mcp-requests).
+- **gRPC**: **gRPC-Status** nimmt Namen wie `OK` und `NOT_FOUND` oder Codes von 0 bis 16; `5`, `not_found` und
+  `NOT_FOUND` sind derselbe Status. Eine fehlgeschlagene Prüfung zeigt die Statusmeldung. Siehe
+  [gRPC](/docs/requests/grpc).
+- **OpenAPI-Spec**: Der Ordner der Anfrage (oder ein Ordner darüber) muss mit einer Spec verknüpft sein, und die
+  Anfrage muss einer ihrer Operationen folgen. Die Prüfung validiert dann den Body gegen das Schema, das die Spec für
+  den
+  zurückgekommenen Status dokumentiert. Ein Status, den die Spec ohne JSON-Body dokumentiert, besteht; ein
+  undokumentierter Status schlägt fehl. Siehe [Specs](/docs/specs).
+
+### Prüfungen aus einer Antwort hinzufügen [#add-checks-from-a-response]
+
+Du musst nicht jede Prüfung tippen:
+
+- **Aus Antwort erzeugen …** im Tab „Tests“ schlägt Prüfungen aus der neuesten Antwort vor. Prüfungen, die für jede
+  gute Antwort gelten, etwa der Status, der Content-Type und die Form des Body als JSON Schema, sind schon angehakt.
+  Werte, die sich zwischen Aufrufen ändern, und die Dauer werden angeboten, aber nicht angehakt. Wähle
+  **das abgeleitete Schema**, um ein vorgeschlagenes Schema zu lesen. Wähle **1 Test hinzufügen** (oder
+  **N Tests hinzufügen**), um die
+  angehakten zu behalten. Sende die Anfrage zuerst: Der Knopf braucht eine Antwort.
+- Klicke im **Body** der Antwort in der Ansicht „JSON-Baum“ einen Wert mit der rechten Maustaste an und wähle
+  **Prüfung hinzufügen**: Das fügt eine **JSON-Wert**-Prüfung hinzu, dass der Pfad diesem Wert entspricht.
+- Klicke in den **Headern** der Antwort einen Header mit der rechten Maustaste an und wähle **Prüfung hinzufügen**: Das
+  fügt eine **Header**-Prüfung hinzu, dass der Header diesem Wert entspricht.
+
+<Shot id="requests-tests-generate" alt="Das Blatt „Tests aus Antwort erzeugen“ für List products, mit angehaktem Status, Content-Type und abgeleitetem Schema und einer angebotenen, aber nicht angehakten Wertprüfung" />
+
+### Ergebnisse [#results]
+
+Der Tab **Tests** des Antwortbereichs listet jede Prüfung mit ihrem Ergebnis und dem gefundenen Wert (`got 200`) auf,
+dann jeden Test aus den Skripten. Die Seite **Tests** in der Seitenleiste (**Ansicht › Tests**,
+<kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>) listet jede Anfrage mit Prüfungen auf, samt ihrem Stand in der neuesten Antwort;
+klicke auf eine, um die Anfrage zu öffnen.
+
+## Skripte [#scripts]
+
+Skripte sind JavaScript mit der `pm.*`-API von Postman, sodass die meisten Postman-Skripte unverändert laufen. Eine
+Anfrage kann zwei haben:
+
+-  Ein **Pre-Request**-Skript läuft, bevor die Anfrage gesendet wird. Es kann die Anfrage ändern, Variablen setzen
+  oder die
+  Anfrage überspringen.
+- Ein **Test**-Skript läuft, nachdem die Antwort eingetroffen ist. Es prüft die Antwort mit `pm.test` und kann Werte für
+  spätere Anfragen sichern.
+
+<Shot id="requests-scripts-tab" alt="Der Tab „Skripte“ von List products auf „Tests“, mit einem pm.test, das den Status und die Zahl der Elemente prüft, und geöffnetem Menü „Snippets“" />
+
+1. Öffne eine Anfrage und wähle den Tab **Skripte**.
+2.  Wähle oben **Pre-Request** oder **Tests**. Ein Punkt hinter dem Namen, etwa **Tests •**, markiert ein Skript mit
+   Code.
+3.  Schreibe das Skript. Der Editor färbt JavaScript ein und vervollständigt `pm.`-Pfade beim Tippen. **Snippets**
+   fügt ein
+   fertiges Skript für gängige Fälle hinzu.
+4. Sende die Anfrage.
+
+Zum Beispiel ein Test-Skript für **Catalog › List products**:
+
+```js
+pm.test("Status code is 200", () => {
+  pm.response.to.have.status(200);
+});
+
+pm.test("Returns tents", () => {
+  const body = pm.response.json();
+  pm.expect(body.items.length).to.be.above(0);
+});
+```
+
+Und ein Pre-Request-Skript, das jeder Anfrage, für die es läuft, einen Header hinzufügt:
+
+```js
+pm.request.headers.add({ key: "X-Request-Id", value: pm.variables.replaceIn("{{$guid}}") });
+```
+
+Jedes `pm.test` erscheint im Tab **Tests** der Antwort unter **Skripte**, nach den Prüfungen aus dem Tab „Tests“. Ein
+Skript, das einen Fehler wirft, erscheint als **Skriptfehler** mit seiner Meldung. Was Skripte mit `console.log`,
+`console.info`, `console.warn` und `console.error` schreiben, erscheint im Tab **Konsole** der Antwort, markiert mit
+`pre`
+oder `test`; den Tab gibt es, sobald Skripte gelaufen sind.
+
+### Snippets [#snippets]
+
+| Snippet | Wofür |
+| --- | --- |
+| **Statuscode ist 200**, **Antwortzeit unter 500 ms**, **JSON-Wert existiert**, **Header ist vorhanden**, **Body enthält Text** | Tests |
+| **Wert für spätere Anfragen speichern** | Tests: `pm.environment.set("token", pm.response.json().token)` |
+| **Danach eine andere Anfrage ausführen** | Tests: `pm.execution.setNextRequest("Request name")` |
+| **Variable setzen**, **Header hinzufügen**, **Anfrage mit HMAC-SHA256 signieren**, **Zuerst ein Token holen**, **Diese Anfrage überspringen** | Pre-Request |
+
+### Skripte für Ordner und den Arbeitsbereich [#scripts-on-folders-and-the-workspace]
+
+Auch ein Ordner und der Arbeitsbereich können Skripte haben, für jede Anfrage darin. Öffne sie über das Kontextmenü des
+Ordners in der Seitenleiste (**Ordnereinstellungen …**) oder über **Arbeitsbereichseinstellungen …**, im Tab
+**Skripte**.
+
+Für jede Anfrage führt Echolot zuerst das Skript des Arbeitsbereichs aus, dann das jedes Ordners von außen nach innen,
+dann das der Anfrage selbst. Dieselbe Reihenfolge gilt für Pre-Request- und Test-Skripte. Nur gesicherte Anfragen führen
+Skripte aus.
+
+MCP-Aufrufe haben keinen Tab „Skripte“ und führen keine Skripte aus. Jede andere Art von Anfrage hat einen.
+
+### Die `pm`-API auf einen Blick [#the-pm-api-at-a-glance]
+
+Die vollständige Liste steht in der [Referenz der Skript-API](/docs/reference/scripting-api).
+
+| Objekt | Was es tut |
+| --- | --- |
+| `pm.test(name, fn)`, `pm.expect(value)` | Ein benannter Test und Assertions im Chai-Stil: `pm.expect(x).to.equal(1)` |
+| `pm.response` | Die Antwort in Test-Skripten: `code`, `status`, `headers`, `responseTime`, `responseSize`, `json()`, `text()` sowie `pm.response.to.have.status(200)`, `.header()`, `.body()`, `.jsonBody()`, `pm.response.to.be.ok`, `.success`, `.json`, `.clientError`, `.serverError`, `.notFound` |
+| `pm.request` | Die Anfrage: `url`, `method`, `headers`, `body`; ein Pre-Request-Skript kann Header und Query-Parameter hinzufügen, ersetzen und entfernen |
+| `pm.variables` | Jeder Gültigkeitsbereich, der nächste zuerst: `get`, `set`, `has`, `unset`, `replaceIn`, `toObject` |
+| `pm.environment`, `pm.collectionVariables`, `pm.globals` | Die aktive Umgebung, die Variablen des Arbeitsbereichs und globale Variablen |
+| `pm.iterationData` | Die Datenzeile eines Durchlaufs: `get`, `has`, `toObject` |
+| `pm.info` | `requestName`, `requestId`, `iteration` (ab 0), `iterationCount`, `eventName` |
+| `pm.execution` | `setNextRequest(name)` (`null` beendet den Durchlauf) und `skipRequest()` |
+| `pm.cookies` | Die Cookies der Antwort |
+| `pm.sendRequest` | Sendet eine andere Anfrage |
+| `console` | `log`, `info`, `warn`, `error` |
+| `CryptoJS` | `MD5`, `SHA1`, `SHA256`, `SHA512`, `HmacSHA1`, `HmacSHA256`, `HmacSHA512` und `CryptoJS.enc` (`Hex`, `Base64`, `Utf8`, `Latin1`) |
+
+`require` liefert `lodash`, `ajv`, `tv4`, `crypto-js`, `uuid`, `atob` und `btoa`. `_` (lodash), `tv4`, `btoa`, `atob`
+und
+`setTimeout` gibt es auch ohne. Die älteren Globals von Postman (`postman.setEnvironmentVariable`, `tests[...]`,
+`environment`, `globals`, `data`, `iteration`) funktionieren weiterhin. Jedes andere Modul schlägt fehl mit „The
+module …
+is not available in Echolot scripts.“
+
+### Variablen, die Skripte setzen [#variables-that-scripts-set]
+
+Was `pm.environment.set`, `pm.collectionVariables.set` und `pm.globals.set` schreiben, ist ein aktueller Wert: Er lebt
+so
+lange wie das Fenster, überschreibt beim Auflösen von Anfragen den gesicherten Wert dieses Gültigkeitsbereichs und
+wird nie
+in die Dateien des Arbeitsbereichs geschrieben. Ein Token, das ein Skript sichert, erreicht also spätere Anfragen,
+ohne in
+Git zu landen. Um einen Wert aus einer Antwort im Arbeitsbereich zu behalten, nutze stattdessen eine
+[Erfassung](/docs/requests/captures).
+
+`pm.variables.set` setzt einen Wert nur für den aktuellen Durchlauf: Ein Durchlauf beginnt ohne die Werte, die Skripte
+so
+gesetzt haben.
+
+### Eine andere Anfrage senden [#sending-another-request]
+
+`pm.sendRequest` sendet aus einem Skript eine Anfrage, etwa um zuerst ein Token zu holen. Es nimmt eine URL oder ein
+Objekt mit `url`, `method`, `header` und `body` und entweder einen Callback oder das Promise, das es zurückgibt:
+
+```js
+pm.sendRequest({
+  url: pm.variables.replaceIn("{{baseURL}}/auth/token"),
+  method: "POST",
+  header: { "Content-Type": "application/json" },
+  body: { mode: "raw", raw: JSON.stringify({ email: "heidi@alpenglow.ch", password: "alpenglow" }) },
+}, (error, response) => {
+  if (!error) pm.environment.set("token", response.json().access_token);
+});
+```
+
+Die Anfrage geht hinaus wie jedes andere Senden aus Echolot, mit demselben Proxy und denselben Zertifikaten, aber ohne
+die
+Auth des Arbeitsbereichs oder Ordners. Skripte warten bis zu 30 Sekunden auf die Antworten.
+
+### Anfragen überspringen und die nächste wählen [#skipping-requests-and-choosing-the-next-one]
+
+`pm.execution.skipRequest()` in einem Pre-Request-Skript verhindert das Senden der Anfrage; der Antwortbereich und die
+Ausführung sagen, dass sie übersprungen wurde. `pm.execution.setNextRequest("Get order")` springt in einem Durchlauf als
+Nächstes zu dieser Anfrage, und `setNextRequest(null)` beendet den Durchlauf. Siehe
+[die Ausführung](/docs/requests/runner).
+
+## Skripte von außerhalb von Echolot [#scripts-from-outside-echolot]
+
+Skripte sind Code, daher führt Echolot nur die aus, denen du auf diesem Mac vertraust. Skripte, die du in Echolot
+schreibst, gelten beim Sichern als vertrauenswürdig. Skripte, die auf anderem Weg ankommen, durch einen Import, aus Git
+oder durch eine Änderung in einem anderen Editor, warten:
+
+- Der Tab „Skripte“ zeigt **Diese Skripte stammen nicht aus Echolot**, mit **Skripten vertrauen**.
+-  Das Senden der Anfrage hält an mit **Skripte prüfen …**. Das öffnet **Diese Skripte ausführen?**, mit jedem Skript,
+  das
+  noch nicht gelaufen ist, und woher es kommt (die Anfrage, ein Ordner oder der Arbeitsbereich). Lies sie und wähle dann
+  **Vertrauen und senden** oder **Abbrechen**.
+
+Das Vertrauen wird auf diesem Mac pro Arbeitsbereich für genau diesen Code behalten: Ändert sich das Skript außerhalb
+von
+Echolot, fragt es erneut. Das Vertrauen wandert nie mit dem Arbeitsbereich, sodass ein geteilter Arbeitsbereich seinen
+eigenen Skripten nicht vertrauen kann.
+
+Das Befehlszeilenwerkzeug führt jedes Skript des Arbeitsbereichs aus, den du ihm gibst. `echolot mcp serve` führt nur
+die
+Skripte aus, die der Arbeitsbereich beim Start hatte.
+
+## Die Sandbox und ihre Grenzen [#the-sandbox-and-its-limits]
+
+Skripte laufen in einer JavaScript-Sandbox in Echolot. Sie haben kein Dateisystem, kein eigenes Netzwerk und keinen
+Zugriff
+auf den Mac: Die einzigen Wege nach draußen sind `pm.sendRequest`, `console` und die Variablen. Jedes Senden beginnt mit
+einer frischen Sandbox.
+
+| Grenze | Wert |
+| --- | --- |
+| JavaScript-Zeit für alle Skripte eines Ereignisses (Pre-Request oder Test) | 5 Sekunden |
+| Speicher | 128 MB |
+| Warten auf Antworten von `pm.sendRequest` | 30 Sekunden |
+| Antwort-Body, den ein Skript sieht | Die ersten 32 MB |
+
+Ein Skript, das zu lange läuft, schlägt fehl mit „the script took longer than 5 s“; eines, das zu viel Speicher nutzt,
+mit „the script used more memory than allowed“. Skripte können weiterhin die Variablen des Arbeitsbereichs lesen,
+Secrets
+eingeschlossen, und sie mit `pm.sendRequest` senden, weshalb Skripte von außen auf dein Vertrauen warten.
+
+## Fehlerbehebung [#troubleshooting]
+
+- **Aus Antwort erzeugen … ist ausgegraut**: Sende die Anfrage zuerst. Es funktioniert bei HTTP- und GraphQL-Anfragen.
+- **„no OpenAPI spec is linked to this request's folder“**: Verknüpfe den Ordner mit einer Spec oder entferne die
+  Prüfung **OpenAPI-Spec**.
+- **„“…” is not a JSONPath this version understands“**: Nutze nur Schlüssel und Indizes, etwa `$.items[0].sku`.
+-  **Ein Skript läuft nicht**: Prüfe, ob die Anfrage gesichert ist, ob sie kein MCP-Aufruf ist und ob das Skript nicht
+  auf
+  dein Vertrauen wartet.

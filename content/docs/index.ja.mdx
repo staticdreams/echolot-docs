@@ -1,0 +1,42 @@
+---
+title: "Echolot"
+description: "Echolotとは何か、何ができるのか、このドキュメントのどこから読み始めればよいかを説明します。"
+---
+
+Echolotは、APIの送信、テスト、構築のためのネイティブMacアプリです。HTTP/1.1、HTTP/2、HTTP/3、GraphQL、gRPC、WebSocket、Server-Sent Events、Socket.IO、MQTT、MCPに対応し、実際に通信で流れたもの（生のバイト列、すべてのリダイレクト、各ステップにかかった時間）をそのまま表示します。
+
+できること:
+
+- **作業内容をプレーンなファイルで保持します。** ワークスペースは、読みやすいTOMLファイル（リクエスト1件につき1ファイル）を入れたフォルダで、Gitで管理できます。シークレットの値はmacOSのキーチェーンに保存され、ファイルには入りません。
+- **テストと実行。** 任意のリクエストにチェックを追加し、フォルダやワークスペース全体をランナーで実行できます。コマンドラインツール`echolot`を使えば、同じワークスペースをCIでも実行できます。
+- **設計とモック。** OpenAPI仕様をビジュアルまたはテキストで記述し、ローカルのモックサーバを起動できます。仕様に基づくモックも、ダミーデータを返す手作りのルートによるモックも使えます。
+- **自動化。** リクエスト、条件、ループをキャンバス上でつないでフローにし、手動、スケジュール、Webhookのいずれかで実行できます。
+- **AIと連携します。** 内蔵のアシスタントが、選んだモデルでリクエストの送信、テスト、修正を行います。外部のAIエージェントは、EcholotのMCPサーバ経由でワークスペースを利用できます。データを変更する操作は、必ず先に確認されます。
+- **巨大なレスポンスも読めます。** ボディはディスクにストリーミングされるので、500 MBのJSONレスポンスもすぐに開きます。
+
+EcholotにはAppleシリコンを搭載したMacとmacOS 15以降が必要です。アカウントもサインインも不要です。
+
+## はじめに [#start-here]
+
+<Cards>
+  <Card title="Echolotをインストールする" href="/docs/get-started/install" description="ダウンロード、起動、最新の状態に保つ方法です。" />
+  <Card title="最初のリクエスト" href="/docs/get-started/first-request" description="何もない状態から、リクエストを送信してレスポンスを読むまでを数分で進めます。" />
+  <Card title="ウインドウ" href="/docs/get-started/the-window" description="サイドバー、ページ、タブ、ショートカットの案内です。" />
+  <Card title="ホームとSonar" href="/docs/get-started/home" description="ワークスペースの概要と、ある期間のすべての送信をレスポンスタイムでプロットした図です。" />
+  <Card title="手持ちのデータを取り込む" href="/docs/get-started/importing" description="Postman、Insomnia、OpenAPI、HAR、cURL、Paw、Brunoから読み込みます。" />
+  <Card title="デモAPI" href="/docs/tutorials/demo-api" description="demo.echolot.devにある架空のショップで練習できます。REST、GraphQL、WebSocket、SSE、MCPに対応しています。" />
+  <Card title="エディション" href="/docs/get-started/editions" description="ダイレクトダウンロード版とMac App Store版を並べて比較します。" />
+</Cards>
+
+## 主な機能 [#the-main-parts]
+
+<Cards>
+  <Card title="ワークスペース" href="/docs/workspaces" description="フォルダ、環境、シークレット、履歴、Git。" />
+  <Card title="リクエスト" href="/docs/requests" description="各プロトコル、認証、レスポンス、スクリプト、テスト、ランナー。" />
+  <Card title="MCPサーバ" href="/docs/mcp-servers" description="あらゆるMCPサーバの検査、チェック、呼び出し。" />
+  <Card title="仕様" href="/docs/specs" description="OpenAPIドキュメントを設計し、リクエストを仕様に合わせて保ちます。" />
+  <Card title="モック" href="/docs/mocks" description="ダミーデータを返すルート、または仕様に基づくローカルサーバ。" />
+  <Card title="フロー" href="/docs/flows" description="リクエスト、条件、ループをキャンバス上でつなぎます。" />
+  <Card title="アシスタント" href="/docs/ai/assistant" description="Echolotに内蔵されたAIエージェントです。" />
+  <Card title="コマンドラインツール" href="/docs/cli" description="ターミナルやCIから、送信、実行、読み込み、モックなどを行います。" />
+</Cards>

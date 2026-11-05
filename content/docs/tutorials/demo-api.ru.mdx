@@ -1,0 +1,94 @@
+---
+title: "Демо-API"
+description: "Alpenglow — ненастоящий магазин outdoor-снаряжения на demo.echolot.dev, на котором можно попробовать любую часть Echolot."
+---
+
+**https://demo.echolot.dev** — API, созданный для знакомства с Echolot: Alpenglow, магазин outdoor-снаряжения в Цюрихе
+и Берне. Ничего приватного в нём нет, и ничто из отправленного туда не сохраняется. `GET https://demo.echolot.dev/`
+выводит список всех эндпоинтов.
+
+## Вход [#sign-in]
+
+Демо-аккаунт — `heidi@alpenglow.ch` с паролем `alpenglow`:
+
+```http
+POST https://demo.echolot.dev/v1/auth/token
+Content-Type: application/json
+
+{ "email": "heidi@alpenglow.ch", "password": "alpenglow" }
+```
+
+В ответе приходит `access_token` (JWT, действует час). Передавайте его как `Authorization: Bearer <token>` на `/v1/me` и
+`/v1/orders`. Тот же эндпоинт принимает и учётные данные клиента OAuth 2: ID клиента `alpenglow-demo`, секрет клиента
+`demo-secret`.
+
+## Магазин [#the-shop]
+
+| Эндпоинт | Что делает |
+| --- | --- |
+| `GET /v1/products` | Товары; параметры `q`, `category`, `tag`, `in_stock=true`, `sort` (`name`, `price`, `-price`, `rating`), `page` и `per_page`. Постраничная навигация — в заголовках `Link` и `X-Total-Count`. |
+| `GET /v1/products/{sku}` | Один товар, например `TNT-MH-2P`, с `ETag` (передайте `If-None-Match`, чтобы получить 304). |
+| `GET /v1/products/export` | 40 000 товаров, около 14 МБ: проверьте режимы просмотра на большом ответе. |
+| `GET /v1/categories` | Категории с числом товаров в них. |
+| `GET /v1/me` | Вошедший пользователь. |
+| `GET /v1/orders` | Заказы Хайди; `?status=shipped`. |
+| `POST /v1/orders` | `{"lines": [{"sku": "TNT-MH-2P", "quantity": 1}]}`. Отвечает 201 с `Location`, 422 с описанием ошибки и тем же заказом для того же `Idempotency-Key`. |
+| `GET /v1/orders/{id}` | Один заказ, например `ord_7Hk2Lw`. |
+| `DELETE /v1/orders/{id}` | Отмена: 204 или 409, если заказ уже отправлен. На самом деле ничего не меняется. |
+
+Ошибки приходят как problem details (`application/problem+json`) с описанием того, что пошло не так. Спецификация
+OpenAPI магазина лежит по адресу `https://demo.echolot.dev/openapi.yaml`.
+
+## GraphQL [#graphql]
+
+`POST https://demo.echolot.dev/v1/graphql` с интроспекцией, поэтому Echolot дополняет поля по мере ввода. Схема лежит
+по адресу `/shop.graphql`.
+
+```graphql
+query SearchProducts($text: String!, $first: Int = 10) {
+  search(text: $text, first: $first) {
+    totalCount
+    nodes { sku name price { amount currency } stock { warehouse available } }
+  }
+}
+```
+
+## События в реальном времени [#live-events]
+
+- **WebSocket** `wss://demo.echolot.dev/v1/orders`: событие заказа каждые 1,5 секунды. Отправьте
+  `{"op": "subscribe", "channel": "orders"}`, `{"op": "ping"}` или любой JSON с `id`, чтобы получить подтверждение.
+  Сеанс длится три минуты; сообщения могут быть до 8 КБ, не более 20 за десять секунд.
+- **Server-Sent Events** `GET https://demo.echolot.dev/v1/orders/events`: 20 событий с интервалом в секунду, затем
+  `end`. Передайте `Last-Event-ID`, чтобы продолжить.
+
+## MCP [#mcp]
+
+`https://demo.echolot.dev/mcp` — MCP-сервер по Streamable HTTP. Добавьте его на странице MCP-серверов, чтобы
+попробовать его инструменты (`search_catalog`, `get_product`, `order_status`), ресурс и промпт.
+
+## Echo [#echo]
+
+Эндпоинты для знакомства с редактором запросов:
+
+| Эндпоинт | Что делает |
+| --- | --- |
+| `/echo/anything` | Возвращает метод, строку запроса, заголовки и тело, которые вы отправили. |
+| `/echo/headers` | Возвращает отправленные вами заголовки. |
+| `/echo/status/{code}` | Отвечает с этим статусом. |
+| `/echo/delay/{seconds}` | Ждёт до 5 секунд, затем возвращает эхо. |
+| `/echo/redirect/{n}` | `n` перенаправлений, затем `/echo/anything`. |
+| `/echo/cookies`, `/echo/cookies/set?name=value`, `/echo/cookies/delete?name` | Показывает, устанавливает и удаляет cookie. |
+| `/echo/basic-auth/{user}/{password}` | 200 при совпадающей авторизации Basic, иначе 401. |
+| `/echo/bearer` | 200 при любом Bearer-токене, иначе 401. |
+| `/echo/bytes/{n}` | `n` случайных байтов, до 1 МБ. |
+| `/echo/xml`, `/echo/html` | Документ XML и страница HTML. |
+
+## Лимиты [#limits]
+
+Демо общее, поэтому у него есть лимиты на адрес: 120 запросов в минуту и 10 в минуту для экспорта, `bytes`, `delay`,
+WebSocket и SSE. При превышении лимита вы получите `429 Too Many Requests` с `Retry-After`. Тела могут быть до 64 КБ.
+
+gRPC, Socket.IO и MQTT там работать не могут; в их руководствах используются небольшие серверы, которые вы запускаете
+на своём Mac.
+
+Исходный код демо-API лежит в [репозитории документации](https://github.com/staticdreams/echolot-docs/tree/main/demo-api).

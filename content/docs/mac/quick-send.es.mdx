@@ -1,0 +1,72 @@
+---
+title: "Envío rápido"
+description: "Envía una solicitud guardada desde cualquier app con un atajo de teclado o desde la barra de menús, y mira la respuesta sin cambiar a Echolot."
+---
+
+El Envío rápido envía una de tus solicitudes guardadas desde donde estés. Pulsa su atajo en cualquier app, escribe
+unas letras del nombre de la solicitud, pulsa <kbd>↩</kbd> y el estado, el tiempo y el tamaño vuelven en un panel
+pequeño. La app en la que estabas se queda delante.
+
+<Shot id="mac-quick-send-panel" alt="El panel de Envío rápido sobre otra app, con una búsqueda de products, las solicitudes de Alpenglow que coinciden y el estado de la respuesta de la que se acaba de enviar" />
+
+## Activarlo [#turn-it-on]
+
+El Envío rápido está desactivado hasta que lo actives.
+
+1. Abre **Ajustes › General**.
+2. En **Envío rápido**, activa **Mostrar Envío rápido en la barra de menús**.
+
+Aparece un avión de papel en la barra de menús y el atajo empieza a funcionar en todas las apps.
+
+### Cambiar el atajo [#change-the-shortcut]
+
+El atajo es <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd>, salvo que elijas otro. Para cambiarlo, haz clic en el atajo
+que hay junto a **Atajo** y pulsa las teclas nuevas. <kbd>Esc</kbd> conserva el anterior y **Restablecer** vuelve a
+<kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd>.
+
+Un atajo que funcione en todas las apps necesita <kbd>⌘</kbd>, <kbd>⌃</kbd> o <kbd>⌥</kbd>, o una tecla de función,
+para que escribir nunca lo active. Mientras está registrado, ninguna otra app recibe esas teclas. Si otra app ya las
+tiene, Ajustes avisa de que no se ha podido registrar el atajo; elige otro.
+
+<Callout title="Fuentes de entrada">
+  macOS puede usar <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> para cambiar a la siguiente fuente de entrada cuando está
+  activado en Ajustes del Sistema › Teclado › Atajos de teclado. Si lo usas, elige otro atajo para el Envío rápido.
+</Callout>
+
+## Enviar una solicitud [#send-a-request]
+
+1. Pulsa el atajo o haz clic en el avión de papel de la barra de menús.
+2. Escribe en **Enviar una solicitud guardada…** para acotar la lista. Cada fila muestra el método y el nombre de la
+   solicitud, y su espacio de trabajo y su carpeta.
+3. Usa <kbd>↑</kbd> y <kbd>↓</kbd> para elegir una y pulsa <kbd>↩</kbd>, o haz clic en ella.
+
+La parte inferior del panel muestra el resultado: el código de estado, el motivo (o el nombre de la solicitud), el
+tiempo y el tamaño, o por qué falló el envío. **Abrir en Echolot** muestra la solicitud en la ventana de su espacio de
+trabajo y abre el espacio de trabajo si no está abierto.
+
+El panel se cierra con <kbd>Esc</kbd> o cuando haces clic fuera.
+
+## Qué solicitudes ofrece [#which-requests-it-offers]
+
+El panel lista primero todas las solicitudes guardadas de los espacios de trabajo abiertos en Echolot y después las de
+tus espacios de trabajo recientes (los últimos diez que abriste), en el orden de la barra lateral de cada espacio de
+trabajo. Un espacio de trabajo no tiene que estar abierto para enviar sus solicitudes.
+
+Una solicitud enviada desde el Envío rápido sale igual que desde su ventana:
+
+- Con el entorno que usa el espacio de trabajo en su ventana, o el que usó la última vez.
+- Con sus scripts y comprobaciones.
+- En el [historial](/docs/workspaces/history) de la solicitud, así que la respuesta está ahí cuando abres la solicitud.
+
+<Edition only="appstore">
+  El Envío rápido funciona igual en la edición de la App Store. A un espacio de trabajo que no está abierto se accede
+  con el permiso que diste a Echolot al abrirlo desde **Archivo › Abrir espacio de trabajo…**.
+</Edition>
+
+## Entornos protegidos [#protected-environments]
+
+Cuando el entorno de la solicitud está [protegido](/docs/workspaces/protected-environments), el panel pregunta antes:
+**¿Enviar a *Entorno*?**, con el método y la dirección a la que enviaría, con los secretos ocultos. **Cancelar** es el
+botón predeterminado, así que <kbd>↩</kbd> no envía; haz clic en **Enviar** (o en **Conectar** para una solicitud
+WebSocket, Socket.IO o MQTT) para continuar. Si elegiste que no se volviera a preguntar por ese entorno en la ventana
+abierta del espacio de trabajo, el Envío rápido tampoco pregunta.

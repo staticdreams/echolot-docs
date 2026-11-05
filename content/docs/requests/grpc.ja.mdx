@@ -1,0 +1,89 @@
+---
+title: "gRPC"
+description: ".protoファイルまたはサーバのリフレクションで記述されたgRPCサービスを呼び出し、メッセージをJSONで書き、JSONで表示します。"
+---
+
+gRPCリクエストは、サービスの1つのメソッドを呼び出します。メッセージをJSONで書くと、Echolotはサービスの記述に従ってエンコードし、HTTP/2で送信して、
+呼び出しのステータスとともに、答えをJSONで表示します。
+
+<Shot id="requests-grpc-message" alt="Inventory › Reserve stock：inventory.proto、Inventoryサービス、Reserveメソッド（unary）、JSONメッセージを表示したメッセージタブと、ステータスOK・メッセージ1件のレスポンス" />
+
+<Callout title="Alpenglowで試す">
+  **Inventory**フォルダのリクエストは、`localhost:50051`のgRPCサーバを呼び出します。サーバは、ドキュメントリポジトリの`examples/servers`フォルダにあります（`bun run grpc`）。
+</Callout>
+
+## gRPCリクエストを作成する [#create-a-grpc-request]
+
+<strong>ファイル › 新規gRPCリクエスト</strong>を選ぶか、サイドバーの<strong>リクエスト</strong>の横にある<strong>+</strong>メニューから<strong>新規gRPCリクエスト</strong>を選びます。
+アドレスはサーバで、パスなしの`http://localhost:50051`のような形です（Alpenglowでは`{{grpcURL}}`）。
+
+エディタのタブは次のとおりです：**ドキュメント**、**メッセージ**、**ヘッダー**、**認証**、**変数**、**テスト**、**スクリプト**、**設定**。
+ヘッダーは呼び出しのメタデータです。gRPCの呼び出しは常にPOSTなので、バッジにはメソッドの代わりに**gRPC**と表示されます。
+
+## サービスを記述する [#describe-the-service]
+
+**メッセージ**タブは、サービスの記述元を指定するところから始まります：
+
+- ワークスペースの`specs/`フォルダにある`.proto`ファイル（`specs/inventory.proto`など）。importはファイルの隣から読み込まれ、よく使われる`google.protobuf`の型にはファイルは不要です。
+  `.proto`ファイルの追加と編集は仕様ページで行います。[protoファイル](/docs/specs/proto-files)を参照してください。
+- **サーバリフレクション**：Echolotがサーバにサービスを問い合わせます。サーバがリフレクションサービスを提供している必要があります。
+  リフレクションの呼び出しは、リクエストのアドレスに、そのヘッダー、認証、変数とともに送られます。
+
+**読み込む**を選ぶと、サービスが読み込まれます。続いて、サービスとメソッドを選びます。メソッドの横に、Echolotがその種類を表示します：
+**unary**、**server streaming**、**client streaming**、**bidirectional streaming**。
+
+<Callout>
+  仕様ページの`.proto`ファイルから始めるほうが早く済みます。アウトラインにすべてのメソッドが並び、各メソッドのボタンで、例のメッセージ付きのgRPCリクエストを作れます。
+</Callout>
+
+## メッセージを書く [#write-the-message]
+
+メッセージはprotobufのJSONマッピングによるJSONで、`{{variables}}`が使えます：
+
+```json
+{
+  "sku": "TNT-MH-2P",
+  "quantity": 1,
+  "order_id": "{{orderId}}"
+}
+```
+
+**例**は、メッセージを、メソッドの入力のすべてのフィールドを例の値で埋めたもの（入れ子のメッセージも含む）に置き換えます。そこから書き始められます。
+
+JSONマッピングでは、64ビット整数は文字列、bytesはBase64、enumは名前、mapはオブジェクトになり、`Timestamp`、`Duration`、`FieldMask`、ラッパー、`Struct`、`Any`には通常のJSON形式があります。
+メッセージ型にないキーは拒否されるので、タイプミスが見過ごされることはありません。
+
+## 呼び出しの種類 [#call-kinds]
+
+| 種類 | 書くメッセージ | レスポンス |
+| --- | --- | --- |
+| Unary | JSONオブジェクト1つ | JSONオブジェクト1つ |
+| Server streaming | JSONオブジェクト1つ | サーバが送信したすべてのメッセージのJSON配列 |
+| Client streaming | メッセージのJSON配列 | JSONオブジェクト1つ |
+| Bidirectional streaming | メッセージのJSON配列 | サーバが送信したすべてのメッセージのJSON配列 |
+
+サーバストリーミングの呼び出しである**Inventory › Watch stock**では、メッセージが監視する商品を指定し、レスポンスはサーバが送信した在庫レベルのリストになります。
+
+## ステータス、メタデータ、トレーラー [#status-metadata-and-trailers]
+
+gRPCは、呼び出しの結果をステータスで報告します。ステータスは、メッセージの後のトレーラーに入って届きます。レスポンスの概要に表示され、`OK`は緑、
+それ以外はステータスとコードが赤で表示されます（`NOT_FOUND (5)`など）。受信したメッセージ数と圧縮方式も表示されます。レスポンスの**ヘッダー**タブには、レスポンスヘッダーが表示されます。
+
+テストでステータスを確認するには、**テスト**タブに**gRPCステータス**のチェックを追加します。デフォルトは`OK`と等しく、名前（`NOT_FOUND`）またはコード（`5`）も指定できます。
+[スクリプトとテスト](/docs/requests/scripts-and-tests)を参照してください。
+
+## 圧縮と期限 [#compression-and-deadline]
+
+アドレスの前にある**gRPC**バッジはメニューになっています：
+
+- **メッセージを圧縮**：**なし**、**gzip**、**deflate**。圧縮された返信は、この設定にかかわらず常に読み取られます。
+- **期限**：**期限なし**、または500 ms、1 s、5 s、30 s。期限はサーバに送られ、それを過ぎた呼び出しは`DEADLINE_EXCEEDED`で終了します。
+
+## TLSと証明書 [#tls-and-certificates]
+
+`http://`のアドレスは、TLSなしのHTTP/2でサーバを呼び出します。`https://`のアドレスはTLSを使い、ワークスペースの証明書ルールが適用されるので、カスタムCA証明書やクライアント証明書も使えます。
+[リクエスト設定](/docs/requests/settings)を参照してください。
+
+## コマンドラインから [#from-the-command-line]
+
+`echolot grpc describe`は、サーバのサービスとメソッドを一覧します。`echolot grpc call`は呼び出しを行い、`OK`以外のステータスでは1で終了します。[echolot grpc](/docs/cli/grpc)を参照してください。

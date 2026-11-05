@@ -1,0 +1,356 @@
+---
+title: "Динамические значения"
+description: "Все динамические значения Echolot с аргументами и примерами, сгруппированные так же, как в списке подсказок, который появляется после двух открывающих фигурных скобок."
+---
+
+Динамическое значение — это функция внутри `{{ }}`: `{{$uuid}}`, `{{$base64('heidi:alpenglow')}}`,
+`{{$responseJSONPath('auth/sign-in', '$.access_token')}}`. Echolot вычисляет её при отправке запроса. Динамические
+значения работают везде, где работают переменные: в URL, заголовках, телах, полях авторизации, сообщениях и
+настройках. О том, как выбирать и править их в приложении, см. [динамические значения](/docs/requests/dynamic-values).
+
+## Как их писать [#writing-them]
+
+- Динамическое значение начинается с `$`: `{{$timestamp}}`. Если аргументов нет, скобки можно не писать.
+- Аргументы идут в скобках через запятую: текст в кавычках (`'…'` или `"…"`), числа, имена переменных без кавычек или
+  другие динамические значения.
+- В текстовых аргументах могут быть собственные токены: `{{$base64('{{email}}:{{password}}')}}`. `}}` внутри кавычек
+  токен не завершает.
+- Всё, что не удалось разобрать, остаётся как вы написали, и об этом сообщается, поэтому случайная `{{` никогда не
+  сломает запрос.
+
+```text
+{{$sha256('{{body}}', 'base64')}}
+{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}
+{{$hmacSha256(apiSecret, $timestamp)}}
+```
+
+## Ответы [#responses]
+
+Эти значения читают последний ответ другого сохранённого запроса, заданного его путём (`folder/request`, например
+`auth/sign-in`). У каждого есть необязательный последний аргумент, который говорит, нужно ли сначала отправить этот
+запрос:
+
+| Последний аргумент | Что значит |
+| --- | --- |
+| `'if-missing'` (по умолчанию) | Сначала отправить, если ответа ещё нет. |
+| `'fresh'` | Каждый раз отправлять сначала; в прогоне — один раз за прогон. |
+| `'latest'` | Никогда не отправлять; взять последний ответ. |
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$responseJSONPath` | Запрос, JSONPath | Значение из тела ответа, выбранное по JSONPath. `{{$responseJSONPath('auth/sign-in', '$.access_token')}}` |
+| `$responseKeyPath` | Запрос, путь по ключам | Значение, выбранное путём по ключам, например `data.items.0.id`. `{{$responseKeyPath('orders/list-orders', 'items.0.id')}}` |
+| `$responseJq` | Запрос, фильтр jq | Результат применения фильтра jq к телу; если результатов несколько, каждый на своей строке. `{{$responseJq('catalog/list-products', '.items[0].sku')}}` |
+| `$responseXPath` | Запрос, XPath | Значение из ответа в формате XML. `{{$responseXPath('echo/xml', '/catalog/product[1]/@sku')}}` |
+| `$responseRegex` | Запрос, шаблон | Первое совпадение регулярного выражения в теле: его первая группа, если она есть. `{{$responseRegex('echo/html', '<title>(\\w+)</title>')}}` |
+| `$responseHeader` | Запрос, заголовок | Заголовок ответа. `{{$responseHeader('orders/create-order', 'Location')}}` |
+| `$responseCookie` | Запрос, cookie | Значение cookie, установленного ответом. `{{$responseCookie('echo/set-cookie', 'flavour')}}` |
+| `$responseStatus` | Запрос | Код состояния. `{{$responseStatus('auth/sign-in')}}` |
+| `$responseBody` | Запрос | Всё тело как текст. `{{$responseBody('auth/who-am-i')}}` |
+| `$responseBodyLength` | Запрос | Размер тела в байтах. `{{$responseBodyLength('catalog/export')}}` |
+| `$response` | Запрос, выражение | Любое из перечисленного, в зависимости от вида выражения: JSONPath (`$.token`), XPath (`/a/b` или `xpath:…`), `regex:…`, `jq:…`, `keypath:…`, `header:Name` или `cookie:Name`. `{{$response('auth/sign-in', 'header:Content-Type')}}` |
+
+Например, **Who am I** может брать токен прямо из **Sign in**, при необходимости отправляя его сначала:
+
+```text
+Authorization: Bearer {{$responseJSONPath('auth/sign-in', '$.access_token')}}
+```
+
+Запрос, который по кругу читает ответ другого запроса, отклоняется с указанием этого круга.
+[Захваты из ответов](/docs/requests/captures) — другой способ переносить значения между запросами.
+
+## Запросы [#requests]
+
+Эти значения читают запрос в том виде, в каком он был бы отправлен, с подставленными значениями. Первый аргумент —
+путь сохранённого запроса или пустая строка (`''`) для запроса, который сейчас отправляется.
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$requestURL` | Запрос | Его URL с подставленными значениями. `{{$requestURL('')}}` |
+| `$requestMethod` | Запрос | Его метод. `{{$requestMethod('')}}` |
+| `$requestHeader` | Запрос, заголовок | Заголовок с подставленными значениями, включая то, что добавляет авторизация. `{{$requestHeader('', 'Content-Type')}}` |
+| `$requestQuery` | Запрос, параметр | Параметр запроса из его URL, декодированный. `{{$requestQuery('', 'page')}}` |
+| `$requestBody` | Запрос | Его тело с подставленными значениями, как текст. `{{$requestBody('')}}` |
+| `$requestJSONPath` | Запрос, JSONPath | Значение из его тела JSON. `{{$requestJSONPath('orders/create-order', '$.lines[0].sku')}}` |
+| `$requestJq` | Запрос, фильтр jq | Результат применения фильтра jq к его телу JSON. `{{$requestJq('', '.lines[0].quantity')}}` |
+| `$requestVariable` | Запрос, переменная | Переменная в том виде, в каком её видит этот запрос. `{{$requestVariable('auth/sign-in', 'email')}}` |
+
+Обычно их используют, чтобы подписать запрос тем, что он отправляет:
+
+```text
+X-Signature: {{$hmacSha256(apiSecret, $requestBody(''))}}
+```
+
+## Кодирование [#encoding]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$base64` | Текст | Текст в Base64. `{{$base64('heidi:alpenglow')}}` |
+| `$base64Decode` | Base64 | Base64 или Base64URL, декодированный в текст. `{{$base64Decode('aGVpZGk=')}}` |
+| `$base64Url` | Текст | Текст в Base64URL, без заполнения. `{{$base64Url('{"alg":"none"}')}}` |
+| `$urlEncode` | Текст | Текст, закодированный с процентным кодированием для компонента URL. `{{$urlEncode('ultralight tent')}}` |
+| `$urlDecode` | Текст | Текст с процентным кодированием, декодированный; `+` остаётся `+`. `{{$urlDecode('ultralight%20tent')}}` |
+| `$hex` | Текст | Байты текста в UTF-8 в шестнадцатеричном виде. `{{$hex('Grüezi')}}` |
+| `$hexDecode` | Hex | Шестнадцатеричная запись, декодированная в текст. `{{$hexDecode('6869')}}` |
+| `$jsonEscape` | Текст | Текст, экранированный для вставки внутрь строки JSON, без кавычек. `{{$jsonEscape(note)}}` |
+| `$newline` | нет | Перевод строки (`\n`). |
+| `$cr` | нет | Возврат каретки (`\r`). |
+| `$crlf` | нет | Возврат каретки и перевод строки (`\r\n`). |
+| `$tab` | нет | Табуляция. |
+| `$unescape` | Последовательность | Текст, в котором управляющие последовательности заменены символами: `\n`, `\r`, `\t`, `\0`, `\\`, `\xHH`, `\uHHHH`. `{{$unescape('café')}}` |
+| `$basicAuth` | Пользователь, пароль | Значение `Authorization` для HTTP Basic: `Basic ` и Base64 от `user:password`. `{{$basicAuth(email, password)}}` |
+| `$jwt` | Полезная нагрузка, секрет, алгоритм (необязательно) | JWT с полезной нагрузкой JSON, подписанный секретом: `HS256`, если вы не выбрали `HS384` или `HS512`. `{{$jwt('{"sub": "heidi"}', jwtSecret)}}` |
+
+## Хеши и подписи [#hashes-and-signatures]
+
+Каждый хеш принимает текст и, необязательно, формат вывода: `'hex'` (по умолчанию), `'base64'` или `'base64url'`.
+Каждый HMAC принимает ключ, сообщение и, необязательно, формат вывода.
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$md5` | Текст, вывод | MD5 текста. `{{$md5('alpenglow')}}` |
+| `$sha1` | Текст, вывод | SHA-1. `{{$sha1('alpenglow')}}` |
+| `$sha224` | Текст, вывод | SHA-224. |
+| `$sha256` | Текст, вывод | SHA-256. `{{$sha256($requestBody(''), 'base64')}}` |
+| `$sha384` | Текст, вывод | SHA-384. |
+| `$sha512` | Текст, вывод | SHA-512. |
+| `$hmacMd5` | Ключ, сообщение, вывод | HMAC-MD5 сообщения с этим ключом. |
+| `$hmacSha1` | Ключ, сообщение, вывод | HMAC-SHA1. |
+| `$hmacSha224` | Ключ, сообщение, вывод | HMAC-SHA224. |
+| `$hmacSha256` | Ключ, сообщение, вывод | HMAC-SHA256. `{{$hmacSha256(apiSecret, $timestamp)}}` |
+| `$hmacSha384` | Ключ, сообщение, вывод | HMAC-SHA384. |
+| `$hmacSha512` | Ключ, сообщение, вывод | HMAC-SHA512. |
+
+## Время [#time]
+
+Все эти значения относятся к моменту отправки запроса.
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$timestamp` | нет | Время Unix в секундах: `1793525000`. |
+| `$timestampMs` | нет | Время Unix в миллисекундах: `1793525000123`. |
+| `$isoTimestamp` | нет | ISO 8601 в UTC, с миллисекундами: `2026-11-01T09:30:00.123Z`. |
+| `$httpDate` | нет | Дата HTTP, для `Date` или `If-Modified-Since`: `Sun, 01 Nov 2026 09:30:00 GMT`. |
+| `$date` | Формат, смещение в секундах (необязательно), часовой пояс (необязательно) | Время по шаблону даты Unicode, сдвинутое на смещение, в заданном часовом поясе (UTC, если не указан). `{{$date('yyyy-MM-dd')}}`, `{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
+
+## Случайные значения [#random]
+
+Новое значение при каждой отправке.
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$uuid` | нет | Случайный UUID в нижнем регистре. Также `$guid` и `$randomUUID`. `{{$uuid}}` |
+| `$randomInt` | Минимум, максимум | Целое число между двумя значениями, включая оба. Один аргумент — максимум, от 0; без аргументов — от 0 до 1000. `{{$randomInt(1, 5)}}` |
+| `$randomString` | Длина, символы (необязательно) | Случайные символы, 16, если не указано (до 4096): буквы и цифры или заданные символы. `{{$randomString(8, 'ABCDEF0123456789')}}` |
+| `$randomHex` | Байты | Случайные байты в шестнадцатеричном виде, 16, если не указано (до 2048); цифр вдвое больше. `{{$randomHex(8)}}` |
+
+Запрос **Create order** в Alpenglow отправляет `Idempotency-Key: {{$uuid}}`, так что каждый его заказ — новый.
+
+## Тестовые данные [#fake-data]
+
+Выдуманные значения для тел запросов, тестовых данных и [маршрутов мока](/docs/mocks/routes#bodies-with-fake-data):
+имена, адреса, компании, цены, даты, lorem ipsum и многое другое, каждый раз новые. Имена взяты из динамических
+переменных Postman, поэтому коллекции, которые ими пользуются, отправляют здесь настоящие значения. В списке `{{` они
+находятся в разделе **Тестовые данные**, по группам.
+
+Аргументы необязательны; числа принимаются от -10^15 до 10^15. В телах моков можно пользоваться также `$uuid` (как
+`$randomUUID`), `$randomInt`, `$randomString`, `$randomHex`, `$timestamp`, `$timestampMs` и `$isoTimestamp` из разделов
+[Случайные значения](#random) и [Время](#time). Из Терминала [`echolot fake`](/docs/cli/fake) заполняет ими шаблон.
+
+### Общие [#common]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomFloat` | Минимум, максимум, число знаков | Десятичное число между границами (от 0 до 1000), с 2 знаками после запятой, если не указано иное. |
+| `$randomDigits` | Длина | Строка из случайных цифр, 6, если длина не указана. |
+| `$randomBoolean` | нет | true или false. |
+| `$randomElement` | Варианты | Один из аргументов, выбранный случайно: $randomElement(active, paused, closed). |
+| `$randomAlphaNumeric` | нет | Одна буква или цифра. |
+| `$randomColor` | нет | Название цвета: teal. |
+| `$randomHexColor` | нет | Цвет в шестнадцатеричном виде: #3f8acb. |
+| `$randomAbbreviation` | нет | Техническая аббревиатура: SQL. |
+
+### Имена и должности [#names-and-jobs]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomFirstName` | нет | Имя: Amelia. |
+| `$randomLastName` | нет | Фамилия: Okafor. |
+| `$randomFullName` | нет | Имя и фамилия: Amelia Okafor. |
+| `$randomNamePrefix` | нет | Mr., Ms., Dr.… |
+| `$randomNameSuffix` | нет | Jr., PhD… |
+| `$randomJobArea` | нет | Mobility, Security… |
+| `$randomJobDescriptor` | нет | Lead, Senior… |
+| `$randomJobTitle` | нет | Senior Security Engineer. |
+| `$randomJobType` | нет | Engineer, Designer… |
+
+### Интернет [#internet]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomEmail` | нет | Адрес электронной почты: amelia.okafor@gmail.com. |
+| `$randomExampleEmail` | нет | Адрес электронной почты на example.com, example.net или example.org. |
+| `$randomUserName` | нет | Имя пользователя: amelia_okafor42. |
+| `$randomPassword` | нет | 15 случайных букв и цифр. |
+| `$randomUrl` | нет | https://northwind.io |
+| `$randomDomainName` | нет | northwind.io |
+| `$randomDomainSuffix` | нет | com, io, dev… |
+| `$randomDomainWord` | нет | northwind |
+| `$randomIP` | нет | Адрес IPv4: 192.168.14.7. |
+| `$randomIPV6` | нет | Адрес IPv6. |
+| `$randomMACAddress` | нет | MAC-адрес: 3a:f1:0c:5e:92:b4. |
+| `$randomProtocol` | нет | http или https. |
+| `$randomSemver` | нет | Семантическая версия: 2.14.3. |
+| `$randomLocale` | нет | Локаль: de_CH. |
+| `$randomUserAgent` | нет | User-Agent браузера. |
+
+### Адреса и места [#addresses-and-places]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomStreetName` | нет | Maple Avenue |
+| `$randomStreetAddress` | нет | 42 Maple Avenue |
+| `$randomCity` | нет | Lisbon |
+| `$randomZipCode` | нет | Пятизначный почтовый индекс. Также `$randomZip`. |
+| `$randomCountry` | нет | Portugal |
+| `$randomCountryCode` | нет | Код страны по ISO 3166: PT. |
+| `$randomLatitude` | нет | Широта: 38.7223. |
+| `$randomLongitude` | нет | Долгота: -9.1393. |
+
+### Телефон [#phone]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomPhoneNumber` | нет | Номер телефона: 555-201-4417. |
+| `$randomPhoneNumberExt` | нет | Номер телефона с кодом страны: +44 555-201-4417. |
+
+### Компании [#companies]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomCompanyName` | нет | Northwind Labs |
+| `$randomCompanySuffix` | нет | Inc, LLC, GmbH… |
+| `$randomBs` | нет | streamline seamless platforms |
+| `$randomBsAdjective` | нет | seamless |
+| `$randomBsBuzz` | нет | streamline |
+| `$randomBsNoun` | нет | platforms |
+| `$randomCatchPhrase` | нет | Adaptive real-time framework |
+| `$randomCatchPhraseAdjective` | нет | Adaptive |
+| `$randomCatchPhraseDescriptor` | нет | real-time |
+| `$randomCatchPhraseNoun` | нет | framework |
+
+### Финансы [#finance]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomPrice` | Минимум, максимум | Цена с двумя знаками после запятой, от 1 до 1000, если границы не указаны. |
+| `$randomCurrencyCode` | нет | EUR |
+| `$randomCurrencyName` | нет | Euro |
+| `$randomCurrencySymbol` | нет | € |
+| `$randomBankAccount` | нет | Номер счёта из 8 цифр. |
+| `$randomBankAccountName` | нет | Savings Account |
+| `$randomBankAccountIban` | нет | IBAN с правильными контрольными цифрами. |
+| `$randomBankAccountBic` | нет | BIC (код SWIFT). |
+| `$randomCreditCardMask` | нет | Последние четыре цифры карты. |
+| `$randomTransactionType` | нет | deposit, payment, refund… |
+| `$randomBitcoin` | нет | Выдуманный биткойн-адрес. |
+
+### Магазины и товары [#shops-and-products]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomProduct` | нет | Chair |
+| `$randomProductName` | нет | Ergonomic Wooden Chair |
+| `$randomProductAdjective` | нет | Ergonomic |
+| `$randomProductMaterial` | нет | Wooden |
+| `$randomDepartment` | нет | Garden |
+
+### Даты [#dates]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomDatePast` | нет | Момент за последний год, ISO 8601. |
+| `$randomDateFuture` | нет | Момент в течение следующего года, ISO 8601. |
+| `$randomDateRecent` | нет | Момент за последние два дня, ISO 8601. |
+| `$randomDate` | нет | День за последний год: 2026-03-14. |
+| `$randomWeekday` | нет | Tuesday |
+| `$randomMonth` | нет | March |
+
+### Слова [#words]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomWord` | нет | Слово. |
+| `$randomWords` | Количество | Несколько слов, 3, если количество не указано. |
+| `$randomNoun` | нет | router |
+| `$randomVerb` | нет | compile |
+| `$randomIngverb` | нет | compiling |
+| `$randomAdjective` | нет | wireless |
+| `$randomPhrase` | нет | Короткая фраза из перечисленных выше слов. |
+
+### Lorem ipsum [#lorem-ipsum]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomLoremWord` | нет | dolor |
+| `$randomLoremWords` | Количество | Слова lorem, 3, если количество не указано. |
+| `$randomLoremSentence` | нет | Одно предложение. |
+| `$randomLoremSentences` | Количество | Несколько предложений, от 2 до 6, если количество не указано. |
+| `$randomLoremParagraph` | нет | Один абзац. |
+| `$randomLoremParagraphs` | Количество | Абзацы, 3, если количество не указано. |
+| `$randomLoremText` | нет | Предложение или несколько. |
+| `$randomLoremSlug` | нет | dolor-sit-amet |
+| `$randomLoremLines` | нет | Несколько предложений, по одному на строке. |
+
+### Файлы [#files]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomFileName` | нет | router_matrix.pdf |
+| `$randomFileType` | нет | image, text, video… |
+| `$randomFileExt` | нет | pdf |
+| `$randomCommonFileName` | нет | Имя файла с распространённым расширением. |
+| `$randomCommonFileType` | нет | image, video, text… |
+| `$randomCommonFileExt` | нет | png |
+| `$randomFilePath` | нет | /var/reports/router_matrix.pdf |
+| `$randomDirectoryPath` | нет | /var/reports |
+| `$randomMimeType` | нет | application/pdf |
+
+### Изображения [#images]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomAvatarImage` | нет | Адрес изображения аватара. |
+| `$randomImageUrl` | нет | Адрес изображения 640×480. |
+| `$randomAbstractImage` | нет | Адрес изображения 640×480 на тему abstract. Другие темы: `$randomAnimalsImage`, `$randomBusinessImage`, `$randomCatsImage`, `$randomCityImage`, `$randomFoodImage`, `$randomNightlifeImage`, `$randomFashionImage`, `$randomPeopleImage`, `$randomNatureImage`, `$randomSportsImage`, `$randomTransportImage`. |
+| `$randomImageDataUri` | нет | Небольшое изображение SVG в виде data: URI. |
+
+### Базы данных [#databases]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$randomDatabaseColumn` | нет | createdAt |
+| `$randomDatabaseType` | нет | varchar |
+| `$randomDatabaseCollation` | нет | utf8mb4_unicode_ci |
+| `$randomDatabaseEngine` | нет | InnoDB |
+
+## Текст [#text]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$lowercase` | Текст | Текст в нижнем регистре. `{{$lowercase(email)}}` |
+| `$uppercase` | Текст | Текст в верхнем регистре. `{{$uppercase(productId)}}` |
+| `$trim` | Текст | Текст без пробелов и переводов строки по краям. `{{$trim($responseBody('auth/who-am-i'))}}` |
+
+## Файлы и система [#files-and-the-system]
+
+| Значение | Аргументы | Что даёт |
+| --- | --- | --- |
+| `$file` | Путь | Содержимое файла: путь относительно рабочего пространства или абсолютный. `{{$file('fixtures/order.json')}}` |
+| `$env` | Имя | Переменная окружения процесса Echolot. `{{$env('HOME')}}` |
+
+## Динамические значения и агенты [#dynamic-values-and-agents]
+
+Когда запрос отправляет ИИ-агент (через MCP-сервер Echolot или Ассистента), `$env` ничего не возвращает, а `$file`
+читает только файлы внутри рабочего пространства. Секретные значения никогда не попадают к агенту. См.
+[агенты](/docs/ai/agents).

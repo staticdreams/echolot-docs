@@ -1,0 +1,177 @@
+---
+title: "echolot run"
+description: "Прогоните рабочее пространство, некоторые его папки или запросы либо коллекцию Postman — с проверками, файлами данных и отчётами."
+---
+
+`echolot run` отправляет запросы рабочего пространства по порядку, выполняет их скрипты и проверки и сообщает, что
+прошло. Это [Прогон](/docs/requests/runner) без окна, сделанный для CI. Он также запускает коллекцию Postman как есть,
+не импортируя её.
+
+```sh
+echolot run [<options>] <source>
+```
+
+`<source>` — это папка рабочего пространства (та, в которой лежит `workspace.toml`) или файл коллекции Postman.
+
+## Прогон рабочего пространства [#run-a-workspace]
+
+```sh
+echolot run Alpenglow.echolot --folder auth/sign-in --folder catalog
+```
+
+```text
+catalog, auth/sign-in
+
+✓ POST   auth/sign-in  200 150 ms
+    ✓ Status equals 200
+    ✓ JSON value $.access_token exists
+✓ GET    catalog/list-products  200 74 ms
+    ✓ Status equals 200
+    ✓ JSON value $.items.length is greater than 0
+    ✓ Header Content-Type contains json
+    ✓ Response time (ms) is less than 1000
+✓ GET    catalog/search  200 69 ms
+    ✓ Status equals 200
+✓ GET    catalog/get-product  200 70 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ GET    catalog/categories  200 73 ms
+    ✓ Status equals 200
+✓ GQL    catalog/search-products  200 37 ms
+✓ GET    catalog/export  200 410 ms
+    ✓ Status equals 200
+
+All 7 requests passed  11/11 checks passed · 0.90 s
+```
+
+- Без `--folder` выполняется всё. `--folder` принимает папку (`catalog`) или запрос (`auth/sign-in`) в виде путей из
+  slug-ов в `requests/` и может быть указан несколько раз. Запросы выполняются в порядке рабочего пространства.
+- `--env` принимает имя файла окружения без `.toml` (`staging`) или его имя (`Staging`).
+- Учитываются проверки каждого запроса и результаты `pm.test`. Запрос считается неудавшимся, если на него нет ответа
+  или проверка не прошла; тогда прогон завершается с кодом 1.
+- Ответы, захваченные в переменные, токены из клиентских учётных данных OAuth 2 и значения, которые задали скрипты,
+  переходят в последующие запросы прогона, как в приложении. Значения скриптов живут только в рамках прогона и
+  никогда не записываются в файлы.
+
+<Callout type="warn">
+  Без Связки ключей (в CI, на Linux или с `ECHOLOT_KEYCHAIN=0`) захват ответа в **секретную** переменную не
+  сохраняется для следующего запроса. В Alpenglow запрос **Sign in** захватывает `{{token}}` как секрет, поэтому
+  **Who am I** и папка Orders получают в таком прогоне 401. Для таких прогонов задайте `ECHOLOT_SECRET_TOKEN` сами или
+  захватывайте в переменную, которая не секретная.
+</Callout>
+
+## Прогоны на данных [#data-driven-runs]
+
+`--data` выполняет всё один раз на каждую строку файла данных:
+
+- Файл CSV со строкой заголовков: каждый столбец — переменная для своей строки.
+- Файл JSON с массивом объектов: каждый ключ — переменная.
+
+```sh
+echolot run Alpenglow.echolot --folder catalog/get-product --data skus.csv
+```
+
+```text
+catalog/get-product · skus.csv, 2 rows
+
+✓ #1 GET    catalog/get-product  200 133 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ #2 GET    catalog/get-product  200 88 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+
+All 2 requests passed  4/4 checks passed · 0.22 s
+```
+
+Скрипты читают строку через `pm.iterationData`. Без файла данных `--iterations` повторяет прогон. `--concurrency`
+выполняет столько итераций одновременно; то, что задают скрипты одной итерации, остаётся только за ней.
+
+## Отчёты [#reports]
+
+`--reporter` выбирает отчёт и может быть указан несколько раз. `--out` называет файл для каждого отчёта, кроме
+`console`, в порядке параметров `--reporter`; отчёт без файла идёт в стандартный вывод.
+
+| Репортёр | Что пишет |
+| --- | --- |
+| `console` | Строки выше, с цветом в терминале. По умолчанию, если вы не указали `--reporter`. |
+| `junit` | JUnit XML: один набор тестов на запрос, один тестовый случай на проверку. Его читает большинство систем CI. |
+| `json` | Весь прогон в JSON: каждый запрос с его статусом, временем, размером, попытками и результатом каждой проверки. |
+| `html` | Отчёт, который можно открыть в браузере. |
+| `har` | Каждый обмен прогона в виде HTTP Archive. |
+
+```sh
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out results.xml \
+  --reporter html --out report.html
+```
+
+Отчёт JUnit прогона с непройденной проверкой:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Alpenglow" tests="4" failures="1" errors="0" time="0.377" timestamp="2026-11-01T09:23:04Z">
+  <testsuite name="auth/sign-in" tests="2" failures="0" errors="0" skipped="0" time="0.155">
+    <testcase name="Status equals 200" classname="auth.sign-in" time="0"/>
+    <testcase name="JSON value $.access_token exists" classname="auth.sign-in" time="0"/>
+  </testsuite>
+  <testsuite name="auth/who-am-i" tests="1" failures="1" errors="0" skipped="0" time="0.083">
+    <testcase name="Status equals 200" classname="auth.who-am-i" time="0">
+      <failure message="expected “200”, got “401”" type="AssertionFailure"/>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+Каждый отчёт маскирует секретные значения — в URL, заголовках, сообщениях проверок и журналах, — поэтому отчёт можно
+безопасно хранить как артефакт CI.
+
+## Прогон коллекции Postman [#run-a-postman-collection]
+
+```sh
+echolot run shop.postman_collection.json --env-file staging.postman_environment.json --data users.csv
+```
+
+Коллекция выполняется как есть: Echolot читает её во временное рабочее пространство, которое потом выбрасывается, а её
+учётные данные остаются в памяти. Её скрипты перед запросом и тестовые скрипты выполняются, как в Newman. `--env-file`
+принимает файл окружения Postman; `--env` — для рабочих пространств. `--folder` может называть папку коллекции без
+собственной верхней папки коллекции.
+
+Чтобы продолжать работать с коллекцией, [импортируйте её](/docs/cli/import-export).
+
+## Параметры [#options]
+
+| Параметр | Значение |
+| --- | --- |
+| `-e`, `--env <env>` | Окружение: имя его файла без `.toml` или его имя. |
+| `--env-file <file>` | Файл окружения Postman для использования с коллекцией. |
+| `--folder <path>` | Папка или запрос для выполнения, например `users` или `users/list-users`. Можно повторять; если не указано — всё. |
+| `-d`, `--data <file>` | Файл CSV со строкой заголовков или массив объектов JSON: одна итерация на строку. |
+| `-n`, `--iterations <n>` | Сколько раз выполнить всё, без файла данных. По умолчанию 1. |
+| `--delay <ms>` | Сколько миллисекунд ждать между запросами. По умолчанию 0. |
+| `--retries <n>` | Дополнительные попытки для запроса, который не прошёл. По умолчанию 0. |
+| `--bail` | Остановиться на первом неудавшемся запросе. |
+| `--concurrency <n>` | Сколько итераций выполняется одновременно; 1 — одну за другой. По умолчанию 1. |
+| `--reporter <name>` | `console`, `junit`, `json`, `html` или `har`. Можно повторять; если не указано — `console`. |
+| `-o`, `--out <file>` | Файл для каждого отчёта, кроме консольного, в порядке `--reporter`; если не указан — стандартный вывод. |
+| `--secrets <file>` | Файл со строками `NAME=value` с секретными значениями, в дополнение к переменным `ECHOLOT_SECRET_<NAME>`. |
+| `-k`, `--insecure` | Пропустить проверку сертификата TLS. |
+| `--proxy <url>` | Отправлять через этот прокси: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
+| `--no-proxy` | Подключаться напрямую, игнорируя `HTTP_PROXY` и остальные. |
+| `--cacert <file>` | Дополнительно доверять сертификатам ЦС из этого файла PEM. Можно повторять. |
+| `--cert <file>` | Отправлять этот клиентский сертификат: файл PEM (вместе с `--key`) или файл `.p12`/`.pfx`. |
+| `--key <file>` | Закрытый ключ клиентского сертификата в PEM, когда в файле сертификата его нет. |
+| `--pass <passphrase>` | Парольная фраза ключа или файла PKCS#12. Лучше использовать `ECHOLOT_CERT_PASSPHRASE`. |
+| `--timeout <seconds>` | Тайм-аут для каждого запроса. По умолчанию 60. |
+| `--no-color` | Простой вывод в консоль. Также когда задана `NO_COLOR` или вывод идёт не в терминал. |
+
+## Коды выхода [#exit-codes]
+
+| Код | Когда |
+| --- | --- |
+| `0` | На каждый запрос получен ответ, и все проверки прошли. |
+| `1` | Запрос не удался: нет ответа или непройденная проверка. |
+| `64` | Неверный параметр, источник, который не является ни рабочим пространством, ни коллекцией Postman, неизвестное окружение или файл данных без строк. |
+
+Полные конвейеры см. в [CI](/docs/cli/ci), а откуда берутся секретные значения — в [секретах](/docs/cli#secrets).

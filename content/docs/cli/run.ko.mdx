@@ -1,0 +1,171 @@
+---
+title: "echolot run"
+description: "작업 공간, 그 일부 폴더나 요청, 또는 Postman 컬렉션을 검사, 데이터 파일, 보고서와 함께 실행합니다."
+---
+
+`echolot run`은 작업 공간의 요청을 순서대로 보내고, 스크립트와 검사를 실행하고, 통과한 항목을 보고합니다. 창이 없는
+[실행](/docs/requests/runner)이며 CI용으로 만들어졌습니다. Postman 컬렉션을 가져오지 않고 그대로 실행할 수도 있습니다.
+
+```sh
+echolot run [<options>] <source>
+```
+
+`<source>`는 작업 공간 폴더(`workspace.toml`이 들어 있는 폴더) 또는 Postman 컬렉션 파일입니다.
+
+## 작업 공간 실행 [#run-a-workspace]
+
+```sh
+echolot run Alpenglow.echolot --folder auth/sign-in --folder catalog
+```
+
+```text
+catalog, auth/sign-in
+
+✓ POST   auth/sign-in  200 150 ms
+    ✓ Status equals 200
+    ✓ JSON value $.access_token exists
+✓ GET    catalog/list-products  200 74 ms
+    ✓ Status equals 200
+    ✓ JSON value $.items.length is greater than 0
+    ✓ Header Content-Type contains json
+    ✓ Response time (ms) is less than 1000
+✓ GET    catalog/search  200 69 ms
+    ✓ Status equals 200
+✓ GET    catalog/get-product  200 70 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ GET    catalog/categories  200 73 ms
+    ✓ Status equals 200
+✓ GQL    catalog/search-products  200 37 ms
+✓ GET    catalog/export  200 410 ms
+    ✓ Status equals 200
+
+All 7 requests passed  11/11 checks passed · 0.90 s
+```
+
+- `--folder`가 없으면 모두 실행됩니다. `--folder`는 `requests/` 아래의 슬러그 경로로 폴더(`catalog`)나 요청(`auth/sign-in`)을
+  받으며 여러 번 지정할 수 있습니다. 요청은 작업 공간의 순서대로 실행됩니다.
+- `--env`는 `.toml`을 뺀 환경의 파일 이름(`staging`) 또는 이름(`Staging`)을 받습니다.
+- 각 요청의 검사와 `pm.test` 결과가 집계됩니다. 응답이 없거나 검사가 실패하면 요청이 실패하며, 이때 실행은 1로 종료됩니다.
+- 변수로 캡처한 응답, OAuth 2 클라이언트 자격 증명으로 받은 토큰, 스크립트가 설정한 값은 앱에서와 같이 같은 실행의 이후 요청으로
+  이어집니다. 스크립트 값은 그 실행 동안만 유지되며 파일에는 기록되지 않습니다.
+
+<Callout type="warn">
+  키체인이 없으면(CI, Linux, `ECHOLOT_KEYCHAIN=0`) **비밀** 변수로 캡처한 응답은 다음 요청으로 이어지지 않습니다. Alpenglow에서
+  **Sign in**은 `{{token}}`을 비밀 값으로 캡처하므로, 이런 실행에서는 **Who am I**와 Orders 폴더가 401을 받습니다. 이런 실행에서는
+  `ECHOLOT_SECRET_TOKEN`을 직접 설정하거나, 비밀 값이 아닌 변수로 캡처하십시오.
+</Callout>
+
+## 데이터 기반 실행 [#data-driven-runs]
+
+`--data`는 데이터 파일의 행마다 한 번씩 전체를 실행합니다.
+
+- 머리글 행이 있는 CSV 파일: 각 열이 해당 행의 변수가 됩니다.
+- 객체 배열이 들어 있는 JSON 파일: 각 키가 변수가 됩니다.
+
+```sh
+echolot run Alpenglow.echolot --folder catalog/get-product --data skus.csv
+```
+
+```text
+catalog/get-product · skus.csv, 2 rows
+
+✓ #1 GET    catalog/get-product  200 133 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+✓ #2 GET    catalog/get-product  200 88 ms
+    ✓ Status equals 200
+    ✓ JSON value $.sku equals {{productId}}
+
+All 2 requests passed  4/4 checks passed · 0.22 s
+```
+
+스크립트는 `pm.iterationData`로 행을 읽습니다. 데이터 파일이 없으면 `--iterations`가 실행을 반복합니다. `--concurrency`는 그 수만큼의
+반복을 나란히 실행하며, 한 반복의 스크립트가 설정한 값은 그 반복에만 남습니다.
+
+## 보고서 [#reports]
+
+`--reporter`는 보고서를 선택하며 여러 번 지정할 수 있습니다. `--out`은 `console`이 아닌 각 보고서의 파일을 `--reporter` 옵션의
+순서대로 지정합니다. 파일이 없는 보고서는 표준 출력으로 나갑니다.
+
+| 리포터 | 쓰는 내용 |
+| --- | --- |
+| `console` | 위와 같은 줄. 터미널에서는 색이 들어갑니다. `--reporter`를 지정하지 않았을 때의 기본값입니다. |
+| `junit` | JUnit XML: 요청마다 테스트 스위트 하나, 검사마다 테스트 케이스 하나. 대부분의 CI 시스템이 읽을 수 있습니다. |
+| `json` | 실행 전체를 JSON으로: 모든 요청의 상태, 시간, 크기, 시도 횟수, 각 검사의 결과. |
+| `html` | 브라우저에서 여는 보고서. |
+| `har` | 실행의 모든 교환을 HTTP Archive로. |
+
+```sh
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out results.xml \
+  --reporter html --out report.html
+```
+
+검사가 실패한 실행의 JUnit 보고서:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Alpenglow" tests="4" failures="1" errors="0" time="0.377" timestamp="2026-11-01T09:23:04Z">
+  <testsuite name="auth/sign-in" tests="2" failures="0" errors="0" skipped="0" time="0.155">
+    <testcase name="Status equals 200" classname="auth.sign-in" time="0"/>
+    <testcase name="JSON value $.access_token exists" classname="auth.sign-in" time="0"/>
+  </testsuite>
+  <testsuite name="auth/who-am-i" tests="1" failures="1" errors="0" skipped="0" time="0.083">
+    <testcase name="Status equals 200" classname="auth.who-am-i" time="0">
+      <failure message="expected “200”, got “401”" type="AssertionFailure"/>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+모든 보고서는 URL, 헤더, 검사 메시지, 로그의 비밀 값을 가리므로 보고서를 CI 아티팩트로 보관해도 안전합니다.
+
+## Postman 컬렉션 실행 [#run-a-postman-collection]
+
+```sh
+echolot run shop.postman_collection.json --env-file staging.postman_environment.json --data users.csv
+```
+
+컬렉션은 그대로 실행됩니다. Echolot은 컬렉션을 임시 작업 공간으로 읽어 들이고 실행이 끝나면 버리며, 자격 증명은 메모리에만 남습니다.
+컬렉션의 요청 전 스크립트와 테스트 스크립트는 Newman에서처럼 실행됩니다. `--env-file`은 Postman 환경 파일을 받고, `--env`는 작업
+공간용입니다. `--folder`에는 컬렉션 자체의 최상위 폴더를 뺀 컬렉션 폴더 이름을 지정할 수 있습니다.
+
+컬렉션을 계속 사용하려면 대신 [가져오십시오](/docs/cli/import-export).
+
+## 옵션 [#options]
+
+| 옵션 | 의미 |
+| --- | --- |
+| `-e`, `--env <env>` | 환경: `.toml`을 뺀 파일 이름 또는 이름. |
+| `--env-file <file>` | 컬렉션과 함께 사용할 Postman 환경 파일. |
+| `--folder <path>` | 실행할 폴더나 요청. 예: `users` 또는 `users/list-users`. 반복할 수 있으며, 생략하면 모두 실행합니다. |
+| `-d`, `--data <file>` | 머리글 행이 있는 CSV 파일 또는 객체의 JSON 배열: 행마다 한 번씩 반복합니다. |
+| `-n`, `--iterations <n>` | 데이터 파일이 없을 때 전체를 몇 번 실행할지. 기본값은 1입니다. |
+| `--delay <ms>` | 요청 사이에 기다릴 시간(밀리초). 기본값은 0입니다. |
+| `--retries <n>` | 실패한 요청의 추가 시도 횟수. 기본값은 0입니다. |
+| `--bail` | 처음 실패한 요청에서 멈춥니다. |
+| `--concurrency <n>` | 나란히 실행할 반복 수. 1이면 차례로 실행합니다. 기본값은 1입니다. |
+| `--reporter <name>` | `console`, `junit`, `json`, `html`, `har`. 반복할 수 있으며, 생략하면 `console`입니다. |
+| `-o`, `--out <file>` | 콘솔이 아닌 각 리포터의 파일. `--reporter`의 순서를 따르며, 없으면 표준 출력입니다. |
+| `--secrets <file>` | `ECHOLOT_SECRET_<NAME>` 변수에 더해 비밀 값을 담은 `NAME=value` 줄로 이루어진 파일. |
+| `-k`, `--insecure` | TLS 인증서 검증을 건너뜁니다. |
+| `--proxy <url>` | 이 프록시를 통해 보냅니다: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
+| `--no-proxy` | `HTTP_PROXY` 등을 무시하고 직접 연결합니다. |
+| `--cacert <file>` | 이 PEM 파일의 CA 인증서도 신뢰합니다. 반복할 수 있습니다. |
+| `--cert <file>` | 이 클라이언트 인증서를 보냅니다. PEM 파일(`--key`와 함께) 또는 `.p12`/`.pfx` 파일. |
+| `--key <file>` | 인증서 파일에 개인 키가 없을 때, 클라이언트 인증서의 PEM 개인 키. |
+| `--pass <passphrase>` | 키나 PKCS#12 파일의 암호. `ECHOLOT_CERT_PASSPHRASE`를 쓰는 편이 좋습니다. |
+| `--timeout <seconds>` | 요청마다의 시간 초과. 기본값은 60입니다. |
+| `--no-color` | 색 없는 콘솔 출력. `NO_COLOR`가 설정되어 있거나 출력이 터미널이 아닐 때도 같습니다. |
+
+## 종료 코드 [#exit-codes]
+
+| 코드 | 조건 |
+| --- | --- |
+| `0` | 모든 요청이 응답을 받았고 모든 검사를 통과했습니다. |
+| `1` | 요청이 실패했습니다. 응답이 없거나 검사가 실패했습니다. |
+| `64` | 잘못된 옵션, 작업 공간도 Postman 컬렉션도 아닌 소스, 알 수 없는 환경, 행이 없는 데이터 파일. |
+
+전체 파이프라인은 [CI](/docs/cli/ci)를, 비밀 값을 어디서 가져오는지는 [비밀 값](/docs/cli#secrets)을 참조하십시오.

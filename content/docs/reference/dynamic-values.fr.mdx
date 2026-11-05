@@ -1,0 +1,357 @@
+---
+title: "Valeurs dynamiques"
+description: "Toutes les valeurs dynamiques d’Echolot, avec leurs arguments et un exemple, regroupées comme dans la liste qui s’ouvre quand vous tapez deux accolades ouvrantes."
+---
+
+Une valeur dynamique est une fonction placée dans `{{ }}` : `{{$uuid}}`, `{{$base64('heidi:alpenglow')}}`,
+`{{$responseJSONPath('auth/sign-in', '$.access_token')}}`. Echolot la calcule à l’envoi de la requête. Les valeurs
+dynamiques fonctionnent partout où les variables fonctionnent : l’URL, les en-têtes, les corps, les champs d’auth, les
+messages et les réglages. Pour savoir comment les choisir et les modifier dans l’app, voir
+[valeurs dynamiques](/docs/requests/dynamic-values).
+
+## Les écrire [#writing-them]
+
+- Une valeur dynamique commence par `$` : `{{$timestamp}}`. Sans arguments, les parenthèses sont facultatives.
+- Les arguments se placent entre parenthèses, séparés par des virgules : du texte entre guillemets (`'…'` ou `"…"`), des
+  nombres, des noms de variables sans guillemets, ou d’autres valeurs dynamiques.
+- Les arguments de texte peuvent contenir leurs propres jetons : `{{$base64('{{email}}:{{password}}')}}`. Un `}}` entre
+  guillemets ne termine pas le jeton.
+- Tout ce qui ne s’analyse pas reste tel que vous l’avez écrit et est signalé : un `{{` isolé ne casse donc jamais une
+  requête.
+
+```text
+{{$sha256('{{body}}', 'base64')}}
+{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}
+{{$hmacSha256(apiSecret, $timestamp)}}
+```
+
+## Réponses [#responses]
+
+Ces valeurs lisent la dernière réponse d’une autre requête enregistrée, désignée par son chemin (`folder/request`, comme
+dans `auth/sign-in`). Chacune accepte un dernier argument facultatif qui indique si cette requête est envoyée d’abord :
+
+| Dernier argument | Signification |
+| --- | --- |
+| `'if-missing'` (par défaut) | L’envoyer d’abord si elle n’a pas encore de réponse. |
+| `'fresh'` | L’envoyer d’abord à chaque fois ; dans une exécution, une fois par exécution. |
+| `'latest'` | Ne jamais l’envoyer ; utiliser la dernière réponse. |
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$responseJSONPath` | Requête, JSONPath | Une valeur du corps de la réponse, choisie avec JSONPath. `{{$responseJSONPath('auth/sign-in', '$.access_token')}}` |
+| `$responseKeyPath` | Requête, chemin de clés | Une valeur choisie avec un chemin de clés comme `data.items.0.id`. `{{$responseKeyPath('orders/list-orders', 'items.0.id')}}` |
+| `$responseJq` | Requête, filtre jq | Ce qu’un filtre jq produit à partir du corps ; plusieurs résultats arrivent un par ligne. `{{$responseJq('catalog/list-products', '.items[0].sku')}}` |
+| `$responseXPath` | Requête, XPath | Une valeur d’une réponse XML. `{{$responseXPath('echo/xml', '/catalog/product[1]/@sku')}}` |
+| `$responseRegex` | Requête, motif | La première correspondance d’une expression régulière dans le corps : son premier groupe s’il y en a un. `{{$responseRegex('echo/html', '<title>(\\w+)</title>')}}` |
+| `$responseHeader` | Requête, en-tête | Un en-tête de la réponse. `{{$responseHeader('orders/create-order', 'Location')}}` |
+| `$responseCookie` | Requête, cookie | La valeur d’un cookie défini par la réponse. `{{$responseCookie('echo/set-cookie', 'flavour')}}` |
+| `$responseStatus` | Requête | Le code d’état. `{{$responseStatus('auth/sign-in')}}` |
+| `$responseBody` | Requête | Tout le corps, en texte. `{{$responseBody('auth/who-am-i')}}` |
+| `$responseBodyLength` | Requête | La taille du corps en octets. `{{$responseBodyLength('catalog/export')}}` |
+| `$response` | Requête, requête de sélection | N’importe laquelle des précédentes, selon la forme de la requête de sélection : un JSONPath (`$.token`), un XPath (`/a/b`, ou `xpath:…`), `regex:…`, `jq:…`, `keypath:…`, `header:Name` ou `cookie:Name`. `{{$response('auth/sign-in', 'header:Content-Type')}}` |
+
+Par exemple, **Who am I** peut prendre son jeton directement dans **Sign in**, en l’envoyant d’abord si nécessaire :
+
+```text
+Authorization: Bearer {{$responseJSONPath('auth/sign-in', '$.access_token')}}
+```
+
+Une requête qui lit la réponse d’une autre en boucle est refusée, avec la boucle nommée.
+Les [captures de réponse](/docs/requests/captures) sont l’autre façon de transmettre des valeurs d’une requête à l’autre.
+
+## Requêtes [#requests]
+
+Ces valeurs lisent une requête telle qu’elle serait envoyée, une fois résolue. Le premier argument est le chemin d’une
+requête enregistrée, ou vide (`''`) pour la requête en cours d’envoi.
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$requestURL` | Requête | Son URL, résolue. `{{$requestURL('')}}` |
+| `$requestMethod` | Requête | Sa méthode. `{{$requestMethod('')}}` |
+| `$requestHeader` | Requête, en-tête | Un en-tête, résolu, y compris ce que son auth ajoute. `{{$requestHeader('', 'Content-Type')}}` |
+| `$requestQuery` | Requête, paramètre | Un paramètre de requête de son URL, décodé. `{{$requestQuery('', 'page')}}` |
+| `$requestBody` | Requête | Son corps, résolu, en texte. `{{$requestBody('')}}` |
+| `$requestJSONPath` | Requête, JSONPath | Une valeur de son corps JSON. `{{$requestJSONPath('orders/create-order', '$.lines[0].sku')}}` |
+| `$requestJq` | Requête, filtre jq | Ce qu’un filtre jq produit à partir de son corps JSON. `{{$requestJq('', '.lines[0].quantity')}}` |
+| `$requestVariable` | Requête, variable | Une variable telle que cette requête la voit. `{{$requestVariable('auth/sign-in', 'email')}}` |
+
+L’usage habituel est de signer une requête avec ce qu’elle envoie :
+
+```text
+X-Signature: {{$hmacSha256(apiSecret, $requestBody(''))}}
+```
+
+## Encodage [#encoding]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$base64` | Texte | Le texte en Base64. `{{$base64('heidi:alpenglow')}}` |
+| `$base64Decode` | Base64 | Du Base64 ou Base64URL décodé en texte. `{{$base64Decode('aGVpZGk=')}}` |
+| `$base64Url` | Texte | Le texte en Base64URL, sans remplissage. `{{$base64Url('{"alg":"none"}')}}` |
+| `$urlEncode` | Texte | Le texte encodé en pourcentage pour un composant d’URL. `{{$urlEncode('ultralight tent')}}` |
+| `$urlDecode` | Texte | Du texte encodé en pourcentage, décodé ; `+` reste `+`. `{{$urlDecode('ultralight%20tent')}}` |
+| `$hex` | Texte | Les octets UTF-8 du texte en hexadécimal. `{{$hex('Grüezi')}}` |
+| `$hexDecode` | Hex | De l’hexadécimal décodé en texte. `{{$hexDecode('6869')}}` |
+| `$jsonEscape` | Texte | Le texte échappé pour aller dans une chaîne JSON, sans les guillemets. `{{$jsonEscape(note)}}` |
+| `$newline` | aucun | Un saut de ligne (`\n`). |
+| `$cr` | aucun | Un retour chariot (`\r`). |
+| `$crlf` | aucun | Un retour chariot et un saut de ligne (`\r\n`). |
+| `$tab` | aucun | Une tabulation. |
+| `$unescape` | Séquence | Du texte dont les séquences d’échappement sont devenues des caractères : `\n`, `\r`, `\t`, `\0`, `\\`, `\xHH`, `\uHHHH`. `{{$unescape('café')}}` |
+| `$basicAuth` | Utilisateur, mot de passe | Une valeur `Authorization` pour HTTP Basic : `Basic ` et le Base64 de `user:password`. `{{$basicAuth(email, password)}}` |
+| `$jwt` | Charge utile, secret, algorithme (facultatif) | Un JWT de la charge utile JSON, signé avec le secret : `HS256` sauf si vous choisissez `HS384` ou `HS512`. `{{$jwt('{"sub": "heidi"}', jwtSecret)}}` |
+
+## Hachages et signatures [#hashes-and-signatures]
+
+Chaque hachage prend le texte et, facultativement, la sortie : `'hex'` (par défaut), `'base64'` ou `'base64url'`. Chaque
+HMAC prend la clé, le message et, facultativement, la sortie.
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$md5` | Texte, sortie | Le MD5 du texte. `{{$md5('alpenglow')}}` |
+| `$sha1` | Texte, sortie | Le SHA-1. `{{$sha1('alpenglow')}}` |
+| `$sha224` | Texte, sortie | Le SHA-224. |
+| `$sha256` | Texte, sortie | Le SHA-256. `{{$sha256($requestBody(''), 'base64')}}` |
+| `$sha384` | Texte, sortie | Le SHA-384. |
+| `$sha512` | Texte, sortie | Le SHA-512. |
+| `$hmacMd5` | Clé, message, sortie | Le HMAC-MD5 du message avec la clé. |
+| `$hmacSha1` | Clé, message, sortie | Le HMAC-SHA1. |
+| `$hmacSha224` | Clé, message, sortie | Le HMAC-SHA224. |
+| `$hmacSha256` | Clé, message, sortie | Le HMAC-SHA256. `{{$hmacSha256(apiSecret, $timestamp)}}` |
+| `$hmacSha384` | Clé, message, sortie | Le HMAC-SHA384. |
+| `$hmacSha512` | Clé, message, sortie | Le HMAC-SHA512. |
+
+## Temps [#time]
+
+Toutes ces valeurs correspondent au moment de l’envoi de la requête.
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$timestamp` | aucun | Le temps Unix en secondes : `1793525000`. |
+| `$timestampMs` | aucun | Le temps Unix en millisecondes : `1793525000123`. |
+| `$isoTimestamp` | aucun | ISO 8601 en UTC, avec les millisecondes : `2026-11-01T09:30:00.123Z`. |
+| `$httpDate` | aucun | Une date HTTP, pour `Date` ou `If-Modified-Since` : `Sun, 01 Nov 2026 09:30:00 GMT`. |
+| `$date` | Format, décalage en secondes (facultatif), fuseau horaire (facultatif) | L’heure dans un motif de date Unicode, décalée du décalage, dans le fuseau horaire (UTC sauf indication). `{{$date('yyyy-MM-dd')}}`, `{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
+
+## Aléatoire [#random]
+
+Une nouvelle valeur à chaque envoi.
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$uuid` | aucun | Un UUID aléatoire, en minuscules. Aussi `$guid` et `$randomUUID`. `{{$uuid}}` |
+| `$randomInt` | Minimum, maximum | Un nombre entier entre les deux, bornes comprises. Un argument est le maximum, à partir de 0 ; aucun donne 0 à 1000. `{{$randomInt(1, 5)}}` |
+| `$randomString` | Longueur, caractères (facultatif) | Des caractères aléatoires, 16 sauf indication (jusqu’à 4096) : des lettres et des chiffres, ou les caractères donnés. `{{$randomString(8, 'ABCDEF0123456789')}}` |
+| `$randomHex` | Octets | Des octets aléatoires en hexadécimal, 16 sauf indication (jusqu’à 2048) ; deux fois plus de chiffres. `{{$randomHex(8)}}` |
+
+**Create order** d’Alpenglow envoie `Idempotency-Key: {{$uuid}}` : chaque commande qu’il passe est donc nouvelle.
+
+## Données fictives [#fake-data]
+
+Des valeurs inventées pour les corps de requête, les données de test et les [routes de mock](/docs/mocks/routes#bodies-with-fake-data) :
+noms, adresses, entreprises, prix, dates, lorem ipsum et plus, nouvelles à chaque envoi. Les noms sont les variables
+dynamiques de Postman : les collections qui les utilisent envoient donc de vraies valeurs ici. Dans la liste `{{`, elles
+sont sous **Données fictives**, par catégorie.
+
+Les arguments sont facultatifs ; les nombres vont de -10^15 à 10^15. Les corps de mock peuvent aussi utiliser `$uuid`
+(sous la forme `$randomUUID`), `$randomInt`, `$randomString`, `$randomHex`, `$timestamp`, `$timestampMs` et
+`$isoTimestamp`, de [Aléatoire](#random) et de [Temps](#time). Depuis Terminal, [`echolot fake`](/docs/cli/fake) remplit un
+modèle avec elles.
+
+### Courantes [#common]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomFloat` | Minimum, Maximum, Décimales | Un nombre décimal entre les bornes (0 à 1000), avec 2 décimales sauf indication contraire. |
+| `$randomDigits` | Longueur | Une chaîne de chiffres aléatoires, 6 sauf si une longueur est donnée. |
+| `$randomBoolean` | aucun | true ou false. |
+| `$randomElement` | Choix | L’un des arguments, choisi au hasard : $randomElement(active, paused, closed). |
+| `$randomAlphaNumeric` | aucun | Une lettre ou un chiffre. |
+| `$randomColor` | aucun | Un nom de couleur : teal. |
+| `$randomHexColor` | aucun | Une couleur en hexadécimal : #3f8acb. |
+| `$randomAbbreviation` | aucun | Une abréviation technique : SQL. |
+
+### Noms et métiers [#names-and-jobs]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomFirstName` | aucun | Un prénom : Amelia. |
+| `$randomLastName` | aucun | Un nom de famille : Okafor. |
+| `$randomFullName` | aucun | Un prénom et un nom : Amelia Okafor. |
+| `$randomNamePrefix` | aucun | Mr., Ms., Dr.… |
+| `$randomNameSuffix` | aucun | Jr., PhD… |
+| `$randomJobArea` | aucun | Mobility, Security… |
+| `$randomJobDescriptor` | aucun | Lead, Senior… |
+| `$randomJobTitle` | aucun | Senior Security Engineer. |
+| `$randomJobType` | aucun | Engineer, Designer… |
+
+### Internet [#internet]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomEmail` | aucun | Une adresse e-mail : amelia.okafor@gmail.com. |
+| `$randomExampleEmail` | aucun | Une adresse e-mail en example.com, example.net ou example.org. |
+| `$randomUserName` | aucun | Un nom d’utilisateur : amelia_okafor42. |
+| `$randomPassword` | aucun | 15 lettres et chiffres aléatoires. |
+| `$randomUrl` | aucun | https://northwind.io |
+| `$randomDomainName` | aucun | northwind.io |
+| `$randomDomainSuffix` | aucun | com, io, dev… |
+| `$randomDomainWord` | aucun | northwind |
+| `$randomIP` | aucun | Une adresse IPv4 : 192.168.14.7. |
+| `$randomIPV6` | aucun | Une adresse IPv6. |
+| `$randomMACAddress` | aucun | Une adresse MAC : 3a:f1:0c:5e:92:b4. |
+| `$randomProtocol` | aucun | http ou https. |
+| `$randomSemver` | aucun | Une version sémantique : 2.14.3. |
+| `$randomLocale` | aucun | Une locale : de_CH. |
+| `$randomUserAgent` | aucun | Le User-Agent d’un navigateur. |
+
+### Adresses et lieux [#addresses-and-places]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomStreetName` | aucun | Maple Avenue |
+| `$randomStreetAddress` | aucun | 42 Maple Avenue |
+| `$randomCity` | aucun | Lisbon |
+| `$randomZipCode` | aucun | Un code postal à cinq chiffres. Aussi `$randomZip`. |
+| `$randomCountry` | aucun | Portugal |
+| `$randomCountryCode` | aucun | Un code pays ISO 3166 : PT. |
+| `$randomLatitude` | aucun | Une latitude : 38.7223. |
+| `$randomLongitude` | aucun | Une longitude : -9.1393. |
+
+### Téléphone [#phone]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomPhoneNumber` | aucun | Un numéro de téléphone : 555-201-4417. |
+| `$randomPhoneNumberExt` | aucun | Un numéro de téléphone avec indicatif de pays : +44 555-201-4417. |
+
+### Entreprises [#companies]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomCompanyName` | aucun | Northwind Labs |
+| `$randomCompanySuffix` | aucun | Inc, LLC, GmbH… |
+| `$randomBs` | aucun | streamline seamless platforms |
+| `$randomBsAdjective` | aucun | seamless |
+| `$randomBsBuzz` | aucun | streamline |
+| `$randomBsNoun` | aucun | platforms |
+| `$randomCatchPhrase` | aucun | Adaptive real-time framework |
+| `$randomCatchPhraseAdjective` | aucun | Adaptive |
+| `$randomCatchPhraseDescriptor` | aucun | real-time |
+| `$randomCatchPhraseNoun` | aucun | framework |
+
+### Finance [#finance]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomPrice` | Minimum, Maximum | Un prix à deux décimales, de 1 à 1000 sauf si des bornes sont données. |
+| `$randomCurrencyCode` | aucun | EUR |
+| `$randomCurrencyName` | aucun | Euro |
+| `$randomCurrencySymbol` | aucun | € |
+| `$randomBankAccount` | aucun | Un numéro de compte à 8 chiffres. |
+| `$randomBankAccountName` | aucun | Savings Account |
+| `$randomBankAccountIban` | aucun | Un IBAN avec des chiffres de contrôle valides. |
+| `$randomBankAccountBic` | aucun | Un BIC (code SWIFT). |
+| `$randomCreditCardMask` | aucun | Les quatre derniers chiffres d’une carte. |
+| `$randomTransactionType` | aucun | deposit, payment, refund… |
+| `$randomBitcoin` | aucun | Une adresse bitcoin inventée. |
+
+### Boutiques et produits [#shops-and-products]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomProduct` | aucun | Chair |
+| `$randomProductName` | aucun | Ergonomic Wooden Chair |
+| `$randomProductAdjective` | aucun | Ergonomic |
+| `$randomProductMaterial` | aucun | Wooden |
+| `$randomDepartment` | aucun | Garden |
+
+### Dates [#dates]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomDatePast` | aucun | Un moment de l’année écoulée, en ISO 8601. |
+| `$randomDateFuture` | aucun | Un moment de l’année à venir, en ISO 8601. |
+| `$randomDateRecent` | aucun | Un moment des deux derniers jours, en ISO 8601. |
+| `$randomDate` | aucun | Un jour de l’année écoulée : 2026-03-14. |
+| `$randomWeekday` | aucun | Tuesday |
+| `$randomMonth` | aucun | March |
+
+### Mots [#words]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomWord` | aucun | Un mot. |
+| `$randomWords` | Nombre | Quelques mots, 3 sauf si un nombre est donné. |
+| `$randomNoun` | aucun | router |
+| `$randomVerb` | aucun | compile |
+| `$randomIngverb` | aucun | compiling |
+| `$randomAdjective` | aucun | wireless |
+| `$randomPhrase` | aucun | Une courte phrase faite des mots ci-dessus. |
+
+### Lorem ipsum [#lorem-ipsum]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomLoremWord` | aucun | dolor |
+| `$randomLoremWords` | Nombre | Des mots de lorem, 3 sauf si un nombre est donné. |
+| `$randomLoremSentence` | aucun | Une phrase. |
+| `$randomLoremSentences` | Nombre | Quelques phrases, de 2 à 6 sauf si un nombre est donné. |
+| `$randomLoremParagraph` | aucun | Un paragraphe. |
+| `$randomLoremParagraphs` | Nombre | Des paragraphes, 3 sauf si un nombre est donné. |
+| `$randomLoremText` | aucun | Une phrase ou quelques-unes. |
+| `$randomLoremSlug` | aucun | dolor-sit-amet |
+| `$randomLoremLines` | aucun | Quelques phrases, une par ligne. |
+
+### Fichiers [#files]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomFileName` | aucun | router_matrix.pdf |
+| `$randomFileType` | aucun | image, text, video… |
+| `$randomFileExt` | aucun | pdf |
+| `$randomCommonFileName` | aucun | Un nom de fichier avec une extension courante. |
+| `$randomCommonFileType` | aucun | image, video, text… |
+| `$randomCommonFileExt` | aucun | png |
+| `$randomFilePath` | aucun | /var/reports/router_matrix.pdf |
+| `$randomDirectoryPath` | aucun | /var/reports |
+| `$randomMimeType` | aucun | application/pdf |
+
+### Images [#images]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomAvatarImage` | aucun | L’adresse d’une image d’avatar. |
+| `$randomImageUrl` | aucun | L’adresse d’une image de 640×480. |
+| `$randomAbstractImage` | aucun | L’adresse d’une image de 640×480 sur le thème abstract. Les autres thèmes : `$randomAnimalsImage`, `$randomBusinessImage`, `$randomCatsImage`, `$randomCityImage`, `$randomFoodImage`, `$randomNightlifeImage`, `$randomFashionImage`, `$randomPeopleImage`, `$randomNatureImage`, `$randomSportsImage`, `$randomTransportImage`. |
+| `$randomImageDataUri` | aucun | Une petite image SVG sous forme d’URI data:. |
+
+### Bases de données [#databases]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$randomDatabaseColumn` | aucun | createdAt |
+| `$randomDatabaseType` | aucun | varchar |
+| `$randomDatabaseCollation` | aucun | utf8mb4_unicode_ci |
+| `$randomDatabaseEngine` | aucun | InnoDB |
+
+## Texte [#text]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$lowercase` | Texte | Le texte en minuscules. `{{$lowercase(email)}}` |
+| `$uppercase` | Texte | Le texte en majuscules. `{{$uppercase(productId)}}` |
+| `$trim` | Texte | Le texte sans les espaces ni les sauts de ligne à chaque extrémité. `{{$trim($responseBody('auth/who-am-i'))}}` |
+
+## Fichiers et système [#files-and-the-system]
+
+| Valeur | Arguments | Ce qu’elle donne |
+| --- | --- | --- |
+| `$file` | Chemin | Le contenu d’un fichier : un chemin relatif à l’espace de travail, ou absolu. `{{$file('fixtures/order.json')}}` |
+| `$env` | Nom | Une variable d’environnement du processus Echolot. `{{$env('HOME')}}` |
+
+## Valeurs dynamiques et agents [#dynamic-values-and-agents]
+
+Quand un agent IA envoie une requête (via le serveur MCP d’Echolot ou l’Assistant), `$env` ne donne rien, et `$file` ne lit
+que des fichiers situés dans l’espace de travail. Les valeurs secrètes n’arrivent jamais jusqu’à l’agent. Voir
+[agents](/docs/ai/agents).

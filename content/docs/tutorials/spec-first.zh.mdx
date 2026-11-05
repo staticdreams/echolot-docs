@@ -1,0 +1,124 @@
+---
+title: "规范优先的设计与模拟"
+description: "导入或设计 OpenAPI 规范，对其进行 lint，提供它的模拟服务，向模拟服务器发送请求，并对照规范检查真实响应。"
+---
+
+规范优先意味着 OpenAPI 文档先于代码：先约定好 API，用模拟服务器试用它，等真实服务器出现后再对照同一份文档检查。在本教程中，你会把 Alpenglow 商店的规范添加到工作区，设计一个商店尚不具备的端点，在 Mac 上用模拟服务器同时提供两者，并对照规范检查真实 API 的响应。
+
+- **用时：** 20 分钟。
+- **你需要：** Echolot 和一个工作区，比如[你的第一个工作区](/docs/tutorials/first-workspace)中的那个，或者一个新的空工作区。
+- **你将学到：** “规范”页面、lint、遵循规范的请求、模拟服务器，以及 **OpenAPI 规范**检查。
+
+## 1. 添加规范 [#1-add-the-spec]
+
+演示商店在 `https://demo.echolot.dev/openapi.yaml` 发布了它的规范。
+
+1. 把它存到你的 Mac 上。在“终端”中：
+
+   ```sh
+   curl -o ~/Downloads/openapi.yaml https://demo.echolot.dev/openapi.yaml
+   ```
+
+   或者在 Safari 中打开该地址，然后选取**文件 › 存储为…**。
+2. 在工作区窗口中切换到**规范**（<kbd>⌘</kbd><kbd>3</kbd>）。
+3. 选取**添加规范文件…**（在空白页面上，或边栏的 **+** 菜单中），然后选择 `openapi.yaml`。副本会放入工作区的 `specs` 文件夹。
+
+规范会在**可视化**编辑器中打开：它的服务器、按路径或标签分组的端点，以及它的 Schema。工具栏上的开关可在**可视化**和**代码**之间切换。两者编辑的是同一份文本，存储的也是这份文本。
+
+<Callout title="从零开始">
+  请改为选取**新建规范**。你会得到一份标题为**新 API** 的 OpenAPI 3.1 文档，其中有一个端点 `GET /items`，可供重命名和扩展。本教程的其余部分操作方式相同。
+</Callout>
+
+## 2. 设计商店尚不具备的端点 [#2-design-an-endpoint-the-shop-doesnt-have]
+
+商店想要一个门店列表。在有人动手实现之前，先把它设计出来。
+
+1. 在**可视化**编辑器中选取**添加端点**。
+2. 在**新建端点**中，保持**方法**为 **GET**，输入路径 `/stores`、摘要 `List stores` 和标签 `Catalog`。选取**添加端点**。Echolot 会添加该操作，并附带一个 `200` 响应作为起点。
+3. 在端点的编辑器中，把**操作 ID** 设为 `listStores`。
+4. 选取**在代码中显示**。把端点的 `responses` 替换为带有正文和示例的版本：
+
+   ```yaml
+         responses:
+           '200':
+             description: The shop's stores.
+             content:
+               application/json:
+                 schema:
+                   type: array
+                   items:
+                     type: object
+                     required: [id, city]
+                     properties:
+                       id: { type: string }
+                       city: { type: string }
+                       address: { type: string }
+                 example:
+                   - { id: zrh, city: Zürich, address: Bahnhofstrasse 1 }
+                   - { id: brn, city: Bern, address: Spitalgasse 4 }
+   ```
+
+编辑会随着你的操作自动存储，<kbd>⌘</kbd><kbd>Z</kbd> 可撤销。可视化编辑只会改动你所碰触条目的那几行，因此文件的其余部分（包括注释）保持你写下的样子。详见[编辑规范](/docs/specs/editing)。
+
+<Shot id="tutorials-spec-visual-editor" alt="可视化编辑器中的“规范”页面，选中了 Alpenglow 规范的一个端点" />
+
+## 3. 对规范进行 lint [#3-lint-the-spec]
+
+工具栏上的问题按钮会显示绿色对勾和**没有问题**，或者错误和警告的数量。
+
+1. 选取它。**问题**弹出窗口会说明文档符合 OpenAPI 规范，且所有引用都能解析。
+2. 制造一个问题来看看：在**代码**中，把某一行的 `$ref: '#/components/schemas/Product'` 改成 `'#/components/schemas/Produkt'`。按钮会变红。选取它并选中该问题：编辑器会跳到对应的行。
+3. 撤销这个更改（<kbd>⌘</kbd><kbd>Z</kbd>）。
+
+同样的 lint 也可以通过命令行工具在 CI 中运行。`--strict` 会在出现警告时同样失败，`--hints` 会加入建议，例如缺少操作 ID：
+
+```sh
+echolot spec lint specs/openapi.yaml --strict
+```
+
+## 4. 创建遵循规范的请求 [#4-make-requests-that-follow-the-spec]
+
+1. 在“规范”工具栏中选取**生成请求**。**请求**下会出现一个文件夹 **Alpenglow demo shop**，其中每个标签一个文件夹（**Catalog**、**Auth**、**Orders**），每个端点一个请求，包括 **List stores**。
+2. 查看 **Catalog › List products**。它的 URL 是 `{{baseUrl}}/products`。它的**测试**标签页已经带有规范生成的两项检查：**状态**等于 `200`，以及所记录正文的 **JSON Schema**。
+
+这个文件夹会跟随规范。之后规范有变化时，“规范”工具栏的**请求**菜单会提供**检查“Alpenglow demo shop”的更改…**：它列出规范中新增、更改和删除的内容，并在不覆盖你对请求所做编辑的前提下应用它们。参见 [OpenAPI 同步](/docs/specs)。
+
+生成的请求以 `{{baseUrl}}`（小写的 `rl`）开头。你会在接下来的两个步骤中给它赋值。
+
+## 5. 提供规范的模拟服务 [#5-serve-a-mock-of-the-spec]
+
+1. 切换到**模拟服务器**（<kbd>⌘</kbd><kbd>4</kbd>）。打开 **+** 菜单并选取 **Alpenglow demo shop 的模拟服务器**。
+2. 选取**开始**（<kbd>⌘</kbd><kbd>R</kbd>）。工具栏会显示绿点和地址 `http://127.0.0.1:4010/v1`：从 4010 起的第一个空闲端口，以及来自规范服务器的基础路径。
+3. 选取**在环境中使用**。Echolot 会创建一个环境 **Mock: Alpenglow demo shop**，其 `{{baseUrl}}` 就是模拟服务器的地址，并选中它。
+
+**设置**卡片中有模拟服务器的**端口**、**应答网络上的其他设备**、每次应答前的**延迟**、一定比例的**失败率**（注入的 500 响应），以及**检查**：**拒绝违反规范的请求（返回 400 及原因）**。模拟服务器在窗口打开期间运行。
+
+<Shot id="tutorials-spec-mock-running" alt="“模拟服务器”页面，Alpenglow demo shop 的模拟服务器运行在 127.0.0.1:4010，其中有它的设置和请求日志" />
+
+## 6. 向模拟服务器发送请求 [#6-send-requests-to-the-mock]
+
+1. 回到**请求**，发送 **Catalog › List stores**。模拟服务器返回 `200` 和你示例中的两家门店。**标头**标签页显示 `Server: Echolot mock`。
+2. 发送 **Catalog › List products**。模拟服务器没有它的示例，所以会根据 Schema 生成一个正文：形状正确，值是占位符。请求的两项检查都通过。
+3. 在 **List products** 的**参数**中，添加 `sort`，值为 `cheapest`，然后发送。模拟服务器会拒绝它：返回 `400` 和 `query “sort”: not one of the allowed values`。规范允许 `name`、`price`、`-price` 和 `rating`。移除这个参数。
+4. 在 **Get a product** 中添加标头 `Prefer: code=404` 并发送。模拟服务器会改为返回规范中记录的 `404` 问题响应。移除这个标头。
+
+“模拟服务器”页面的**日志**列出了模拟服务器应答的每个请求，包括匹配到的操作和任何问题。在**响应**卡片中，你可以让某个操作对每个请求都返回另一个已记录的状态或示例。需要状态的应答可以使用 JavaScript 路由，参见[脚本路由](/docs/mocks/scripted-routes)。
+
+## 7. 对照规范检查真实 API [#7-check-the-real-api-against-the-spec]
+
+1. 在**环境**页面添加环境 `Demo`，其中变量 `baseUrl` 设为 `https://demo.echolot.dev/v1`，然后在页面标题栏中选择它。
+2. 打开 **List products**，在它的**测试**标签页中打开**添加测试**并选取 **OpenAPI 规范**。它没有需要填写的内容：它会按规范为返回的状态记录的 Schema 来检查正文。
+3. 发送。三项检查全部通过：真实的商店与它的规范一致。
+4. 发送 **List stores**。真实的商店返回 `404`：这个端点只存在于规范中。这正是规范优先的意义：模拟服务器让你现在就能基于它开发。
+
+要在 CI 中运行同样的检查，请用 [`echolot run`](/docs/cli/run) 运行该文件夹，并在那里用 `echolot mock` 提供模拟服务：
+
+```sh
+echolot mock specs/openapi.yaml --port 4010
+```
+
+## 后续步骤 [#next-steps]
+
+- [从流量生成规范](/docs/specs/specs-from-traffic)：根据你已经发送的请求编写规范。
+- [模拟服务器](/docs/mocks)：从历史记录存储的示例、延迟、失败，以及在网络上共享。
+- [`echolot spec`](/docs/cli/spec)：文件夹落后于其规范时，`check` 会让 CI 失败。

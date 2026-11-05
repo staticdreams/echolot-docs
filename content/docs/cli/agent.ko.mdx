@@ -1,0 +1,131 @@
+---
+title: "echolot agent"
+description: "스크립트와 CI를 위해 앱 없이 승인 대신 정책 파일로 내장 에이전트에게 작업을 실행시킵니다."
+---
+
+`echolot agent`는 [어시스턴트](/docs/ai/assistant)와 같은 내장 에이전트에게 작업을 맡기고, 끝날 때까지 작업 공간의 도구로 일하게 합니다.
+승인해 줄 사람이 없으므로 정책이 무엇을 할 수 있는지 정합니다. CI(“모든 요청을 확인하고 실패하는 것을 보고해 줘”)나 스크립트에서
+사용하십시오.
+
+```sh
+echolot agent [<options>] <task>
+```
+
+`<task>`는 에이전트가 해야 할 일을 평소 쓰는 말로 쓴 것입니다.
+
+## 작업 실행 [#run-a-task]
+
+```sh
+export ANTHROPIC_API_KEY=…
+echolot agent "Check every request of the Catalog folder and report what fails" -w Alpenglow.echolot
+```
+
+모델의 답변은 쓰는 대로 표준 출력으로 스트리밍됩니다. 끝나면 요약이 표준 오류로 나갑니다.
+
+```text
+Agent finished: 9 tool calls, 18234 in, 1210 out.
+```
+
+`-v`는 모든 도구 호출과 그 결과도 표준 오류에 출력합니다(`→ send_request …`, `← send_request ok in 82 ms`). `--json`은 대신 세션
+전체를 JSON으로 출력합니다. 모든 메시지, 도구 호출과 결과, 토큰 사용량, 종료 방식이 포함됩니다.
+
+## 제공업체와 모델 [#providers-and-models]
+
+| `--provider` | 키의 출처 | 모델 |
+| --- | --- | --- |
+| `anthropic`(기본값) | `ANTHROPIC_API_KEY` | `--model`로 달리 지정하지 않으면 `claude-opus-5-5`. |
+| `openai` | `OPENAI_API_KEY` | `--model`이 필수입니다. |
+| `gemini` | `GEMINI_API_KEY` | `--model`이 필수입니다. |
+| `openai-compatible` | 설정되어 있으면 `OPENAI_API_KEY`. 필수는 아닙니다 | `--model`이 필수입니다. Ollama, LM Studio, OpenRouter 등 OpenAI API를 쓰는 서버용입니다. `--base-url`이 서버이며, 기본값은 이 Mac의 Ollama(`http://127.0.0.1:11434/v1`)입니다. |
+
+`--key-env`는 키를 담은 다른 환경 변수를 지정합니다. 키는 CI의 비밀 값에 보관하거나 명령을 실행할 때 가져오십시오.
+
+```sh
+op run --env-file agent-keys.env -- echolot agent "Save every product as CSV" \
+  -w Alpenglow.echolot --provider openai --model gpt-5.5 --policy-file ci-policy.toml --json
+```
+
+사용자의 Mac에서 무료로 실행하려면:
+
+```sh
+echolot agent "List the requests that have no checks" -w Alpenglow.echolot \
+  --provider openai-compatible --model qwen3:4b
+```
+
+## 정책 [#policies]
+
+에이전트의 도구는 Echolot의 MCP 서버의 도구이며 안전 장치도 같습니다. 비밀 값은 모델에 전달되지 않고, 모델이 보는 모든 내용은 같은
+가림 처리를 거칩니다. 각 종류의 작업으로 무엇을 할 수 있는지는 정책이 정합니다.
+
+| `--policy` | 실행되는 것 |
+| --- | --- |
+| `standard`(기본값) | 읽기와 안전한 전송(`GET` 등). 기타 전송, 새로운 호스트, 작업 공간 변경은 거부됩니다. |
+| `readonly` | 읽기만. |
+| `permissive` | 전송과 작업 공간 변경. 삭제, 작업 공간이 모르는 호스트, 보호된 환경으로의 전송은 거부됩니다. |
+
+사람이 없으므로 “묻기”는 “거부”를 뜻합니다.
+
+**정책 파일**은 작업 종류별로 기본 정책을 느슨하게 하거나 엄격하게 합니다. 작업 공간의 `[agents]` 섹션과 같은 규칙을 받으며,
+`[agents]`로 감싸도 되고 감싸지 않아도 됩니다.
+
+```toml
+# ci-policy.toml: 작업 공간의 호스트로는 무엇이든 보내게 하되, 작업 공간은 절대 변경하지 못하게 합니다
+[rules]
+unsafe-send = "allow"
+workspace-write = "refuse"
+destructive = "refuse"
+```
+
+| 작업 | 포함하는 것 |
+| --- | --- |
+| `read` | 요청, 응답, 환경 등의 읽기. |
+| `safe-send` | `GET`처럼 아무것도 바꾸지 않는 요청의 전송. |
+| `unsafe-send` | `POST`나 `DELETE`처럼 무언가를 바꿀 수 있는 요청의 전송. |
+| `protected-send` | [보호된 환경](/docs/workspaces/protected-environments)에서의 전송. |
+| `new-host` | 작업 공간이 모르는 호스트로의 전송. |
+| `workspace-write` | 요청, 폴더, 환경 등 파일의 생성과 변경. |
+| `destructive` | 삭제. |
+
+각각 `allow`, `ask`, `refuse`를 받습니다. `protected-send`와 `new-host`는 더 엄격하게 할 수 있지만 무조건 허용할 수는 없습니다.
+
+정책 파일은 사용자가 만든 것으로 취급되므로 정책을 느슨하게 할 수 있습니다. 작업 공간 자체의 `[agents]` 규칙은 `--trust-workspace-policy`를
+지정하지 않으면 정책을 엄격하게만 합니다.
+
+## 제한 [#limits]
+
+`--max-steps`는 모델 턴이 그 수에 이르면 실행을 멈춥니다(기본값 30). `--token-budget`은 그만큼의 토큰을 사용하면 멈춥니다. 제한에 걸려
+멈춘 실행은 1로 종료합니다.
+
+## 옵션 [#options]
+
+| 옵션 | 의미 |
+| --- | --- |
+| `-w`, `--workspace <folder>` | 작업 공간 폴더. 기본값은 현재 폴더입니다. |
+| `--env <env>` | 호출이 환경을 지정하지 않을 때 쓸 환경: `.toml`을 뺀 파일 이름. |
+| `--provider <provider>` | `anthropic`, `openai`, `gemini`, `openai-compatible`. 기본값은 `anthropic`입니다. |
+| `--model <model>` | 모델. `anthropic`을 제외한 모든 제공업체에서 필수입니다. |
+| `--base-url <url>` | 제공업체의 URL. `openai-compatible` 서버용입니다. 기본값은 Ollama의 URL입니다. |
+| `--key-env <name>` | API 키를 담은 환경 변수. 제공업체의 일반적인 변수가 아닐 때 지정합니다. |
+| `--policy <policy>` | 기본 정책: `standard`, `readonly`, `permissive`. 기본값은 `standard`입니다. |
+| `--policy-file <file>` | 작업별 규칙(`allow`, `ask`, `refuse`)이 든 TOML 파일. 작업 공간의 `[agents]` 섹션과 같습니다. |
+| `--trust-workspace-policy` | 작업 공간의 `[agents]` 규칙이 정책을 엄격하게 할 뿐 아니라 느슨하게도 하게 합니다. |
+| `--toolsets <list>` | 제공할 도구 그룹. 쉼표로 구분하며 `all`도 가능합니다. `requests`(항상), `flows`, `workspace`, `environments`, `specs`, `mocks`, `mcp-servers`, `history`, `flow-editing`. 기본값은 `all`입니다. |
+| `--max-steps <n>` | 실행이 멈추기 전까지의 모델 턴 수. 기본값은 30입니다. |
+| `--token-budget <n>` | 실행이 멈추기 전까지 사용할 수 있는 토큰 수. |
+| `--json` | 대화 기록 대신 세션 전체를 JSON으로 출력합니다. |
+| `-v`, `--verbose` | 모든 도구 호출과 그 결과를 표준 오류에 출력합니다. |
+
+도구 모음은 [`echolot mcp`](/docs/cli/mcp#echolot-mcp-serve) 페이지에 설명되어 있습니다.
+
+## 종료 코드 [#exit-codes]
+
+| 코드 | 조건 |
+| --- | --- |
+| `0` | 모델이 작업을 마쳤습니다. |
+| `1` | 실행이 실패했거나, 모델이 거부했거나, 단계 제한, 토큰 예산, 출력 제한에 도달했습니다. |
+| `64` | 잘못된 옵션, 알 수 없는 제공업체나 정책, 빠진 `--model`, API 키 없음, 알 수 없는 환경. |
+
+<Callout>
+  작업 공간 데이터는 선택한 모델 제공업체로 전송됩니다. 데이터가 Mac에 머물러야 한다면 사용자의 Mac에 있는 서버와 함께
+  `openai-compatible`을 사용하십시오.
+</Callout>

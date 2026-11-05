@@ -1,0 +1,22 @@
+{
+  "title": "Echolot",
+  "pages": [
+    "index",
+    "get-started",
+    "workspaces",
+    "requests",
+    "mcp-servers",
+    "specs",
+    "mocks",
+    "flows",
+    "ai",
+    "mac",
+    "settings",
+    "cli",
+    "tutorials",
+    "reference",
+    "privacy-and-security",
+    "troubleshooting",
+    "whats-new"
+  ]
+}

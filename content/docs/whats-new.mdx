@@ -1,10 +1,106 @@
 ---
-title: What's new
-description: The release notes of every Echolot release, newest first.
+title: "What's new"
+description: "The release notes of every Echolot release, newest first."
 ---
 
-These are the notes Echolot shows in **Help › What's New in Echolot**, newest first. Every release and its downloads
-are also on the [releases page](https://github.com/staticdreams/echolot-public/releases).
+These are the notes Echolot shows in **Help › What's New in Echolot**, newest first. Every release and its downloads are also on the [releases page](https://github.com/staticdreams/echolot-public/releases).
+
+## 0.8.0
+
+*November 4, 2026 · build 12*
+
+**New**
+
+- Echolot now speaks French, German, Spanish, Japanese, Korean, Russian and Simplified Chinese. It follows the system
+  language, or pick one in Settings › General › Language.
+- A guided tour on first launch, to replay from Help › Show the Tour.
+- The Assistant panel resizes: drag its edge (double-click restores the default).
+- Mocks answer spec operations that have no example with fresh fake data that fits each field.
+
+**Improvements**
+
+- Echo, the status screen in the page header, is on by default.
+- In the Assistant's approval sheet, Allow for This Session now covers every change to the workspace at once; deleting
+  still asks.
+- The welcome window gets a sonar ping behind the app icon.
+
+**Fixes**
+
+- The request editor no longer draws over the response.
+- Home fits a narrow window, so a wide Assistant no longer pushes it over the sidebar.
+- Echo's greeting is no longer squeezed, and the Assistant's title stays on one line in every language.
+- Removing a test with its minus button no longer crashes Echolot, and neither does removing an MQTT subscription or
+  message, a WebSocket message or a Socket.IO emit. Thanks to Amit for reporting it.
+- The minus button in the Flows list deletes the selected flow; it used to take clicks only on its thin line.
+
+## 0.7.1
+
+*November 3, 2026 · build 11*
+
+**New**
+
+- Home's Sonar card plots every send of the last hour, 24 hours, 7 or 30 days by response time, with sends, answered
+  OK, median and p95 against the period before.
+- Marine, a second dark appearance in deep-water blues (Settings › General › Appearance).
+- Workspace auth from any request: the Auth tab opens the folder or workspace auth a request inherits (Workspace Auth…
+  for one with its own), and folder and workspace settings sign in with OAuth 2.0 once for every request that inherits.
+- More auth: OAuth 1.0, OAuth 2.0's password grant and Advanced settings, and Postman's ASAP auth imported as JWT
+  Bearer.
+- Agents and the Assistant can give requests auth and captures (credentials only as `{{variables}}`), set a folder's
+  auth, and try a flow once after you approve it; Settings › Assistant › Ask before can limit questions to deleting,
+  new hosts and protected environments.
+- Requests whose last call failed show a warning sign in the requests list, with what went wrong.
+
+**Improvements**
+
+- The Assistant's replies render as Markdown and stay smooth while they stream.
+- Flow cards show what they do, conditions are edited as rules, and an Evaluate block's last expression is its result.
+- Settings › Storage shows how much room response bodies take, and Remove Stored Bodies… frees it.
+- On smaller screens the Assistant and pinned variables no longer push the window past the screen: the variables float
+  instead.
+
+**Fixes**
+
+- Security fixes from two audits: OAuth tokens are kept per environment and settings and never go to another host;
+  agents can't write credentials into files or send secrets to new hosts without asking; stopped mock, MCP and webhook
+  servers close every connection.
+- Fixed a crash on very large numbers in values, HTTPS proxies failing with HTTP/2 servers, text ending in `"""`
+  changing when saved, and moves or renames wiping open tabs' undo.
+- With encryption at rest on, history no longer keeps request bodies in plain text.
+- Workspace and folder settings follow your appearance, Marine included, and keep one size when you switch tabs.
+- The gRPC call bar fits its pane: long proto, service and method names are cut short instead of running into the
+  response.
+
+## 0.6.0
+
+*November 2, 2026 · build 9*
+
+**New**
+
+- Mocks no longer need a spec: make routes by hand (method, path with `{id}`, status, headers, body and rules on the
+  request), with fake data in their bodies: `{{$randomFullName}}`, `{{request.params.id}}`, `{{#repeat
+  10}}`…`{{/repeat}}`. Create Requests turns a mock's routes into requests.
+- The same fake values work in requests, and echolot fake writes fake data from a template on the command line.
+- Select several requests in the sidebar to put them in a new folder (New Folder with N Items) or change their
+  headers, query parameters and auth at once (Edit N Requests…).
+- Echo, an optional status screen in the page header (Settings › General › Echo), tells what happens in the window,
+  and a click unrolls a report of the session.
+- Help › Echolot Documentation (⌘?) opens the new documentation at docs.echolot.dev, and Help › Help for This Page the
+  page about what you're looking at.
+
+**Improvements**
+
+- Echolot asks once per model provider before sending anything to it; Settings › Assistant lists what you've allowed,
+  with Revoke. Apple's on-device model and servers on your Mac never ask.
+- After an update nothing opens by itself: a What's New button in the page header shows the new notes.
+- The command palette offers only what makes sense on the page showing.
+- JSON responses show \u escapes as the characters they stand for.
+- The sidebar's highlight glides from row to row, and the module switcher springs to the module you pick.
+
+**Fixes**
+
+- Add Rule and Add Header keep the row they add and put the cursor in it.
+- The window's traffic lights no longer sit cut off when another window comes to the front.
 
 ## 0.5.0
 
@@ -35,7 +131,7 @@ are also on the [releases page](https://github.com/staticdreams/echolot-public/r
   how many credentials were written in clear.
 - Edits are no longer lost: folder and workspace settings, mock routes and a tab closing just before you quit are all
   written, and a failed save keeps your text.
-- Closing a window stops its runs and sends. Runs with iterations side by side keep their own `$response` values, and
+- Closing a window stops its runs and sends. Runs with iterations side by side keep their own $response values, and
   data files of up to 100 MB load without freezing the window.
 - A flow whose request script fails now takes the failure path, and background services follow a choice of no
   environment.

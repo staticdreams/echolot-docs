@@ -1,0 +1,187 @@
+---
+title: "Probar una API y ejecutarla en CI"
+description: "Añade comprobaciones a las solicitudes, ejecútalas en Ejecución y después ejecuta el mismo espacio de trabajo con la herramienta de línea de comandos en GitHub Actions con un informe JUnit."
+---
+
+Las comprobaciones convierten las solicitudes en pruebas: cada envío dice qué se ha superado y qué no. En este tutorial
+añades comprobaciones a las solicitudes de Alpenglow, ejecutas carpetas en Ejecución y después ejecutas el mismo espacio
+de trabajo en cada push con `echolot run` en GitHub Actions.
+
+- **Tiempo:** 20 minutos.
+- **Necesitas:** el [espacio de trabajo Alpenglow](/docs/tutorials#the-alpenglow-workspace) y, para la última parte, un
+  repositorio de GitHub en el que puedas hacer push.
+- **Aprendes:** las comprobaciones, Ejecución y sus informes, `echolot run` y los secretos en CI.
+
+## 1. Mira las comprobaciones de una solicitud [#1-look-at-the-checks-a-request-has]
+
+1. Abre **Catalog › List products** y elige su pestaña **Pruebas**.
+2. Tiene cuatro comprobaciones: **Estado** es igual a `200`, **Valor JSON** `$.items.length` es mayor que `0`,
+   **Cabecera** `Content-Type` contiene `json` y **Tiempo de respuesta (ms)** es menor que `1000`.
+3. Envíala. La pestaña informa **4 superadas**, y la pestaña **Pruebas** de la respuesta muestra `4/4` con cada
+   comprobación bajo **Comprobaciones**.
+
+## 2. Añade tus propias comprobaciones [#2-add-your-own-checks]
+
+1. En la pestaña **Pruebas**, abre **Añadir prueba** y elige **Valor JSON**.
+2. Pon la ruta en `$.items[0].price.currency`, la comparación en **es igual a** y el valor esperado en `CHF`.
+3. Abre **Añadir prueba** otra vez y elige **Tamaño (bytes)**, **es menor que**, `65536`.
+4. Envía. Se superan seis comprobaciones.
+
+Dos formas más rápidas de añadir comprobaciones:
+
+- En el **Árbol JSON** de la respuesta, haz clic derecho en un valor y elige **Añadir aserción**. La comprobación toma su
+  ruta y su valor.
+- **Generar a partir de la respuesta…** propone comprobaciones a partir de la última respuesta, incluido un
+  **JSON Schema** del cuerpo.
+
+Ahora mira un fallo: cambia la comprobación del tiempo de respuesta a **es menor que** `1` y envía. La pestaña dice
+**1 de 6 con error**, y la pestaña **Pruebas** de la respuesta muestra lo que llegó bajo la comprobación que falla. Vuelve a
+ponerla en `1000`.
+
+Para comprobaciones que necesitan código, escribe un script de pruebas con `pm.test()` en la pestaña **Scripts**;
+consulta [scripts y pruebas](/docs/requests/scripts-and-tests).
+
+<Shot id="tutorials-ci-tests-tab" alt="La pestaña Pruebas de List products con sus comprobaciones, todas superadas tras un envío" />
+
+## 3. Ejecuta carpetas en Ejecución [#3-run-folders-in-the-runner]
+
+1. Haz clic derecho en la carpeta **Catalog** y elige **Ejecutar carpeta**. Se abre la página **Ejecución** y ejecuta
+   todas las solicitudes de la carpeta, en orden.
+2. Las estadísticas muestran **Solicitudes**, **Superadas**, **Con error**, **Comprobaciones con fallos** y
+   **Duración**, y la tarjeta **Resultados** lista cada solicitud con su estado, su tiempo y sus comprobaciones fallidas.
+3. Para preparar una ejecución tú mismo, elige **Vista › Ejecución** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>R</kbd>). En la
+   tarjeta **Ejecutar**:
+   - **Qué**: **Todo el espacio de trabajo**, una de las **Carpetas** o **Una solicitud**. Elige **Auth**, ejecútala y
+     después **Orders**: las solicitudes de Orders envían el token que guardó **Sign in**.
+   - **Entorno**, **Iteraciones** (prueba con `3`), **Retraso** entre solicitudes en milisegundos, **Reintentos** para
+     una solicitud que falla y **Detener en el primer fallo**.
+   - **Datos**: **Elegir CSV o JSON…** ejecuta una vez por fila, con las columnas de la fila como variables.
+4. Elige **Ejecutar** (<kbd>⌘</kbd><kbd>R</kbd>).
+5. Abre **Guardar informe** y elige **JUnit XML…**, **JSON…**, **HTML…** o **HAR (todos los intercambios)…**.
+
+Una ejecución de todo el espacio de trabajo también ejecuta **Realtime** e **Inventory**. Sus solicitudes de Socket.IO,
+MQTT y gRPC fallan si no están en marcha los [servidores locales](/docs/tutorials#servers-on-your-mac-for-grpc-socketio-and-mqtt).
+Más en [Ejecución](/docs/requests/runner).
+
+<Shot id="tutorials-ci-runner" alt="La página Ejecución tras ejecutar la carpeta Catalog, todo superado" />
+
+## 4. Ejecútalo desde Terminal [#4-run-it-from-terminal]
+
+1. Instala la herramienta de línea de comandos: elige **Echolot › Instalar herramienta de línea de comandos…**, o
+   actívala en **Ajustes › General**. Pone `echolot` en tu `PATH`.
+
+   <Edition only="appstore">
+     La edición de la App Store no incluye la herramienta de línea de comandos. Descarga `echolot-<version>-macos.zip`
+     de las [versiones](https://github.com/staticdreams/echolot-public/releases), descomprímelo y pon `echolot` en una
+     carpeta de tu `PATH`. Consulta [la CLI](/docs/cli).
+   </Edition>
+
+2. Comprueba que se lee cada archivo y que se resuelve cada variable:
+
+   ```sh
+   echolot validate Alpenglow.echolot
+   ```
+
+   Imprime `29 requests, 3 environments: no problems`.
+3. Ejecuta las tres carpetas que no necesitan más que la API de demostración:
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders
+   ```
+
+   ```text
+   ✓ POST   auth/sign-in  200 142 ms
+       ✓ Status equals 200
+       ✓ JSON value $.access_token exists
+   ✓ GET    auth/who-am-i  200 87 ms
+       ✓ Status equals 200
+   …
+   All 13 requests passed  18/18 checks passed · 1.35 s
+   ```
+
+   `--folder` admite el nombre de archivo de una carpeta o de una solicitud (`auth`, `catalog/list-products`). El código
+   de salida es `1` cuando una solicitud no recibe respuesta o falla una comprobación, para que los scripts y CI puedan
+   detenerse con él.
+4. Escribe también un informe JUnit además de la salida de la consola:
+
+   ```sh
+   echolot run Alpenglow.echolot --folder auth --folder catalog --folder orders \
+     --reporter junit --out results.xml --reporter console
+   ```
+
+   Cada solicitud se convierte en un `testsuite` y cada comprobación en un `testcase`. Todas las opciones están en
+   [`echolot run`](/docs/cli/run).
+
+## 5. Ejecútalo en GitHub Actions [#5-run-it-in-github-actions]
+
+1. Confirma `Alpenglow.echolot` en tu repositorio.
+2. Añade `.github/workflows/api.yml`:
+
+   ```yaml
+   name: API checks
+   on: [push, pull_request]
+
+   jobs:
+     api:
+       runs-on: macos-15
+       steps:
+         - uses: actions/checkout@v4
+
+         - name: Install the Echolot CLI
+           env:
+             GH_TOKEN: ${{ github.token }}
+           run: |
+             gh release download --repo staticdreams/echolot-public --pattern 'echolot-*-macos.zip' --dir "$RUNNER_TEMP"
+             unzip -q "$RUNNER_TEMP"/echolot-*-macos.zip -d "$RUNNER_TEMP/echolot"
+             echo "$RUNNER_TEMP/echolot" >> "$GITHUB_PATH"
+
+         - name: Validate
+           run: echolot validate Alpenglow.echolot
+
+         - name: Run
+           run: >
+             echolot run Alpenglow.echolot
+             --folder auth --folder catalog --folder orders
+             --reporter console --reporter junit --out results.xml
+
+         - name: Keep the report
+           if: always()
+           uses: actions/upload-artifact@v4
+           with:
+             name: echolot-results
+             path: results.xml
+   ```
+
+3. Haz push. El paso **Run** imprime las mismas líneas que en tu Mac, y el trabajo falla cuando falla una comprobación.
+   El archivo JUnit se adjunta a la ejecución como `echolot-results`; cualquier acción de informes de pruebas JUnit
+   puede mostrarlo como una tabla.
+
+La herramienta de línea de comandos se ejecuta en macOS con Apple silicon, así que el trabajo usa un runner de macOS.
+
+## 6. Dale a CI sus secretos [#6-give-ci-its-secrets]
+
+El llavero de tu Mac no viaja con el espacio de trabajo. En CI, la herramienta de línea de comandos lee una variable
+secreta `name` de la variable de entorno `ECHOLOT_SECRET_NAME`, o de un archivo de líneas `NAME=value` indicado con
+`--secrets`.
+
+La contraseña de demostración de Alpenglow es pública, así que es una variable normal. Para una de verdad:
+
+1. Conviértela en una variable secreta del espacio de trabajo, por ejemplo `password`, y confirma los cambios.
+2. En GitHub, añade un secreto de repositorio `API_PASSWORD` (**Settings › Secrets and variables › Actions**).
+3. Pásalo al paso:
+
+   ```yaml
+         - name: Run
+           env:
+             ECHOLOT_SECRET_PASSWORD: ${{ secrets.API_PASSWORD }}
+           run: echolot run Alpenglow.echolot --env staging --reporter console --reporter junit --out results.xml
+   ```
+
+`--env` admite el nombre de archivo de un entorno sin `.toml`, o su nombre. Más sobre CI en [CI](/docs/cli/ci).
+
+## Siguientes pasos [#next-steps]
+
+- [Diseñar primero la especificación y simularla](/docs/tutorials/spec-first): comprueba las respuestas con una
+  especificación OpenAPI, en la app y en CI.
+- [Ejecución](/docs/requests/runner): archivos de datos, iteraciones en paralelo, reintentos.
+- [`echolot run`](/docs/cli/run): todas las opciones, incluidas `--bail`, `--delay` y el informe HTML.

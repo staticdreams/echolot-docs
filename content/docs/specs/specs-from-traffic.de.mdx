@@ -1,0 +1,106 @@
+---
+title: "Spec aus Antworten"
+description: "Schreibe eine OpenAPI-Spec aus den Anfragen, die du gesendet hast, und den Antworten, die sie bekamen."
+---
+
+Oft hast du Anfragen, bevor du eine Spec hast: eine Sammlung, die jemand importiert hat, oder Aufrufe, die du beim
+Erkunden einer API ausprobiert hast. **Spec aus Antworten** macht daraus ein OpenAPI-Dokument. Jede Anfrage wird zu einer
+Operation, dokumentiert nach der letzten Antwort, die sie bekam: ihr Pfad und ihre Parameter, der Body, den sie
+gesendet hat, und die Antwort mit einem JSON Schema ihres Bodys und einem Beispiel. Du kannst eine Spec ergänzen, die du
+schon hast, und sie bekommt nur, was ihr fehlt.
+
+## Einen Ordner dokumentieren [#documenting-a-folder]
+
+<Steps>
+<Step>
+
+Sende die Anfragen, die dokumentiert werden sollen, damit jede eine Antwort hat. Sende in Alpenglow zum Beispiel die
+Anfragen im Ordner **Catalog**.
+
+</Step>
+<Step>
+
+Klicke den Ordner in der Seitenleiste der Anfragen mit der rechten Maustaste an und wähle
+**In OpenAPI-Spec dokumentieren …**. Um den ganzen Arbeitsbereich zu dokumentieren, wähle in der Seitenleiste von
+„Specs“ **+** › **Neue Spec aus Antworten …**, auf einer leeren Seite „Specs“ **Aus Antworten …** oder in der
+Befehlspalette **Neue Spec aus Antworten …**.
+
+</Step>
+<Step>
+
+Prüfe im Blatt **In OpenAPI-Spec dokumentieren** die Auswahl:
+
+| Auswahl | Was sie bedeutet |
+| --- | --- |
+| **Anfragen** | **Ganzer Arbeitsbereich** oder ein Ordner. Anfragen in seinen Unterordnern sind eingeschlossen. |
+| **Spec** | **Neue Spec** oder eine Spec im Arbeitsbereich, die ergänzt wird. Ein Ordner, der bereits einer Spec folgt, ergänzt diese. |
+| **Titel** | Der Titel einer neuen Spec. Er beginnt als Name des Ordners oder des Arbeitsbereichs. |
+| **„Ordner“ mit der Spec verknüpfen** | Standardmäßig an. Die Anfragen des Ordners folgen dann den Operationen, die aus ihnen geworden sind, sodass spätere Änderungen an der Spec auf sie angewendet werden können. |
+
+</Step>
+<Step>
+
+Klicke auf **Dokumentieren**. Das Blatt sagt, was passiert ist; **Spec öffnen** öffnet dann das Ergebnis.
+
+</Step>
+</Steps>
+
+<Shot id="specs-from-responses" alt="Das Blatt „In OpenAPI-Spec dokumentieren“ nach dem Dokumentieren des Ordners Catalog: die neuen Operationen, die ausgelassenen Anfragen mit ihren Gründen und der Knopf „Spec öffnen“" />
+
+## Was du bekommst [#what-you-get]
+
+Das Ergebnis listet:
+
+| Überschrift | Bedeutung |
+| --- | --- |
+| **Neue Operationen** | Operationen, die die Spec nicht hatte, etwa `GET /products/{sku}`. |
+| **Antwort ergänzt** | Operationen, die sie hatte und die jetzt eine weitere Antwort dokumentieren, etwa eine `404`. |
+| **Bereits dokumentiert** | Operationen, die sie schon so dokumentiert hatte, wie sie beantwortet wurden. Nichts hat sich geändert. |
+| **Ausgelassen** | Anfragen, die nicht dokumentiert wurden, jeweils mit dem Grund. |
+
+Außerdem steht dort, wie viele Anfragen jetzt ihren Operationen folgen und wie viele Fehler der Linter im Ergebnis
+findet, falls es welche gibt.
+
+Was in jede Operation kommt:
+
+- **Der Pfad** in der Form von OpenAPI: Pfadsegmente, die aus Variablen stammen, werden zu Pfadparametern, dokumentiert
+  mit den gesendeten Werten. Der Serveranteil der URL bleibt aus dem Pfad heraus.
+- **Query-Parameter und Header**, die die Anfrage setzt.
+- **Der Anfrage-Body** und **die Antwort**, mit einem JSON Schema, das aus dem Body entsteht, und einem Beispiel. Große
+  Beispiele werden weggelassen, das Schema bleibt; lange Arrays behalten im Beispiel ein paar Elemente.
+- **Der Name der Anfrage** als Zusammenfassung der Operation und **ihr Unterordner** als Tag der Operation.
+- **Die Auth der Anfrage** als Sicherheitsschema. Wo OpenAPI dafür kein Schema hat (OAuth 2 mit dem Device-Code-Grant),
+  weist ein Hinweis darauf hin.
+
+Secrets werden maskiert: Geheime Variablen und Werte unter Schlüsseln, die geheim aussehen (Tokens, Passwörter, Schlüssel),
+erscheinen in Beispielen als `••••••`.
+
+## Eine vorhandene Spec ergänzen [#adding-to-a-spec-you-have]
+
+Wähle die Spec unter **Spec**. Echolot ergänzt nur, was fehlt: Operationen, Antworten, Schemas und Sicherheitsschemata,
+die sie noch nicht nennt. Was die Spec schon sagt, bleibt, wie es geschrieben ist. Specs in Swagger 2.0 lassen sich nicht
+ergänzen; nur OpenAPI-3-Dokumente.
+
+## Einzelne Antworten aus dem Verlauf dokumentieren [#documenting-single-responses-from-history]
+
+Klicke im [Verlauf](/docs/workspaces/history) mit der rechten Maustaste auf einen HTTP-Austausch, der eine Antwort
+bekam, und wähle **Zur OpenAPI-Spec hinzufügen …**. Dasselbe Blatt öffnet sich, für diese eine Antwort. Das ist praktisch
+für eine Antwort, die du nur einmal gesehen hast, etwa einen Fehler.
+
+## Was ausgelassen wird [#what-is-left-out]
+
+- Anfragen, die kein HTTP sind (GraphQL, gRPC, WebSocket und die übrigen): Nur HTTP-Anfragen werden in OpenAPI
+  dokumentiert.
+- Anfragen ohne Antwort: Sende sie zuerst.
+- Anfragen, deren Senden fehlschlug, bevor es eine Antwort gab.
+- Anfragen in einem Unterordner, der einer eigenen Spec folgt.
+
+## Aktuell halten [#keep-it-current]
+
+Sobald der Ordner der Spec folgt, ist die Spec der Vertrag. Bearbeite sie auf der Seite „Specs“ und wende ihre
+Änderungen mit **„Ordner“ auf Änderungen prüfen …** auf die Anfragen an. Siehe
+[Anfragen, die der Spec folgen](/docs/specs#requests-that-follow-the-spec). Du kannst die Antworten der Spec auch einem
+[Mock](/docs/mocks) geben, damit Frontends dagegen arbeiten können.
+
+Agenten können dasselbe über das Tool `add_to_spec` tun, wenn das Tool-Set **Specs** an ist: siehe
+[Agenten](/docs/ai/agents).

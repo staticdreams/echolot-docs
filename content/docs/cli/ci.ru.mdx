@@ -1,0 +1,132 @@
+---
+title: "CI"
+description: "Запускайте проверки рабочего пространства при каждом пуше, с отчётами JUnit, секретами из вашего CI и проверками для спецификаций, схем и MCP-серверов."
+---
+
+Рабочее пространство — это папка с текстовыми файлами, поэтому оно может жить в том же репозитории, что и тестируемое
+им API. В CI инструмент командной строки проверяет рабочее пространство, выполняет его запросы с проверками и пишет
+отчёт, который показывает ваша система CI. Непройденная проверка роняет задание.
+
+## Что делает задание [#what-a-job-does]
+
+```sh
+echolot validate Alpenglow.echolot --env staging
+echolot run Alpenglow.echolot --env staging \
+  --reporter console --reporter junit --out echolot-results.xml
+```
+
+1. [`echolot validate`](/docs/cli/validate) ловит испорченный файл или отсутствующую переменную, прежде чем что-либо
+   отправится.
+2. [`echolot run`](/docs/cli/run) отправляет запросы и выполняет их проверки и скрипты. `console` печатает прогон в
+   журнале задания; `junit` записывает файл, который ваш CI читает как результаты тестов.
+3. Код выхода равен 1, когда запрос не удался, поэтому задание падает.
+
+Добавьте `--folder`, чтобы выполнить часть рабочего пространства, `--data` для прогона на данных, `--bail`, чтобы
+остановиться на первой неудаче, и `--retries` для нестабильной зависимости.
+
+## Секреты в CI [#secrets-in-ci]
+
+В файлах рабочего пространства нет секретных значений, поэтому их должен предоставить CI. Храните каждое в секретах
+вашего CI и передавайте как переменную окружения `ECHOLOT_SECRET_<NAME>`, где имя переменной — заглавными буквами (см.
+[секреты](/docs/cli#secrets)):
+
+| Секретная переменная в рабочем пространстве | Переменная окружения в CI |
+| --- | --- |
+| `password` | `ECHOLOT_SECRET_PASSWORD` |
+| `token` | `ECHOLOT_SECRET_TOKEN` |
+| `api-key` | `ECHOLOT_SECRET_API_KEY` |
+
+Или запишите их в файл и передайте через `--secrets`; по одной строке `NAME=value`. Никогда не коммитьте этот файл.
+
+Большинство систем CI задают `CI`, что отключает Связку ключей, так что задание никогда не ждёт запроса. Отчёты
+маскируют секретные значения, поэтому их безопасно хранить как артефакты.
+
+- **MCP-серверы с OAuth:** один раз войдите на своём Mac командой `echolot mcp sign-in <server> --print` и сохраните
+  напечатанное значение `ECHOLOT_SECRET_…` как секрет CI. См. [`echolot mcp`](/docs/cli/mcp).
+- **Захваченные секреты:** без Связки ключей захват ответа в секретную переменную не сохраняется для следующего
+  запроса прогона. Задайте такой переменной значение из CI или захватывайте в переменную, которая не секретная.
+
+## GitHub Actions [#github-actions]
+
+На раннере macOS скачайте инструмент из релизов и запустите его:
+
+```yaml
+# .github/workflows/api-checks.yml
+name: API checks
+on: [push, pull_request]
+
+jobs:
+  echolot:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Echolot command-line tool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --repo staticdreams/echolot-public --pattern 'echolot-*-macos.zip'
+          unzip -o echolot-*-macos.zip -d "$RUNNER_TEMP/echolot"
+          echo "$RUNNER_TEMP/echolot" >> "$GITHUB_PATH"
+
+      - name: Check the workspace
+        run: echolot validate Alpenglow.echolot --env staging
+        env:
+          ECHOLOT_SECRET_PASSWORD: ${{ secrets.ALPENGLOW_STAGING_PASSWORD }}
+
+      - name: Run the requests
+        run: |
+          echolot run Alpenglow.echolot --env staging \
+            --reporter console --reporter junit --out echolot-results.xml
+        env:
+          ECHOLOT_SECRET_PASSWORD: ${{ secrets.ALPENGLOW_STAGING_PASSWORD }}
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: echolot-results
+          path: echolot-results.xml
+```
+
+`gh release download` без тега берёт последний релиз. Укажите тег (`gh release download v0.5.0 …`), чтобы закрепить
+версию.
+
+### Раннеры Linux [#linux-runners]
+
+Сегодня инструмент работает на macOS: задание выше использует раннер macOS. Сборка для Linux, образ Docker и готовое
+действие GitHub Action пока не опубликованы; эта страница покажет их, когда они появятся.
+
+## Любой другой CI [#any-other-ci]
+
+Всё — это команда с кодом выхода, поэтому подойдёт любая система CI, которая выполняет команды оболочки. Скрипт для
+раннера macOS:
+
+```sh
+#!/bin/sh
+set -e
+
+echolot validate Alpenglow.echolot --env staging
+echolot run Alpenglow.echolot --env staging \
+  --reporter console \
+  --reporter junit --out reports/echolot.xml \
+  --reporter html --out reports/echolot.html
+```
+
+`set -e` останавливает скрипт на первой же команде, которая не удалась. Укажите в настройке отчёта о тестах вашего CI
+файл `reports/echolot.xml` и сохраняйте `reports/echolot.html` как артефакт, чтобы люди могли его открыть.
+
+## Другие проверки [#more-gates]
+
+| Что проверяется | Команда | Падает, когда |
+| --- | --- | --- |
+| Спецификация OpenAPI в порядке | `echolot spec lint specs/alpenglow.yaml --strict` | В ней есть ошибки или предупреждения. |
+| Запросы следуют спецификации | `echolot spec check -w Alpenglow.echolot <folder>` | Спецификация изменилась, а папку не обновили. |
+| Схема GraphQL остаётся совместимой | `echolot graphql diff before.graphql specs/shop.graphql` | Изменение несовместимое (`--fail-on dangerous` — строже). |
+| MCP-сервером могут пользоваться модели | `echolot mcp check --url https://demo.echolot.dev/mcp --quality --strict` | Модель споткнулась бы об инструмент. |
+| Сценарий по-прежнему работает | `echolot flow run morning-stock-check -w Alpenglow.echolot --no-input` | Сценарий или один из его тестов не проходит. |
+| Агент справляется с задачей | `echolot agent "…" -w Alpenglow.echolot --policy-file ci-policy.toml` | Агент не заканчивает. |
+
+Для сервера, который нужен API, но которого нет в CI, сначала запустите в фоне [мок](/docs/cli/mock).
+
+Пошаговое руководство, начинающееся с пустого репозитория, см. в [Тестировании API в CI](/docs/tutorials/test-in-ci).

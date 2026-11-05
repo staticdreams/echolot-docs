@@ -1,0 +1,123 @@
+---
+title: "동적 값"
+description: "타임스탬프, UUID, 해시, 인코딩, 파일, 다른 요청과 그 응답의 값처럼 보낼 때 계산되는 값으로 요청을 채웁니다."
+---
+
+동적 값은 요청을 보낼 때마다 Echolot이 계산하는 토큰입니다. 현재 시간, 새 UUID, 본문에 대한 서명, 다른 요청의 최신 응답에 있는 값 등이 해당합니다. 변수처럼
+쓰되 앞에 `$`를 붙입니다. `{{$uuid}}`, `{{$sha256('{{password}}')}}`처럼 씁니다. 동적 값은 변수를 쓸 수 있는 모든 곳에서 동작합니다. URL, 매개변수, 헤더,
+본문, 양식 필드, 인증 필드가 그렇습니다.
+
+이 페이지는 동적 값을 추가하고 편집하는 방법을 설명합니다. 모든 동적 값과 그 인수는 [동적 값 레퍼런스](/docs/reference/dynamic-values)에 정리되어 있습니다.
+
+## 목록에서 추가하기 [#add-one-from-the-list]
+
+1. 변수를 받는 필드에 `{{`를 입력합니다. 범위 안의 변수가 먼저, 이어서 카테고리별 동적 값이 있는 목록이 열립니다.
+2. 계속 입력해서 범위를 좁힙니다. `uuid`, `time`, `hmac` 같은 식입니다. 각 항목에는 무엇을 주는지 설명이 있습니다.
+3. <kbd>↑</kbd>와 <kbd>↓</kbd>로 이동하고 <kbd>↩</kbd> 또는 <kbd>⇥</kbd>를 눌러 삽입합니다. <kbd>Esc</kbd>는 목록을 닫습니다.
+
+인수를 받는 값은 삽입하자마자 편집기가 열리므로 인수를 직접 입력하지 않고 양식에서 채울 수 있습니다. `{{`를 입력하지 않고 목록을 열려면 필드를 오른쪽 클릭하고
+<strong>변수 또는 값 삽입…</strong>을 선택합니다.
+
+필드에서 동적 값은 읽기 쉬운 라벨이 붙은 알약 모양으로 표시됩니다. 값의 제목(`HMAC-SHA256`)이거나, 응답 값이면 요청과 읽는 대상(`Sign in › $.access_token`)입니다.
+그 아래의 텍스트는 쓴 그대로 유지됩니다.
+
+<Shot id="requests-http-token-editor" alt="JSONPath 필터링된 응답 값의 토큰 편집기: 요청 Sign in, JSONPath $.access_token, 먼저 보내기가 아직 응답이 없을 때로 설정됨, 최신 응답의 값" />
+
+## 토큰 편집 [#edit-a-token]
+
+알약을 두 번 클릭하거나 오른쪽 클릭하고 <strong>토큰 편집…</strong>을 선택합니다. 토큰 편집기가 열립니다.
+
+- 맨 위의 버튼은 토큰이 무엇인지(변수 또는 동적 값) 알려 주며, 눌러서 바꿀 수 있습니다.
+- 필드는 값의 인수입니다. 요청 인수는 작업 공간의 요청을 폴더별로 보여 주는 메뉴이고, 쿼리 인수(JSONPath, XPath, 헤더 이름)에는 최신 응답에 있는 항목을
+  나열하는 버튼이 있어 경로를 입력하지 않고 값을 고를 수 있습니다.
+- <strong>값</strong>은 현재 환경에서 토큰이 주는 값을 보여 주며, 값을 확인할 수 없으면 <strong>현재 환경에서 값을 확인할 수 없음</strong>과 그 이유를 보여 줍니다.
+- 변수에서는 <strong>다른 변수 사용</strong>으로 다른 변수로 바꾸고, <strong>대신 응답 값 사용</strong>으로 응답 값으로 바꿀 수 있습니다.
+- <strong>제거</strong>는 토큰을 삭제하고 <strong>완료</strong>는 변경 사항을 유지합니다.
+
+## 빠른 확인 [#quick-look]
+
+알약에 포인터를 올리면 열지 않고도 그 값이 무엇을 주는지 볼 수 있습니다. 값(비밀 값은 가려지고 <strong>비밀 키</strong>로 표시됨), 출처, 쓰인 방식이 나옵니다. 동적 값은 빠른
+확인에 값이 계산되는 시점도 표시됩니다. 시간과 무작위 값은 <strong>보낼 때마다 새로 만들어집니다. 위는 예시입니다.</strong> 버튼은 <strong>편집…</strong>, <strong>값 복사</strong>,
+<strong>모든 변수…</strong>이며, <strong>모든 변수…</strong>는 변수 패널을 엽니다.
+
+## 직접 쓰기 [#writing-them-by-hand]
+
+```text
+{{$name}}                       no arguments
+{{$name('text', 42)}}           text in single or double quotes, numbers as they are
+{{$base64(user)}}               a bare name is a variable
+{{$base64('{{user}}:{{pass}}')}} variables inside text
+{{$sha256("{{$requestBody('')}}")}} a dynamic value inside another one
+```
+
+따옴표로 묶은 인수 안의 토큰은 자신의 인수에 다른 종류의 따옴표를 써야 합니다. 마지막 줄처럼 인수가 작은따옴표로 묶인 토큰은 큰따옴표로 감쌉니다.
+
+## 사용할 수 있는 값 [#what-you-can-use]
+
+| 카테고리 | 예 | 제공하는 값 |
+| --- | --- | --- |
+| <strong>응답</strong> | `{{$response('auth/sign-in', '$.access_token')}}`, `{{$responseHeader('orders/create-order', 'Location')}}`, `{{$responseStatus('auth/sign-in')}}` | 다른 요청의 최신 응답에 있는 값. |
+| <strong>요청</strong> | `{{$requestHeader('', 'Content-Type')}}`, `{{$requestURL('auth/sign-in')}}`, `{{$requestJSONPath('', '$.lines[0].sku')}}` | 이 요청(첫 번째 인수가 비어 있음) 또는 다른 요청의, 보내질 때의 일부분. |
+| <strong>인코딩</strong> | `{{$base64('heidi:alpenglow')}}`, `{{$urlEncode('a b&c')}}`, `{{$jsonEscape('say "hi"')}}`, `{{$basicAuth('heidi', '{{password}}')}}`, `{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`, `{{$newline}}` | 인코딩 또는 디코딩된 텍스트, 이스케이프, Basic 인증 값, 서명된 JWT. |
+| <strong>해시 및 서명</strong> | `{{$sha256("{{$requestBody('')}}")}}`, `{{$hmacSha256('{{key}}', 'message', 'base64')}}`, `{{$md5('text')}}` | 해시와 HMAC. `base64`나 `base64url`을 지정하지 않으면 16진수입니다. |
+| <strong>시간</strong> | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | 보내는 시각을 Unix 초 또는 밀리초, ISO 8601, HTTP 날짜, 직접 정한 형식으로. 초 단위 오프셋과 시간대를 적용할 수 있습니다. |
+| <strong>무작위</strong> | `{{$uuid}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | 보낼 때마다 새로 만들어지는 무작위 값. `$guid`와 `$randomUUID`는 `$uuid`의 다른 이름입니다. |
+| <strong>가짜 데이터</strong> | `{{$randomFullName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomLoremSentence}}`, `{{$randomDatePast}}` | 지어낸 이름, 주소, 회사, 가격, 날짜, lorem ipsum 등이며 보낼 때마다 새로 만들어집니다. 이름은 Postman의 이름을 따릅니다. 목록에서는 하위 메뉴로 묶여 있습니다. [가짜 데이터](/docs/reference/dynamic-values#fake-data)를 참고하십시오. |
+| <strong>텍스트</strong> | `{{$lowercase('{{name}}')}}`, `{{$uppercase('chf')}}`, `{{$trim('{{code}}')}}` | 변환된 텍스트. |
+| <strong>파일 및 시스템</strong> | `{{$file('data/order.json')}}`, `{{$env('HOME')}}` | 파일의 내용(작업 공간 기준 상대 경로 또는 절대 경로), 또는 Echolot 프로세스의 환경 변수. |
+
+`$env`는 에이전트에서 사용할 수 없습니다. AI 에이전트가 요청을 보낼 때 Mac의 환경 변수는 포함되지 않습니다.
+
+Alpenglow 예제에서는 <strong>Orders › Create order</strong>가 하나를 사용합니다. `Idempotency-Key` 헤더가 `{{$uuid}}`이므로 주문마다 새 값이 됩니다.
+
+## 다른 요청의 응답에서 가져오는 값 [#values-from-other-requests-responses]
+
+<strong>응답</strong> 값은 저장된 다른 요청의 최신 응답을 읽습니다. 첫 번째 인수는 작업 공간에서 그 요청의 경로, 즉 파일에서와 같은 폴더와 이름입니다. <strong>Auth › Sign in</strong>은
+`auth/sign-in`입니다.
+
+| 값 | 읽는 대상 |
+| --- | --- |
+| `$response(request, query)` | 쿼리의 형식에 따라 무엇이든: `$.token`(JSONPath), `/feed/entry[1]/id`(XPath), `header:Location`, `cookie:session`, `regex:token=(\w+)`, `jq:.data.token`, `keypath:data.items.0.id`. |
+| `$responseJSONPath`, `$responseKeyPath`, `$responseJq`, `$responseXPath`, `$responseRegex` | 해당 종류의 쿼리로 읽는 본문. 정규 표현식은 그룹이 있으면 첫 번째 그룹을 줍니다. |
+| `$responseHeader`, `$responseCookie` | 헤더, 또는 응답이 설정한 쿠키. |
+| `$responseStatus`, `$responseBody`, `$responseBodyLength` | 상태 코드, 텍스트로 읽은 본문, 바이트 단위 크기. |
+
+값이 읽는 요청에 아직 응답이 없으면 Echolot이 그 요청을 먼저 보냅니다. 보내기 전에 URL 막대 아래 줄에 <strong>“Sign in”을(를) 먼저 보냄</strong>이라고 표시됩니다. 선택 사항인
+마지막 인수가 이것이 일어나는 시점을 정하며, 토큰 편집기에서는 <strong>먼저 보내기</strong>입니다.
+
+| 인수 | 편집기에서 | 동작 |
+| --- | --- | --- |
+| (없음) 또는 `'if-missing'` | <strong>아직 응답이 없을 때</strong> | 다른 요청에 응답이 없을 때만 그 요청을 보냅니다. |
+| `'fresh'` | <strong>매번</strong> | 이 요청을 보낼 때마다 먼저 보냅니다(실행에서는 실행당 한 번). |
+| `'latest'` | <strong>안 함: 최신 응답 사용</strong> | 보내지 않고 최신 응답을 사용합니다. |
+
+```text
+{{$response('auth/sign-in', '$.access_token', 'fresh')}}
+```
+
+서로를 순환하며 읽는 요청은 해당 요청 이름과 함께 거부됩니다.
+
+한 요청을 가리키는 대신 모든 요청이 읽는 변수에 응답의 값을 보관하려면 [응답 캡처](/docs/requests/captures)를 사용하십시오.
+
+## 이 요청에서 가져오는 값 [#values-from-this-request]
+
+<strong>요청</strong> 값은 변수와 인증이 채워진, 보내질 때의 요청을 읽습니다. 지금 보내는 요청이면 첫 번째 인수를 비워 둡니다: `{{$requestHeader('', 'X-Request-Id')}}`.
+Echolot은 요청한 부분만 계산하므로 헤더로 본문에 서명할 수 있습니다.
+
+```text
+X-Signature: {{$hmacSha256('{{signingKey}}', "{{$requestBody('')}}")}}
+```
+
+## jq [#jq]
+
+jq 필터는 `$responseJq`, `$requestJq`, `$response(…, 'jq:…')`에서 동작하며 따로 설치할 것이 없습니다. 결과가 여러 개인 필터는 한 줄에 하나씩 줍니다.
+
+```text
+{{$responseJq('catalog/list-products', '.items[0].sku')}}
+{{$responseJq('catalog/list-products', '[.items[].price.amount] | add')}}
+```
+
+## 값이 확인되지 않을 때 [#when-a-value-doesnt-resolve]
+
+계산할 수 없는 토큰(없는 변수, 보낼 수 없는 응답 없는 요청, 아무것도 찾지 못하는 JSONPath)은 쓴 그대로 전송되며 URL 막대 아래 줄에 <strong>문제 1개</strong>가 표시됩니다.
+클릭하면 어느 것인지 볼 수 있습니다. 토큰 편집기와 빠른 확인에도 같은 내용이 나옵니다.

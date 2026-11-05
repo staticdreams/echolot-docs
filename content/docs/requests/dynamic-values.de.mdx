@@ -1,0 +1,143 @@
+---
+title: "Dynamische Werte"
+description: "Anfragen mit Werten füllen, die beim Senden berechnet werden, etwa Zeitstempel, UUIDs, Hashes, Codierungen, Dateien und Werte aus anderen Anfragen und ihren Antworten."
+---
+
+Ein dynamischer Wert ist ein Token, das Echolot bei jedem Senden der Anfrage berechnet: die aktuelle Zeit, eine neue
+UUID, eine Signatur über den Body oder ein Wert aus der neuesten Antwort einer anderen Anfrage. Du schreibst ihn wie
+eine Variable, mit einem `$` davor: `{{$uuid}}`, `{{$sha256('{{password}}')}}`. Dynamische Werte funktionieren überall,
+wo Variablen funktionieren: in der URL, in Parametern, Headern, im Body, in Formularfeldern und in Auth-Feldern.
+
+Diese Seite zeigt, wie du sie hinzufügst und bearbeitest. Jeder dynamische Wert mit seinen Argumenten steht in der
+[Referenz der dynamischen Werte](/docs/reference/dynamic-values).
+
+## Aus der Liste hinzufügen [#add-one-from-the-list]
+
+1. Tippe in einem Feld, das Variablen annimmt, `{{`. Eine Liste öffnet sich, zuerst mit den Variablen im aktuellen
+   Gültigkeitsbereich, dann mit den dynamischen Werten nach Kategorie.
+2. Tippe weiter, um sie einzugrenzen: `uuid`, `time`, `hmac`. Jeder Eintrag sagt, was er liefert.
+3. Bewege dich mit <kbd>↑</kbd> und <kbd>↓</kbd> und drücke <kbd>↩</kbd> oder <kbd>⇥</kbd>, um ihn einzufügen;
+   <kbd>Esc</kbd> schließt die Liste.
+
+Ein Wert mit Argumenten öffnet seinen Editor, sobald du ihn einfügst, sodass du sie in einem Formular ausfüllst, statt
+sie zu tippen. Um die Liste ohne Tippen von `{{` zu öffnen, klicke das Feld mit der rechten Maustaste an und wähle
+**Variable oder Wert einfügen …**.
+
+Im Feld erscheint ein dynamischer Wert als Pille mit gut lesbarer Beschriftung: dem Titel des Werts (`HMAC-SHA256`)
+oder, bei einem Antwortwert, der Anfrage und dem, was er liest (`Sign in › $.access_token`). Der Text darunter bleibt,
+wie er geschrieben ist.
+
+<Shot id="requests-http-token-editor" alt="Der Token-Editor für einen Antwortwert mit JSONPath-Filter: die Anfrage Sign in, der JSONPath $.access_token, „Zuerst senden“ auf „Wenn sie noch keine Antwort hat“ und der Wert aus der neuesten Antwort" />
+
+## Token bearbeiten [#edit-a-token]
+
+Doppelklicke eine Pille oder klicke sie mit der rechten Maustaste an und wähle **Token bearbeiten …**. Der Token-Editor
+öffnet sich:
+
+- Der Knopf oben sagt, was das Token ist, und ändert es: eine Variable oder ein dynamischer Wert.
+- Die Felder sind die Argumente des Werts. Ein Anfrage-Argument ist ein Menü der Anfragen des Arbeitsbereichs nach
+  Ordnern; ein Query-Argument (ein JSONPath, ein XPath, ein Header-Name) hat einen Knopf, der auflistet, was die neueste
+  Antwort enthält, sodass du einen Wert auswählen kannst, statt seinen Pfad zu tippen.
+-  **Wert** zeigt, was das Token jetzt mit der aktuellen Umgebung liefert, oder
+  **Lässt sich mit der aktuellen Umgebung nicht auflösen** und warum.
+-  Bei einer Variablen tauscht **Andere Variable verwenden** sie gegen eine andere aus, und
+  **Stattdessen einen Antwortwert verwenden** macht daraus einen Antwortwert.
+- **Entfernen** löscht das Token; **Fertig** behält deine Änderungen.
+
+## Kurzinfo [#quick-look]
+
+Halte den Zeiger auf eine Pille, um zu sehen, was sie liefert, ohne sie zu öffnen: den Wert (bei einem Secret maskiert
+und als **Geheim** markiert), woher er kommt und wie er geschrieben ist. Bei dynamischen Werten sagt die Kurzinfo, wann
+sie berechnet werden: Zeit- und Zufallswerte sind **Wird bei jedem Senden neu erzeugt; oben ein Beispiel.** Ihre Knöpfe
+sind **Bearbeiten …**, **Wert kopieren** und **Alle Variablen …**, das das Variablen-Panel öffnet.
+
+## Von Hand schreiben [#writing-them-by-hand]
+
+```text
+{{$name}}                       no arguments
+{{$name('text', 42)}}           text in single or double quotes, numbers as they are
+{{$base64(user)}}               a bare name is a variable
+{{$base64('{{user}}:{{pass}}')}} variables inside text
+{{$sha256("{{$requestBody('')}}")}} a dynamic value inside another one
+```
+
+Ein Token in einem Argument in Anführungszeichen muss für seine eigenen Argumente die andere Art Anführungszeichen
+nutzen: doppelte um ein Token, dessen Argumente in einfachen stehen, wie in der letzten Zeile.
+
+## Was du nutzen kannst [#what-you-can-use]
+
+| Kategorie | Beispiele | Liefert |
+| --- | --- | --- |
+| **Antworten** | `{{$response('auth/sign-in', '$.access_token')}}`, `{{$responseHeader('orders/create-order', 'Location')}}`, `{{$responseStatus('auth/sign-in')}}` | Werte aus der neuesten Antwort einer anderen Anfrage. |
+| **Anfragen** | `{{$requestHeader('', 'Content-Type')}}`, `{{$requestURL('auth/sign-in')}}`, `{{$requestJSONPath('', '$.lines[0].sku')}}` | Teile dieser Anfrage (erstes Argument leer) oder einer anderen, so wie sie gesendet würden. |
+| **Codierung** | `{{$base64('heidi:alpenglow')}}`, `{{$urlEncode('a b&c')}}`, `{{$jsonEscape('say "hi"')}}`, `{{$basicAuth('heidi', '{{password}}')}}`, `{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`, `{{$newline}}` | Codierten oder decodierten Text, Escapes, einen Basic-Auth-Wert, ein signiertes JWT. |
+| **Hashes und Signaturen** | `{{$sha256("{{$requestBody('')}}")}}`, `{{$hmacSha256('{{key}}', 'message', 'base64')}}`, `{{$md5('text')}}` | Hashes und HMACs, hexadezimal, sofern du nicht `base64` oder `base64url` verlangst. |
+| **Zeit** | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | Die Sendezeit in Unix-Sekunden oder -Millisekunden, ISO 8601, als HTTP-Datum oder in deinem eigenen Format, verschoben um einen Versatz in Sekunden und in einer Zeitzone. |
+| **Zufall** | `{{$uuid}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | Bei jedem Senden neue Zufallswerte. `$guid` und `$randomUUID` sind andere Namen für `$uuid`. |
+| **Beispieldaten** | `{{$randomFullName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomLoremSentence}}`, `{{$randomDatePast}}` | Erfundene Namen, Adressen, Firmen, Preise, Daten, Lorem ipsum und mehr, bei jedem Senden neu, unter den Namen von Postman. Die Liste gruppiert sie in Untermenüs. Siehe [Beispieldaten](/docs/reference/dynamic-values#fake-data). |
+| **Text** | `{{$lowercase('{{name}}')}}`, `{{$uppercase('chf')}}`, `{{$trim('{{code}}')}}` | Veränderten Text. |
+| **Dateien und System** | `{{$file('data/order.json')}}`, `{{$env('HOME')}}` | Den Inhalt einer Datei (ein Pfad relativ zum Arbeitsbereich oder ein absoluter Pfad) oder eine Umgebungsvariable des Echolot-Prozesses. |
+
+`$env` steht Agenten nicht zur Verfügung: Sendet ein KI-Agent eine Anfrage, bleibt eine Umgebungsvariable deines Mac
+außen vor.
+
+Das Alpenglow-Beispiel nutzt einen in **Orders › Create order**: Sein Header `Idempotency-Key` ist `{{$uuid}}`, sodass
+jede Bestellung neu ist.
+
+## Werte aus Antworten anderer Anfragen [#values-from-other-requests-responses]
+
+Die Werte unter **Antworten** lesen die neueste Antwort einer anderen gesicherten Anfrage. Das erste Argument ist der
+Pfad dieser Anfrage im Arbeitsbereich, ihr Ordner und ihr Name wie in den Dateien: `auth/sign-in` für
+**Auth › Sign in**.
+
+| Wert | Liest |
+| --- | --- |
+| `$response(request, query)` | Alles, je nach Form der Query: `$.token` (JSONPath), `/feed/entry[1]/id` (XPath), `header:Location`, `cookie:session`, `regex:token=(\w+)`, `jq:.data.token`, `keypath:data.items.0.id`. |
+| `$responseJSONPath`, `$responseKeyPath`, `$responseJq`, `$responseXPath`, `$responseRegex` | Den Body, mit dieser Art von Query. Ein Regex liefert seine erste Gruppe, falls er eine hat. |
+| `$responseHeader`, `$responseCookie` | Einen Header oder ein Cookie, das die Antwort gesetzt hat. |
+| `$responseStatus`, `$responseBody`, `$responseBodyLength` | Den Statuscode, den Body als Text, seine Größe in Bytes. |
+
+Hat die Anfrage, die ein Wert liest, noch keine Antwort, sendet Echolot sie zuerst. Die Zeile unter der URL-Leiste sagt
+das schon vor dem Senden: **Sendet zuerst „Sign in“**. Das optionale letzte Argument entscheidet, wann das geschieht;
+im Token-Editor heißt es **Zuerst senden**:
+
+| Argument | Im Editor | Was passiert |
+| --- | --- | --- |
+| (keines) oder `'if-missing'` | **Wenn sie noch keine Antwort hat** | Sendet die andere Anfrage nur, wenn sie keine Antwort hat. |
+| `'fresh'` | **Jedes Mal** | Sendet sie vor jedem Senden dieser Anfrage (einmal pro Durchlauf in der Ausführung). |
+| `'latest'` | **Nie: letzte Antwort verwenden** | Sendet sie nie; nutzt ihre neueste Antwort. |
+
+```text
+{{$response('auth/sign-in', '$.access_token', 'fresh')}}
+```
+
+Anfragen, die einander im Kreis lesen, werden mit Nennung der Anfragen abgelehnt.
+
+Um einen Wert aus einer Antwort in einer Variablen zu behalten, die jede Anfrage liest, statt auf eine einzelne Anfrage
+zu zeigen, nutze eine [Erfassung](/docs/requests/captures).
+
+## Werte aus dieser Anfrage [#values-from-this-request]
+
+Die Werte unter **Anfragen** lesen eine Anfrage so, wie sie gesendet würde, mit eingesetzten Variablen und Auth. Lass
+das erste Argument leer für die Anfrage, die gerade gesendet wird: `{{$requestHeader('', 'X-Request-Id')}}`. Echolot
+berechnet nur den Teil, den du verlangst, sodass ein Header den Body signieren kann:
+
+```text
+X-Signature: {{$hmacSha256('{{signingKey}}', "{{$requestBody('')}}")}}
+```
+
+## jq [#jq]
+
+jq-Filter funktionieren in `$responseJq`, `$requestJq` und `$response(…, 'jq:…')`, ohne dass du etwas installieren
+musst. Ein Filter mit mehreren Ergebnissen liefert sie zeilenweise:
+
+```text
+{{$responseJq('catalog/list-products', '.items[0].sku')}}
+{{$responseJq('catalog/list-products', '[.items[].price.amount] | add')}}
+```
+
+## Wenn ein Wert sich nicht auflöst [#when-a-value-doesnt-resolve]
+
+Ein Token, das sich nicht berechnen lässt (eine fehlende Variable, eine Anfrage ohne Antwort, die sich nicht senden
+lässt, ein JSONPath, der nichts findet), wird unverändert gesendet, und die Zeile unter der URL-Leiste zeigt
+**1 Problem**. Klicke darauf, um zu sehen, welches. Der Token-Editor und die Kurzinfo sagen dasselbe.

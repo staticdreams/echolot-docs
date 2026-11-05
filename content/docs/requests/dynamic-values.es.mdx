@@ -1,0 +1,141 @@
+---
+title: "Valores dinámicos"
+description: "Rellena las solicitudes con valores calculados al enviar, como marcas de tiempo, UUID, hashes, codificaciones, archivos y valores de otras solicitudes y de sus respuestas."
+---
+
+Un valor dinámico es un token que Echolot calcula cada vez que se envía la solicitud: la hora actual, un UUID nuevo, una
+firma sobre el cuerpo o un valor de la última respuesta de otra solicitud. Se escribe como una variable, con un `$`
+delante: `{{$uuid}}`, `{{$sha256('{{password}}')}}`. Los valores dinámicos funcionan donde funcionan las variables: la URL,
+los parámetros, las cabeceras, el cuerpo, los campos de formulario y los campos de autenticación.
+
+Esta página muestra cómo añadirlos y editarlos. Todos los valores dinámicos, con sus argumentos, están en la
+[referencia de valores dinámicos](/docs/reference/dynamic-values).
+
+## Añade uno desde la lista [#add-one-from-the-list]
+
+1. En cualquier campo que admita variables, escribe `{{`. Se abre una lista con primero las variables del ámbito y
+   después los valores dinámicos por categoría.
+2. Sigue escribiendo para acotarla: `uuid`, `time`, `hmac`. Cada entrada indica lo que da.
+3. Muévete con <kbd>↑</kbd> y <kbd>↓</kbd> y pulsa <kbd>↩</kbd> o <kbd>⇥</kbd> para insertarlo; <kbd>Esc</kbd> cierra la
+   lista.
+
+Un valor que admite argumentos abre su editor en cuanto lo insertas, para que los rellenes en un formulario en lugar de
+escribirlos. Para abrir la lista sin escribir `{{`, haz clic con el botón derecho en el campo y elige
+**Insertar variable o valor…**.
+
+En el campo, un valor dinámico se muestra como una píldora con una etiqueta legible: el título del valor (`HMAC-SHA256`)
+o, para un valor de respuesta, la solicitud y lo que lee (`Sign in › $.access_token`). El texto subyacente se queda como
+está escrito.
+
+<Shot id="requests-http-token-editor" alt="El editor de tokens de un valor Respuesta filtrada con JSONPath: la solicitud Sign in, el JSONPath $.access_token, Enviarla antes en Cuando aún no tiene respuesta, y el valor de la última respuesta" />
+
+## Edita un token [#edit-a-token]
+
+Haz doble clic en una píldora, o haz clic con el botón derecho y elige **Editar token…**. Se abre el editor de tokens:
+
+- El botón de la parte superior indica qué es el token y lo cambia: una variable o un valor dinámico.
+- Los campos son los argumentos del valor. Un argumento de solicitud es un menú con las solicitudes del espacio de
+  trabajo por carpeta; un argumento de consulta (un JSONPath, un XPath, un nombre de cabecera) tiene un botón que lista
+  lo que contiene la última respuesta, para que elijas un valor en lugar de escribir su ruta.
+- **Valor** muestra lo que da el token ahora, con el entorno actual, o **No se resuelve con el entorno actual** y el
+  motivo.
+- Para una variable, **Usar otra variable** la cambia por otra, y **Usar un valor de respuesta en su lugar** la convierte
+  en un valor de respuesta.
+- **Eliminar** borra el token; **OK** conserva tus cambios.
+
+## Vista rápida [#quick-look]
+
+Pasa el puntero por una píldora para ver lo que da sin abrirla: el valor (enmascarado si es secreto, marcado como
+**Secreto**), de dónde viene y cómo está escrito. Para los valores dinámicos, la vista rápida indica cuándo se calculan:
+los valores de tiempo y los aleatorios dicen **Se genera de nuevo en cada envío; arriba hay un ejemplo.** Sus botones son
+**Editar…**, **Copiar valor** y **Todas las variables…**, que abre el panel de variables.
+
+## Escribirlos a mano [#writing-them-by-hand]
+
+```text
+{{$name}}                       no arguments
+{{$name('text', 42)}}           text in single or double quotes, numbers as they are
+{{$base64(user)}}               a bare name is a variable
+{{$base64('{{user}}:{{pass}}')}} variables inside text
+{{$sha256("{{$requestBody('')}}")}} a dynamic value inside another one
+```
+
+Un token dentro de un argumento entre comillas debe usar el otro tipo de comillas para sus propios argumentos: comillas
+dobles alrededor de un token cuyos argumentos van entre comillas simples, como en la última línea.
+
+## Qué puedes usar [#what-you-can-use]
+
+| Categoría | Ejemplos | Da |
+| --- | --- | --- |
+| **Respuestas** | `{{$response('auth/sign-in', '$.access_token')}}`, `{{$responseHeader('orders/create-order', 'Location')}}`, `{{$responseStatus('auth/sign-in')}}` | Valores de la última respuesta de otra solicitud. |
+| **Solicitudes** | `{{$requestHeader('', 'Content-Type')}}`, `{{$requestURL('auth/sign-in')}}`, `{{$requestJSONPath('', '$.lines[0].sku')}}` | Partes de esta solicitud (primer argumento vacío) o de otra, tal como se enviarían. |
+| **Codificación** | `{{$base64('heidi:alpenglow')}}`, `{{$urlEncode('a b&c')}}`, `{{$jsonEscape('say "hi"')}}`, `{{$basicAuth('heidi', '{{password}}')}}`, `{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`, `{{$newline}}` | Texto codificado o decodificado, escapes, un valor de autenticación Basic, un JWT firmado. |
+| **Hashes y firmas** | `{{$sha256("{{$requestBody('')}}")}}`, `{{$hmacSha256('{{key}}', 'message', 'base64')}}`, `{{$md5('text')}}` | Hashes y HMAC, en hexadecimal salvo que pidas `base64` o `base64url`. |
+| **Tiempo** | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | La hora del envío, en segundos o milisegundos Unix, ISO 8601, una fecha HTTP o tu propio formato, desplazada con un desfase en segundos y en una zona horaria. |
+| **Aleatorio** | `{{$uuid}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | Valores aleatorios nuevos en cada envío. `$guid` y `$randomUUID` son otros nombres de `$uuid`. |
+| **Datos falsos** | `{{$randomFullName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomLoremSentence}}`, `{{$randomDatePast}}` | Nombres, direcciones, empresas, precios, fechas, lorem ipsum y más inventados, nuevos en cada envío, con los nombres de Postman. La lista los agrupa en submenús. Consulta [datos falsos](/docs/reference/dynamic-values#fake-data). |
+| **Texto** | `{{$lowercase('{{name}}')}}`, `{{$uppercase('chf')}}`, `{{$trim('{{code}}')}}` | Texto modificado. |
+| **Archivos y sistema** | `{{$file('data/order.json')}}`, `{{$env('HOME')}}` | El contenido de un archivo (una ruta relativa al espacio de trabajo, o una ruta absoluta), o una variable de entorno del proceso de Echolot. |
+
+`$env` no está disponible para los agentes: cuando un agente de IA envía una solicitud, una variable de entorno de tu Mac
+queda fuera.
+
+El ejemplo Alpenglow usa uno en **Orders › Create order**: su cabecera `Idempotency-Key` es `{{$uuid}}`, así que cada
+pedido es nuevo.
+
+## Valores de las respuestas de otras solicitudes [#values-from-other-requests-responses]
+
+Los valores de **Respuestas** leen la última respuesta de otra solicitud guardada. El primer argumento es la ruta de esa
+solicitud en el espacio de trabajo, su carpeta y su nombre como en los archivos: `auth/sign-in` para **Auth › Sign in**.
+
+| Valor | Lee |
+| --- | --- |
+| `$response(request, query)` | Cualquier cosa, según la forma de la consulta: `$.token` (JSONPath), `/feed/entry[1]/id` (XPath), `header:Location`, `cookie:session`, `regex:token=(\w+)`, `jq:.data.token`, `keypath:data.items.0.id`. |
+| `$responseJSONPath`, `$responseKeyPath`, `$responseJq`, `$responseXPath`, `$responseRegex` | El cuerpo, con ese tipo de consulta. Una regex da su primer grupo, si lo tiene. |
+| `$responseHeader`, `$responseCookie` | Una cabecera, o una cookie que estableció la respuesta. |
+| `$responseStatus`, `$responseBody`, `$responseBodyLength` | El código de estado, el cuerpo como texto, su tamaño en bytes. |
+
+Cuando la solicitud que lee un valor aún no tiene respuesta, Echolot la envía antes. La línea bajo la barra de la URL lo
+indica antes de enviar: **Primero envía “Sign in”**. El último argumento opcional decide cuándo ocurre; en el editor de
+tokens es **Enviarla antes**:
+
+| Argumento | En el editor | Qué ocurre |
+| --- | --- | --- |
+| (ninguno) o `'if-missing'` | **Cuando aún no tiene respuesta** | Envía la otra solicitud solo si no tiene respuesta. |
+| `'fresh'` | **Siempre** | La envía antes de cada envío de esta solicitud (una vez por ejecución en la Ejecución). |
+| `'latest'` | **Nunca: usar la última respuesta** | Nunca la envía; usa su última respuesta. |
+
+```text
+{{$response('auth/sign-in', '$.access_token', 'fresh')}}
+```
+
+Las solicitudes que se leen unas a otras en círculo se rechazan, con los nombres de las solicitudes implicadas.
+
+Para guardar un valor de una respuesta en una variable que lean todas las solicitudes, en lugar de apuntar a una sola
+solicitud, usa una [captura de respuesta](/docs/requests/captures).
+
+## Valores de esta solicitud [#values-from-this-request]
+
+Los valores de **Solicitudes** leen una solicitud tal como se enviaría, con sus variables y su autenticación ya
+rellenadas. Deja vacío el primer argumento para la solicitud que se está enviando: `{{$requestHeader('', 'X-Request-Id')}}`.
+Echolot calcula solo la parte que pides, de modo que una cabecera puede firmar el cuerpo:
+
+```text
+X-Signature: {{$hmacSha256('{{signingKey}}', "{{$requestBody('')}}")}}
+```
+
+## jq [#jq]
+
+Los filtros jq funcionan en `$responseJq`, `$requestJq` y `$response(…, 'jq:…')`, sin instalar nada. Un filtro con varios
+resultados los da uno por línea:
+
+```text
+{{$responseJq('catalog/list-products', '.items[0].sku')}}
+{{$responseJq('catalog/list-products', '[.items[].price.amount] | add')}}
+```
+
+## Cuando un valor no se resuelve [#when-a-value-doesnt-resolve]
+
+Un token que no se puede calcular (una variable que falta, una solicitud sin respuesta que no se puede enviar, un
+JSONPath que no encuentra nada) se envía tal como está escrito, y la línea bajo la barra de la URL muestra **1 problema**.
+Haz clic en ella para ver cuál. El editor de tokens y la vista rápida dicen lo mismo.

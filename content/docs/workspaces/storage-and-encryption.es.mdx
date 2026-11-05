@@ -1,0 +1,120 @@
+---
+title: "Almacenamiento y cifrado"
+description: "Dónde guarda Echolot los espacios de trabajo, los cuerpos de respuesta y el historial, cuánto conserva y cómo cifrar los cuerpos de respuesta en el disco."
+---
+
+Echolot mantiene separados dos tipos de datos. Tus espacios de trabajo son carpetas que pones donde quieres. Los datos
+propios de Echolot (cuerpos de respuesta, historial, informes de fallos) viven en su carpeta de almacenamiento en tu
+Mac. Eliminar esa carpeta pierde el historial, nunca una solicitud.
+
+## Dónde está cada cosa [#where-things-are]
+
+| Qué | Dónde |
+| --- | --- |
+| Espacios de trabajo | Donde los crees o los guardes. |
+| Valores secretos, tokens de OAuth, la clave de cifrado | Tu llavero de inicio de sesión. |
+| Cuerpos de respuesta y capturas de red | `Payloads` en la carpeta de almacenamiento de Echolot. |
+| Historial | `History` en la carpeta de almacenamiento de Echolot: un archivo por espacio de trabajo. |
+| Conversaciones del Asistente que no has compartido | `Assistant` en la carpeta de almacenamiento de Echolot. |
+| Informes de fallos, si los permites | `Crash Reports` en la carpeta de almacenamiento de Echolot. |
+| Tus propias plantillas de código | `Code Templates` en la carpeta de almacenamiento de Echolot. Consulta [exportar](/docs/workspaces/exporting#copy-a-request-as-code). |
+| El espacio de trabajo Examples | `Examples.echolot` en la carpeta de almacenamiento de Echolot. |
+| Ajustes, variables globales, el entorno activo de cada espacio de trabajo | Las preferencias de Echolot. |
+
+La carpeta de almacenamiento de Echolot es `~/Library/Application Support/Echolot`. Para abrirla, ve a
+**Ajustes › Acerca de** y haz clic en **Mostrar en el Finder** junto a **Respuestas e historial**.
+
+<Edition only="appstore">
+  La edición de la App Store guarda los mismos datos en su propio contenedor en lugar de en
+  `~/Library/Application Support/Echolot`. **Ajustes › Acerca de › Mostrar en el Finder** abre la carpeta correcta en
+  cualquiera de las dos ediciones. Los espacios de trabajo se quedan donde los guardes en ambas, y se abren en ambas.
+</Edition>
+
+## Cuerpos de respuesta [#response-bodies]
+
+Todo cuerpo de respuesta va directamente a un archivo a medida que llega, nunca a la memoria, así que una respuesta de
+varios gigabytes no es problema. Un cuerpo se guarda una sola vez, aunque llegue muchas veces: enviar diez veces la misma
+solicitud con la misma respuesta conserva una copia.
+
+Define cuánto espacio pueden ocupar los cuerpos en **Ajustes › Almacenamiento › Cuerpos de respuesta**:
+**Conservar cuerpos de respuesta de hasta** 1, 2, 5 (el valor predeterminado), 10, 20 o 50 GB. Por encima de ese tamaño,
+Echolot elimina los cuerpos usados hace más tiempo. Siempre conserva:
+
+- los cuerpos que se muestran en una pestaña abierta,
+- la respuesta más reciente de cada solicitud guardada, para que se vuelva a mostrar tras reiniciar,
+- los cuerpos que otras solicitudes leen mediante [valores dinámicos](/docs/requests/dynamic-values) como
+  `$responseJSONPath`.
+
+La línea que hay bajo el límite muestra cuánto ocupan en el disco los cuerpos guardados. Para liberar ese espacio ahora,
+haz clic en **Eliminar cuerpos guardados…** y confirma. Echolot conserva solo lo que necesitan las ventanas abiertas: los
+cuerpos que se muestran en una pestaña abierta y la respuesta más reciente de cada solicitud de los espacios de trabajo
+abiertos. Todos los demás cuerpos se van, incluidos los de los espacios de trabajo que no están abiertos, y no se pueden
+recuperar. Las solicitudes y su historial se quedan; las respuestas antiguas se muestran sin sus cuerpos.
+
+El historial conserva la solicitud que envió cada intercambio. Un cuerpo de solicitud de más de 256 KB no se conserva en
+el historial; la captura de red sigue teniendo su comienzo.
+
+## Historial [#history]
+
+**Ajustes › Almacenamiento › Historial** define cuántas respuestas conserva el [historial](/docs/workspaces/history) por
+solicitud: 10, 25, 50 (el valor predeterminado), 100 o 200. Las entradas más antiguas se van primero. Cada envío se
+conserva con quién lo hizo: tú, una ejecución o un agente. Para borrar el historial de un espacio de trabajo, usa
+**Borrar historial…** en el menú ⋯ de su [página Historial](/docs/workspaces/history); el historial propio de una
+solicitud se borra desde el mismo menú en su lista del historial.
+
+<Shot id="workspaces-settings-storage" alt="Ajustes, panel Almacenamiento: Cifrar los cuerpos de respuesta en el disco, Conservar cuerpos de respuesta de hasta 5 GB e Historial por solicitud 50 respuestas" />
+
+## Cifra los cuerpos de respuesta en el disco [#encrypt-response-bodies-on-disk]
+
+Las respuestas pueden contener datos personales, tokens y cualquier otra cosa que devuelva una API. Con el cifrado
+activado, nada de una respuesta se puede leer en la carpeta de almacenamiento de Echolot sin una clave de tu llavero.
+
+1. Abre **Ajustes › Almacenamiento**.
+2. Activa **Cifrar los cuerpos de respuesta en el disco**.
+
+Echolot crea una clave la primera vez y la guarda en tu llavero de inicio de sesión, como
+**Echolot response storage key**. Los cuerpos nuevos se escriben cifrados de inmediato. Los cuerpos ya guardados se
+cifran en segundo plano; el ajuste muestra cuánto llevan («Cifrando 120 de 860…») y después el estado, como «Los 860
+cuerpos guardados están cifrados.»
+
+Los cuerpos se cifran con AES-256 en modo contador, lo que permite a Echolot leer cualquier parte de un cuerpo sin
+descifrar el resto: los visores, la búsqueda dentro de una respuesta y los cuerpos grandes funcionan como antes.
+
+### Qué cubre [#what-it-covers]
+
+| Cifrado | No cifrado |
+| --- | --- |
+| Cuerpos de respuesta | Archivos del espacio de trabajo (no contienen valores secretos de todos modos) |
+| Capturas de red (los bytes sin procesar enviados y recibidos) | El archivo del historial: nombres, direcciones, cabeceras, estado y tiempos |
+| Copias con formato de los cuerpos | Las preferencias de Echolot |
+
+El archivo del historial no está cifrado, así que mientras el cifrado está activado no guarda texto de los cuerpos. La
+búsqueda encuentra entonces solicitudes por nombre, dirección y cabeceras, no por lo que dicen sus cuerpos. Activar el
+cifrado elimina el texto de los cuerpos que el historial ya había indexado. Los valores secretos están enmascarados en el
+historial tanto si el cifrado está activado como si no.
+
+### Desactivarlo [#turning-it-off]
+
+Desactiva **Cifrar los cuerpos de respuesta en el disco**. Los cuerpos nuevos se vuelven a escribir sin cifrar, y Echolot
+descifra los guardados en segundo plano («Descifrando 120 de 860…»). La clave se queda en el llavero, así que los
+cuerpos que aún no se han descifrado se siguen leyendo.
+
+Las respuestas registradas mientras el cifrado estaba activado se quedan fuera de la búsqueda en cuerpos del historial.
+Las respuestas posteriores vuelven a poder buscarse por cuerpo.
+
+<Callout type="warn">
+  Conserva en tu llavero el elemento **Echolot response storage key**. Echolot lo necesita para leer los cuerpos que
+  están cifrados.
+</Callout>
+
+Si no se puede crear o leer la clave, el ajuste lo dice («No se ha podido guardar la clave de cifrado en el llavero…») y
+los cuerpos se quedan como están.
+
+## Libera espacio [#free-up-room]
+
+- Reduce **Conservar cuerpos de respuesta de hasta** en **Ajustes › Almacenamiento**. Echolot elimina los cuerpos usados
+  hace más tiempo poco después.
+- Borra el historial en la página [Historial](/docs/workspaces/history#clear-history), de una solicitud o de todo el
+  espacio de trabajo.
+- Sal de Echolot y elimina `Payloads` o `History` en su carpeta de almacenamiento. Pierdes las respuestas anteriores y el
+  historial; las solicitudes, los entornos y todos los archivos del espacio de trabajo se quedan.

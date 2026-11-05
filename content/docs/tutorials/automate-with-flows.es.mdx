@@ -1,0 +1,150 @@
+---
+title: "Automatizar con un flujo"
+description: "Crea en el lienzo un flujo que inicia sesión, lista pedidos, decide y te avisa; ejecútalo, prográmalo e inícialo desde un webhook."
+---
+
+Un flujo encadena solicitudes y otros pasos en un lienzo, de modo que un trabajo que haces a mano se ejecuta con un clic,
+con una programación o cuando otro sistema lo llama. En este tutorial creas **Orders to ship**: inicia sesión en la
+tienda de demostración, lista los pedidos de Heidi y envía una notificación cuando alguno está pagado pero todavía no se
+ha enviado.
+
+- **Tiempo:** 20 minutos.
+- **Necesitas:** el [espacio de trabajo Alpenglow](/docs/tutorials#the-alpenglow-workspace) con **Sin entorno** elegido.
+  Su flujo **Morning stock check** es un ejemplo terminado con la misma forma.
+- **Aprendes:** bloques y enlaces, los bloques Si y Notificar, el registro de ejecución, las programaciones, los webhooks
+  y `echolot flow run`.
+
+## 1. Crea un flujo [#1-make-a-flow]
+
+1. Cambia a **Flujos** (<kbd>⌘</kbd><kbd>5</kbd>).
+2. Abre el menú **+** de la barra lateral (**Nuevo flujo**) y elige **Flujo vacío**. Se abre un flujo **Nuevo flujo** con
+   un bloque **Inicio** enlazado a un bloque **Salida**.
+3. Haz clic en un punto vacío del lienzo para que no haya ningún bloque seleccionado. En el inspector, pon **Nombre** en
+   `Orders to ship` y **Descripción** en `Says when an order is paid but not shipped.`
+
+Mientras hay un flujo abierto, la barra lateral lista las **Solicitudes** del espacio de trabajo para arrastrarlas al
+lienzo. La sección **Desde una plantilla** del menú **+** parte en cambio de un flujo ya preparado, como
+**Paginate and export**; consulta [plantillas](/docs/flows/templates).
+
+## 2. Añade las solicitudes [#2-add-the-requests]
+
+1. Deja el puntero sobre el enlace entre **Inicio** y **Salida** y elige su botón **Romper este enlace**.
+2. Arrastra **Auth › Sign in** desde la barra lateral al lienzo. Se convierte en un bloque **Solicitud** titulado
+   **Sign in**, con la entrada `send` y las salidas `success` y `fail`.
+3. Arrastra **Orders › List orders** al lienzo, a su derecha.
+4. Enlázalas: arrastra desde el puerto `run` de **Inicio** hasta el puerto `send` de **Sign in**, y después desde el
+   puerto `success` de **Sign in** hasta el puerto `send` de **List orders**.
+
+**Sign in** guarda el token en `{{token}}` cada vez que se supera, así que **List orders** envía el nuevo. La salida
+`success` de un bloque Solicitud lleva la respuesta: `status`, `headers`, `body`, `time` y `url`. `fail` se activa
+cuando la solicitud no recibe respuesta o falla una comprobación.
+
+## 3. Decide con un bloque Si [#3-decide-with-an-if-block]
+
+1. Elige **Bloque** en la barra de herramientas (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>B</kbd>), escribe `Si` en
+   **Buscar bloques o solicitudes** y pulsa <kbd>↩</kbd>.
+2. En el inspector, pon **Título** en `Waiting to ship?` y **Condición** en:
+
+   ```js
+   value.body.items.some(o => o.status === 'paid')
+   ```
+
+   La condición es JavaScript. `value` es lo que ha llegado: aquí, la respuesta de **List orders**.
+3. Enlaza el `success` de **List orders** con el `value` del bloque Si.
+
+## 4. Avísate a ti mismo [#4-notify-yourself]
+
+1. Arrastra desde el puerto `true` del bloque Si y suelta sobre un punto vacío del lienzo. Ahí se abre el selector de
+   bloques. Elige **Notificar**: llega ya enlazado a `true`.
+2. En los ajustes del bloque, pon **Título** en `Orders to ship` y **Mensaje** en:
+
+   ```text
+   {{value.body.total}} orders, at least one paid and waiting.
+   ```
+
+   `{{value…}}` rellena partes de lo que ha llegado; las variables del espacio de trabajo también valen.
+3. Enlaza también el `success` de **List orders** con el `value` del bloque **Salida**. Un webhook responde con lo que
+   llega a **Salida** (paso 7).
+
+Elige **Ordenar** para alinear los bloques en el orden en que se ejecutan y **Ajustar** (<kbd>⌥</kbd><kbd>⌘</kbd><kbd>0</kbd>)
+para verlos todos.
+
+<Shot id="tutorials-flows-canvas" alt="Un flujo en el lienzo tras una ejecución: Inicio, un bloque Solicitud, un bloque Si y un bloque Notificar enlazado desde su puerto true, cada uno marcado como OK" />
+
+## 5. Ejecútalo [#5-run-it]
+
+1. Elige **Ejecutar** (<kbd>⌘</kbd><kbd>R</kbd>).
+2. Cada bloque muestra una insignia mientras se ejecuta y después **OK**. El registro de ejecución bajo el lienzo lista
+   cada bloque con su tiempo.
+3. Una notificación dice **Orders to ship**: 3 orders, at least one paid and waiting. El pedido `ord_8Jm4Qx` de la demo
+   está pagado. La primera vez, macOS pregunta si Echolot puede mostrar notificaciones.
+4. Selecciona **List orders**. En **Última ejecución**, el inspector muestra lo que entró y lo que salió; cambia **Mostrar**
+   entre **Entrada** y **Salida**.
+
+Cambia la condición a `o.status === 'cancelled'` y ejecuta otra vez: el bloque Si envía su valor a `false`, que no está
+enlazado con nada, así que no llega ninguna notificación. Vuelve a ponerla como estaba.
+
+Cuando una ejecución falla, el bloque que falla muestra el error. Donde está disponible el modelo del Mac en el
+dispositivo, **Explicar el fallo** en el registro de ejecución dice qué salió mal. Las ejecuciones anteriores se quedan en
+el menú **Ejecuciones** de la barra de herramientas. Más en [ejecución y activadores](/docs/flows/running-and-triggers).
+
+## 6. Prográmalo [#6-run-it-on-a-schedule]
+
+1. Selecciona el bloque **Inicio**. Su inspector tiene una sección **Activadores**.
+2. Activa **Programación**. Pon **Cada (minutos)** en `60`, o escribe una línea cron en
+   **O una línea cron (minuto hora día mes día de la semana)**, como `0 7 * * 1-5` para las siete de la mañana de lunes a viernes.
+3. Elige **Permitir**. Echolot te pide que permitas un flujo antes de que nada lo inicie sin ti, y vuelve a pedirlo
+   después de que cambie (**Permitir de nuevo**). **Revocar** lo detiene.
+
+El inspector muestra la siguiente ejecución. Las programaciones se ejecutan mientras la ventana del espacio de trabajo
+está abierta. Para ejecutarlas sin la app, usa `echolot flow serve -w Alpenglow.echolot` en un Mac o en un servidor que
+siga encendido.
+
+## 7. Inícialo desde un webhook [#7-start-it-from-a-webhook]
+
+1. En los **Activadores** del bloque **Inicio**, activa **Webhook**. Deja el método en **POST** y pon la ruta en
+   `/orders-to-ship`.
+2. Elige **Permitir**. El inspector muestra la dirección en `127.0.0.1` con **Copiar URL** y **Copiar token**.
+3. En Terminal, llámalo con el token como token Bearer:
+
+   ```sh
+   curl -X POST 'http://127.0.0.1:PORT/orders-to-ship' -H 'Authorization: Bearer TOKEN'
+   ```
+
+   Pega la URL y el token que copiaste. El flujo se ejecuta, y la respuesta es lo que llegó a **Salida**: los pedidos.
+
+Una cadena de consulta y un cuerpo JSON rellenan las entradas del flujo. El webhook responde solo en este Mac, mientras
+la ventana está abierta; `echolot flow serve` sirve webhooks sin la app, por omisión en el puerto 4100.
+**Order status on webhook** de Alpenglow es otro ejemplo. Un flujo también puede ofrecerse a los agentes de IA como herramienta
+(**Agentes (una herramienta MCP)**); consulta [agentes](/docs/ai/agents).
+
+## 8. Ejecútalo desde Terminal [#8-run-it-from-terminal]
+
+```sh
+echolot flow list -w Alpenglow.echolot
+echolot flow run "Orders to ship" -w Alpenglow.echolot
+```
+
+Imprime cada bloque al terminar, con su tiempo, y después el texto de la notificación y el resultado:
+
+```text
+✓ start  Start  0 ms
+✓ …      Sign in  168 ms
+✓ …      List orders  116 ms
+✓ …      Waiting to ship?  4 ms
+notification: Orders to ship — 3 orders, at least one paid and waiting.
+✓ …      Notify  0 ms
+Orders to ship: passed in 304 ms
+```
+
+En CI, añade `--no-input` para que un flujo que necesita a una persona falle en vez de esperar. El flujo es un archivo de
+la carpeta `flows` del espacio de trabajo, así que va a Git junto con las solicitudes que usa. Consulta
+[`echolot flow`](/docs/cli/flow).
+
+## Siguientes pasos [#next-steps]
+
+- [Bloques](/docs/flows/blocks): Aprobar, Preguntar, Para cada, Sondear, Escribir archivo y los demás.
+- [Plantillas](/docs/flows/templates): inicio de sesión de dispositivo, renovación de token, paginar y exportar, un
+  monitor de humo.
+- [Deja que un agente use tu espacio de trabajo con seguridad](/docs/tutorials/agents-safely): ofrece un flujo a un
+  agente como una sola herramienta.

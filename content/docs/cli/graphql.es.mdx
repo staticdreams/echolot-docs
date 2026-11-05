@@ -1,0 +1,70 @@
+---
+title: "echolot graphql diff"
+description: "Compara dos esquemas GraphQL y haz fallar una compilación ante cambios incompatibles."
+---
+
+`echolot graphql diff` lista lo que cambió de un esquema GraphQL a otro y califica cada cambio, para que una compilación
+pueda detenerse antes de que un cambio rompa a los clientes de una API.
+
+```sh
+echolot graphql diff <old> <new> [--fail-on <level>] [--json]
+```
+
+`<old>` y `<new>` son el esquema anterior y el posterior: archivos SDL (`.graphql`) o resultados de introspección
+(JSON), en cualquier combinación.
+
+## Comparar dos esquemas [#compare-two-schemas]
+
+```sh
+git show main:specs/shop.graphql > before.graphql
+echolot graphql diff before.graphql Alpenglow.echolot/specs/shop.graphql
+```
+
+```text
+Breaking (1)
+  The field Product.weightGrams was removed
+Dangerous (1)
+  The argument inStock was added to Query.search
+Safe (1)
+  The field Product.colors was added
+```
+
+| Calificación | Significa |
+| --- | --- |
+| Breaking (incompatible) | Las consultas que antes funcionaban pueden fallar ahora: se quitó un tipo, un campo, un campo de entrada, un argumento, un valor de enum o una directiva; se añadió un argumento o un campo de entrada obligatorio; cambió el tipo de un campo (salvo hacer que una salida no admita null); se retiró un miembro de una unión o una interfaz. |
+| Dangerous (peligroso) | Las consultas siguen funcionando, pero pueden comportarse de otro modo: se añadió un argumento opcional, cambió un valor predeterminado, se añadió un valor de enum o un miembro de una unión, una interfaz nueva, algo quedó obsoleto. |
+| Safe (seguro) | Nada que una consulta existente pueda notar: se añadió un tipo, un campo, un campo de entrada opcional o una directiva, cambió una descripción, se quitó una obsolescencia. |
+
+`--json` imprime los cambios como un array JSON, cada uno con su `severity`, su `path` y su `message`:
+
+```json
+[
+  {
+    "message" : "The field Product.weightGrams was removed",
+    "path" : "Product.weightGrams",
+    "severity" : "breaking"
+  },
+  {
+    "message" : "The argument inStock was added to Query.search",
+    "path" : "Query.search(inStock)",
+    "severity" : "dangerous"
+  }
+]
+```
+
+## Opciones [#options]
+
+| Opción | Significado |
+| --- | --- |
+| `--fail-on <level>` | `breaking` (el predeterminado) sale con 1 ante cambios incompatibles; `dangerous` ante incompatibles y peligrosos; `none` nunca. |
+| `--json` | Imprime los cambios como JSON. |
+
+## Códigos de salida [#exit-codes]
+
+| Código | Cuándo |
+| --- | --- |
+| `0` | Ningún cambio en el nivel de `--fail-on` o superior. |
+| `1` | Cambios en el nivel de `--fail-on` o superior, o un esquema que no se pudo leer. |
+
+Para obtener un esquema de un servidor en marcha, envía la consulta de introspección con la solicitud GraphQL de la app,
+o mira [solicitudes GraphQL](/docs/requests/graphql).

@@ -1,0 +1,222 @@
+---
+title: "Anfrageeinstellungen"
+description: "HTTP-Version, Weiterleitungen, Cookies, Dekomprimierung, TLS-Prüfung, Zeitüberschreitung und Rohmodus für eine Anfrage wählen und Proxys und Zertifikate festlegen."
+---
+
+Der Tab **Einstellungen** legt fest, wie eine Anfrage unterwegs ist: welche HTTP-Version, ob sie Weiterleitungen folgt,
+Cookies behält, Zertifikate prüft und wie lange sie dauern darf. Proxys und Zertifikate legst du für den ganzen
+Arbeitsbereich oder die App fest, weiter unten auf dieser Seite.
+
+<Shot id="requests-http-settings" alt="Der Tab „Einstellungen“ einer Anfrage: Rohmodus, HTTP-Version auf Automatisch mit Hinweis, TLS-Zertifikate prüfen, Weiterleitungen folgen mit Maximale Weiterleitungen 10, Cookies, Antworten dekomprimieren und Zeitüberschreitung 60 s" />
+
+## Der Tab „Einstellungen“ [#the-settings-tab]
+
+| Einstellung | Standard | Was sie tut |
+| --- | --- | --- |
+| **Rohmodus** | Aus | Sendet genau die Header aus dem Tab **Header**, ohne etwas hinzuzufügen. |
+| **HTTP-Version** | **Automatisch** | **Automatisch**, **HTTP/1.1**, **HTTP/2** oder **HTTP/3**. |
+| **TLS-Zertifikate prüfen** | An | Prüft das Zertifikat des Servers bei `https://`-Adressen. |
+| **Weiterleitungen folgen** | An | Folgt 3xx-Antworten, bis zu **Maximale Weiterleitungen**. |
+| **Maximale Weiterleitungen** | 10 | Von 1 bis 50. |
+| **Cookies senden und speichern** | An | Sendet die Cookies, die der Cookie-Speicher des Fensters für die Adresse hält, und behält die, die die Antwort setzt. |
+| **Antworten dekomprimieren** | An | Fordert komprimierte Antworten an und decodiert sie. |
+| **Zeitüberschreitung** | 60 s | Die Zeit, die der ganze Austausch dauern darf, von 1 Sekunde bis zu einer Stunde, in Schritten von 5 Sekunden. |
+
+Nur die Einstellungen, die du änderst, werden in der Datei der Anfrage gesichert. Der Tab zeigt einen Punkt, wenn eine
+Einstellung vom Standard abweicht, und heißt **Einstellungen (Roh)**, solange der Rohmodus an ist.
+**Auf Standard zurücksetzen** setzt jede Einstellung zurück.
+
+In der Anfragedatei sehen die Einstellungen so aus:
+
+```toml
+[settings]
+http-version = "http2"
+follow-redirects = false
+timeout = 10.0
+```
+
+## HTTP-Version [#http-version]
+
+| Auswahl | Was Echolot sendet |
+| --- | --- |
+| **Automatisch** | HTTP/2, wenn der Server es anbietet, sonst HTTP/1.1. Sobald ein Server HTTP/3 anbietet (mit einem `Alt-Svc`-Header), nutzen spätere Anfragen an ihn HTTP/3 und fallen auf TCP zurück, wenn es sich nicht verbinden lässt. |
+| **HTTP/1.1** | Nur HTTP/1.1. |
+| **HTTP/2** | Nur HTTP/2: über TLS oder über reines `http://` mit Prior Knowledge (h2c). |
+| **HTTP/3** | Nur HTTP/3 über QUIC. |
+
+HTTP/3 hat Grenzen:
+
+-  Es braucht **macOS 27 oder neuer**. Auf einem älteren Mac sagt der Tab das, und eine Anfrage, die auf **HTTP/3**
+  steht,
+  lässt sich nicht senden; **Automatisch** bleibt bei HTTP/2 und HTTP/1.1.
+- Nur `https://`-Adressen.
+- Keine Proxys (auch nicht die des Systems), keine eigenen CA-Dateien und keine Client-Zertifikate. Eine Anfrage auf
+  **HTTP/3**, die eines davon braucht, wird mit Begründung abgelehnt. Auf **Automatisch** bleiben solche Anfragen bei
+  TCP.
+- Der Rohmodus lässt sich nicht mit HTTP/3 nutzen.
+
+Auf **Automatisch** zeigt die Detailkarte einer Antwort **HTTP/3 angeboten**, wenn sie HTTP/3 anbietet. Schlägt die
+QUIC-Verbindung der nächsten Anfrage fehl, sendet Echolot sie stattdessen über TCP, vergisst das Angebot, und die
+Detailkarte sagt warum. Nichts wird doppelt gesendet.
+
+Zwei weitere Fälle wechseln die Version von selbst:
+
+-  [NTLM](/docs/requests/auth#ntlm) braucht HTTP/1.1. Auf **Automatisch** gehen NTLM-Anfragen über HTTP/1.1; auf
+  **HTTP/2**
+  oder **HTTP/3** werden sie abgelehnt.
+- Setzt ein Server eine HTTP/2-Anfrage mit `HTTP_1_1_REQUIRED` zurück, spricht Echolot von da an HTTP/1.1 mit diesem
+  Server. Eine Anfrage, die sich gefahrlos wiederholen lässt, wird sofort erneut über HTTP/1.1 gesendet; jede andere
+  Anfrage bricht mit einem entsprechenden Fehler ab und geht beim erneuten Senden über HTTP/1.1.
+
+Die Detailkarte der Antwort zeigt die verwendete Version neben der TLS-Version.
+
+## Weiterleitungen [#redirects]
+
+Ist **Weiterleitungen folgen** an, folgt Echolot Antworten mit `301`, `302`, `303`, `307` und `308` zu `http://`- und
+`https://`-Adressen:
+
+- `303` wird zu einem `GET` (ein `HEAD` bleibt ein `HEAD`), ohne den Body.
+- `301` und `302` machen aus einem `POST` ein `GET`, wie Browser es tun.
+- `307` und `308` behalten die Methode und den Body.
+
+Jeder Hop wird aufgezeichnet. Die Detailkarte zeigt **3 Weiterleitungen** (oder wie viele es sind); klicke darauf, um
+Status, Methode, Adresse und Dauer jedes Hops und die endgültige Adresse zu sehen. Probiere es mit
+**Echo › Follow redirects** in Alpenglow aus.
+
+Eine Weiterleitung zu einem anderen Ursprung lässt deine Zugangsdaten weg: die Header `Authorization` und `Cookie`,
+API-Schlüssel-Header, Header mit einem Secret, das Signieren (Digest, AWS, Hawk, EdgeGrid, NTLM) und das
+Client-Zertifikat. Siehe
+[Zugangsdaten bleiben bei ihrem Ursprung](/docs/requests/auth#credentials-stay-with-their-origin).
+
+Ist **Weiterleitungen folgen** aus, ist die 3xx-Antwort die Antwort.
+
+## Cookies [#cookies]
+
+Jedes Fenster hat einen Cookie-Speicher. Ist **Cookies senden und speichern** an, sendet eine Anfrage die Cookies des
+Speichers, die zu ihrer Adresse passen, und die Cookies, die ihre Antwort setzt, landen im Speicher. Schalte es für eine
+Anfrage aus, die weder welche senden noch behalten soll.
+
+Der Tab **Cookies** der Antwort zeigt, was **Mit der Anfrage gesendet** wurde, was **Von der Antwort gesetzt** wurde und
+was **In diesem Fenster gespeichert** ist. Entferne ein Cookie mit seinem Knopf oder alle mit **Alle löschen**. Siehe
+[Antworten](/docs/requests/responses#cookies).
+
+Der Cookie-Speicher folgt den Regeln des Browsers: Eine Antwort kann kein Cookie für ein ganzes öffentliches Suffix wie
+`.com` oder `.co.uk` setzen. Probiere **Echo › Set a cookie** in Alpenglow aus und danach eine beliebige andere
+Anfrage an
+`demo.echolot.dev`.
+
+## Antworten dekomprimieren [#decompress-responses]
+
+Ist **Antworten dekomprimieren** an, sendet Echolot `Accept-Encoding: gzip, deflate, br, zstd` (sofern du den Header
+nicht
+selbst setzt) und decodiert Antworten mit gzip, deflate, Brotli und Zstandard. Der Tab **Body** zeigt den decodierten
+Body; die Bytes, wie sie kamen, bleiben im Tab **Übertragung**, und das Sichern-Menü des Body bietet
+**Codierten Body sichern …**. Die Detailkarte sagt zum Beispiel `br, 12 KB → 48 KB`.
+
+Schalte es aus, um eine Antwort genau so zu sehen, wie der Server sie komprimiert hat, oder um keinen
+`Accept-Encoding`-Header zu senden.
+
+## TLS-Zertifikate prüfen [#verify-tls-certificates]
+
+Lass das an, es sei denn, du testest gegen einen Server, dessen Zertifikat dein Mac nicht vertraut und dessen CA du
+nicht
+hinzufügen kannst. Ist es aus, zeigt die Detailkarte ein oranges offenes Schloss, und ihr Popover sagt
+**Zertifikatsprüfung ist aus**.
+
+Besser ist bei einer privaten CA, ihr für diesen Host zu vertrauen: siehe [Zertifikate](#certificates).
+
+## Zeitüberschreitung [#timeout]
+
+Die Zeitüberschreitung ist die Gesamtzeit, die der Austausch dauern darf, vom Verbinden bis zum letzten Byte. Läuft sie
+ab, bricht die Anfrage mit **Zeitüberschreitung bei der Anfrage** ab und die Verbindung wird geschlossen.
+
+## Rohmodus [#raw-mode]
+
+Der Rohmodus ist dafür da, eine Anfrage Byte für Byte so zu senden, wie du sie geschrieben hast, auch eine fehlerhafte,
+um zu testen, wie ein Server damit umgeht. Echolot lässt die Header weg, die es jeder Anfrage hinzufügt (`Host`,
+`User-Agent`, `Accept`, `Accept-Encoding`, `Cookie`, `Content-Length` und Framing) und prüft nicht, ob die Anfrage
+wohlgeformt ist. Unter **AUTOMATISCH** sagt der Tab **Header**
+**Rohmodus: Echolot fügt keine Header hinzu; nur die obigen werden gesendet.**
+
+Für eine Anfrage, die nur deine eigenen Header sendet, setze außerdem **Auth** auf **Keine Auth** und schreibe einen
+eigenen `Content-Type`, falls der Body einen braucht. Der Rohmodus schreibt HTTP/1.1 und lässt sich daher nicht mit
+HTTP/3 nutzen.
+
+## Wiederholungen [#retries]
+
+Echolot hält Verbindungen offen und verwendet sie wieder, was die Zeit für DNS, Verbinden und TLS spart; die Detailkarte
+sagt **Wiederverwendete Verbindung**, wenn es das tut. Manchmal hat ein Server eine offen gehaltene Verbindung genau
+dann
+geschlossen, als eine Anfrage hinausgeht. Dann gilt:
+
+-  Eine Anfrage, die sich gefahrlos wiederholen lässt, wird auf einer neuen Verbindung erneut gesendet: ein `GET`,
+  `HEAD`,
+  `OPTIONS`, `TRACE`, `PUT` oder `DELETE` oder jede Anfrage mit einem `Idempotency-Key`-Header. Die Detailkarte sagt,
+  dass
+  sie erneut gesendet wurde.
+- Jede andere Anfrage (etwa ein `POST` ohne `Idempotency-Key`) wird nicht erneut gesendet, weil der Server sie
+  möglicherweise schon ausgeführt hat. Sie bricht ab mit
+  **Die Verbindung wurde geschlossen, bevor eine Antwort kam; der Server hat die Anfrage vielleicht schon ausgeführt**.
+
+In keinem anderen Fall wiederholt Echolot etwas.
+
+## Proxys [#proxies]
+
+Anfragen gehen standardmäßig über den Proxy, der in **Einstellungen › Netzwerk** gewählt ist:
+
+| Proxy | Bedeutung |
+| --- | --- |
+| **Systemeinstellungen** | Die HTTP-, HTTPS- und SOCKS-Proxys aus **Systemeinstellungen › Netzwerk**, mit ihren Ausnahmen. Die automatische Proxy-Konfiguration (PAC) wird nicht genutzt. |
+| **Ohne** | Jede Anfrage verbindet sich direkt. |
+| **Manuell** | Ein HTTP-, HTTPS- (TLS zum Proxy) oder SOCKS5-Proxy, etwa `http://proxy:3128` oder `socks5://host:1080`, mit optionalem Benutzernamen und Passwort (im Schlüsselbund gehalten) und Hosts, die direkt erreicht werden, unter **Ohne Proxy für** (`localhost, *.internal`). |
+
+Ein Arbeitsbereich kann einen eigenen Proxy festlegen, der mit ihm zu Teammitgliedern und zum Befehlszeilenwerkzeug
+geht:
+
+1. Öffne **Arbeitsbereichseinstellungen …** über den Arbeitsbereichs-Umschalter unten in der Seitenleiste.
+2. Wähle den Tab **Proxy** und schalte **Proxy-Einstellung der App verwenden** aus.
+3. Wähle **Systemeinstellungen**, **Umgebungsvariablen (HTTPS_PROXY …)** (liest `HTTPS_PROXY`, `HTTP_PROXY` und
+   `NO_PROXY`), **Ohne** oder **Manuell**.
+4. Fülle bei **Manuell** **Proxy** (nimmt Variablen, etwa `{{proxy}}`), **Benutzername** und **Passwort** sowie
+   **Ohne Proxy für** aus. Schreibe das Passwort als geheime Variable, `{{proxy_password}}`: Arbeitsbereichsdateien
+   enthalten nie Secrets. Ein festes Passwort bietet **In den Schlüsselbund verschieben** an.
+
+HTTP/3 geht nie über einen Proxy. Siehe [Arbeitsbereiche](/docs/workspaces).
+
+## Zertifikate [#certificates]
+
+Für einen Host, der eine private Zertifizierungsstelle nutzt oder ein Client-Zertifikat verlangt (Mutual TLS), füge im
+Arbeitsbereich eine Regel hinzu:
+
+1. Öffne **Arbeitsbereichseinstellungen …** und wähle den Tab **Zertifikate**.
+2. Klicke auf **Host hinzufügen** und tippe den Host, etwa `api.example.com`, oder `*.internal` für jede Subdomain.
+3.  Klicke neben **Vertrauenswürdige CAs** auf **Wählen …** und wähle eine oder mehrere PEM-Dateien. Ihnen wird neben
+   denen
+   des Systems vertraut.
+4.  Wähle für ein Client-Zertifikat die Datei neben **Client-Zertifikat**: eine PEM-Datei oder eine `.p12` (`.pfx`).
+   Wähle
+   bei einem PEM-Zertifikat, dessen Datei keinen Schlüssel enthält, auch die Datei **Privater Schlüssel**.
+5. Hat der Schlüssel oder die `.p12` eine Passphrase, schreibe sie als geheime Variable in **Passphrase**, etwa
+   `{{p12_passphrase}}`.
+
+Die erste Regel, die zu einem Host passt, zählt. Dateien im Arbeitsbereich werden als Pfade relativ zu ihm gesichert,
+sodass
+die Regel für alle funktioniert, die den Arbeitsbereich haben. Die Zertifikate jeder Regel werden nur für ihren Host
+genutzt: Eine Weiterleitung zu einem anderen Host präsentiert nie das Client-Zertifikat des ersten Hosts.
+
+<Edition only="appstore">
+  Die App-Store-Version kann nur Dateien lesen, die du ausgewählt hast. CA-Dateien, Client-Zertifikate und Schlüssel,
+  die du
+  hier wählst, bleiben für spätere Sendungen lesbar. Eine Regel, die ein Teammitglied angelegt hat und die auf Dateien
+  außerhalb des Arbeitsbereichs zeigt, braucht einmal diese Dateien von dir: Das Senden bricht ab, und der
+  Antwortbereich
+  bietet **Zugriff erlauben …** an.
+</Edition>
+
+## Einstellungen für die ganze App [#app-wide-settings]
+
+Der Proxy ist die einzige Anfrageeinstellung mit einem Standard für die ganze App (**Einstellungen › Netzwerk**). Jede
+andere Einstellung beginnt für jede Anfrage mit den Standardwerten aus der Tabelle oben, und die Datei der Anfrage
+behält,
+was du änderst. Um Einstellungen für viele Anfragen auf einmal zu ändern, wähle sie in der Seitenleiste aus und nutze
+**N Anfragen bearbeiten …** für ihre Header, Parameter und Auth, oder bearbeite die Dateien.

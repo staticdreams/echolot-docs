@@ -1,0 +1,160 @@
+---
+title: "設定"
+description: "Echolotの設定のすべてのペインと、その中の各オプションの内容とデフォルト値を説明します。"
+---
+
+Echolotの設定は、このMac上のアプリに関するものです。見た目、プロキシ、保持する量、AIプロバイダ、エージェントを受け入れるかどうかなどです。
+ワークスペースに属する設定（認証、変数、プロキシ、証明書、エージェントのルール）は、サイドバー下部のワークスペースメニューにある<strong>ワークスペース設定…</strong>にあり、ワークスペースとともに移動します。
+[ワークスペース](/docs/workspaces)を参照してください。
+
+設定は、<strong>Echolot › 設定…</strong>または<kbd>⌘</kbd><kbd>,</kbd>で開きます。左にペインが並びます。
+その上の検索欄（<kbd>⌘</kbd><kbd>F</kbd>）は、一致する設定を含むペインだけを残します。<kbd>↩</kbd>で最初のペインが開きます。設定は、最後に使ったペインで開きます。
+
+<Shot id="settings-general" alt="一般ペインの設定：言語、外観、コードとレスポンス、クイック送信、Echo、コマンドラインツール、アップデート" />
+
+## 一般 [#general]
+
+言語、外観、コードとレスポンスの表示方法です。
+
+| 設定 | 内容 | デフォルト |
+| --- | --- | --- |
+| <strong>言語</strong> | Echolotの言語。<strong>システム</strong>はシステム設定 › 一般 › 言語と地域に従います。または、Echolotの言語から1つ選びます（それぞれの言語の名前で表示されます）。新しい選択は再起動後に有効になり、設定の下に<strong>Echolotを再起動</strong>が表示されます。このセクションは、Echolotが複数の言語に対応すると表示されます。 | システム |
+| <strong>外観</strong> | <strong>システム</strong>、<strong>ライト</strong>、<strong>ダーク</strong>、<strong>マリン</strong>。macOSの設定にかかわらず、すべてのEcholotウインドウに適用されます。マリンは、深い海の青を使ったダークモードです。 | システム |
+| <strong>コードのフォントサイズ</strong> | レスポンスのボディ、16進表示、JSONツリー、コードエディタのサイズ。10〜22 pt。<strong>表示</strong>メニューの<kbd>⌘</kbd><kbd>+</kbd>と<kbd>⌘</kbd><kbd>−</kbd>でも変更できます。 | 12 pt |
+| <strong>レスポンスの長い行を折り返す</strong> | レスポンスの<strong>ボディ</strong>、<strong>生データ</strong>、<strong>通信</strong>の表示で、長い行を横にスクロールする代わりに折り返します。 | オフ |
+
+### クイック送信 [#quick-send]
+
+| 設定 | 内容 | デフォルト |
+| --- | --- | --- |
+| <strong>メニューバーにクイック送信を表示</strong> | メニューバー項目と、どのアプリでも使えるショートカットで、開いているワークスペースと最近のワークスペースの保存済みリクエストを送信するパネルを開きます。[クイック送信](/docs/mac/quick-send)を参照してください。 | オフ |
+| <strong>ショートカット</strong> | クリックしてキーを押すと変更できます。<strong>リセット</strong>でデフォルトに戻ります。ほかのアプリがそのキーを使っている場合は、設定にそう表示されます。 | <kbd>⌃</kbd><kbd>⌥</kbd><kbd>Space</kbd> |
+
+### Echo [#echo]
+
+| 設定 | 内容 | デフォルト |
+| --- | --- | --- |
+| <strong>ページヘッダーにEchoのステータス画面を表示</strong> | ウインドウ内で何が起きているかを伝える小さな画面。[Echo](/docs/ai/echo)を参照してください。 | オン |
+| <strong>ユーモア</strong> | <strong>事実のみ</strong>、<strong>ほどほど</strong>、<strong>たっぷり</strong>。 | ほどほど |
+| <strong>Echoのコメントの一部をAIに書かせる</strong> | モデルがいくつかの行を書きます。Macに搭載されていればAppleのオンデバイスモデル、なければ設定 › アシスタントで選んだモデルです。<strong>事実のみ</strong>では使えません。<strong>作成者</strong>には、どのモデルかが表示され、必要なら許可を求めます。 | オフ |
+
+### コマンドラインツール [#command-line-tool]
+
+<Edition only="direct">
+  このセクションはダイレクトダウンロード版にのみあります。App Storeエディションではツールをインストールできません。ダウンロードページから単独でインストールしてください。[コマンドラインツール](/docs/cli)を参照してください。
+</Edition>
+
+- <strong>同梱のツール</strong>：アプリ内の`echolot`ツールの場所。
+- <strong>PATHに追加済み</strong>：<strong>未インストール</strong>の場合は<strong>コマンドラインツールをインストール…</strong>、インストール済みの場合はリンクのパスと<strong>再インストール</strong>、<strong>削除</strong>が表示されます。
+  インストールすると、同梱のツールへの`echolot`リンクが`/opt/homebrew/bin`または`/usr/local/bin`に作られ、`echolot run`や`echolot mcp setup`がターミナルで使えるようになります。
+  どちらのフォルダにも書き込めない場合は、macOSが管理者のパスワードを求めます。Echolotの別のコピーへのリンクはオレンジで表示され、<strong>再インストール</strong>が使えます。
+  Echolotが作成していないファイルがあると<strong>置き換える…</strong>が表示され、置き換える前に確認します。
+
+<strong>Echolot › コマンドラインツールをインストール…</strong>でも同じことができます。
+
+### アップデート [#updates]
+
+<Edition only="appstore">
+  App Storeエディションでは、このセクションに<strong>App StoreがEcholotを最新の状態に保ちます。</strong>と表示されます。
+</Edition>
+
+| 設定 | 内容 | デフォルト |
+| --- | --- | --- |
+| <strong>アップデートを自動的に確認</strong> | 1日に1回GitHubで新しいバージョンを確認し、インストールする前に確認します。 | オン |
+| <strong>アップデートを自動的にダウンロードしてインストール</strong> | 確認なしでアップデートをインストールします。上の設定が必要です。 | オフ |
+| <strong>最終確認</strong> | Echolotが最後に確認した日時。<strong>今すぐ確認</strong>があります。 | |
+
+アップデートには署名があり、Echolotは開発元が署名したものだけをインストールします。<strong>Echolot › アップデートを確認…</strong>は、すぐに確認します。自分でビルドしたものは、アップデートを確認しません。
+
+## ネットワーク [#network]
+
+リクエストが経由するプロキシです。
+
+| <strong>プロキシ</strong> | 動作 |
+| --- | --- |
+| <strong>システム設定</strong>（デフォルト） | システム設定 › ネットワークのHTTP、HTTPS、SOCKSプロキシと、その例外。自動プロキシ構成（PAC）は使いません。 |
+| <strong>なし</strong> | すべてのリクエストが直接接続します。 |
+| <strong>手動</strong> | HTTP、HTTPS（プロキシへはTLS）、SOCKS5のプロキシ1つ。下のフィールドで設定します。 |
+
+<strong>手動</strong>の場合：
+
+- <strong>プロキシ</strong>：プロキシのアドレス。`http://proxy:3128`や`socks5://host:1080`のように指定します。
+- <strong>ユーザー名</strong>：省略可能。
+- <strong>パスワード</strong>：キーチェーンに保存されます。ユーザー名があると使えます。
+- <strong>直接接続するホスト</strong>：プロキシを経由しないホスト。`localhost, *.internal`のようにカンマで区切ります。
+
+ワークスペースは、<strong>ワークスペース設定 › プロキシ</strong>で独自のプロキシを設定でき、それが優先されます。HTTP/3はプロキシ経由では動作しません。そのようなリクエストは失敗し、理由が表示されます。
+[リクエスト設定](/docs/requests/settings)を参照してください。
+
+## ストレージ [#storage]
+
+レスポンスとその履歴をどれだけ保持するかです。[ストレージと暗号化](/docs/workspaces/storage-and-encryption)を参照してください。
+
+| 設定 | 内容 | デフォルト |
+| --- | --- | --- |
+| <strong>レスポンスのボディをディスク上で暗号化</strong> | ボディ、通信のキャプチャ、整形したコピーを、ログインキーチェーンに保存された鍵で暗号化します。すでに保存されているボディはバックグラウンドで暗号化され、オフにすると元に戻ります。下の行に進捗と、暗号化されたボディの数が表示されます。オンの間、履歴の検索は、リクエストの名前、アドレス、ヘッダーで見つかりますが、ボディの内容では見つかりません。ワークスペースには影響しません。 | オフ |
+| <strong>レスポンスのボディを保持する上限</strong> | 1、2、5、10、20、50 GB。ボディは何度届いても一度だけ保存されます。このサイズを超えると、最も長く使われていないものから削除されます。タブで開いているボディは常に保持されます。下の行にディスク上のサイズが表示されます。<strong>保存済みのボディを削除…</strong>は、開いているウインドウが必要としないすべてのボディを、確認の後に削除します。 | 5 GB |
+| <strong>リクエストごとの履歴</strong> | 各リクエストの履歴に保持するレスポンスの数：10、25、50、100、200。古いものから削除されます。各リクエストの最新のレスポンスは、ボディを保持します。 | 50件のレスポンス |
+
+## アシスタント [#assistant]
+
+Echolotに組み込まれたエージェントのモデルプロバイダとキーです。[アシスタント](/docs/ai/assistant)を参照してください。
+
+<Shot id="settings-assistant" alt="アシスタントペインの設定：モデル付きの2つのプロバイダ、データの受け取りを許可されたプロバイダ、モデルに見せないパターン、プロバイダを追加するフォーム" />
+
+- <strong>プロバイダ</strong>：追加したすべてのプロバイダ。チェックの付いたものがアシスタントが使うプロバイダです。それぞれに<strong>モデル</strong>メニュー（またはフィールド）、リストを再取得する<strong>モデルを読み込む</strong>、
+  キーをキーチェーンから削除する<strong>削除…</strong>があります。Anthropicのアカウントには<strong>推論の強度</strong>もあります：<strong>モデルのデフォルト</strong>、`low`、`medium`、`high`、`xhigh`、`max`。
+  CLIエージェントには、代わりに<strong>コマンド</strong>があります。
+- <strong>データの受け取りを許可</strong>：一度だけの許可を与えたプロバイダと、その対象（<strong>アシスタントとEchoのコメント</strong>、または<strong>Echoのコメント</strong>のみ）。<strong>許可を取り消す</strong>で取り消すと、次のメッセージで再び確認されます。
+  AppleのオンデバイスモデルとこのMac上のサーバは、確認しません。
+- <strong>モデルに見せない</strong>：1行に1つの正規表現。ツールの結果で一致したものは、モデルに見える前に`[hidden]`に置き換えられます。シークレット変数は常に隠されます。ここはそれ以外のためのものです。
+- <strong>プロバイダを追加</strong>：<strong>プロバイダ</strong>（<strong>Anthropic</strong>、<strong>OpenAI</strong>、<strong>Google Gemini</strong>、<strong>OpenAI互換</strong>、<strong>CLIエージェント（ACP）</strong>）を選び、<strong>APIキー</strong>、<strong>アドレス</strong>（OpenAI互換。空なら`http://127.0.0.1:11434/v1`）、
+  または<strong>エージェント</strong>と<strong>コマンド</strong>（CLIエージェント）を入力して、<strong>追加</strong>を選びます。
+
+キーはこのMacのキーチェーンに保存され、プロバイダ自身のアドレスにだけ送信されます。
+
+<Edition only="direct">
+  <strong>CLIエージェント（ACP）</strong>はダイレクトダウンロード版にのみあります。App Storeエディションは、Mac上でプログラムを起動できません。
+</Edition>
+
+## エージェント [#agents]
+
+AIエージェントに、開いているワークスペースを使わせます。[外部エージェント](/docs/ai/agents)を参照してください。
+
+<Shot id="settings-agents" alt="エージェントペインの設定：エージェントに開いているワークスペースの使用を許可するスイッチ、最近のワークスペース付きのClaude Desktop、ツールセット" />
+
+| 設定 | 内容 | デフォルト |
+| --- | --- | --- |
+| <strong>開いているワークスペースの使用をエージェントに許可</strong> | ワークスペースが開いている間、エージェントの呼び出しはEcholot内で実行されます。データを変更しうる送信、新しいホスト、ワークスペースの変更は承認が必要で、すべての呼び出しはウインドウの<strong>エージェント</strong>で確認できます。シークレットの値がエージェントに渡ることはありません。 | オフ |
+| <strong>Claude Desktop</strong> | 最近のワークスペース。それぞれに<strong>Claudeに追加</strong>があり、エージェントをオンにして、ワークスペースをClaude Desktopに追加します。Claude Desktopにあれば<strong>追加済み</strong>。ダイレクトダウンロード版のみ。 | |
+| <strong>エージェント用のツール</strong> | エージェントが使えるツールセット：<strong>リクエスト</strong>（常にオン）、<strong>フロー</strong>、<strong>ワークスペース</strong>、<strong>環境</strong>、<strong>仕様</strong>、<strong>モック</strong>、<strong>MCPサーバ</strong>、<strong>履歴</strong>、<strong>フローの編集</strong>。 | リクエストとフロー |
+| <strong>その他のアプリ</strong> | Claude Code、Cursor、VS Code、Codexは、ワークスペースウインドウの上部にある<strong>エージェント</strong>ボタンから接続します。 | |
+
+<Edition only="appstore">
+  App Storeエディションでは、Claude Desktopのセクションの代わりに<strong>コマンドラインツール</strong>が表示されます。クライアントは、単独でインストールした`echolot`ツールを通じて接続し、<strong>コマンドラインツールを入手</strong>からダウンロードページに進みます。
+  ワークスペースが開いている間、それらの呼び出しはアプリ内で実行されます。
+</Edition>
+
+## プライバシー [#privacy]
+
+Echolotが収集してよいものです。あなたが許可するまで、常にオフです。[プライバシーとセキュリティ](/docs/privacy-and-security)を参照してください。
+
+| 設定 | 内容 | デフォルト |
+| --- | --- | --- |
+| <strong>匿名の使用状況データを共有</strong> | どの機能が使われたか（リクエストの送信、実行、MCPのチェック）を、リクエストの種類やステータスコードといった小さな情報とともに、Echolotの開発者に伝え、エラーをスタックトレースとともに報告します。URL、ヘッダー、ボディ、変数、シークレット、レスポンスは含まれません。 | オフ |
+| <strong>クラッシュレポートを収集</strong> | macOSが次回の起動時にクラッシュレポートとハングレポートをEcholotに渡し、EcholotはそれらをこのMacに保存するので、フィードバックに添付できます。スタックトレースのみ。どこにも送信されません。保存されたレポートの数が、<strong>Finderに表示</strong>とともに表示されます。 | オン |
+| <strong>アップデートの確認</strong> | EcholotがGitHubにリリースの一覧を問い合わせる頻度：<strong>1日に1回</strong>、<strong>手動のみ</strong>、<strong>App Store経由</strong>。GitHubが知るのはアプリのバージョンとIPアドレスで、あなたやワークスペースに関する情報は何もありません。 | |
+
+## 情報 [#about]
+
+バージョンと、Echolotがデータを保存する場所です。
+
+- <strong>バージョン</strong>：バージョンとビルド。リリースノートを見る<strong>新機能</strong>があります。
+- <strong>Webサイト</strong>：echolot.dev。<strong>リリース</strong>：すべてのリリースとそのノート。
+- <strong>レスポンスと履歴</strong>：<strong>Finderに表示</strong>で、Echolot自身のデータフォルダを開きます。レスポンスのボディ、履歴、クラッシュレポートが入っています。
+  ワークスペースは、保存した場所にあります。このフォルダを削除しても失われるのは履歴だけで、リクエストが失われることはありません。
+- <strong>クレジット</strong>：Echoのフォント、Helena Zhang作のDeparture Mono（SIL Open Font License 1.1）。
+
+<Edition only="appstore">
+  App Storeエディションは、データをApplication Supportフォルダの代わりに、独自のコンテナに保存します。<strong>Finderに表示</strong>はそこを開きます。
+</Edition>

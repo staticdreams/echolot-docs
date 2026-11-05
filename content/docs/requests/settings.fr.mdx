@@ -1,0 +1,209 @@
+---
+title: "Réglages de la requête"
+description: "Choisissez la version HTTP, les redirections, les cookies, la décompression, les vérifications TLS, le délai d’attente et le mode brut d’une requête, et configurez les proxys et les certificats."
+---
+
+L’onglet **Réglages** définit comment une requête voyage : quelle version HTTP, si elle suit les redirections, conserve
+les cookies, vérifie les certificats, et combien de temps elle peut durer. Les proxys et les certificats se règlent pour
+tout l’espace de travail ou pour l’app, plus bas sur cette page.
+
+<Shot id="requests-http-settings" alt="L’onglet Réglages d’une requête : Mode brut, Version HTTP sur Automatique avec sa note, Vérifier les certificats TLS, Suivre les redirections avec Nombre maximal de redirections 10, les cookies, Décompresser les réponses et Délai d’attente 60 s" />
+
+## L’onglet Réglages [#the-settings-tab]
+
+| Réglage | Par défaut | Ce qu’il fait |
+| --- | --- | --- |
+| **Mode brut** | Désactivé | Envoie exactement les en-têtes de l’onglet **En-têtes**, sans rien ajouter. |
+| **Version HTTP** | **Automatique** | **Automatique**, **HTTP/1.1**, **HTTP/2** ou **HTTP/3**. |
+| **Vérifier les certificats TLS** | Activé | Vérifie le certificat du serveur pour les adresses `https://`. |
+| **Suivre les redirections** | Activé | Suit les réponses 3xx, jusqu’au **Nombre maximal de redirections**. |
+| **Nombre maximal de redirections** | 10 | De 1 à 50. |
+| **Envoyer et enregistrer les cookies** | Activé | Envoie les cookies que le jar de la fenêtre contient pour l’adresse, et garde ceux que la réponse définit. |
+| **Décompresser les réponses** | Activé | Demande des réponses compressées et les décode. |
+| **Délai d’attente** | 60 s | La durée que tout l’échange peut prendre, d’une seconde à une heure, par pas de 5 secondes. |
+
+Seuls les réglages que vous modifiez sont enregistrés dans le fichier de la requête. L’onglet affiche un point quand un
+réglage diffère de sa valeur par défaut, et affiche **Réglages (brut)** tant que le mode brut est activé. **Rétablir les
+valeurs par défaut** remet tous les réglages à leur état d’origine.
+
+Dans le fichier de la requête, les réglages ressemblent à ceci :
+
+```toml
+[settings]
+http-version = "http2"
+follow-redirects = false
+timeout = 10.0
+```
+
+## Version HTTP [#http-version]
+
+| Choix | Ce qu’Echolot envoie |
+| --- | --- |
+| **Automatique** | HTTP/2 quand le serveur le propose, sinon HTTP/1.1. Dès qu’un serveur propose HTTP/3 (avec un en-tête `Alt-Svc`), les requêtes suivantes vers lui utilisent HTTP/3, avec repli sur TCP s’il ne se connecte pas. |
+| **HTTP/1.1** | HTTP/1.1 uniquement. |
+| **HTTP/2** | HTTP/2 uniquement : sur TLS, ou sur `http://` simple avec connaissance préalable (h2c). |
+| **HTTP/3** | HTTP/3 sur QUIC uniquement. |
+
+HTTP/3 a des limites :
+
+- Il nécessite **macOS 27 ou version ultérieure**. Sur un Mac plus ancien, l’onglet l’indique et une requête réglée sur
+  **HTTP/3** ne peut pas être envoyée ; **Automatique** reste sur HTTP/2 et HTTP/1.1.
+- Adresses `https://` uniquement.
+- Pas de proxys (ceux du système compris), pas de fichiers d’AC personnalisés et pas de certificats client. Une requête
+  réglée sur **HTTP/3** qui en a besoin est refusée, avec la raison. Sur **Automatique**, ces requêtes restent sur TCP.
+- Le mode brut ne peut pas être utilisé avec HTTP/3.
+
+Sur **Automatique**, quand une réponse propose HTTP/3, sa carte de détails affiche **HTTP/3 proposé**. Si la connexion
+QUIC de la requête suivante échoue, Echolot l’envoie sur TCP à la place, oublie la proposition, et la carte de détails en
+donne la raison. Rien n’est envoyé deux fois.
+
+Deux autres cas changent de version d’eux-mêmes :
+
+- [NTLM](/docs/requests/auth#ntlm) nécessite HTTP/1.1. Sur **Automatique**, les requêtes NTLM passent en HTTP/1.1 ; sur
+  **HTTP/2** ou **HTTP/3**, elles sont refusées.
+- Quand un serveur réinitialise une requête HTTP/2 avec `HTTP_1_1_REQUIRED`, Echolot parle HTTP/1.1 à ce serveur à
+  partir de là. Une requête qui peut être répétée sans risque est renvoyée aussitôt en HTTP/1.1 ; toute autre requête
+  s’arrête avec une erreur qui l’indique, et passe en HTTP/1.1 quand vous la renvoyez.
+
+La carte de détails de la réponse montre la version utilisée, à côté de la version de TLS.
+
+## Redirections [#redirects]
+
+Avec **Suivre les redirections** activé, Echolot suit les réponses `301`, `302`, `303`, `307` et `308` vers des adresses
+`http://` et `https://` :
+
+- `303` devient un `GET` (un `HEAD` reste un `HEAD`), sans le corps.
+- `301` et `302` transforment un `POST` en `GET`, comme le font les navigateurs.
+- `307` et `308` conservent la méthode et le corps.
+
+Chaque étape est enregistrée. La carte de détails affiche **3 redirections** (ou leur nombre) ; cliquez dessus pour voir
+l’état, la méthode, l’adresse et la durée de chaque étape, ainsi que l’adresse finale. Essayez avec
+**Echo › Follow redirects** dans Alpenglow.
+
+Une redirection vers une autre origine abandonne vos identifiants : les en-têtes `Authorization` et `Cookie`, les
+en-têtes de clé d’API, les en-têtes qui contiennent un secret, les signatures (Digest, AWS, Hawk, EdgeGrid, NTLM) et le
+certificat client. Voir
+[Les identifiants restent avec leur origine](/docs/requests/auth#credentials-stay-with-their-origin).
+
+Avec **Suivre les redirections** désactivé, la réponse 3xx est la réponse.
+
+## Cookies [#cookies]
+
+Chaque fenêtre a un jar de cookies. Avec **Envoyer et enregistrer les cookies** activé, une requête envoie les cookies du
+jar qui correspondent à son adresse, et les cookies que sa réponse définit entrent dans le jar. Désactivez-le pour une
+requête qui ne doit ni en envoyer ni en garder.
+
+L’onglet **Cookies** de la réponse montre ce qui a été **Envoyé avec la requête**, ce qui a été **Défini par la
+réponse**, et ce qui est **Enregistré dans cette fenêtre**. Supprimez un cookie avec son bouton, ou tous avec
+**Tout effacer**. Voir [Réponses](/docs/requests/responses#cookies).
+
+Le jar suit les règles des navigateurs : une réponse ne peut pas définir un cookie pour un suffixe public entier comme
+`.com` ou `.co.uk`. Essayez **Echo › Set a cookie** dans Alpenglow, puis n’importe quelle autre requête vers
+`demo.echolot.dev`.
+
+## Décompresser les réponses [#decompress-responses]
+
+Avec **Décompresser les réponses** activé, Echolot envoie `Accept-Encoding: gzip, deflate, br, zstd` (sauf si vous
+définissez vous-même cet en-tête) et décode les réponses gzip, deflate, Brotli et Zstandard. L’onglet **Corps** montre
+le corps décodé ; les octets tels qu’ils sont arrivés restent dans l’onglet **Réseau**, et le menu d’enregistrement du
+corps propose **Enregistrer le corps encodé…**. La carte de détails indique par exemple `br, 12 KB → 48 KB`.
+
+Désactivez-le pour voir une réponse exactement comme le serveur l’a compressée, ou pour n’envoyer aucun en-tête
+`Accept-Encoding`.
+
+## Vérifier les certificats TLS [#verify-tls-certificates]
+
+Laissez cette option activée, sauf si vous testez un serveur dont le certificat n’est pas approuvé par votre Mac et que
+vous ne pouvez pas ajouter son AC. Quand elle est désactivée, la carte de détails affiche un cadenas orange ouvert, et sa
+fenêtre contextuelle indique **La vérification des certificats est désactivée**.
+
+Pour une AC privée, il vaut mieux l’approuver pour cet hôte : voir [Certificats](#certificates).
+
+## Délai d’attente [#timeout]
+
+Le délai d’attente est la durée totale que l’échange peut prendre, de la connexion au dernier octet. Quand il est écoulé,
+la requête s’arrête avec **Le délai d’attente de la requête est dépassé** et la connexion est fermée.
+
+## Mode brut [#raw-mode]
+
+Le mode brut sert à envoyer une requête octet pour octet telle que vous l’avez écrite, même mal formée, pour tester la
+façon dont un serveur la traite. Echolot omet les en-têtes qu’il ajoute à chaque requête (`Host`, `User-Agent`,
+`Accept`, `Accept-Encoding`, `Cookie`, `Content-Length` et le découpage) et ne vérifie pas que la requête est bien
+formée. Sous **AUTOMATIQUES**, l’onglet **En-têtes** indique **Mode brut : Echolot n’ajoute aucun en-tête ; seuls ceux
+ci-dessus sont envoyés.**
+
+Pour une requête qui n’envoie que vos propres en-têtes, réglez aussi **Auth** sur **Aucune auth** et écrivez votre propre
+`Content-Type` si le corps en a besoin. Le mode brut écrit du HTTP/1.1 : il ne peut donc pas être utilisé avec HTTP/3.
+
+## Nouvelles tentatives [#retries]
+
+Echolot garde les connexions ouvertes et les réutilise, ce qui économise le temps DNS, de connexion et TLS ; la carte de
+détails indique **Connexion réutilisée** quand c’est le cas. Il arrive qu’un serveur ait fermé une connexion maintenue
+ouverte au moment même où une requête part. Alors :
+
+- Une requête qui peut être répétée sans risque est renvoyée sur une nouvelle connexion : un `GET`, `HEAD`, `OPTIONS`,
+  `TRACE`, `PUT` ou `DELETE`, ou toute requête avec un en-tête `Idempotency-Key`. La carte de détails indique qu’elle a
+  été renvoyée.
+- Toute autre requête (un `POST` sans `Idempotency-Key`, par exemple) n’est pas renvoyée, car le serveur a peut-être
+  agi dessus. Elle s’arrête avec **La connexion s’est fermée avant toute réponse ; le serveur a peut-être appliqué la
+  requête**.
+
+Echolot ne réessaie jamais dans un autre cas.
+
+## Proxys [#proxies]
+
+Par défaut, les requêtes passent par le proxy choisi dans **Réglages › Réseau** :
+
+| Proxy | Signification |
+| --- | --- |
+| **Réglages Système** | Les proxys HTTP, HTTPS et SOCKS de **Réglages Système › Réseau**, avec leurs exceptions. La configuration automatique du proxy (PAC) n’est pas utilisée. |
+| **Aucun** | Chaque requête se connecte directement. |
+| **Manuel** | Un proxy HTTP, HTTPS (TLS jusqu’au proxy) ou SOCKS5, comme `http://proxy:3128` ou `socks5://host:1080`, avec un nom d’utilisateur et un mot de passe facultatifs (gardés dans le trousseau), et des hôtes à joindre directement sous **Sans proxy pour** (`localhost, *.internal`). |
+
+Un espace de travail peut définir son propre proxy, qui le suit chez vos collègues et dans l’outil en ligne de commande :
+
+1. Ouvrez **Réglages de l’espace de travail…** depuis le sélecteur d’espace de travail en bas de la barre latérale.
+2. Choisissez l’onglet **Proxy** et désactivez **Utiliser le réglage proxy de l’app**.
+3. Choisissez **Réglages Système**, **Environnement (HTTPS_PROXY…)** (lit `HTTPS_PROXY`, `HTTP_PROXY` et `NO_PROXY`),
+   **Aucun** ou **Manuel**.
+4. Pour **Manuel**, remplissez **Proxy** (il accepte des variables, comme `{{proxy}}`), **Nom d’utilisateur** et
+   **Mot de passe**, ainsi que **Sans proxy pour**. Écrivez le mot de passe comme variable secrète,
+   `{{proxy_password}}` : les fichiers de l’espace de travail ne contiennent jamais de secrets. Un mot de passe en clair
+   propose **Placer dans le trousseau**.
+
+HTTP/3 ne passe jamais par un proxy. Voir [Espaces de travail](/docs/workspaces).
+
+## Certificats [#certificates]
+
+Pour un hôte qui utilise une autorité de certification privée, ou qui veut un certificat client (TLS mutuel), ajoutez
+une règle dans l’espace de travail :
+
+1. Ouvrez **Réglages de l’espace de travail…** et choisissez l’onglet **Certificats**.
+2. Cliquez sur **Ajouter un hôte** et saisissez l’hôte, comme `api.example.com`, ou `*.internal` pour tous les
+   sous-domaines.
+3. À côté de **AC approuvées**, cliquez sur **Choisir…** et sélectionnez un ou plusieurs fichiers PEM. Ils sont approuvés
+   en plus de ceux du système.
+4. Pour un certificat client, choisissez le fichier à côté de **Certificat client** : un fichier PEM ou un `.p12`
+   (`.pfx`). Pour un certificat PEM dont le fichier n’a pas de clé, choisissez aussi le fichier **Clé privée**.
+5. Si la clé ou le `.p12` a une phrase secrète, écrivez-la comme variable secrète dans **Phrase secrète**, par exemple
+   `{{p12_passphrase}}`.
+
+La première règle qui correspond à un hôte s’applique. Les fichiers situés dans l’espace de travail sont enregistrés
+sous forme de chemins relatifs à celui-ci : la règle fonctionne donc pour tous ceux qui ont l’espace de travail. Les
+certificats de chaque règle ne sont utilisés que pour son hôte : une redirection vers un autre hôte ne présente jamais
+le certificat client du premier.
+
+<Edition only="appstore">
+  L’édition App Store ne peut lire que les fichiers que vous avez choisis. Les fichiers d’AC, les certificats client et
+  les clés que vous choisissez ici restent lisibles pour les envois suivants. Une règle créée par un collègue, qui
+  pointe vers des fichiers hors de l’espace de travail, exige que vous donniez une fois ces fichiers à l’app : l’envoi
+  s’arrête et le volet de réponse propose **Autoriser l’accès…**.
+</Edition>
+
+## Réglages valables pour toute l’app [#app-wide-settings]
+
+Le proxy est le seul réglage de requête qui a une valeur par défaut valable pour toute l’app (**Réglages › Réseau**).
+Tous les autres réglages partent, pour chaque requête, des valeurs par défaut du tableau ci-dessus, et le fichier de la
+requête garde ce que vous modifiez. Pour modifier les réglages de nombreuses requêtes à la fois, sélectionnez-les dans
+la barre latérale et utilisez **Modifier N requêtes…** pour leurs en-têtes, paramètres et authentification, ou modifiez
+les fichiers.

@@ -1,0 +1,116 @@
+---
+title: "echolot mock"
+description: "Servez un mock depuis le terminal ou en CI, avec les routes d’un espace de travail faites à la main ou un document OpenAPI, avec des délais, des échecs injectés et des vérifications de requêtes."
+---
+
+`echolot mock` sert un mock : un mock enregistré dans un espace de travail, avec ses [routes faites à la
+main](/docs/mocks/routes) et sa spec s’il en a une, ou un document OpenAPI, dont les opérations répondent avec leurs
+exemples documentés ou un corps généré à partir de leur schéma. Utilisez-le pour construire un client avant que l’API
+n’existe, ou pour donner à une tâche de CI un serveur qui répond comme vous le voulez. Il sert les mêmes mocks que la
+[page Mocks](/docs/mocks).
+
+```sh
+echolot mock <source> [--workspace <workspace>] [--port <port>] [--share] [--delay <ms>] [--failure-rate <percent>] [--no-validate] [--routes <file>]
+```
+
+`<source>` est un fichier de spec (YAML ou JSON), ou, avec `--workspace`, le nom d’un mock enregistré dans cet espace de
+travail.
+
+## Mocker une spec [#mock-a-spec]
+
+```sh
+echolot mock Alpenglow.echolot/specs/alpenglow.yaml --port 4010
+```
+
+```text
+Mock of Alpenglow demo shop: 9 operations at http://127.0.0.1:4010/v1 (Ctrl-C stops it)
+```
+
+Le mock répond au chemin du premier serveur de la spec (ici `/v1`). Chaque requête à laquelle il répond est une ligne
+sur la sortie standard : l’état, la méthode et le chemin, l’opération correspondante, l’origine de la réponse, et la
+durée. Les problèmes de la requête sont listés en dessous.
+
+```text
+200 GET /v1/products/TNT-MH-2P  → GET /products/{sku} (generated)  0 ms
+400 POST /v1/orders  → POST /orders  0 ms
+    body $.lines: expected array, got string
+```
+
+**Les requêtes sont vérifiées par rapport à la spec.** Une requête dont les paramètres ou le corps enfreignent la spec
+reçoit un `400` qui dit ce qui ne va pas :
+
+```json
+{
+  "error" : "The request does not match the spec (POST /orders).",
+  "problems" : [
+    "body $.lines: expected array, got string"
+  ]
+}
+```
+
+`--no-validate` répond quand même à ces requêtes.
+
+**Choisir une réponse.** Par défaut, une opération répond avec sa première réponse de succès et son premier exemple.
+Une requête peut en demander une autre avec `Prefer: code=404, example=empty`, ou avec les en-têtes
+`x-mock-response-code` et `x-mock-response-name` de Postman.
+
+## Mocker un mock d’un espace de travail [#mock-a-workspaces-mock]
+
+Avec `--workspace`, `<source>` nomme un mock enregistré sur la page Mocks (son nom de fichier dans `mocks/` sans
+`.toml`, ou son nom). Son port, son délai, son taux d’échec, ses vérifications de requêtes, ses réponses choisies et ses
+routes s’appliquent, et les options que vous donnez les remplacent. Ses routes en JavaScript (`mocks/<name>.js`)
+répondent en premier, puis ses routes faites à la main, puis sa spec ; voir [routes scriptées](/docs/mocks/scripted-routes)
+et [routes et données fictives](/docs/mocks/routes).
+
+```sh
+echolot mock shop -w Alpenglow.echolot --delay 300
+```
+
+Un mock de routes n’a pas besoin de spec :
+
+```sh
+echolot mock storefront -w Shop.echolot
+```
+
+```text
+Mock of Storefront: 3 routes at http://127.0.0.1:4321 (Ctrl-C stops it)
+200 GET /users/42  → GET /users/{id} (OK)  1 ms
+404 GET /users/0  → GET /users/{id} (Not found)  0 ms
+```
+
+Chaque ligne nomme la route qui a répondu et, entre parenthèses, la réponse qu’elle a donnée. Les valeurs fictives des
+corps sont recréées à chaque requête. Pour produire des données fictives sans serveur, voir
+[echolot fake](/docs/cli/fake).
+
+## Options [#options]
+
+| Option | Signification |
+| --- | --- |
+| `-w`, `--workspace <folder>` | Le dossier de l’espace de travail qui contient le mock. |
+| `--port <port>` | Le port. Par défaut : celui du mock, ou 4010. |
+| `--share` | Répondre sur toutes les interfaces réseau, pas seulement ce Mac : pour les conteneurs et les téléphones. |
+| `--delay <ms>` | Millisecondes avant chaque réponse. |
+| `--failure-rate <percent>` | Pourcentage de requêtes auxquelles répondre par un `500` injecté. |
+| `--no-validate` | Répondre aux requêtes qui enfreignent la spec au lieu de les refuser avec un `400`. |
+| `--routes <file>` | Des routes en JavaScript qui répondent avant la spec. Par défaut : le `mocks/<name>.js` du mock de l’espace de travail. |
+
+Sans `--share`, le mock n’écoute que sur 127.0.0.1 : rien d’autre sur le réseau ne peut l’atteindre. Avec `--share`,
+quiconque peut atteindre votre Mac le peut.
+
+Un corps de requête qui dépasse la limite du mock reçoit un `413` et n’atteint jamais une route.
+
+## En CI [#in-ci]
+
+Démarrez le mock en arrière-plan et exécutez contre lui. L’environnement **Local** d’Alpenglow fait pointer
+`{{baseURL}}` vers `http://localhost:8787/v1` : un mock sur le port 8787 répond donc à ses requêtes :
+
+```sh
+echolot mock Alpenglow.echolot/specs/alpenglow.yaml --port 8787 &
+echolot run Alpenglow.echolot --env local --folder catalog
+kill %1
+```
+
+## Codes de sortie [#exit-codes]
+
+Le mock tourne jusqu’à ce que vous l’arrêtiez. Il se termine avec `64` pour une option erronée ou un nom de mock que
+l’espace de travail n’a pas, et avec `1` quand la spec ne peut pas être lue ou que le port est pris.

@@ -1,0 +1,266 @@
+---
+title: "L’Assistant"
+description: "Interrogez l’agent IA intégré d’Echolot sur votre API, ou laissez-le envoyer, tester, documenter et corriger des éléments de votre espace de travail pendant que vous approuvez ce qui change."
+---
+
+L’Assistant est un agent IA intégré à Echolot. Vous posez vos questions en langage courant (« Pourquoi la requête Create
+order échoue-t-elle ? », « Écris des vérifications pour cette requête ») et il travaille avec votre espace de travail
+grâce aux mêmes outils que les agents externes : il liste et lit les requêtes, les envoie, lit les réponses, écrit des
+vérifications, modifie des specs, démarre des mocks et exécute des flux. Chaque appel qu’il fait s’affiche dans le
+panneau au fur et à mesure, et tout ce qui pourrait modifier des données vous demande d’abord confirmation.
+
+<Shot id="ai-assistant-panel" alt="Le panneau de l’Assistant ancré à droite de la page de requête, avec une question, les appels d’outils de l’assistant et sa réponse" />
+
+## Ouvrir l’Assistant [#open-the-assistant]
+
+L’Assistant est un panneau ancré à droite de chaque page. Ouvrez-le ou fermez-le avec l’un de ces moyens :
+
+- <kbd>⌘</kbd><kbd>J</kbd>
+- **Affichage › Afficher l’Assistant** (ou **Masquer l’Assistant**)
+- Le bouton en forme de baguette, le dernier des boutons de l’en-tête de page
+
+Chaque fenêtre a son propre Assistant, qui travaille sur l’espace de travail de cette fenêtre.
+
+Pour élargir le panneau, faites glisser son bord gauche vers la gauche ; il prend de la place à la page, jusqu’à sa
+largeur minimale. Faites-le glisser vers la droite pour le rétrécir, et double-cliquez sur le bord pour revenir à la
+largeur habituelle.
+
+## Choisir un fournisseur de modèle [#choose-a-model-provider]
+
+La première fois que vous ouvrez le panneau, il affiche **Choisir un modèle**. Choisissez
+**Ouvrir les réglages de l’assistant…**, ou ouvrez **Réglages › Assistant**, puis ajoutez un fournisseur sous **Ajouter un fournisseur** :
+
+| Fournisseur | Ce que vous saisissez | Remarques |
+| --- | --- | --- |
+| **Anthropic** | **Clé d’API** | Modèles Claude. Chaque compte a un réglage **Effort** : **Par défaut du modèle**, `low`, `medium`, `high`, `xhigh` ou `max`. |
+| **OpenAI** | **Clé d’API** | |
+| **Google Gemini** | **Clé d’API** | |
+| **Compatible OpenAI** | **Adresse**, et une **Clé d’API (facultative)** | Tout serveur qui parle l’API Chat Completions d’OpenAI : Ollama, LM Studio, OpenRouter et d’autres. L’adresse est `http://127.0.0.1:11434/v1` (Ollama sur ce Mac) tant que vous n’en saisissez pas une autre. |
+| **Agent CLI (ACP)** | **Agent** et **Commande** | Un agent de code sur votre Mac qui parle l’Agent Client Protocol. Téléchargement direct uniquement, voir ci-dessous. |
+
+Choisissez **Ajouter**. Echolot charge les modèles du fournisseur et sélectionne le premier ; choisissez-en un autre
+dans le menu **Modèle** du compte, ou choisissez **Charger les modèles** pour récupérer de nouveau la liste. Quand un
+fournisseur ne liste aucun modèle, saisissez le nom du modèle dans le champ **Modèle**.
+
+Pour essayer l’Assistant gratuitement et hors ligne, exécutez un modèle dans [Ollama](https://ollama.com) et ajoutez-le
+comme fournisseur **Compatible OpenAI** avec l’adresse par défaut.
+
+### Les clés restent dans le trousseau [#keys-stay-in-the-keychain]
+
+Les clés d’API sont stockées dans le trousseau de session de ce Mac, jamais dans l’espace de travail, et ne sont
+envoyées qu’à l’adresse du fournisseur lui-même. **Retirer…** à côté d’un compte supprime sa clé du trousseau.
+
+### Passer d’un fournisseur à l’autre [#switch-between-providers]
+
+Quand vous avez plusieurs fournisseurs, celui qui est coché dans **Réglages › Assistant › Fournisseurs** est celui que
+l’Assistant utilise. Vous pouvez aussi changer dans le panneau : le menu des modèles dans l’en-tête du panneau liste
+chaque compte sous la forme *Fournisseur · modèle*, et **Réglages de l’assistant…** en bas de ce menu ouvre les
+réglages.
+
+### Agents de code locaux (agent CLI) [#local-coding-agents-cli-agent]
+
+<Edition only="direct">
+  Les agents CLI locaux n’existent que dans le téléchargement direct : l’édition App Store ne peut pas lancer de
+  programmes installés sur votre Mac. Utilisez-y une clé d’API, Ollama ou un autre serveur compatible OpenAI.
+</Edition>
+
+Un agent CLI apporte son propre modèle et sa propre connexion. Echolot le lance dans le dossier de l’espace de travail
+et lui donne l’espace de travail via le serveur MCP d’Echolot : activez donc d’abord **Réglages › Agents › Autoriser les
+agents à utiliser les espaces de travail ouverts** (voir [Agents externes](/docs/ai/agents)). Choisissez **Agent CLI
+(ACP)** comme fournisseur, puis un **Agent** :
+
+| Agent | Commande | Prérequis |
+| --- | --- | --- |
+| **Claude Code** | `npx -y @zed-industries/claude-code-acp` | Node.js ; utilise votre abonnement Claude ou `ANTHROPIC_API_KEY` |
+| **Codex** | `npx -y @zed-industries/codex-acp` | Node.js ; utilise votre connexion ChatGPT ou `OPENAI_API_KEY` |
+| **Gemini CLI** | `gemini --experimental-acp` | Gemini CLI installé |
+| **Autre** | La commande que vous saisissez | Tout agent qui parle ACP sur son entrée et sa sortie standard |
+
+Vous pouvez changer la commande plus tard dans le champ **Commande** du compte. Chaque conversation a son propre
+processus d’agent, qui se termine quand vous fermez la fenêtre. Les demandes d’autorisation de l’agent lui-même vous
+sont aussi adressées.
+
+## L’autorisation unique [#the-one-time-permission]
+
+Avant le premier message à un fournisseur, Echolot demande : **Envoyer à *fournisseur* ?** La question indique ce qui
+part là-bas (vos messages, les données de l’espace de travail que l’Assistant lit et les résultats de ses outils), où
+cela va, et que les valeurs secrètes ne sont jamais envoyées. **Annuler** est le bouton par défaut, si bien que
+<kbd>↩</kbd> n’envoie jamais par accident ; choisissez **Autoriser** pour continuer.
+
+Echolot ne demande qu’une fois par fournisseur : une fois pour Anthropic, une fois pour OpenAI, une fois pour Gemini,
+une fois pour chaque serveur compatible OpenAI (selon son hôte) et une fois pour chaque agent CLI. Les serveurs de ce
+Mac (`localhost`, `127.0.0.1`, `::1`) ne demandent jamais, car rien ne quitte le Mac. Un serveur ailleurs sur votre
+réseau demande.
+
+**Réglages › Assistant › Autorisés à recevoir vos données** liste chaque fournisseur que vous avez autorisé.
+**Révoquer** retire l’autorisation ; le message suivant redemande.
+
+## Poser une question [#ask]
+
+Saisissez dans **Demander à l’assistant…** au bas du panneau. <kbd>↩</kbd> envoie, <kbd>⇧</kbd><kbd>↩</kbd> commence
+une nouvelle ligne, et <kbd>⌘</kbd><kbd>.</kbd> arrête l’Assistant pendant qu’il travaille.
+
+Une nouvelle conversation commence par des suggestions adaptées à la page où vous êtes. Cliquez sur l’une d’elles pour
+la placer dans le champ de texte :
+
+| Page | Suggestions |
+| --- | --- |
+| Requêtes | **Envoyez toutes les requêtes de cet espace de travail et dites-moi lesquelles échouent.** · **Pourquoi la requête ouverte échoue-t-elle ? Regardez sa dernière réponse.** · **Écrivez des vérifications pour la requête ouverte à partir de sa dernière réponse.** · **Récupérez toutes les pages de cette liste et enregistrez les éléments en CSV.** |
+| Serveurs MCP | **Vérifiez ce serveur MCP et résumez ce qu’il propose.** · **Appelez une fois chaque outil en lecture seule de ce serveur et indiquez ce qu’il a renvoyé.** |
+| Specs | **Corrigez les problèmes que le linter signale dans cette spec.** · **Documentez les requêtes de cet espace de travail sous forme de spec OpenAPI.** |
+| Mocks | **Démarrez un mock de cette spec et faites pointer un nouvel environnement dessus.** · **Enregistrez les dernières réponses réelles comme exemples dans la spec.** |
+| Flux | **Créez un flux qui se connecte et exporte toutes les pages d’une liste.** · **Pourquoi la dernière exécution de ce flux a-t-elle échoué ?** |
+
+### Ce que vous avez d’ouvert l’accompagne [#what-you-have-open-goes-along]
+
+Au-dessus du champ de texte, des pastilles montrent ce que vous avez ouvert : la requête ouverte, la page Tests et ses
+vérifications en échec, la dernière exécution de l’Exécution, la spec, le mock, le flux ou le serveur MCP ouvert.
+Chaque pastille est envoyée avec votre message, pour que vous puissiez dire « cette requête » ou « la dernière
+exécution ». Cliquez sur une pastille pour l’exclure du prochain message ; cliquez dessus de nouveau pour la remettre.
+Survolez une pastille pour voir la phrase que reçoit le modèle.
+
+### Ce que l’Assistant peut faire [#what-the-assistant-can-do]
+
+L’Assistant dispose de tous les groupes d’outils que l’on peut donner aux [agents externes](/docs/ai/agents#toolsets),
+quoi que vous ayez activé dans Réglages › Agents : requêtes et réponses, exécution de dossiers avec leurs
+vérifications, historique, environnements, dossiers et variables de l’espace de travail, specs, mocks, serveurs MCP et
+flux. Les approbations s’appliquent toujours à chacun d’eux.
+
+Il n’obtient jamais les outils qui modifient la politique des agents, le proxy, les certificats, l’authentification de
+l’espace de travail ou les scripts.
+
+Chaque appel d’outil s’affiche sous forme de carte dans la conversation, avec son entrée et son résultat, et indique
+s’il est en cours, terminé ou en échec. La ligne sous le champ de texte affiche les jetons utilisés jusqu’ici et, quand
+les prix du modèle sont connus, environ ce qu’ils coûtent.
+
+## Approuver ce qui change [#approve-what-changes]
+
+Quand l’Assistant veut faire quelque chose sur lequel la politique demande confirmation, une feuille s’affiche dans la
+fenêtre : ***L’agent* veut *envoyer une requête susceptible de modifier des données*** avec l’appel et la requête telle
+qu’elle partirait, valeurs secrètes masquées.
+
+<Shot id="ai-assistant-approval" alt="La feuille d’approbation : l’agent veut envoyer une requête susceptible de modifier des données, avec la requête POST qu’il enverrait et les boutons Refuser, Autoriser pour cette session et Autoriser une fois" />
+
+- **Autoriser une fois** exécute cet appel.
+- **Autoriser pour cette session** exécute cet appel, et les appels du même genre, sans demander jusqu’à la fermeture de
+  la fenêtre : toutes les modifications de l’espace de travail à la fois, quel que soit l’outil qui les fait (créer une
+  requête, puis enregistrer l’authentification d’un dossier, puis un environnement), et la même méthode vers le même
+  hôte pour les envois (tous les GET vers `demo.echolot.dev`). Les suppressions demandent toujours, ainsi que les
+  environnements protégés, les nouveaux hôtes et tout ce qui est plus étroit qu’une simple modification, comme la
+  version d’un flux ; pour ceux-là, cela ne couvre que le même appel. La feuille indique ce que cela couvre.
+- **Ne plus demander avant les modifications et les envois** est une case à cocher de la feuille, pour les modifications
+  et pour les envois qui modifient des données. Autoriser avec cette case cochée active **Réglages › Assistant ›
+  Demander avant**, plus bas. Elle n’est pas proposée pour les suppressions, les nouveaux hôtes ni les environnements
+  protégés.
+- **Refuser** refuse l’appel, et l’Assistant en est informé.
+
+Pour un envoi vers un nouvel hôte, un envoi vers un environnement protégé et une suppression, **Autoriser une fois**
+n’est pas le bouton par défaut : <kbd>↩</kbd> ne peut donc pas les approuver. Une question restée sans réponse pendant
+cinq minutes est refusée. Quand plusieurs appels attendent, la feuille indique combien il y en a d’autres.
+
+Ce qui demande confirmation dépend des règles des agents de l’espace de travail. Sans règles, voici ce qui se passe :
+
+| Ce que fait l’Assistant | Sans règles d’espace de travail |
+| --- | --- |
+| Lire les requêtes et les environnements | S’exécute |
+| Envois sûrs (GET, requêtes GraphQL, lectures MCP) | S’exécute |
+| Autres envois (POST, PUT, PATCH, DELETE, corps de fichier) | Demande |
+| Envois vers des environnements protégés | Demande toujours |
+| Envois vers de nouveaux hôtes (aucune requête ni aucun environnement de l’espace de travail ne les utilise) | Demande toujours |
+| Modifications de l’espace de travail | Demande |
+| Suppressions (les éléments vont dans la corbeille) | Demande |
+
+### Demander moins [#ask-less]
+
+**Réglages › Assistant › Demander avant ›
+Ne demander qu’avant les suppressions, les nouveaux hôtes et les environnements protégés** supprime les questions sur les envois et les modifications : l’Assistant crée des requêtes,
+des environnements, des specs, des mocks et des flux et envoie des requêtes POST, PUT et DELETE sans demander. Chaque
+appel s’affiche toujours dans la conversation. Placer des éléments dans la corbeille, un hôte que l’espace de travail
+n’utilisait pas au démarrage de l’Assistant et un environnement protégé demandent toujours, tout comme l’exécution d’un
+flux qui n’est pas proposé aux agents. C’est désactivé tant que vous ne l’activez pas, et cela ne concerne que
+l’Assistant ; les agents externes suivent les règles de l’espace de travail.
+
+Pour assouplir ou durcir ces règles, ou pour limiter les hôtes et les envois, utilisez **Réglages de l’espace de
+travail › Agents** : voir [Règles de l’espace de travail pour les agents](/docs/ai/agents#workspace-rules). Les mêmes
+règles s’appliquent aux agents externes. Si **Les agents peuvent utiliser cet espace de travail** y est désactivé,
+l’Assistant refuse aussi de travailler dans cet espace de travail.
+
+### Environnements protégés [#protected-environments]
+
+Tant qu’un [environnement protégé](/docs/workspaces/protected-environments) est actif, chaque envoi de l’Assistant
+demande d’abord confirmation, quelle que soit sa méthode et quelles que soient les règles. Choisir **Autoriser pour
+cette session** ne couvre que ce même appel.
+
+## Ce que le modèle ne voit jamais [#what-the-model-never-sees]
+
+- **Les valeurs secrètes.** Echolot remplace la valeur de chaque variable secrète avant que quoi que ce soit parte vers
+  le modèle, dans les messages, les résultats des outils et les erreurs. Le modèle ne voit les secrets que par leur nom.
+- **Vos propres motifs.** **Réglages › Assistant › Masqué au modèle** accepte une expression régulière par ligne. Tout
+  ce qui correspond dans ce que renvoient les outils est remplacé par `[hidden]` avant que le modèle le voie.
+  Utilisez-le pour des données qui ne sont pas une variable secrète, comme des identifiants de clients ou des adresses
+  e-mail. Une ligne qui n’est pas une expression régulière valide s’affiche en rouge et est ignorée.
+- **Les corps de réponse entiers.** Les réponses parviennent au modèle sous forme de résumés (état, en-têtes, durées,
+  un plan et les premiers octets du corps, résultats des vérifications) avec une référence ; il lit davantage d’un corps
+  grâce à cette référence, à un JSONPath ou à une recherche, un morceau à la fois.
+
+Pour voir exactement ce qui part avec votre prochain message, choisissez le bouton en forme d’œil,
+**Ce que voit le modèle**, dans l’en-tête du panneau. Il montre les instructions, les outils, la conversation et le contexte, avec une
+estimation des jetons.
+
+## Conserver une conversation [#keep-a-conversation]
+
+Les conversations sont conservées sur ce Mac, par espace de travail. Dans l’en-tête du panneau :
+
+- **Nouvelle conversation** (le crayon) en démarre une nouvelle.
+- **Conversations précédentes** (l’horloge) liste les conversations **Sur ce Mac** et celles **Partagées dans cet espace
+  de travail**. Cliquez sur l’une d’elles pour l’ouvrir.
+- Le menu de conservation (le bac avec une flèche) transforme la conversation en quelque chose de durable :
+
+| Commande | Effet |
+| --- | --- |
+| **Enregistrer comme tests** | Crée un dossier *Assistant · titre de la conversation* avec une requête pour chaque envoi de l’Assistant, numérotées dans l’ordre, chacune avec une vérification de l’état reçu. |
+| **Enregistrer comme flux** | Le même dossier, plus un flux qui envoie ces requêtes l’une après l’autre. |
+| **Partager dans l’espace de travail** | Enregistre la conversation dans le dossier `assistant/` de l’espace de travail sous forme de transcription Markdown et d’un enregistrement, secrets remplacés, pour que vos collègues puissent la lire après un Git pull et l’ouvrir depuis **Partagées dans cet espace de travail**. |
+| **Rejouer les appels** | Exécute de nouveau les appels d’outils de la conversation, dans l’ordre, sans modèle, et affiche le résultat comme une nouvelle conversation. Les approbations s’appliquent comme pour tout appel. |
+
+**Enregistrer comme tests** et **Enregistrer comme flux** sont disponibles dès que la conversation a envoyé une
+requête.
+
+## Apple Intelligence sur ce Mac [#apple-intelligence-on-this-mac]
+
+Sous macOS 26 avec Apple Intelligence activé, Echolot utilise aussi le modèle d’Apple sur l’appareil pour de petites
+tâches qui ne quittent jamais le Mac et n’exigent ni fournisseur ni autorisation :
+
+- Le menu Apple Intelligence du volet de réponse : **Résumer la réponse**, **Expliquer l’erreur** (pour les réponses
+  d’erreur), **Suggérer des vérifications** (avec un bouton pour ajouter les vérifications qu’Echolot peut exécuter) et
+  **Suggérer un nom** (avec un bouton pour renommer la requête).
+- **Expliquer l’échec** sur une exécution de flux en échec, et **Résumer le journal** sur le journal d’un mock en cours
+  d’exécution.
+- [Les commentaires d’Echo](/docs/ai/echo#ai-comments), quand vous les activez.
+
+Chaque réponse indique **Réponse produite sur ce Mac ; rien n’a été envoyé.** Là où le modèle n’est pas disponible, ces
+boutons ne s’affichent pas. Le panneau de l’Assistant lui-même utilise toujours un fournisseur de Réglages › Assistant.
+
+## Essayer les outils d’un serveur avec un modèle [#try-a-servers-tools-with-a-model]
+
+Sur la page [Serveurs MCP](/docs/mcp-servers/tools-and-quality), la carte **Essayer avec un modèle** montre lesquels
+des outils d’un serveur un modèle choisirait. Saisissez ce que quelqu’un pourrait demander à un agent dans **Que
+demanderait-on à un agent de faire avec ce serveur ?** et choisissez **Essayer**. Le modèle choisi dans Réglages ›
+Assistant voit les outils du serveur et dit lequel il appellerait et avec quels arguments ; rien n’est appelé. Les
+appels qui ne correspondent pas au schéma d’entrée d’un outil montrent ce qui ne va pas, et c’est ainsi que se révèlent
+les noms et descriptions d’outils peu clairs.
+
+Le premier essai avec un fournisseur demande la même autorisation unique que l’Assistant. Les agents CLI ne sont pas
+utilisés ici.
+
+## Dépannage [#troubleshooting]
+
+- **« Choisissez d’abord un fournisseur de modèles dans Réglages › Assistant. »** Aucun fournisseur n’est coché.
+  Ajoutez-en un, ou cochez-en un dans **Réglages › Assistant › Fournisseurs**.
+- **« Les agents sont désactivés pour cet espace de travail »** : **Réglages de l’espace de travail › Agents › Les
+  agents peuvent utiliser cet espace de travail** est désactivé (`[agents] enabled = false` dans `workspace.toml`).
+  Activez-le pour utiliser l’Assistant dans cet espace de travail.
+- **Un fournisseur affiche une erreur après Ajouter ou Charger les modèles.** Vérifiez la clé et, pour un serveur
+  compatible OpenAI, qu’il tourne bien à cette adresse. Le message indique le fournisseur et ce qui s’est mal passé.
+- **Un agent CLI ne démarre pas.** Vérifiez que sa commande s’exécute dans Terminal, et que **Réglages › Agents ›
+  Autoriser les agents à utiliser les espaces de travail ouverts** est activé.

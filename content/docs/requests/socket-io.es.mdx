@@ -1,0 +1,83 @@
+---
+title: "Socket.IO"
+description: "Únete a un espacio de nombres de Socket.IO con una carga de autenticación, emite eventos con argumentos y confirmaciones, y lee el registro de eventos."
+---
+
+Una solicitud Socket.IO se conecta a un servidor Socket.IO, se une a un espacio de nombres y se mantiene conectada: emites
+eventos y ves los eventos del servidor a medida que llegan. Echolot habla Socket.IO 2, 3 y 4 sobre WebSocket.
+
+<Shot id="requests-socketio-events" alt="Realtime › Support chat conectada al servidor local: la pestaña Eventos con el espacio de nombres /support, el evento guardado Say hello, y el registro con el evento enviado y la respuesta del servidor" />
+
+<Callout title="Pruébalo con Alpenglow">
+  **Realtime › Support chat** se conecta a un servidor Socket.IO local en `localhost:3001`, de la carpeta
+  `examples/servers` del repositorio de la documentación (`bun run realtime`).
+</Callout>
+
+## Conectar [#connect]
+
+1. Elige **Archivo › Nueva solicitud Socket.IO**, o **Nueva solicitud Socket.IO** en el menú **+** junto a
+   **Solicitudes** en la barra lateral.
+2. Escribe la dirección del servidor, como `http://localhost:3001` (`{{realtimeURL}}` en Alpenglow). Funcionan `http://`,
+   `https://`, `ws://` y `wss://`.
+3. Elige la versión del servidor en el menú de la insignia **SIO**, antes de la dirección: **Socket.IO 4**,
+   **Socket.IO 3** o **Socket.IO 2**.
+4. Elige **Conectar** (<kbd>⌘</kbd><kbd>R</kbd>). Dice **Desconectar** mientras hay conexión.
+
+El editor tiene estas pestañas: **Docs**, **Eventos**, **Cabeceras**, **Parámetros**, **Autenticación**, **Variables**,
+**Pruebas**, **Scripts** y **Ajustes**. Las cabeceras, los parámetros de consulta y la autenticación van con el handshake
+de WebSocket.
+
+## Espacio de nombres, ruta y autenticación [#namespace-path-and-auth]
+
+La parte superior de la pestaña **Eventos** define cómo se une el cliente:
+
+| Campo | Qué es |
+| --- | --- |
+| **Espacio de nombres** | El espacio de nombres al que unirse, como `/support`. Vacío se une a la ruta de la dirección, o a `/` |
+| **Ruta** | Dónde escucha el servidor. Vacío significa el valor predeterminado, `/socket.io/` |
+| **Autenticación** | La carga de autenticación, un objeto JSON como `{"token": "{{token}}"}`. Socket.IO 3 y 4 la envían al unirse al espacio de nombres. Vacío para ninguna |
+
+Guarda un token en una [variable secreta](/docs/workspaces/secrets) y escribe `{{token}}` en la carga, para que el valor
+nunca acabe en el archivo de la solicitud. Un servidor que rechaza la conexión responde con un error, que el registro
+muestra en rojo.
+
+## Emite eventos [#emit-events]
+
+En la parte inferior de la pestaña **Eventos**:
+
+1. Escribe el nombre del evento, como `message`.
+2. Escribe sus argumentos como JSON, con `{{variables}}`. Un array son varios argumentos; cualquier otro valor es el único.
+   Déjalo vacío para ninguno.
+3. Marca **Ack** para pedirle al servidor que confirme el evento.
+4. Elige **Emitir** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>↩</kbd>).
+
+Por ejemplo, el evento `message` con los argumentos `{"text": "Grüezi!"}` envía un objeto, y
+`["order", {"id": "ord_7Hk2Lw"}]` envía dos argumentos.
+
+Elige **+** para guardar el evento con la solicitud. Cada evento guardado tiene un nombre, el evento, sus argumentos,
+**Ack** y su propio botón **Emitir**. **Emitir en las ejecuciones**, la casilla de su principio, decide si se emite cuando
+la solicitud se ejecuta sin ti: la [Ejecución](/docs/requests/runner), la línea de comandos y los agentes emiten los
+eventos activados en orden tras unirse, escuchan durante 10 segundos y cierran. Support chat tiene un evento guardado,
+**Say hello**.
+
+## El registro de eventos [#the-event-log]
+
+La pestaña **Mensajes** del panel de respuesta muestra la sesión: todos los eventos en ambos sentidos, los más recientes
+al final, con su hora y tamaño.
+
+- Cada línea muestra el nombre y el espacio de nombres del evento, y su id de confirmación cuando la pidió. Una
+  confirmación muestra el id al que responde.
+- **Todos**, **Enviado** y **Recibido** filtran por dirección; **Filtrar eventos** encuentra eventos por nombre o texto.
+- **Más** formatea los argumentos JSON.
+- Cuando el servidor envía un evento que pide una confirmación, **Confirmar** la responde, sin argumentos.
+- Los adjuntos binarios que llegan con un evento se muestran debajo, cada uno como **Adjunto 1, Base64: …**.
+
+Un paquete de Socket.IO admite como máximo 1000 adjuntos, de hasta 64 MB en total.
+
+Cuando la conexión se cierra, la sesión se conserva en el [Historial](/docs/workspaces/history), con el registro como
+cuerpo de la respuesta.
+
+## Desde la línea de comandos [#from-the-command-line]
+
+`echolot send --socketio` se conecta desde el terminal: cada línea que escribes es un evento con sus argumentos JSON.
+También ejecuta las solicitudes `.sio.toml` guardadas. Consulta [echolot send](/docs/cli/send).

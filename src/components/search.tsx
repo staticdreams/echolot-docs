@@ -15,8 +15,9 @@ import { useI18n } from 'fumadocs-ui/contexts/i18n';
 
 export default function DefaultSearchDialog(props: SharedProps) {
   const { locale } = useI18n(); // (optional) for i18n
+  // One index per language: /api/search for English, /de/api/search for German.
   const search = useStaticSearch({
-    locale,
+    from: locale && locale !== 'en' ? `/${locale}/api/search` : '/api/search',
   });
 
   return (

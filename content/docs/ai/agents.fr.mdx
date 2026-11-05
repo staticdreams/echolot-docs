@@ -1,0 +1,258 @@
+---
+title: "Agents externes"
+description: "Laissez Claude Code, Claude Desktop, Cursor, VS Code, Codex et d’autres clients MCP travailler avec un espace de travail via le serveur MCP d’Echolot, avec votre approbation."
+---
+
+Echolot a son propre serveur MCP. Grâce à lui, des clients IA comme Claude Code, Claude Desktop, Cursor, VS Code et
+Codex peuvent lister vos requêtes enregistrées, les envoyer, lire les réponses, ajouter des vérifications et exécuter
+des dossiers, avec les mêmes outils que l’app. Tant que l’espace de travail est ouvert dans Echolot, leurs appels
+s’exécutent dans l’app : vous approuvez tout ce qui pourrait modifier des données, vous voyez chaque appel, et les
+valeurs secrètes n’atteignent jamais l’agent.
+
+## Fonctionnement [#how-it-works]
+
+Un client lance `echolot mcp serve` avec le chemin d’un espace de travail. La suite dépend de l’app :
+
+- **L’espace de travail est ouvert dans Echolot et les agents sont activés.** La commande se connecte à l’app, et les
+  appels du client s’exécutent dans la fenêtre de l’espace de travail. Les appels qui demandent une approbation vous
+  la demandent dans une feuille, et chaque appel apparaît sous **Agents** dans l’en-tête de page.
+- **Sinon** (l’app est fermée, l’espace de travail n’est pas ouvert ou les agents sont désactivés), la commande sert
+  l’espace de travail seule. Personne ne peut être sollicité : ce qui demanderait une approbation est refusé. Voir
+  [En autonomie](#on-its-own).
+
+Chaque fenêtre ouverte sert son espace de travail sur `127.0.0.1` uniquement, sur un port choisi par le système, et
+seulement aux appelants qui présentent un jeton aléatoire créé pour cette session. La commande trouve la fenêtre grâce
+à un fichier privé dans le dossier Application Support d’Echolot. Rien n’écoute sur votre réseau.
+
+## Activer les agents [#turn-agents-on]
+
+<Steps>
+<Step>
+Ouvrez **Réglages › Agents** et activez **Autoriser les agents à utiliser les espaces de travail ouverts**. C’est
+désactivé tant que vous ne l’activez pas. Le même interrupteur se trouve dans le popover **Agents** de l’en-tête de
+page d’une fenêtre d’espace de travail.
+</Step>
+<Step>
+Ouvrez l’espace de travail dans Echolot. Le point à côté de **Agents** dans l’en-tête de page devient vert tant que la
+fenêtre sert l’espace de travail ; quand des clients sont connectés, il indique leur nombre.
+</Step>
+<Step>
+Connectez un client, comme ci-dessous. Vous le faites une fois par espace de travail et par client.
+</Step>
+</Steps>
+
+Un espace de travail peut aussi désactiver les agents pour lui-même : **Réglages de l’espace de travail › Agents › Les
+agents peuvent utiliser cet espace de travail**. Les clients n’en obtiennent alors rien, ni via l’app ni en autonomie.
+
+## Connecter un client [#connect-a-client]
+
+Cliquez sur **Agents** dans l’en-tête de page. Sous **Connecter un client**, il y a un bouton pour chaque client :
+
+<Shot id="ai-agents-popover" alt="Le popover Agents dans l’en-tête de page, avec l’interrupteur pour laisser entrer les agents, un client connecté, les appels récents et les boutons Connecter un client" />
+
+| Client | Bouton | Effet |
+| --- | --- | --- |
+| **Claude Desktop** | **Ajouter à Claude** | Crée une extension Claude Desktop pour cet espace de travail et l’ouvre dans Claude Desktop, qui vous demande de confirmer. Téléchargement direct uniquement. |
+| **Claude Code** | **Copier la commande** | Copie une commande `claude mcp add`. Collez-la dans Terminal. |
+| **Cursor** | **Ajouter à Cursor** | Ouvre l’invite de Cursor pour installer le serveur MCP. |
+| **VS Code** | **Ajouter à VS Code** | Ouvre l’invite de VS Code pour installer le serveur MCP. |
+| **Codex** | **Copier l’entrée config.toml** | Copie une entrée à coller dans le `config.toml` de Codex. |
+| **Autres** | **Copier le JSON** | Copie une entrée `mcpServers`, le format que lisent la plupart des clients MCP. |
+
+En dessous se trouve la commande elle-même avec **Copier**, pour tout client qui demande une commande et ses arguments.
+
+Le serveur s’appelle `echolot-` suivi du nom de l’espace de travail dans le client. Pour l’espace de travail Alpenglow,
+la commande Claude Code ressemble à ceci (le chemin de `echolot` est celui de l’outil à l’intérieur de l’app) :
+
+```sh
+claude mcp add --scope user echolot-alpenglow -- /Applications/Echolot.app/Contents/Helpers/echolot mcp serve ~/Alpenglow.echolot
+```
+
+et l’entrée Codex à ceci :
+
+```toml
+[mcp_servers.echolot-alpenglow]
+command = "/Applications/Echolot.app/Contents/Helpers/echolot"
+args = ["mcp", "serve", "/Users/you/Alpenglow.echolot"]
+```
+
+Depuis Terminal, `echolot mcp setup <client> -w <workspace>` affiche la même configuration pour `claude-code`,
+`claude-desktop`, `cursor`, `vscode` et `codex`. Voir [`echolot mcp`](/docs/cli/mcp).
+
+<Edition only="appstore">
+  L’édition App Store n’a pas d’outil en ligne de commande dans l’app, ni d’extension Claude Desktop. Installez l’outil
+  en ligne de commande séparément (**Obtenir l’outil en ligne de commande** dans Réglages › Agents et dans le popover
+  Agents mène aux téléchargements) ; les clients l’exécutent, et tant que l’espace de travail est ouvert dans Echolot,
+  leurs appels s’exécutent toujours dans l’app. Les boutons copient la commande ou l’extrait, ou ouvrent l’invite
+  d’installation du client ; ils n’écrivent jamais dans les dossiers d’autres apps.
+</Edition>
+
+### Claude Desktop en un clic [#claude-desktop-in-one-click]
+
+<Edition only="direct">
+  L’extension Claude Desktop (`.mcpb`) embarque l’outil en ligne de commande : elle n’existe donc que dans le
+  téléchargement direct.
+</Edition>
+
+**Réglages › Agents › Claude Desktop** liste vos espaces de travail récents. **Ajouter à Claude** à côté de l’un d’eux
+active les agents, crée une extension pour cet espace de travail et la transmet à Claude Desktop, qui vous demande de
+confirmer. Une fois que Claude Desktop l’a, la ligne indique **Ajouté** ; pour mettre l’extension à jour plus tard,
+faites un Ctrl-clic sur **Ajouté** et choisissez **Ajouter à nouveau**.
+
+Si Claude Desktop n’est pas installé, la section l’indique avec un lien **Obtenir Claude Desktop**, et **Ajouter à
+Claude** place l’extension dans le Finder à la place.
+
+## Ensembles d’outils [#toolsets]
+
+Chaque outil que voit un agent lui coûte de la place dans son contexte : Echolot propose donc ses outils par groupes.
+Choisissez-les dans **Réglages › Agents › Outils pour les agents**. **Requêtes** est toujours activé ; **Requêtes** et
+**Flux** le sont tant que vous ne les changez pas. Ces cases choisissent les outils que voient les agents, pas ce qu’ils
+peuvent faire sans demander : chaque outil demande toujours avant de modifier des données ou d’atteindre un nouvel
+hôte. Pour l’Assistant intégré, **Réglages › Assistant › Demander avant** décide de ce qu’il demande.
+
+| Ensemble d’outils | Ce que les agents peuvent en faire |
+| --- | --- |
+| **Requêtes** | Lister, lire, créer et envoyer des requêtes ; réponses, historique, GraphQL, mocks en cours d’exécution |
+| **Flux** | Exécuter les flux proposés aux agents, répondre à ce qu’ils demandent |
+| **Espace de travail** | Créer, renommer, déplacer, dupliquer et supprimer des dossiers et des requêtes ; l’authentification des dossiers ; les variables de l’espace de travail ; enregistrer des données recueillies sous forme de fichiers |
+| **Environnements** | Créer, modifier et supprimer des environnements |
+| **Specs** | Lire, écrire et analyser (lint) des specs OpenAPI ; y lier des dossiers et appliquer les changements |
+| **Mocks** | Créer, modifier et supprimer des serveurs mock et leurs routes, avec des données fictives ; des requêtes à partir de routes ; enregistrer des réponses comme exemples |
+| **Serveurs MCP** | Ajouter, modifier, vérifier et supprimer des serveurs MCP |
+| **Historique** | Ouvrir, comparer et supprimer d’anciens échanges |
+| **Modification des flux** | Lire, dessiner et supprimer des flux ; en essayer un une fois, après votre approbation |
+
+Avec les ensembles d’outils par défaut, un agent obtient des outils pour lister, lire, créer, modifier et envoyer des
+requêtes, exécuter des dossiers avec leurs vérifications, lire les réponses morceau par morceau, consulter l’historique,
+vérifier des requêtes GraphQL, copier une requête en cURL ou en code, importer, analyser des specs (lint), démarrer et
+arrêter des mocks et exécuter les flux proposés aux agents. Il obtient aussi deux prompts, `debug_request` et
+`write_tests`.
+
+Quand vous changez les ensembles d’outils, les fenêtres ouvertes recommencent à servir avec le nouvel ensemble ;
+reconnectez vos clients pour l’obtenir.
+
+**Jamais proposés**, dans aucun ensemble d’outils : modifier les règles des agents, le proxy, les certificats,
+l’authentification de l’espace de travail, les réglages de dossier au-delà de leur authentification, les scripts
+(scripts de requête, de dossier et de mock), et l’authentification qui récupère ou signe avec des secrets (OAuth 2.0,
+AWS, JWT et similaires). Cela vous revient à vous seul.
+
+Les agents peuvent donner aux requêtes et aux dossiers une authentification **Jeton Bearer**,
+**Auth Basic** ou **Clé d’API**, et faire conserver aux requêtes des valeurs de leurs réponses (le jeton d’une connexion pour les requêtes qui suivent) :
+`create_request` et `update_request` acceptent `auth` et `captures`, et `save_folder_auth` définit ce dont héritent les
+requêtes d’un dossier. Les identifiants doivent être des `{{variables}}` ; un agent qui écrit lui-même un mot de passe
+ou un jeton est refusé, si bien qu’ils ne se retrouvent jamais dans un fichier. Une valeur capturée dont le nom
+ressemble à un identifiant (token, password, key…) est conservée comme secret.
+
+Les agents démarrent les flux qui leur sont proposés (marqués d’une étincelle dans la liste des flux) avec des outils
+dédiés, chacun après votre approbation du flux dans son état actuel ; voir
+[Exécuter des flux](/docs/flows/running-and-triggers). Avec **Modification des flux** activé, `try_flow` exécute une
+fois n’importe quel autre flux, y compris celui qu’un agent est en train de dessiner : vous voyez ce qu’il envoie,
+enregistre et exécute, et vous approuvez cette exécution à chaque fois, quelles que soient les règles ; **Autoriser pour
+cette session** ne couvre que cette version du flux.
+
+## Voir ce que font les agents [#see-what-agents-do]
+
+Le popover **Agents** de l’en-tête de page affiche, tant que la fenêtre sert l’espace de travail :
+
+- Chaque client qui a appelé, avec son nombre d’appels et d’échecs et la date de sa dernière activité. Désactivez son
+  interrupteur pour refuser ses appels à partir de maintenant, ainsi que les approbations qu’il attend.
+- **Appels récents** : les derniers appels avec leur outil, leur client, leur heure, leur durée et leur éventuelle
+  erreur.
+
+Tant qu’un client n’a pas appelé, il est écrit **Aucun agent n’a encore utilisé cet espace de travail.** Quand les
+agents sont désactivés, le popover explique que les clients fonctionnent toujours en autonomie, sans vos approbations.
+
+Chaque envoi d’un agent figure aussi dans l’[historique](/docs/workspaces/history) de l’espace de travail, sous le nom
+du client.
+
+## Approbations [#approvals]
+
+Quand un client veut faire quelque chose sur lequel les règles demandent confirmation, une feuille s’affiche dans la
+fenêtre de l’espace de travail : ***Client* veut *envoyer une requête susceptible de modifier des données***, avec la requête
+telle qu’elle partirait, secrets masqués. Choisissez **Autoriser une fois**, **Autoriser pour cette session** (le même
+appel de nouveau sans demander jusqu’à la fermeture de la fenêtre) ou **Refuser**. Une question restée sans réponse
+pendant cinq minutes est refusée. La feuille est la même que celle de l’[Assistant](/docs/ai/assistant#approve-what-changes).
+
+Ce qui demande une approbation, sans règles d’espace de travail :
+
+| Action | Par défaut |
+| --- | --- |
+| **Lire les requêtes et les environnements** | Autoriser |
+| **Envois sûrs (GET, requêtes GraphQL, lectures MCP)** | Autoriser |
+| **Autres envois** | Demander |
+| **Envois vers des environnements protégés** | Demander, toujours |
+| **Envois vers de nouveaux hôtes** | Demander, toujours |
+| **Modifications de l’espace de travail** | Demander |
+| **Suppressions** | Demander |
+
+Un nouvel hôte est un hôte qu’aucune requête ni aucun environnement de l’espace de travail n’utilisait quand la fenêtre
+a commencé à servir. Des données lues par un agent pourraient partir par là : il demande donc toujours, comme pour les
+envois vers un [environnement protégé](/docs/workspaces/protected-environments).
+
+## Règles de l’espace de travail [#workspace-rules]
+
+**Réglages de l’espace de travail › Agents** (depuis le menu de l’espace de travail au bas de la barre latérale,
+**Réglages de l’espace de travail…**) définit les règles de cet espace de travail. Elles sont enregistrées dans
+`workspace.toml`, donc elles voyagent avec lui via Git, et elles s’appliquent aux agents externes et à l’Assistant.
+
+<Shot id="ai-agents-workspace-rules" alt="Réglages de l’espace de travail, onglet Agents : l’interrupteur des agents, une règle pour chaque action et les champs des hôtes et des limites" />
+
+- **Les agents peuvent utiliser cet espace de travail** : désactivé, les agents n’en obtiennent rien.
+- **Ce que les agents peuvent faire** : une règle pour chaque action du tableau ci-dessus : **Par défaut** (avec la
+  valeur par défaut), **Autoriser**, **Demander** ou **Refuser**. Les envois vers des environnements protégés et vers
+  de nouveaux hôtes ne peuvent être que sur **Demander** ou **Refuser**.
+- **Hôtes et limites** :
+  - **Hôtes autorisés** : les hôtes vers lesquels les agents peuvent envoyer, séparés par des virgules ou des espaces.
+  - **Envois par session** : le nombre maximal d’envois qu’un agent peut faire dans une session. Vide, il n’y a pas de
+    limite.
+  - **Envois par minute** : le nombre maximal d’envois qu’un agent peut faire en une minute. Vide, il n’y a pas de
+    limite.
+
+La règle la plus stricte s’applique toujours. Une règle plus souple venue avec le fichier (d’un collègue, via Git)
+ne s’applique sur votre Mac qu’une fois que vous lui faites confiance : d’ici là, le popover Agents indique quelles actions
+les règles de l’espace de travail autoriseraient sans demander, et les agents demandent toujours. Choisissez
+**Faire confiance à ces règles** pour les accepter. Les règles que vous définissez vous-même dans les réglages de l’espace de
+travail sont approuvées.
+
+## Ce que les agents n’obtiennent jamais [#what-agents-never-get]
+
+- **Les valeurs secrètes.** Echolot remplace la valeur de chaque secret dans tout ce que reçoit un agent, erreurs
+  comprises, sous forme brute, JSON, encodée pour une URL et Base64. Les agents ne voient les variables secrètes que par
+  leur nom.
+- **Les identifiants dans l’historique.** Les anciens échanges parviennent aux agents avec leurs en-têtes d’identifiants
+  masqués et sans la capture réseau.
+- **Vos secrets chez un autre hôte.** Quand l’envoi d’un agent est redirigé vers un hôte que l’espace de travail
+  n’utilise pas, ses en-têtes d’identifiants sont supprimés en chemin.
+
+## En autonomie [#on-its-own]
+
+Quand l’app n’a pas l’espace de travail ouvert, ou avec `--headless`, `echolot mcp serve` sert lui-même l’espace de
+travail et la politique décide seule :
+
+| `--policy` | Exécute | Refuse |
+| --- | --- | --- |
+| `standard` (par défaut) | Les lectures et les envois sûrs | Les autres envois, les modifications, les suppressions, les environnements protégés, les nouveaux hôtes |
+| `readonly` | Les lectures | Tous les envois, les modifications et les suppressions |
+| `permissive` | Les lectures, tous les envois, les modifications | Les suppressions, les environnements protégés, les nouveaux hôtes |
+
+Les secrets sont résolus depuis le trousseau de ce Mac et depuis les variables `ECHOLOT_SECRET_…`, et n’atteignent
+jamais l’agent. `--toolsets` choisit les groupes (`all` pour tous), `--env` l’environnement que les appels utilisent
+quand ils n’en nomment aucun, et `--http 0` sert du Streamable HTTP sur `127.0.0.1` avec un jeton, au lieu de l’entrée
+et de la sortie standard. Les règles de l’espace de travail durcissent la politique ; `--trust-workspace-policy`
+leur permet aussi de l’assouplir. Voir [`echolot mcp`](/docs/cli/mcp).
+
+```sh
+echolot mcp serve ~/Alpenglow.echolot --policy readonly --toolsets requests,history
+```
+
+## Dépannage [#troubleshooting]
+
+- **Le client se connecte mais rien ne vous demande rien, et les modifications sont refusées.** La commande sert en
+  autonomie : ouvrez l’espace de travail dans Echolot et activez **Réglages › Agents › Autoriser les agents à utiliser
+  les espaces de travail ouverts**, puis reconnectez le client.
+- **Le client n’obtient aucun outil.** **Les agents peuvent utiliser cet espace de travail** est désactivé dans
+  Réglages de l’espace de travail › Agents, ou vous avez désactivé l’interrupteur du client dans le popover Agents.
+- **Il manque un outil dont l’agent a besoin.** Activez son ensemble d’outils dans **Réglages › Agents › Outils pour
+  les agents** et reconnectez le client.
+- **Ajouter à Claude est grisé.** La build n’a pas d’outil en ligne de commande à l’intérieur ; la version de
+  echolot.dev en a un.
