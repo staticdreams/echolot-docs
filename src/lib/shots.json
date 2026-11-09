@@ -3,6 +3,10 @@
     "width": 620,
     "height": 460
   },
+  "ai-agents-sessions": {
+    "width": 442,
+    "height": 230
+  },
   "ai-assistant-panel": {
     "width": 1200,
     "height": 775
@@ -46,6 +50,10 @@
   "flows-triggers-start": {
     "width": 300,
     "height": 500
+  },
+  "flows-webhook-signature": {
+    "width": 310,
+    "height": 506
   },
   "get-started-command-palette": {
     "width": 900,
@@ -124,6 +132,10 @@
     "height": 775
   },
   "requests-graphql-query": {
+    "width": 1200,
+    "height": 775
+  },
+  "requests-grpc-live": {
     "width": 1200,
     "height": 775
   },
@@ -338,6 +350,10 @@
   "workspaces-request-history": {
     "width": 656,
     "height": 560
+  },
+  "workspaces-secret-advice": {
+    "width": 1004,
+    "height": 545
   },
   "workspaces-secret-variable": {
     "width": 716,

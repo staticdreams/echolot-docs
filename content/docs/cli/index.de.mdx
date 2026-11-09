@@ -31,14 +31,19 @@ Dateien des Arbeitsbereichs wie die App, nichts muss konvertiert werden.
   </Tab>
   <Tab value="Zip von den Releases">
     Jedes Release hat das Tool auch einzeln, `echolot-<version>-macos.zip`, auf
-    [der Seite der Releases](https://github.com/staticdreams/echolot-public/releases). Es enthält eine Datei, `echolot`,
-    signiert und notarisiert wie die App. Entpacke es und verschiebe es in einen Ordner in deinem `PATH`:
+    [der Seite der Releases](https://github.com/staticdreams/echolot-public/releases). Es enthält `EcholotCLI.app`, das
+    Bundle des Tools, signiert und notarisiert wie die App, und `echolot`, einen Link auf das Tool darin. Lass beide
+    beisammen: Das Bundle bringt mit, was das Tool die Schlüsselbund-Einträge der App teilen lässt, und ohne es startet
+    das Tool nicht. Entpacke beide in einen eigenen Ordner und verlinke `echolot` aus einem Ordner in deinem `PATH`:
 
     ```sh
-    unzip echolot-0.5.0-macos.zip
-    sudo mv echolot /usr/local/bin/
+    sudo mkdir -p /usr/local/lib/echolot
+    sudo unzip -o echolot-0.9.0-macos.zip -d /usr/local/lib/echolot
+    sudo ln -sf /usr/local/lib/echolot/echolot /usr/local/bin/echolot
     echolot --version
     ```
+
+    Auf einem CI-Runner entpackst du es in einen Ordner und fügst diesen Ordner zum `PATH` hinzu; siehe [CI](/docs/cli/ci).
 
     Nutze das Zip auf einem Mac ohne die App, auf einem CI-Runner oder mit der Version aus dem App Store.
   </Tab>

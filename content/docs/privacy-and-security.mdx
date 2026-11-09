@@ -20,7 +20,7 @@ Echolot does, and only that.
 
 Secret values never go into workspace files, so you can commit a workspace to Git.
 
-- **Secret variables** are stored only in your login keychain. The file names the variable; its value is in the
+- **Secret variables** are stored only in the Keychain. The file names the variable; its value is in the
   Keychain. See [Secrets](/docs/workspaces/secrets).
 - **Imports** move passwords, tokens and keys they find in auth and credential headers into secret variables, and the
   import report names them, never their values. See [Importing](/docs/get-started/importing).
@@ -29,8 +29,8 @@ Secret values never go into workspace files, so you can commit a workspace to Gi
 - **Response captures** that store a token into a secret variable write it to the Keychain only.
 - **Model keys** for the Assistant, **MCP sign-in tokens** and the **proxy password** are in the Keychain too. A proxy
   password or certificate passphrase typed as plain text shows a warning with **Move to Keychain**.
-- The command-line tool reads the same Keychain items. macOS asks once before another app or the other edition
-  reads an item; choose **Always Allow**.
+- The command-line tool reads the same Keychain items. The app and the tool from echolot.dev share them without
+  asking; the App Store edition and builds made from source may ask once: choose **Always Allow**.
 
 ## Credentials stay with their server
 

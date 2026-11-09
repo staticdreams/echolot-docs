@@ -253,6 +253,15 @@ Sans trousseau (Linux, CI, ou `ECHOLOT_KEYCHAIN=0`), l’outil lit les secrets d
 les réglages de secrets de votre CI. Voir [CI](/docs/cli/ci).
 
 </Accordion>
+<Accordion title="macOS demande si Echolot ou echolot peut utiliser ses informations confidentielles">
+
+L’app et l’outil en ligne de commande de echolot.dev partagent leurs éléments du trousseau et ne demandent rien. Les
+builds compilées depuis les sources, et l’édition App Store, gardent les secrets dans le trousseau de session, où macOS
+demande une fois par espace de travail avant que l’autre programme lise un élément : choisissez **Toujours autoriser**.
+En CI, définissez `CI` ou `ECHOLOT_KEYCHAIN=0` pour que l’outil n’attende jamais la réponse à cette question. Voir
+[Secrets](/docs/workspaces/secrets#where-the-values-live).
+
+</Accordion>
 <Accordion title="Echolot n’a pas pu créer son stockage dans …">
 
 Echolot n’a pas pu créer son dossier de stockage, généralement par manque d’espace libre ou d’autorisations. Les

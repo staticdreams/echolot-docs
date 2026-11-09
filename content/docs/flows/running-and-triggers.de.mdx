@@ -197,6 +197,37 @@ curl -X POST http://127.0.0.1:52817/order-status \
   -H "Authorization: Bearer <token>"
 ```
 
+#### Vom Absender signiert [#signed-by-the-sender]
+
+Dienste wie GitHub oder Shopify können das Token von Echolot nicht senden, aber sie signieren jede Zustellung: Ein
+Header enthält einen HMAC des rohen Bodys, gebildet mit einem Secret, das du mit ihnen teilst. Ein Flow, der diese
+Signatur prüft, nimmt ihre Zustellungen ohne das Token an.
+
+1. Bewahre das gemeinsame Secret in einer [geheimen Variable](/docs/workspaces/secrets) auf, etwa `webhook_secret`.
+2. Hake unter **Webhook** die Option **Vom Absender signiert** an.
+3. Trag den **Header** ein, in dem der Absender signiert (etwa `X-Hub-Signature-256`), das **Secret** als diese
+   Variable (`{{webhook_secret}}`: nie den Wert, denn Flow-Dateien werden geteilt), den Algorithmus der **Signatur**
+   (**HMAC-SHA256**, **HMAC-SHA512** oder **HMAC-SHA1**) und ihre Codierung (**Hex** oder **Base64**) sowie das
+   **Präfix**, das der Absender vor den Digest schreibt, falls es eines gibt (`sha256=` bei GitHub).
+
+<Shot id="flows-webhook-signature" alt="Die Auslöser des Blocks „Start“: Webhook angehakt mit POST und /order-status, dazu „Vom Absender signiert“ mit dem Header X-Hub-Signature-256, dem Secret {{webhook_secret}}, HMAC-SHA256, Hex und dem Präfix sha256=" />
+
+Eine Zustellung ohne das Token kommt nur herein, wenn genau ein erlaubter Flow auf ihre Methode und ihren Pfad
+antwortet, dieser Flow signiert ist und der Header zum Body passt. Das Secret wird dort gelesen, wo auch die Variablen
+des Durchlaufs herkommen: aus der Umgebung des Auslösers, dem Arbeitsbereich und den globalen Variablen. Alles andere
+bekommt dasselbe `401` wie ein fehlendes Token, sodass ein Aufrufer ohne beides nichts über deine Flows erfährt. Eine
+Zustellung mit dem Token kommt wie bisher herein, signiert oder nicht. Die App und `echolot flow serve` prüfen
+Signaturen gleich.
+
+Um einen signierten Flow auszuprobieren, signierst du einen Body selbst:
+
+```sh
+body='{"order": "ord_7Hk2Lw"}'
+signature=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" -hex | sed 's/.* //')
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "X-Hub-Signature-256: sha256=$signature" -H "Content-Type: application/json" -d "$body"
+```
+
 **Order status on webhook** meldet sich an, holt die Bestellung und antwortet mit ihr. Die Query und die Schlüssel eines
 JSON-Bodys füllen die gleichnamigen Eingaben des Flows; andere Schlüssel bleiben außen vor. Eine Eingabe namens `body`
 bekommt den ganzen Body. Ein Flow mit einer Eingabe `order` nimmt also `?order=ord_7Hk2Lw` oder
@@ -205,7 +236,7 @@ bekommt den ganzen Body. Ein Flow mit einer Eingabe `order` nimmt also `?order=o
 | Antwort | Wann |
 | --- | --- |
 | `200` mit der Ausgabe als JSON | Der Durchlauf war erfolgreich. Der Body ist, was beim Block „Ausgabe“ angekommen ist, oder `null`. |
-| `401` | Das Token fehlt oder ist falsch. |
+| `401` | Das Token fehlt oder ist falsch, und kein signierter Flow hat die Signatur der Zustellung angenommen. |
 | `404` | Kein erlaubter Flow antwortet auf diese Methode und diesen Pfad; der Fehler listet die auf, die es tun. |
 | `409` | Der Durchlauf wurde nicht gestartet: Die Umgebung des Fensters ist geschützt, für einen Flow, der eine Umgebung braucht, ist keine gewählt, oder mehr als ein Flow antwortet auf die Methode und den Pfad. Der Body sagt, was davon. |
 | `413` | Der Body ist größer als 8 MB. Der Flow wird nicht ausgeführt. |

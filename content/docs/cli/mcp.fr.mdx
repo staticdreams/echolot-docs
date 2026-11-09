@@ -190,7 +190,11 @@ voyez ce que fait l’agent. `--headless` sert quand même en autonomie. En pass
 - Quand l’app se ferme et se rouvre, le client la suit sur son nouveau port à l’appel suivant. Tant que l’app a
   l’espace de travail fermé, les appels échouent avec un message qui dit de l’ouvrir avec **Réglages › Agents** activé.
 
-Le passage par l’app se décide une fois, au démarrage de la commande. Pour changer, reconnectez le client.
+**Quand l’app ouvre l’espace de travail plus tard.** Un client démarré alors que l’app n’avait pas l’espace de travail
+ouvert est servi en autonomie jusqu’à ce que l’app l’ouvre avec **Réglages › Agents** activé. Ses appels passent alors
+par l’app, en quelques secondes et sans reconnexion : le client apprend que la liste d’outils a changé, et un message
+de journal dit ce qui s’est passé. Ce qui vivait dans la commande en autonomie y reste : les références de réponse, les
+sessions ouvertes et les approbations pour la session. `--headless` ne passe jamais la main.
 
 **En autonomie.** Sans l’app, personne ne peut être sollicité : ce sur quoi la politique demanderait confirmation est
 donc refusé :
@@ -224,6 +228,7 @@ hôte et un environnement protégé ne sont jamais autorisés d’office. Les cl
 | `mcp-servers` | Ajouter, modifier, vérifier et supprimer des serveurs MCP. |
 | `history` | Ouvrir, comparer et supprimer d’anciens échanges. |
 | `flow-editing` | Lire, dessiner et supprimer des flux ; `try_flow` en exécute un une fois après approbation de la personne (en mode headless, personne ne le peut : il est donc refusé). |
+| `sessions` | Garder des sessions WebSocket, Socket.IO et MQTT ouvertes d’un appel à l’autre : `open_session`, `read_session`, `send_on_session` et `close_session`. Voir [Sessions que les agents gardent ouvertes](/docs/ai/agents#sessions-agents-keep-open). |
 
 La politique des agents, le proxy, les certificats, les réglages d’authentification et les scripts ne sont jamais
 proposés aux agents, dans aucun ensemble d’outils.

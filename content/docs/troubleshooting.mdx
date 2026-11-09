@@ -245,6 +245,14 @@ Without a Keychain (Linux, CI, or `ECHOLOT_KEYCHAIN=0`), the tool reads secrets 
 CI's secret settings. See [CI](/docs/cli/ci).
 
 </Accordion>
+<Accordion title="macOS asks whether Echolot or echolot may use its confidential information">
+
+The app and the command-line tool from echolot.dev share their Keychain items and don't ask. Builds made from source,
+and the App Store edition, keep secrets in the login keychain, where macOS asks once per workspace before the other
+program reads an item: choose **Always Allow**. In CI, set `CI` or `ECHOLOT_KEYCHAIN=0` so the tool never waits on the
+question. See [Secrets](/docs/workspaces/secrets#where-the-values-live).
+
+</Accordion>
 <Accordion title="Echolot could not create its storage at …">
 
 Echolot couldn't make its storage folder, usually for lack of free space or permissions. Responses are kept in a

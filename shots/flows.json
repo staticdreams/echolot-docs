@@ -48,6 +48,62 @@
     ]
   },
   {
+    "id": "flows-webhook-signature",
+    "page": "flows/running-and-triggers",
+    "scene": "tools/scenes.ts: a copy of Alpenglow whose Order status on webhook has [webhook.signature] (X-Hub-Signature-256, {{webhook_secret}}, sha256, hex, prefix sha256=) and a secret variable webhook_secret. Flows page, window 1320×896, the flow fitted, the Start block selected.",
+    "frame": "the inspector's Triggers, from Webhook through the signature's help text",
+    "crop": [
+      1006,
+      208,
+      310,
+      506
+    ],
+    "crops": {
+      "de": [
+        1006,
+        221,
+        310,
+        548
+      ],
+      "es": [
+        1006,
+        221,
+        310,
+        520
+      ],
+      "fr": [
+        1006,
+        221,
+        310,
+        520
+      ],
+      "ja": [
+        1006,
+        208,
+        310,
+        506
+      ],
+      "ko": [
+        1006,
+        193,
+        310,
+        493
+      ],
+      "ru": [
+        1006,
+        221,
+        310,
+        534
+      ],
+      "zh": [
+        1006,
+        208,
+        310,
+        478
+      ]
+    }
+  },
+  {
     "id": "flows-new-from-template",
     "page": "flows/templates",
     "scene": "Alpenglow, no environment. Flows page. Click + next to Flows in the sidebar so its menu is open: Empty Flow, then the section From a Template with the five templates.",

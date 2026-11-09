@@ -16,7 +16,8 @@ A client starts `echolot mcp serve` with the path of a workspace. What happens n
   run in the workspace's window. Calls that need approval ask you in a sheet, and every call shows under **Agents** in
   the page header.
 - **Otherwise** (the app is closed, the workspace isn't open, or agents are off), the command serves the workspace
-  on its own. Nobody can be asked, so what would ask is refused. See [On its own](#on-its-own).
+  on its own. Nobody can be asked, so what would ask is refused. See [On its own](#on-its-own). If the app opens
+  the workspace later, with agents on, the client moves to it within a few seconds, without reconnecting.
 
 Each open window serves its workspace on `127.0.0.1` only, on a port the system picks, and only to callers that
 present a random token made for that session. The command finds the window through a private file in Echolot's
@@ -116,6 +117,7 @@ decides what it asks about.
 | **MCP servers** | Add, change, check and delete MCP servers |
 | **History** | Open, compare and delete past exchanges |
 | **Flow editing** | Read, draw and delete flows; try one once, after you approve it |
+| **Sessions** | Keep WebSocket, Socket.IO and MQTT sessions open across calls: open, read what arrives, send, close |
 
 With the default toolsets, an agent gets tools to list, read, create, update and send requests, run folders with
 their checks, read responses piece by piece, look at history, check GraphQL queries, copy a request as cURL or code,
@@ -126,7 +128,8 @@ When you change the toolsets, open windows start serving again with the new set;
 
 **Never offered**, in any toolset: changing the agent rules, the proxy, certificates, the workspace's auth, folder
 settings beyond their auth, saving scripts (request, folder and mock scripts; agents [propose](#scripts-agents-propose)
-them instead), and auth that fetches or signs with secrets (OAuth 2.0, AWS, JWT and the like). Those are yours alone.
+them instead), and auth that signs with secrets or needs your browser or password (AWS, JWT, OAuth 1.0, OAuth 2.0's
+other grants and the like). Those are yours alone.
 
 Agents make every kind of request: `create_request` takes a `kind` (`http`, `graphql`, `websocket`, `socketio`,
 `mqtt`, `grpc` or `mcp`) and that kind's part, such as a GraphQL query and its variables, WebSocket messages,
@@ -147,6 +150,13 @@ their responses (a sign-in's token for the requests after it): `create_request` 
 `captures`, and `save_folder_auth` sets what a folder's requests inherit. Credentials must be `{{variables}}`; an
 agent that writes a password or token itself is refused, so they never land in a file. A captured value whose name
 looks like a credential (token, password, key…) is kept as a secret.
+
+Agents can also set **OAuth 2.0 with the client-credentials grant**, the one that needs no browser and no person: a
+token URL, a client ID, the client secret as a `{{variable}}`, and a scope or audience if the server wants them.
+Echolot fetches the token when the request is sent and keeps it in the Keychain; the agent never sees it. For agents,
+the token URL's host counts as a new host, like the request's own, so the first send there asks you and the client
+secret never goes to a host nobody approved. The other OAuth 2.0 grants need a browser or your password, so you set
+them up yourself.
 
 Agents start the flows offered to them (marked with a sparkle in the Flows list) through tools of their own, each
 after your approval of the flow as it is now; see [Running flows](/docs/flows/running-and-triggers). With **Flow
@@ -213,6 +223,33 @@ With nobody to ask (`echolot mcp serve` on its own, with a policy that allows ch
 being trusted: it doesn't run until you open the workspace in Echolot and click **Trust Scripts** above it. See
 [scripts and tests](/docs/requests/scripts-and-tests).
 
+## Sessions agents keep open
+
+Some tasks need a connection that stays open while the agent does something else: subscribe to a WebSocket, place an
+order with another request, then read the event the order caused. With the **Sessions** toolset on (it is off until you
+turn it on in **Settings › Agents › Tools for agents**), agents get four tools for saved WebSocket, Socket.IO and MQTT
+requests:
+
+| Tool | What it does |
+| --- | --- |
+| `open_session` | Opens the request: its enabled messages, emits or publishes go out, and MQTT subscribes. Returns a handle and the first lines. |
+| `read_session` | Reads what arrived since a cursor, waiting up to 30 seconds for the next line. It can keep to one Socket.IO event, an MQTT topic filter or messages with a value at a JSONPath. |
+| `send_on_session` | Sends a message, an emit or a publish on the open session. |
+| `close_session` | Closes the session and records it in history with the request's checks and captures, as a run would. |
+
+Opening a session asks you as sending the request would. What the agent sends on it afterwards goes through the same
+approvals; it may use `{{variables}}`, but no secret ones: a secret reaches the server only in the request's own saved
+messages, sent when the session opens. Everything the agent reads is masked like any response.
+
+A client has at most three sessions open, and each belongs to the client that opened it: no other agent reads it, and
+no agent reaches the sessions you open in a window. A session closes by itself after the request's stream limit (ten
+minutes at most), and when the window closes.
+
+While sessions are open, the **Agents** popover lists them, with the client and when each closes. **Stop** closes one
+now; it is recorded in history like any other.
+
+<Shot id="ai-agents-sessions" alt="The Agents popover: Claude Code with one call, an open session on realtime/order-updates with the time it closes and a Stop button, and the open_session call under Recent calls" />
+
 ## Workspace rules
 
 **Workspace Settings › Agents** (from the workspace menu at the foot of the sidebar, **Workspace Settings…**) sets
@@ -248,6 +285,10 @@ yourself are trusted.
 - **Your secrets on someone else's host.** An agent's send that redirects to a host the workspace doesn't use drops
   its credential headers on the way.
 
+Because a secret is masked wherever it appears, a secret that is an ordinary word hides that word everywhere agents
+read, and one of fewer than four characters can't be masked at all. The variable editor warns while you type such a
+value; see [Secrets](/docs/workspaces/secrets#choose-a-value-agents-cant-mistake).
+
 ## On its own
 
 When the app doesn't have the workspace open, or with `--headless`, `echolot mcp serve` serves the workspace itself
@@ -268,10 +309,17 @@ the policy; `--trust-workspace-policy` lets them loosen it too. See [`echolot mc
 echolot mcp serve ~/Alpenglow.echolot --policy readonly --toolsets requests,history
 ```
 
+**When the app opens the workspace later.** A client doesn't need to reconnect: the command keeps looking for the app,
+and once it has the workspace open with agents on, the client's next calls go through the app, where you approve
+them. The client is told that its tool list changed, since the app's **Settings › Agents** decides it. What lived in
+the command on its own stays there: response handles, open sessions and **Allow for This Session** answers. With
+`--headless`, the command never hands over.
+
 ## Troubleshooting
 
 - **The client connects but nothing asks you, and changes are refused.** The command is serving on its own: open the
-  workspace in Echolot and turn on **Settings › Agents › Let agents use open workspaces**, then reconnect the client.
+  workspace in Echolot and turn on **Settings › Agents › Let agents use open workspaces**. The client moves to the app
+  within a few seconds. If it was started with `--headless`, reconnect it without that option.
 - **The client gets no tools at all.** **Agents may use this workspace** is off in Workspace Settings › Agents, or
   you turned the client's switch off in the Agents popover.
 - **A tool the agent needs is missing.** Turn on its toolset in **Settings › Agents › Tools for agents** and

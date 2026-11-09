@@ -553,6 +553,7 @@ to = "signin.run"
 | `[mcp]` | 把流程作为工具提供给智能体：`tool`（它的名称）和 `description`。 |
 | `[schedule]` | 按计划运行：`every-minutes`，或 `cron`（例如 `"0 6 * * *"`），以及 `environment`，即它的运行所用的环境（省略时为窗口的环境，绝不会是受保护的环境）。 |
 | `[webhook]` | 在请求到达时运行：`method`（默认 `POST`）、`path` 和 `environment`，与计划相同。 |
+| `[webhook.signature]` | 让发送方的签名代替令牌：`header`、`secret`（单个 `{{variable}}`）、`algorithm`（`sha256`、`sha512` 或 `sha1`；默认 `sha256`）、`encoding`（`hex` 或 `base64`；默认 `hex`）和 `prefix`（摘要前的文本，例如 `sha256=`）。 |
 | `[[inputs]]` | 它的输入：`name`、`type`（`any`、`text`、`number`、`bool`、`object`、`list`、`secret`）、`description`、`default`、`required`。 |
 | `[[blocks]]` | 它的块：`id`、`kind`、`title`、`position`（画布上的 `[x, y]`）、`paused`、`color`，以及带有该种类设置的 `[blocks.settings]`。 |
 | `[[wires]]` | 连线：`from` 和 `to`，各为 `block.port`。 |

@@ -260,6 +260,15 @@ Ohne Schlüsselbund (Linux, CI oder `ECHOLOT_KEYCHAIN=0`) liest das Tool Secrets
 Secret-Einstellungen deiner CI fest. Siehe [CI](/docs/cli/ci).
 
 </Accordion>
+<Accordion title="macOS fragt, ob Echolot oder echolot vertrauliche Informationen verwenden darf">
+
+Die App und das Befehlszeilentool von echolot.dev teilen ihre Einträge im Schlüsselbund und fragen nicht. Aus dem
+Quellcode gebaute Builds und die Version aus dem App Store bewahren Secrets im Anmelde-Schlüsselbund auf, wo macOS
+einmal pro Arbeitsbereich fragt, bevor das andere Programm einen Eintrag liest: Wähle **Immer erlauben**. Setze in der
+CI `CI` oder `ECHOLOT_KEYCHAIN=0`, damit das Tool nie auf die Frage wartet. Siehe
+[Secrets](/docs/workspaces/secrets#where-the-values-live).
+
+</Accordion>
 <Accordion title="Echolot konnte seinen Speicher unter … nicht anlegen">
 
 Echolot konnte seinen Speicherordner nicht anlegen, meist wegen fehlendem freien Speicherplatz oder fehlenden

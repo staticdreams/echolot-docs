@@ -73,6 +73,29 @@ habituelles. Une clé que le type du message n’a pas est refusée : une faute
 Pour **Inventory › Watch stock**, un appel en streaming serveur, le message nomme les produits à surveiller et la
 réponse est la liste des niveaux de stock envoyés par le serveur.
 
+## Appels en direct [#live-calls]
+
+Un appel en streaming envoie d’ordinaire tous les messages que vous avez écrits d’un coup. Un appel en direct garde le
+stream de la requête ouvert : vous envoyez les messages un par un et voyez les réponses à chacun avant d’écrire le
+suivant. Pour une méthode bidirectionnelle, cela fonctionne comme une conversation ; c’est aussi utile pour un stream
+client que vous voulez alimenter à la main.
+
+1. Dans l’onglet **Message**, cochez **Appel en direct**.
+2. Choisissez **Démarrer l’appel** (<kbd>⌘R</kbd>). L’appel s’ouvre.
+3. Écrivez un message et choisissez **Envoyer le message** (<kbd>⇧⌘↩</kbd>). Modifiez-le et renvoyez-le aussi souvent
+   que vous le voulez.
+4. **Terminer le stream** indique au serveur qu’aucun autre message ne viendra ; ses réponses continuent d’arriver.
+   **Terminer l’appel** (<kbd>⌘R</kbd>) ferme l’appel.
+
+**Messages**, dans le volet de réponse, liste au fil de l’eau ce que vous avez envoyé et ce qui est revenu, avec
+**Tout**, **Envoyé** et **Reçu** et un filtre. Quand l’appel se termine, il figure dans l’historique avec son état,
+comme n’importe quel appel.
+
+<Shot id="requests-grpc-live" alt="Inventory › Count stock en appel en direct : Appel en direct coché, le message pour PCK-TIT-30, Terminer le stream et Envoyer le message, et Messages avec deux messages envoyés, chacun suivi du stock dans trois entrepôts" />
+
+**Inventory › Count stock** est une méthode bidirectionnelle de l’exemple : chaque produit que vous envoyez reçoit en
+retour son stock dans chaque entrepôt.
+
 ## État, métadonnées et trailers [#status-metadata-and-trailers]
 
 gRPC indique comment un appel s’est passé dans son état, qui arrive dans les trailers après les messages. Le résumé de

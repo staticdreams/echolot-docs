@@ -1,6 +1,6 @@
 // The Alpenglow workspace's gRPC side: the Inventory service
 // from examples/specs/inventory.proto on localhost:50051 (plaintext, loopback only).
-// WatchStock streams a dozen stock levels and then ends.
+// WatchStock streams a dozen stock levels and then ends; CountStock answers each product the client sends.
 // Usage: bun run grpc   (in examples/servers, after bun install)
 import * as grpc from '@grpc/grpc-js'
 import * as loader from '@grpc/proto-loader'
@@ -33,6 +33,15 @@ server.addService(proto.alpenglow.inventory.v1.Inventory.service, {
       }
     }, 250)
     call.on('cancelled', () => clearInterval(timer))
+  },
+  // Two-way: every product the client sends gets its level in each warehouse back; the call ends when the client ends.
+  CountStock: (call: grpc.ServerDuplexStream<{ sku: string }, unknown>) => {
+    const levels = { 'TNT-MH-2P': [42, 17, 6], 'PCK-TIT-30': [18, 9, 0] } as Record<string, number[]>
+    call.on('data', ({ sku }) => {
+      const counts = levels[sku] ?? [3, 0, 1]
+      warehouses.forEach((w, i) => call.write({ sku, warehouse: w.id, available: counts[i] }))
+    })
+    call.on('end', () => call.end())
   },
   Reserve: (_call: unknown, done: grpc.sendUnaryData<unknown>) =>
     done(null, { id: 'res_5Tq8Vw', expires_at: new Date(Date.now() + 15 * 60_000).toISOString() }),

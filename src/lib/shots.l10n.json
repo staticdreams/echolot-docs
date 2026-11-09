@@ -1,5 +1,9 @@
 {
   "de": {
+    "ai-agents-sessions": {
+      "width": 442,
+      "height": 230
+    },
     "ai-echo-screen": {
       "width": 1016,
       "height": 60
@@ -7,6 +11,10 @@
     "ai-script-proposal": {
       "width": 670,
       "height": 430
+    },
+    "flows-webhook-signature": {
+      "width": 310,
+      "height": 548
     },
     "get-started-command-palette": {
       "width": 900,
@@ -49,6 +57,10 @@
       "height": 556
     },
     "requests-graphql-query": {
+      "width": 1200,
+      "height": 775
+    },
+    "requests-grpc-live": {
       "width": 1200,
       "height": 775
     },
@@ -147,6 +159,10 @@
     "workspaces-history-page": {
       "width": 1200,
       "height": 775
+    },
+    "workspaces-secret-advice": {
+      "width": 1004,
+      "height": 578
     },
     "workspaces-settings-storage": {
       "width": 900,
@@ -162,6 +178,10 @@
     }
   },
   "es": {
+    "ai-agents-sessions": {
+      "width": 442,
+      "height": 230
+    },
     "ai-echo-screen": {
       "width": 1016,
       "height": 60
@@ -169,6 +189,10 @@
     "ai-script-proposal": {
       "width": 670,
       "height": 430
+    },
+    "flows-webhook-signature": {
+      "width": 310,
+      "height": 520
     },
     "get-started-command-palette": {
       "width": 900,
@@ -211,6 +235,10 @@
       "height": 556
     },
     "requests-graphql-query": {
+      "width": 1200,
+      "height": 775
+    },
+    "requests-grpc-live": {
       "width": 1200,
       "height": 775
     },
@@ -309,6 +337,10 @@
     "workspaces-history-page": {
       "width": 1200,
       "height": 775
+    },
+    "workspaces-secret-advice": {
+      "width": 1004,
+      "height": 578
     },
     "workspaces-settings-storage": {
       "width": 900,
@@ -324,6 +356,10 @@
     }
   },
   "fr": {
+    "ai-agents-sessions": {
+      "width": 442,
+      "height": 230
+    },
     "ai-echo-screen": {
       "width": 1016,
       "height": 60
@@ -331,6 +367,10 @@
     "ai-script-proposal": {
       "width": 670,
       "height": 430
+    },
+    "flows-webhook-signature": {
+      "width": 310,
+      "height": 520
     },
     "get-started-command-palette": {
       "width": 900,
@@ -373,6 +413,10 @@
       "height": 556
     },
     "requests-graphql-query": {
+      "width": 1200,
+      "height": 775
+    },
+    "requests-grpc-live": {
       "width": 1200,
       "height": 775
     },
@@ -471,6 +515,10 @@
     "workspaces-history-page": {
       "width": 1200,
       "height": 775
+    },
+    "workspaces-secret-advice": {
+      "width": 1004,
+      "height": 578
     },
     "workspaces-settings-storage": {
       "width": 900,
@@ -486,6 +534,10 @@
     }
   },
   "ja": {
+    "ai-agents-sessions": {
+      "width": 442,
+      "height": 230
+    },
     "ai-echo-screen": {
       "width": 1016,
       "height": 60
@@ -493,6 +545,10 @@
     "ai-script-proposal": {
       "width": 670,
       "height": 430
+    },
+    "flows-webhook-signature": {
+      "width": 310,
+      "height": 506
     },
     "get-started-command-palette": {
       "width": 900,
@@ -535,6 +591,10 @@
       "height": 556
     },
     "requests-graphql-query": {
+      "width": 1200,
+      "height": 775
+    },
+    "requests-grpc-live": {
       "width": 1200,
       "height": 775
     },
@@ -633,6 +693,10 @@
     "workspaces-history-page": {
       "width": 1200,
       "height": 775
+    },
+    "workspaces-secret-advice": {
+      "width": 1004,
+      "height": 545
     },
     "workspaces-settings-storage": {
       "width": 900,
@@ -648,6 +712,10 @@
     }
   },
   "ko": {
+    "ai-agents-sessions": {
+      "width": 442,
+      "height": 230
+    },
     "ai-echo-screen": {
       "width": 1016,
       "height": 60
@@ -655,6 +723,10 @@
     "ai-script-proposal": {
       "width": 670,
       "height": 430
+    },
+    "flows-webhook-signature": {
+      "width": 310,
+      "height": 493
     },
     "get-started-command-palette": {
       "width": 900,
@@ -697,6 +769,10 @@
       "height": 556
     },
     "requests-graphql-query": {
+      "width": 1200,
+      "height": 775
+    },
+    "requests-grpc-live": {
       "width": 1200,
       "height": 775
     },
@@ -795,6 +871,10 @@
     "workspaces-history-page": {
       "width": 1200,
       "height": 775
+    },
+    "workspaces-secret-advice": {
+      "width": 1004,
+      "height": 545
     },
     "workspaces-settings-storage": {
       "width": 900,
@@ -810,6 +890,10 @@
     }
   },
   "ru": {
+    "ai-agents-sessions": {
+      "width": 442,
+      "height": 230
+    },
     "ai-echo-screen": {
       "width": 1016,
       "height": 60
@@ -817,6 +901,10 @@
     "ai-script-proposal": {
       "width": 670,
       "height": 430
+    },
+    "flows-webhook-signature": {
+      "width": 310,
+      "height": 534
     },
     "get-started-command-palette": {
       "width": 900,
@@ -859,6 +947,10 @@
       "height": 556
     },
     "requests-graphql-query": {
+      "width": 1200,
+      "height": 775
+    },
+    "requests-grpc-live": {
       "width": 1200,
       "height": 775
     },
@@ -957,6 +1049,10 @@
     "workspaces-history-page": {
       "width": 1200,
       "height": 775
+    },
+    "workspaces-secret-advice": {
+      "width": 1004,
+      "height": 578
     },
     "workspaces-settings-storage": {
       "width": 900,
@@ -972,6 +1068,10 @@
     }
   },
   "zh": {
+    "ai-agents-sessions": {
+      "width": 442,
+      "height": 230
+    },
     "ai-echo-screen": {
       "width": 1016,
       "height": 60
@@ -979,6 +1079,10 @@
     "ai-script-proposal": {
       "width": 670,
       "height": 430
+    },
+    "flows-webhook-signature": {
+      "width": 310,
+      "height": 478
     },
     "get-started-command-palette": {
       "width": 900,
@@ -1021,6 +1125,10 @@
       "height": 556
     },
     "requests-graphql-query": {
+      "width": 1200,
+      "height": 775
+    },
+    "requests-grpc-live": {
       "width": 1200,
       "height": 775
     },
@@ -1119,6 +1227,10 @@
     "workspaces-history-page": {
       "width": 1200,
       "height": 775
+    },
+    "workspaces-secret-advice": {
+      "width": 1004,
+      "height": 545
     },
     "workspaces-settings-storage": {
       "width": 900,

@@ -206,7 +206,8 @@ section 3.3.
   app's `changelog.json`, which carries its own translations.
 - **Screenshots** in a language: `tools/drive.ts <lang> [scene…]` launches the Debug build in that language
   (`-AppleLanguages`) with the Alpenglow workspace and captures each scene in `tools/scenes.ts`, light and dark, into
-  `.work/captures/<lang>/`; `tools/shots.ts --lang <lang>` crops them with the same boxes as English into
+  `.work/captures/<lang>/`; `tools/shots.ts --lang <lang>` crops them with the same boxes as English (or a box of
+  the language's own, `crops` in `shots/*.json`, where longer words move a popover or reflow an inspector) into
   `public/shots/<lang>/` and `src/lib/shots.l10n.json`. `<Shot>` shows the reader's language when it has the shot, else
   the English one. Scenes are locale-proof: requests open through ⌘K by their English names, tabs and menu items are
   found by place. `tools/capture-all.sh <lang…>` runs every scene. Scenes that need hover, other apps (Terminal,

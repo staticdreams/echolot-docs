@@ -31,14 +31,19 @@ description: "Установите команду echolot и узнайте, ч�
   </Tab>
   <Tab value="Zip со страницы релизов">
     У каждого релиза есть отдельный инструмент, `echolot-<version>-macos.zip`, на
-    [странице релизов](https://github.com/staticdreams/echolot-public/releases). В нём один файл, `echolot`,
-    подписанный и нотаризованный, как приложение. Распакуйте его и переместите в папку из `PATH`:
+    [странице релизов](https://github.com/staticdreams/echolot-public/releases). В нём `EcholotCLI.app` — пакет
+    инструмента, подписанный и нотаризованный, как приложение, — и `echolot`, ссылка на инструмент внутри него.
+    Держите их вместе: в пакете лежит то, что позволяет инструменту пользоваться элементами Связки ключей приложения, и
+    без него инструмент не запускается. Распакуйте оба в отдельную папку и сошлитесь на `echolot` из папки в `PATH`:
 
     ```sh
-    unzip echolot-0.5.0-macos.zip
-    sudo mv echolot /usr/local/bin/
+    sudo mkdir -p /usr/local/lib/echolot
+    sudo unzip -o echolot-0.9.0-macos.zip -d /usr/local/lib/echolot
+    sudo ln -sf /usr/local/lib/echolot/echolot /usr/local/bin/echolot
     echolot --version
     ```
+
+    На раннере CI распакуйте его в папку и добавьте эту папку в `PATH`; см. [CI](/docs/cli/ci).
 
     Используйте zip на Mac без приложения, на раннере CI или с версией из App Store.
   </Tab>

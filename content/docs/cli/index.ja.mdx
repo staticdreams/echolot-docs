@@ -29,14 +29,19 @@ description: "echolotコマンドのインストール方法と、すべての�
   </Tab>
   <Tab value="リリースのzipから">
     すべてのリリースには、ツール単体の `echolot-<version>-macos.zip` が
-    [リリースページ](https://github.com/staticdreams/echolot-public/releases)に用意されています。中身は `echolot` ファイル1つで、アプリと同様に
-    署名と公証が済んでいます。展開して、`PATH` 上のフォルダに移動します。
+    [リリースページ](https://github.com/staticdreams/echolot-public/releases)に用意されています。中身は、アプリと同様に署名と公証が済んだ
+    ツールのバンドル `EcholotCLI.app` と、その中のツールへのリンク `echolot` です。この2つは一緒にしておいてください。バンドルには、ツールが
+    アプリのキーチェーン項目を共有するためのものが入っていて、ツールはバンドルなしでは起動しません。両方を専用のフォルダに展開し、`PATH` 上の
+    フォルダから `echolot` へのリンクを作ります。
 
     ```sh
-    unzip echolot-0.5.0-macos.zip
-    sudo mv echolot /usr/local/bin/
+    sudo mkdir -p /usr/local/lib/echolot
+    sudo unzip -o echolot-0.9.0-macos.zip -d /usr/local/lib/echolot
+    sudo ln -sf /usr/local/lib/echolot/echolot /usr/local/bin/echolot
     echolot --version
     ```
+
+    CIランナーでは、フォルダに展開してそのフォルダを `PATH` に追加します。[CI](/docs/cli/ci)を参照してください。
 
     アプリのないMac、CIランナー、Mac App Store版では、このzipを使ってください。
   </Tab>

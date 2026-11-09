@@ -6,6 +6,8 @@ service Inventory {
   rpc ListWarehouses (ListWarehousesRequest) returns (ListWarehousesResponse);
   rpc WatchStock (WatchStockRequest) returns (stream StockLevel);
   rpc Reserve (ReserveRequest) returns (Reservation);
+  // Send a product at a time; each answer is its level in every warehouse.
+  rpc CountStock (stream CountRequest) returns (stream StockLevel);
 }
 
 message ListWarehousesRequest {}
@@ -28,6 +30,10 @@ message StockLevel {
   string sku = 1;
   string warehouse = 2;
   int32 available = 3;
+}
+
+message CountRequest {
+  string sku = 1;
 }
 
 message ReserveRequest {

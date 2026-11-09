@@ -30,13 +30,18 @@ description: "echolot 명령을 설치하고, 모든 명령이 공유하는 비�
   <Tab value="릴리스의 Zip">
     모든 릴리스에는 도구만 담은 `echolot-<version>-macos.zip`이 있습니다.
     [릴리스 페이지](https://github.com/staticdreams/echolot-public/releases)에서 받을 수 있습니다. 이 파일에는 앱과 마찬가지로
-    서명 및 공증된 `echolot` 파일 하나가 들어 있습니다. 압축을 풀고 `PATH`에 있는 폴더로 옮깁니다.
+    서명 및 공증된 도구의 번들 `EcholotCLI.app`과, 그 안의 도구를 가리키는 링크 `echolot`이 들어 있습니다. 둘은 함께 두십시오.
+    도구가 앱의 키체인 항목을 공유할 수 있게 해 주는 것이 번들에 들어 있어, 번들 없이는 도구가 시작되지 않습니다. 둘 다 전용 폴더에
+    압축을 풀고 `PATH`에 있는 폴더에 `echolot` 링크를 만듭니다.
 
     ```sh
-    unzip echolot-0.5.0-macos.zip
-    sudo mv echolot /usr/local/bin/
+    sudo mkdir -p /usr/local/lib/echolot
+    sudo unzip -o echolot-0.9.0-macos.zip -d /usr/local/lib/echolot
+    sudo ln -sf /usr/local/lib/echolot/echolot /usr/local/bin/echolot
     echolot --version
     ```
+
+    CI 러너에서는 폴더에 압축을 풀고 그 폴더를 `PATH`에 추가합니다. [CI](/docs/cli/ci)를 참조하십시오.
 
     앱이 없는 Mac, CI 러너, App Store 버전에서는 이 zip을 사용합니다.
   </Tab>

@@ -29,14 +29,19 @@ workspace to AI agents over MCP. It reads the same workspace files as the app, s
   </Tab>
   <Tab value="Zip from the releases">
     Every release has the tool on its own, `echolot-<version>-macos.zip`, on
-    [the releases page](https://github.com/staticdreams/echolot-public/releases). It holds one file, `echolot`,
-    signed and notarized like the app. Unzip it and move it to a folder on your `PATH`:
+    [the releases page](https://github.com/staticdreams/echolot-public/releases). It holds `EcholotCLI.app`, the
+    tool's bundle, signed and notarized like the app, and `echolot`, a link to the tool inside it. Keep the two
+    together: the bundle carries what lets the tool share the app's Keychain items, and the tool doesn't start
+    without it. Unzip both into a folder of their own and link `echolot` from a folder on your `PATH`:
 
     ```sh
-    unzip echolot-0.5.0-macos.zip
-    sudo mv echolot /usr/local/bin/
+    sudo mkdir -p /usr/local/lib/echolot
+    sudo unzip -o echolot-0.9.0-macos.zip -d /usr/local/lib/echolot
+    sudo ln -sf /usr/local/lib/echolot/echolot /usr/local/bin/echolot
     echolot --version
     ```
+
+    On a CI runner, unzip it into a folder and add that folder to `PATH`; see [CI](/docs/cli/ci).
 
     Use the zip on a Mac without the app, on a CI runner, or with the App Store edition.
   </Tab>

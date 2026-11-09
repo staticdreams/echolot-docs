@@ -580,6 +580,7 @@ to = "signin.run"
 | `[mcp]` | Bietet den Flow Agenten als Tool an: `tool` (sein Name) und `description`. |
 | `[schedule]` | Führt ihn nach einem Zeitplan aus: `every-minutes` oder `cron` (etwa `"0 6 * * *"`), und `environment`, die Umgebung, die seine Durchläufe nutzen (weggelassen die des Fensters, nie eine geschützte). |
 | `[webhook]` | Führt ihn aus, wenn eine Anfrage eintrifft: `method` (Standard `POST`), `path` und `environment`, wie bei einem Zeitplan. |
+| `[webhook.signature]` | Lässt die Signatur des Absenders an die Stelle des Tokens treten: `header`, `secret` (eine einzelne `{{variable}}`), `algorithm` (`sha256`, `sha512` oder `sha1`; Standard `sha256`), `encoding` (`hex` oder `base64`; Standard `hex`) und `prefix` (der Text vor dem Digest, etwa `sha256=`). |
 | `[[inputs]]` | Seine Eingaben: `name`, `type` (`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
 | `[[blocks]]` | Seine Blöcke: `id`, `kind`, `title`, `position` (`[x, y]` auf der Arbeitsfläche), `paused`, `color` und `[blocks.settings]` mit den Einstellungen der Art. |
 | `[[wires]]` | Verbindungen: `from` und `to`, jeweils `block.port`. |

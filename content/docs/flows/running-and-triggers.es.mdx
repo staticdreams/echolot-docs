@@ -194,6 +194,36 @@ curl -X POST http://127.0.0.1:52817/order-status \
   -H "Authorization: Bearer <token>"
 ```
 
+#### Firmado por el remitente [#signed-by-the-sender]
+
+Servicios como GitHub o Shopify no pueden enviar el token de Echolot, pero firman cada entrega: una cabecera lleva un
+HMAC del cuerpo tal cual, hecho con un secreto que compartes con ellos. Un flujo que comprueba esa firma acepta sus
+entregas sin el token.
+
+1. Guarda el secreto compartido en una [variable secreta](/docs/workspaces/secrets), como `webhook_secret`.
+2. En **Webhook**, marca **Firmado por el remitente**.
+3. Rellena la **Cabecera** en la que firma el remitente (como `X-Hub-Signature-256`), el **Secreto** como esa variable
+   (`{{webhook_secret}}`: nunca el valor, porque los archivos de flujo se comparten), el algoritmo de la **Firma**
+   (**HMAC-SHA256**, **HMAC-SHA512** o **HMAC-SHA1**) y su codificación (**Hex** o **Base64**), y el **Prefijo** que
+   el remitente escribe antes del resumen, si lo hay (`sha256=` en GitHub).
+
+<Shot id="flows-webhook-signature" alt="Los activadores del bloque Inicio: Webhook marcado con POST y /order-status, y Firmado por el remitente con la cabecera X-Hub-Signature-256, el secreto {{webhook_secret}}, HMAC-SHA256, Hex y el prefijo sha256=" />
+
+Una entrega sin el token entra solo cuando exactamente un flujo permitido responde a su método y su ruta, ese flujo
+está firmado y la cabecera coincide con el cuerpo. El secreto se lee de donde se leen las variables de la ejecución:
+el entorno del activador, el espacio de trabajo y las variables globales. Todo lo demás recibe el mismo `401` que un
+token que falta, así que quien no tiene ni lo uno ni lo otro no averigua nada de tus flujos. Una entrega que lleva el
+token entra como antes, esté firmada o no. La app y `echolot flow serve` comprueban las firmas de la misma forma.
+
+Para probar un flujo firmado, firma tú mismo un cuerpo:
+
+```sh
+body='{"order": "ord_7Hk2Lw"}'
+signature=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" -hex | sed 's/.* //')
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "X-Hub-Signature-256: sha256=$signature" -H "Content-Type: application/json" -d "$body"
+```
+
 **Order status on webhook** inicia sesión, obtiene el pedido y responde con él. La consulta y las claves de un cuerpo
 JSON rellenan las entradas del flujo que tienen el mismo nombre; las demás claves se omiten. Una entrada llamada `body`
 recibe el cuerpo entero. Así, un flujo con una entrada `order` acepta `?order=ord_7Hk2Lw` o `{"order": "ord_7Hk2Lw"}`.
@@ -202,7 +232,7 @@ La ejecución usa el [entorno](#where-triggered-runs-send) del activador.
 | Respuesta | Cuándo |
 | --- | --- |
 | `200` con la salida como JSON | La ejecución se ha superado. El cuerpo es lo que ha recibido el bloque Salida, o `null`. |
-| `401` | Falta el token o es incorrecto. |
+| `401` | Falta el token o es incorrecto, y ningún flujo firmado aceptó la firma de la entrega. |
 | `404` | Ningún flujo permitido responde a ese método y esa ruta; el error enumera los que sí. |
 | `409` | La ejecución no se inició: el entorno de la ventana está protegido, no hay entorno elegido para un flujo que lo necesita, o más de un flujo responde a ese método y esa ruta. El cuerpo dice cuál. |
 | `413` | El cuerpo supera los 8 MB. El flujo no se ejecuta. |

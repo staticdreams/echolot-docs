@@ -18,7 +18,8 @@ Un client lance `echolot mcp serve` avec le chemin d’un espace de travail. La 
   la demandent dans une feuille, et chaque appel apparaît sous **Agents** dans l’en-tête de page.
 - **Sinon** (l’app est fermée, l’espace de travail n’est pas ouvert ou les agents sont désactivés), la commande sert
   l’espace de travail seule. Personne ne peut être sollicité : ce qui demanderait une approbation est refusé. Voir
-  [En autonomie](#on-its-own).
+  [En autonomie](#on-its-own). Si l’app ouvre l’espace de travail plus tard, avec les agents activés, le client passe
+  par elle en quelques secondes, sans se reconnecter.
 
 Chaque fenêtre ouverte sert son espace de travail sur `127.0.0.1` uniquement, sur un port choisi par le système, et
 seulement aux appelants qui présentent un jeton aléatoire créé pour cette session. La commande trouve la fenêtre grâce
@@ -121,6 +122,7 @@ hôte. Pour l’Assistant intégré, **Réglages › Assistant › Demander avan
 | **Serveurs MCP** | Ajouter, modifier, vérifier et supprimer des serveurs MCP |
 | **Historique** | Ouvrir, comparer et supprimer d’anciens échanges |
 | **Modification des flux** | Lire, dessiner et supprimer des flux ; en essayer un une fois, après votre approbation |
+| **Sessions** | Garder des sessions WebSocket, Socket.IO et MQTT ouvertes d’un appel à l’autre : les ouvrir, lire ce qui arrive, envoyer, les fermer |
 
 Avec les ensembles d’outils par défaut, un agent obtient des outils pour lister, lire, créer, modifier et envoyer des
 requêtes, exécuter des dossiers avec leurs vérifications, lire les réponses morceau par morceau, consulter l’historique,
@@ -134,8 +136,8 @@ reconnectez vos clients pour l’obtenir.
 **Jamais proposés**, dans aucun ensemble d’outils : modifier les règles des agents, le proxy, les certificats,
 l’authentification de l’espace de travail, les réglages de dossier au-delà de leur authentification, l’enregistrement
 de scripts (scripts de requête, de dossier et de mock ; les agents les [proposent](#scripts-agents-propose) à la
-place), et l’authentification qui récupère ou signe avec des secrets (OAuth 2.0, AWS, JWT et similaires). Cela vous
-revient à vous seul.
+place), et l’authentification qui signe avec des secrets ou qui a besoin de votre navigateur ou de votre mot de passe
+(AWS, JWT, OAuth 1.0, les autres types d’autorisation d’OAuth 2.0 et similaires). Cela vous revient à vous seul.
 
 Les agents créent tous les types de requêtes : `create_request` prend un `kind` (`http`, `graphql`, `websocket`,
 `socketio`, `mqtt`, `grpc` ou `mcp`) et la partie propre à ce type, comme une requête GraphQL et ses variables, des
@@ -157,6 +159,14 @@ Les agents peuvent donner aux requêtes et aux dossiers une authentification **J
 requêtes d’un dossier. Les identifiants doivent être des `{{variables}}` ; un agent qui écrit lui-même un mot de passe
 ou un jeton est refusé, si bien qu’ils ne se retrouvent jamais dans un fichier. Une valeur capturée dont le nom
 ressemble à un identifiant (token, password, key…) est conservée comme secret.
+
+Les agents peuvent aussi définir **OAuth 2.0 avec les identifiants client**, le type d’autorisation qui n’a besoin ni
+d’un navigateur ni d’une personne : une URL de jeton, un ID client, le secret client sous forme de `{{variable}}`, et une
+portée (scope) ou une audience si le serveur en veut. Echolot récupère le jeton à l’envoi de la requête et le conserve
+dans le trousseau ; l’agent ne le voit jamais. Pour les agents, l’hôte de l’URL de jeton compte comme un nouvel hôte,
+comme celui de la requête : le premier envoi vers lui vous est donc demandé, et le secret client ne part jamais vers un
+hôte que personne n’a approuvé. Les autres types d’autorisation d’OAuth 2.0 ont besoin d’un navigateur ou de votre mot
+de passe : vous les configurez vous-même.
 
 Les agents démarrent les flux qui leur sont proposés (marqués d’une étincelle dans la liste des flux) avec des outils
 dédiés, chacun après votre approbation du flux dans son état actuel ; voir
@@ -228,6 +238,35 @@ Sans personne à qui demander (`echolot mcp serve` seul, avec des règles qui au
 est enregistré sans être approuvé : il ne s’exécute pas tant que vous n’ouvrez pas l’espace de travail dans Echolot et
 ne cliquez pas sur **Faire confiance aux scripts** au-dessus. Voir [scripts et tests](/docs/requests/scripts-and-tests).
 
+## Sessions que les agents gardent ouvertes [#sessions-agents-keep-open]
+
+Certaines tâches ont besoin d’une connexion qui reste ouverte pendant que l’agent fait autre chose : s’abonner à un
+WebSocket, passer une commande avec une autre requête, puis lire l’événement que cette commande a provoqué. Avec
+l’ensemble d’outils **Sessions** activé (il est désactivé tant que vous ne l’activez pas dans **Réglages › Agents ›
+Outils pour les agents**), les agents obtiennent quatre outils pour les requêtes WebSocket, Socket.IO et MQTT
+enregistrées :
+
+| Outil | Ce qu’il fait |
+| --- | --- |
+| `open_session` | Ouvre la requête : ses messages, émissions ou publications activés partent, et MQTT s’abonne. Renvoie une référence et les premières lignes. |
+| `read_session` | Lit ce qui est arrivé depuis un curseur, en attendant jusqu’à 30 secondes la ligne suivante. Il peut s’en tenir à un événement Socket.IO, à un filtre de topics MQTT ou aux messages qui ont une valeur à un JSONPath. |
+| `send_on_session` | Envoie un message, une émission ou une publication sur la session ouverte. |
+| `close_session` | Ferme la session et l’enregistre dans l’historique avec les vérifications et les captures de la requête, comme le ferait une exécution. |
+
+Ouvrir une session vous est demandé comme le serait l’envoi de la requête. Ce que l’agent y envoie ensuite passe par
+les mêmes approbations ; il peut utiliser des `{{variables}}`, mais pas des variables secrètes : un secret n’atteint le
+serveur que dans les messages enregistrés de la requête elle-même, envoyés à l’ouverture de la session. Tout ce que lit
+l’agent est masqué comme n’importe quelle réponse.
+
+Un client a au plus trois sessions ouvertes, et chacune appartient au client qui l’a ouverte : aucun autre agent ne la
+lit, et aucun agent n’atteint les sessions que vous ouvrez dans une fenêtre. Une session se ferme d’elle-même après la
+limite de stream de la requête (dix minutes au plus), et quand la fenêtre se ferme.
+
+Tant que des sessions sont ouvertes, le popover **Agents** les liste, avec le client et l’heure à laquelle chacune se
+ferme. **Arrêter** en ferme une tout de suite ; elle est enregistrée dans l’historique comme les autres.
+
+<Shot id="ai-agents-sessions" alt="Le popover Agents : Claude Code avec un appel, une session ouverte sur realtime/order-updates avec l’heure de sa fermeture et un bouton Arrêter, et l’appel open_session sous Appels récents" />
+
 ## Règles de l’espace de travail [#workspace-rules]
 
 **Réglages de l’espace de travail › Agents** (depuis le menu de l’espace de travail au bas de la barre latérale,
@@ -268,6 +307,10 @@ travail sont approuvées.
 - **Vos secrets chez un autre hôte.** Quand l’envoi d’un agent est redirigé vers un hôte que l’espace de travail
   n’utilise pas, ses en-têtes d’identifiants sont supprimés en chemin.
 
+Comme un secret est masqué partout où il apparaît, un secret qui est un mot ordinaire cache ce mot partout où lisent
+les agents, et un secret de moins de quatre caractères ne peut pas être masqué du tout. L’éditeur de variables vous
+prévient pendant que vous tapez une telle valeur ; voir [Secrets](/docs/workspaces/secrets#choose-a-value-agents-cant-mistake).
+
 ## En autonomie [#on-its-own]
 
 Quand l’app n’a pas l’espace de travail ouvert, ou avec `--headless`, `echolot mcp serve` sert lui-même l’espace de
@@ -289,11 +332,19 @@ leur permet aussi de l’assouplir. Voir [`echolot mcp`](/docs/cli/mcp).
 echolot mcp serve ~/Alpenglow.echolot --policy readonly --toolsets requests,history
 ```
 
+**Quand l’app ouvre l’espace de travail plus tard.** Le client n’a pas besoin de se reconnecter : la commande continue
+de chercher l’app, et dès que celle-ci a l’espace de travail ouvert avec les agents activés, les appels suivants du
+client passent par l’app, où vous les approuvez. Le client est prévenu que sa liste d’outils a changé, puisque c’est
+**Réglages › Agents** dans l’app qui la décide. Ce qui vivait dans la commande en autonomie y reste : les références
+de réponse, les sessions ouvertes et les réponses **Autoriser pour cette session**. Avec `--headless`, la commande ne
+passe jamais la main.
+
 ## Dépannage [#troubleshooting]
 
 - **Le client se connecte mais rien ne vous demande rien, et les modifications sont refusées.** La commande sert en
   autonomie : ouvrez l’espace de travail dans Echolot et activez **Réglages › Agents › Autoriser les agents à utiliser
-  les espaces de travail ouverts**, puis reconnectez le client.
+  les espaces de travail ouverts**. Le client passe par l’app en quelques secondes. S’il a été lancé avec
+  `--headless`, reconnectez-le sans cette option.
 - **Le client n’obtient aucun outil.** **Les agents peuvent utiliser cet espace de travail** est désactivé dans
   Réglages de l’espace de travail › Agents, ou vous avez désactivé l’interrupteur du client dans le popover Agents.
 - **Il manque un outil dont l’agent a besoin.** Activez son ensemble d’outils dans **Réglages › Agents › Outils pour

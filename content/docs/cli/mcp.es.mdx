@@ -189,7 +189,12 @@ ves lo que hace el agente. `--headless` sirve por su cuenta de todas formas. A t
   app tiene cerrado el espacio de trabajo, las llamadas fallan con un mensaje que dice que lo abras con
   **Ajustes › Agentes** activado.
 
-Si pasa por la app se decide una vez, cuando arranca el comando. Para cambiarlo, vuelve a conectar el cliente.
+**Cuando la app abre el espacio de trabajo más tarde.** Un cliente iniciado mientras la app no tenía abierto el
+espacio de trabajo se sirve por su cuenta hasta que la app lo abre con **Ajustes › Agentes** activado. Entonces sus
+llamadas pasan por la app, en pocos segundos y sin volver a conectarse: al cliente se le avisa de que la lista de
+herramientas ha cambiado, y un mensaje de registro dice lo que ha pasado. Lo que vivía en el comando por su cuenta se
+queda allí: los identificadores de respuesta, las sesiones abiertas y las aprobaciones para la sesión. `--headless`
+nunca cede el control.
 
 **Por su cuenta.** Sin la app no se puede preguntar a nadie, así que se rechaza lo que la política preguntaría:
 
@@ -220,6 +225,7 @@ se permiten sin más. Las claves están en [archivos del espacio de trabajo](/do
 | `mcp-servers` | Añadir, cambiar, comprobar y eliminar servidores MCP. |
 | `history` | Abrir, comparar y eliminar intercambios pasados. |
 | `flow-editing` | Leer, dibujar y eliminar flujos; `try_flow` ejecuta uno una vez después de que la persona lo apruebe (en modo headless nadie puede, así que se rechaza). |
+| `sessions` | Mantener abiertas sesiones WebSocket, Socket.IO y MQTT entre llamadas: `open_session`, `read_session`, `send_on_session` y `close_session`. Mira [Sesiones que los agentes mantienen abiertas](/docs/ai/agents#sessions-agents-keep-open). |
 
 La política de agentes, el proxy, los certificados, los ajustes de autenticación y los scripts nunca se ofrecen a los
 agentes, en ningún conjunto de herramientas.

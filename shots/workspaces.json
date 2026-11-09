@@ -172,5 +172,43 @@
       620,
       600
     ]
+  },
+  {
+    "id": "workspaces-secret-advice",
+    "page": "workspaces/secrets",
+    "scene": "tools/scenes.ts: a copy of Alpenglow with a new secret workspace variable webhook_secret. Environments page, Workspace; click its value field and type an ordinary word (never saved: the field is emptied before the app quits).",
+    "frame": "the Workspace variables card down to the warning",
+    "crop": [
+      284,
+      88,
+      1004,
+      545
+    ],
+    "crops": {
+      "de": [
+        284,
+        88,
+        1004,
+        578
+      ],
+      "es": [
+        284,
+        88,
+        1004,
+        578
+      ],
+      "fr": [
+        284,
+        88,
+        1004,
+        578
+      ],
+      "ru": [
+        284,
+        88,
+        1004,
+        578
+      ]
+    }
   }
 ]

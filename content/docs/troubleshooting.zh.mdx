@@ -195,6 +195,11 @@ Echolot 无法写入请求的文件：磁盘已满、文件夹是只读的，或
 没有钥匙串时（Linux、CI，或 `ECHOLOT_KEYCHAIN=0`），工具会从名为 `ECHOLOT_SECRET_<NAME>` 的环境变量读取机密，例如机密变量 `password` 对应 `ECHOLOT_SECRET_PASSWORD`。请在 CI 的机密设置中设置它们。见 [CI](/docs/cli/ci)。
 
 </Accordion>
+<Accordion title="macOS 询问 Echolot 或 echolot 是否可以使用其机密信息">
+
+App 和来自 echolot.dev 的命令行工具共用各自的钥匙串项，不会询问。从源代码构建的版本和 App Store 版将机密保存在登录钥匙串中，在那里，另一个程序读取某一项之前，macOS 会针对每个工作区询问一次：请选择**始终允许**。在 CI 中，请设置 `CI` 或 `ECHOLOT_KEYCHAIN=0`，这样工具就不会一直等待这个问题的回答。见[机密](/docs/workspaces/secrets#where-the-values-live)。
+
+</Accordion>
 <Accordion title="Echolot 无法在 … 创建存储">
 
 Echolot 无法创建它的储存文件夹，通常是因为可用空间或权限不足。在你重新启动 Echolot 之前，响应会保存在临时文件夹中。请腾出一些空间或修正文件夹的权限（**设置 › 关于 › 响应和历史记录 › 在访达中显示**会显示它的位置），然后重新启动。

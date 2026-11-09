@@ -224,6 +224,14 @@ Echolot이 요청의 파일을 기록할 수 없었습니다. 디스크가 가�
 `password`에는 `ECHOLOT_SECRET_PASSWORD`입니다. CI의 비밀 값 설정에서 지정하세요. [CI](/docs/cli/ci)를 참조하세요.
 
 </Accordion>
+<Accordion title="macOS가 Echolot이나 echolot이 기밀 정보를 사용해도 되는지 묻습니다">
+
+echolot.dev의 앱과 명령줄 도구는 키체인 항목을 공유하므로 묻지 않습니다. 소스에서 만든 빌드와 App Store 에디션은 비밀 값을 로그인
+키체인에 보관하며, 거기서는 다른 프로그램이 항목을 읽기 전에 macOS가 작업 공간마다 한 번 묻습니다. <strong>항상 허용</strong>을 선택하세요.
+CI에서는 `CI`나 `ECHOLOT_KEYCHAIN=0`을 설정해 도구가 이 질문에서 기다리지 않게 하세요. [비밀 값](/docs/workspaces/secrets#where-the-values-live)을
+참조하세요.
+
+</Accordion>
 <Accordion title="Echolot이 …에 저장 공간을 만들 수 없습니다">
 
 Echolot이 저장 폴더를 만들 수 없었으며, 보통 여유 공간이나 권한이 부족해서입니다. Echolot을 다시 시작할 때까지 응답은 임시 폴더에 보관됩니다. 공간을 확보하거나

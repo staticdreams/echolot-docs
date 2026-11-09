@@ -191,7 +191,11 @@ braucht, und du siehst, was der Agent tut. `--headless` stellt trotzdem auf eige
   App den Arbeitsbereich geschlossen hat, schlagen Aufrufe mit einer Meldung fehl, die sagt, dass du ihn mit
   eingeschaltetem **Einstellungen › Agenten** öffnen sollst.
 
-Ob es über die App geht, wird einmal entschieden, wenn der Befehl startet. Zum Wechseln verbinde den Client neu.
+**Wenn die App den Arbeitsbereich später öffnet.** Ein Client, der gestartet wurde, als die App den Arbeitsbereich nicht
+geöffnet hatte, wird auf eigene Faust bedient, bis die App ihn mit eingeschaltetem **Einstellungen › Agenten** öffnet.
+Dann laufen seine Aufrufe über die App, innerhalb weniger Sekunden und ohne neue Verbindung: Der Client erfährt, dass
+sich die Tool-Liste geändert hat, und eine Log-Meldung sagt, was passiert ist. Was im Befehl auf eigene Faust lebte,
+bleibt dort: Handles von Antworten, offene Sitzungen und Genehmigungen für die Sitzung. `--headless` gibt nie ab.
 
 **Auf eigene Faust.** Ohne die App kann niemand gefragt werden, daher wird abgelehnt, wonach die Richtlinie fragen
 würde:
@@ -224,6 +228,7 @@ geschützte Umgebung werden nie ohne Weiteres erlaubt. Die Schlüssel stehen in 
 | `mcp-servers` | MCP-Server hinzufügen, ändern, prüfen und löschen. |
 | `history` | Frühere Austausche öffnen, vergleichen und löschen. |
 | `flow-editing` | Flows lesen, zeichnen und löschen; `try_flow` führt einen einmal aus, nachdem die Person ihn genehmigt hat (headless kann das niemand, daher wird es abgelehnt). |
+| `sessions` | WebSocket-, Socket.IO- und MQTT-Sitzungen über mehrere Aufrufe offen halten: `open_session`, `read_session`, `send_on_session` und `close_session`. Siehe [Sitzungen, die Agenten offen halten](/docs/ai/agents#sessions-agents-keep-open). |
 
 Die Richtlinie für Agenten, der Proxy, Zertifikate, Auth-Einstellungen und Skripte werden Agenten in keinem Tool-Set je
 angeboten.

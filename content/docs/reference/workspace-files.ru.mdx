@@ -582,6 +582,7 @@ to = "signin.run"
 | `[mcp]` | Предлагает сценарий агентам как инструмент: `tool` (его имя) и `description`. |
 | `[schedule]` | Запускает его по расписанию: `every-minutes` или `cron` (например, `"0 6 * * *"`), и `environment` — окружение, которое используют его запуски (если не указано — окружение окна, но никогда не защищённое). |
 | `[webhook]` | Запускает его, когда приходит запрос: `method` (по умолчанию `POST`), `path` и `environment`, как для расписания. |
+| `[webhook.signature]` | Позволяет подписи отправителя заменить токен: `header`, `secret` (одна `{{variable}}`), `algorithm` (`sha256`, `sha512` или `sha1`; по умолчанию `sha256`), `encoding` (`hex` или `base64`; по умолчанию `hex`) и `prefix` (текст перед хешем, например `sha256=`). |
 | `[[inputs]]` | Его входные данные: `name`, `type` (`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
 | `[[blocks]]` | Его блоки: `id`, `kind`, `title`, `position` (`[x, y]` на холсте), `paused`, `color` и `[blocks.settings]` с настройками этого вида. |
 | `[[wires]]` | Связи: `from` и `to`, каждая в виде `block.port`. |

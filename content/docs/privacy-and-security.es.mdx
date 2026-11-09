@@ -22,8 +22,8 @@ lo que hace Echolot, y solo eso.
 Los valores secretos nunca van a los archivos del espacio de trabajo, así que puedes confirmar un espacio de trabajo en
 Git.
 
-- Las **variables secretas** se guardan solo en tu llavero de inicio de sesión. El archivo nombra la variable; su valor
-  está en el llavero. Consulta los [secretos](/docs/workspaces/secrets).
+- Las **variables secretas** se guardan solo en el llavero. El archivo nombra la variable; su valor está en el
+  llavero. Consulta los [secretos](/docs/workspaces/secrets).
 - Las **importaciones** mueven a variables secretas las contraseñas, tokens y claves que encuentran en la autenticación y
   en las cabeceras de credenciales, y el informe de la importación los nombra, nunca sus valores. Consulta
   [Importar](/docs/get-started/importing).
@@ -33,8 +33,9 @@ Git.
 - Las **claves de modelo** del Asistente, los **tokens de inicio de sesión de MCP** y la **contraseña del proxy** también
   están en el llavero. Una contraseña de proxy o una frase de contraseña de un certificado escritas como texto sin
   cifrar muestran una advertencia con **Trasladar al llavero**.
-- La herramienta de línea de comandos lee los mismos elementos del llavero. macOS pregunta una vez antes de que otra app o
-  la otra edición lea un elemento; elige **Permitir siempre**.
+- La herramienta de línea de comandos lee los mismos elementos del llavero. La app y la herramienta de echolot.dev los
+  comparten sin preguntar; la edición de la App Store y las compilaciones hechas desde el código fuente pueden
+  preguntar una vez: elige **Permitir siempre**.
 
 ## Las credenciales se quedan con su servidor [#credentials-stay-with-their-server]
 

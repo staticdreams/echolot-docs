@@ -582,6 +582,7 @@ to = "signin.run"
 | `[mcp]` | Ofrece el flujo a los agentes como una herramienta: `tool` (su nombre) y `description`. |
 | `[schedule]` | Lo ejecuta según una programación: `every-minutes`, o `cron` (como `"0 6 * * *"`), y `environment`, el entorno que usan sus ejecuciones (el de la ventana si se omite, nunca uno protegido). |
 | `[webhook]` | Lo ejecuta cuando llega una solicitud: `method` (`POST` por omisión), `path` y `environment`, como en una programación. |
+| `[webhook.signature]` | Deja que la firma del remitente sustituya al token: `header`, `secret` (una sola `{{variable}}`), `algorithm` (`sha256`, `sha512` o `sha1`; `sha256` por omisión), `encoding` (`hex` o `base64`; `hex` por omisión) y `prefix` (el texto antes del resumen, como `sha256=`). |
 | `[[inputs]]` | Sus entradas: `name`, `type` (`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
 | `[[blocks]]` | Sus bloques: `id`, `kind`, `title`, `position` (`[x, y]` en el lienzo), `paused`, `color` y `[blocks.settings]` con los ajustes del tipo. |
 | `[[wires]]` | Enlaces: `from` y `to`, cada uno `block.port`. |

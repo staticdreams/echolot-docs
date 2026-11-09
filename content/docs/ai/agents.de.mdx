@@ -17,7 +17,8 @@ Ein Client startet `echolot mcp serve` mit dem Pfad eines Arbeitsbereichs. Was d
   dich in einem Blatt, und jeder Aufruf erscheint unter **Agenten** im Seitenkopf.
 - **Andernfalls** (die App ist geschlossen, der Arbeitsbereich ist nicht geöffnet oder Agenten sind ausgeschaltet)
   stellt der Befehl den Arbeitsbereich selbst bereit. Niemand kann gefragt werden, daher wird abgelehnt, was sonst
-  fragen würde. Siehe [Auf eigene Faust](#on-its-own).
+  fragen würde. Siehe [Auf eigene Faust](#on-its-own). Öffnet die App den Arbeitsbereich später mit eingeschalteten
+  Agenten, wechselt der Client innerhalb weniger Sekunden zu ihr, ohne sich neu zu verbinden.
 
 Jedes geöffnete Fenster stellt seinen Arbeitsbereich nur auf `127.0.0.1` bereit, auf einem Port, den das System wählt,
 und nur für Aufrufer, die ein zufälliges, für diese Sitzung erzeugtes Token vorzeigen. Der Befehl findet das Fenster
@@ -119,6 +120,7 @@ erfragt, legst du unter **Einstellungen › Assistent › Vorher fragen** fest.
 | **MCP-Server** | MCP-Server hinzufügen, ändern, prüfen und löschen |
 | **Verlauf** | Frühere Austausche öffnen, vergleichen und löschen |
 | **Flows bearbeiten** | Flows lesen, zeichnen und löschen; einen einmal ausprobieren, nachdem du ihn genehmigt hast |
+| **Sitzungen** | WebSocket-, Socket.IO- und MQTT-Sitzungen über mehrere Aufrufe offen halten: öffnen, lesen, was ankommt, senden, schließen |
 
 Mit den Standard-Tool-Sets bekommt ein Agent Tools, um Anfragen aufzulisten, zu lesen, zu erstellen, zu aktualisieren
 und zu senden, Ordner samt ihren Prüfungen auszuführen, Antworten Stück für Stück zu lesen, den Verlauf anzusehen,
@@ -131,8 +133,9 @@ damit sie ihn bekommen.
 
 **Nie angeboten**, in keinem Tool-Set: die Regeln für Agenten ändern, der Proxy, Zertifikate, die Auth des
 Arbeitsbereichs, Ordnereinstellungen jenseits ihrer Auth, das Sichern von Skripten (Skripte von Anfragen, Ordnern und
-Mocks; Agenten [schlagen sie stattdessen vor](#scripts-agents-propose)) und Auth, die mit Secrets etwas abruft oder
-signiert (OAuth 2.0, AWS, JWT und dergleichen). Das bleibt allein dir überlassen.
+Mocks; Agenten [schlagen sie stattdessen vor](#scripts-agents-propose)) und Auth, die mit Secrets signiert oder deinen
+Browser oder dein Passwort braucht (AWS, JWT, OAuth 1.0, die anderen Grants von OAuth 2.0 und dergleichen). Das bleibt
+allein dir überlassen.
 
 Agenten erstellen jede Art von Anfrage: `create_request` nimmt eine `kind` (`http`, `graphql`, `websocket`, `socketio`,
 `mqtt`, `grpc` oder `mcp`) und den Teil dieser Art, etwa eine GraphQL-Query mit ihren Variablen, WebSocket-Nachrichten,
@@ -155,6 +158,13 @@ Anfragen Werte aus ihren Antworten behalten (das Token einer Anmeldung für die 
 übernehmen. Zugangsdaten müssen `{{variables}}` sein; ein Agent, der selbst ein Passwort oder Token schreibt, wird
 abgelehnt, damit sie nie in einer Datei landen. Ein erfasster Wert, dessen Name nach Zugangsdaten aussieht (Token,
 Passwort, Schlüssel …), wird als Secret aufbewahrt.
+
+Agenten können auch **OAuth 2.0 mit dem Grant „Client-Anmeldedaten“** festlegen, den einen, der keinen Browser und
+keine Person braucht: eine Token-URL, eine Client-ID, das Client-Secret als `{{variable}}` und, falls der Server sie will,
+einen Scope oder eine Audience. Echolot holt das Token, wenn die Anfrage gesendet wird, und bewahrt es im Schlüsselbund
+auf; der Agent sieht es nie. Für Agenten zählt der Host der Token-URL als neuer Host, wie der der Anfrage selbst: Das
+erste Senden dorthin fragt dich, und das Client-Secret geht nie an einen Host, den niemand genehmigt hat. Die anderen
+Grants von OAuth 2.0 brauchen einen Browser oder dein Passwort, die richtest du also selbst ein.
 
 Agenten starten die Flows, die ihnen angeboten werden (in der Liste der Flows mit einem Funkeln markiert), über eigene
 Tools, jeweils nachdem du den Flow in seinem jetzigen Stand genehmigt hast; siehe
@@ -227,6 +237,34 @@ Ist niemand da, den Echolot fragen kann (`echolot mcp serve` allein, mit einer R
 wird das Skript gesichert, ohne dass ihm vertraut wird: Es läuft erst, wenn du den Arbeitsbereich in Echolot öffnest und
 darüber auf **Skripten vertrauen** klickst. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests).
 
+## Sitzungen, die Agenten offen halten [#sessions-agents-keep-open]
+
+Manche Aufgaben brauchen eine Verbindung, die offen bleibt, während der Agent etwas anderes tut: einen WebSocket
+abonnieren, mit einer anderen Anfrage eine Bestellung aufgeben und dann das Ereignis lesen, das die Bestellung ausgelöst
+hat. Ist das Tool-Set **Sitzungen** an (es ist aus, bis du es unter **Einstellungen › Agenten › Tools für Agenten**
+einschaltest), bekommen Agenten vier Tools für gesicherte WebSocket-, Socket.IO- und MQTT-Anfragen:
+
+| Tool | Was es macht |
+| --- | --- |
+| `open_session` | Öffnet die Anfrage: Ihre aktivierten Nachrichten, Emits oder Veröffentlichungen gehen hinaus, und MQTT abonniert. Gibt ein Handle und die ersten Zeilen zurück. |
+| `read_session` | Liest, was seit einem Cursor angekommen ist, und wartet bis zu 30 Sekunden auf die nächste Zeile. Es kann sich auf ein Socket.IO-Ereignis, einen MQTT-Topic-Filter oder Nachrichten mit einem Wert an einem JSONPath beschränken. |
+| `send_on_session` | Sendet eine Nachricht, einen Emit oder eine Veröffentlichung in der offenen Sitzung. |
+| `close_session` | Schließt die Sitzung und hält sie mit den Prüfungen und Erfassungen der Anfrage im Verlauf fest, wie ein Durchlauf es täte. |
+
+Eine Sitzung zu öffnen fragt dich, wie es das Senden der Anfrage täte. Was der Agent danach in ihr sendet, geht durch
+dieselben Genehmigungen; es darf `{{variables}}` nutzen, aber keine geheimen: Ein Secret erreicht den Server nur in den
+eigenen gesicherten Nachrichten der Anfrage, die beim Öffnen der Sitzung gesendet werden. Alles, was der Agent liest,
+ist maskiert wie jede Antwort.
+
+Ein Client hat höchstens drei Sitzungen offen, und jede gehört dem Client, der sie geöffnet hat: Kein anderer Agent
+liest sie, und kein Agent erreicht die Sitzungen, die du in einem Fenster öffnest. Eine Sitzung schließt sich von selbst
+nach dem Stream-Limit der Anfrage (höchstens zehn Minuten) und wenn das Fenster geschlossen wird.
+
+Solange Sitzungen offen sind, listet das Popover **Agenten** sie auf, mit dem Client und wann sich jede schließt.
+**Stoppen** schließt eine sofort; sie wird wie jede andere im Verlauf festgehalten.
+
+<Shot id="ai-agents-sessions" alt="Das Popover „Agenten“: Claude Code mit einem Aufruf, eine offene Sitzung auf realtime/order-updates mit der Zeit, zu der sie sich schließt, und der Taste „Stoppen“, darunter der Aufruf open_session unter „Letzte Aufrufe“" />
+
 ## Regeln des Arbeitsbereichs [#workspace-rules]
 
 **Arbeitsbereichseinstellungen › Agenten** (im Arbeitsbereichsmenü am Fuß der Seitenleiste, **Arbeitsbereichseinstellungen …**)
@@ -263,6 +301,10 @@ zu übernehmen. Regeln, die du selbst in den Arbeitsbereichseinstellungen festle
 - **Deine Secrets auf dem Host eines anderen.** Leitet eine Anfrage eines Agenten auf einen Host um, den der
   Arbeitsbereich nicht nutzt, verliert sie unterwegs ihre Header für Zugangsdaten.
 
+Weil ein Secret überall maskiert wird, wo es vorkommt, verbirgt ein Secret, das ein gewöhnliches Wort ist, dieses Wort
+überall, wo Agenten lesen, und eines mit weniger als vier Zeichen lässt sich gar nicht maskieren. Der Variableneditor
+warnt, während du einen solchen Wert tippst; siehe [Secrets](/docs/workspaces/secrets#choose-a-value-agents-cant-mistake).
+
 ## Auf eigene Faust [#on-its-own]
 
 Hat die App den Arbeitsbereich nicht geöffnet, oder mit `--headless`, stellt `echolot mcp serve` den Arbeitsbereich
@@ -284,11 +326,18 @@ auch lockern. Siehe [`echolot mcp`](/docs/cli/mcp).
 echolot mcp serve ~/Alpenglow.echolot --policy readonly --toolsets requests,history
 ```
 
+**Wenn die App den Arbeitsbereich später öffnet.** Ein Client muss sich nicht neu verbinden: Der Befehl sucht weiter
+nach der App, und sobald sie den Arbeitsbereich mit eingeschalteten Agenten geöffnet hat, laufen die nächsten Aufrufe
+des Clients über die App, wo du sie genehmigst. Der Client erfährt, dass sich seine Tool-Liste geändert hat, denn die
+bestimmt dann **Einstellungen › Agenten** der App. Was im Befehl auf eigene Faust lebte, bleibt dort: Handles von
+Antworten, offene Sitzungen und Antworten mit **Für diese Sitzung erlauben**. Mit `--headless` gibt der Befehl nie ab.
+
 ## Fehlerbehebung [#troubleshooting]
 
 - **Der Client verbindet sich, aber nichts fragt dich, und Änderungen werden abgelehnt.** Der Befehl arbeitet auf eigene
   Faust: Öffne den Arbeitsbereich in Echolot und schalte **Einstellungen › Agenten › Agenten geöffnete Arbeitsbereiche
-  nutzen lassen** ein, dann verbinde den Client neu.
+  nutzen lassen** ein. Der Client wechselt innerhalb weniger Sekunden zur App. Wurde er mit `--headless` gestartet,
+  verbinde ihn ohne diese Option neu.
 - **Der Client bekommt gar keine Tools.** **Agenten dürfen diesen Arbeitsbereich nutzen** ist in den
   Arbeitsbereichseinstellungen › Agenten aus, oder du hast den Schalter des Clients im Popover „Agenten“ ausgeschaltet.
 - **Ein Tool, das der Agent braucht, fehlt.** Schalte sein Tool-Set unter **Einstellungen › Agenten › Tools für Agenten**

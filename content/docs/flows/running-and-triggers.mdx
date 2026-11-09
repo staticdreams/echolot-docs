@@ -186,6 +186,36 @@ curl -X POST http://127.0.0.1:52817/order-status \
   -H "Authorization: Bearer <token>"
 ```
 
+#### Signed by the sender
+
+Services such as GitHub or Shopify can't send Echolot's token, but they sign each delivery: a header holds an HMAC of
+the raw body, made with a secret you share with them. A flow that checks that signature takes their deliveries
+without the token.
+
+1. Keep the shared secret in a [secret variable](/docs/workspaces/secrets), such as `webhook_secret`.
+2. Under **Webhook**, tick **Signed by the sender**.
+3. Fill in the **Header** the sender signs in (such as `X-Hub-Signature-256`), the **Secret** as that variable
+   (`{{webhook_secret}}`: never the value, since flow files are shared), the **Signature**'s algorithm
+   (**HMAC-SHA256**, **HMAC-SHA512** or **HMAC-SHA1**) and encoding (**Hex** or **Base64**), and the **Prefix** the
+   sender writes before the digest, if any (`sha256=` for GitHub).
+
+<Shot id="flows-webhook-signature" alt="The Start block's Triggers: Webhook ticked with POST and /order-status, and Signed by the sender with the header X-Hub-Signature-256, the secret {{webhook_secret}}, HMAC-SHA256, Hex and the prefix sha256=" />
+
+A delivery without the token comes in only when exactly one allowed flow answers its method and path, that flow is
+signed, and the header matches the body. The secret is read where the run's variables are: the trigger's environment,
+the workspace and the global variables. Anything else gets the same `401` as a missing token, so a caller with neither
+learns nothing about your flows. A delivery that carries the token comes in as before, signed or not. The app and
+`echolot flow serve` check signatures alike.
+
+To try a signed flow, sign a body yourself:
+
+```sh
+body='{"order": "ord_7Hk2Lw"}'
+signature=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" -hex | sed 's/.* //')
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "X-Hub-Signature-256: sha256=$signature" -H "Content-Type: application/json" -d "$body"
+```
+
 **Order status on webhook** signs in, gets the order and answers with it. The query and the keys of a JSON body fill
 the flow's inputs of the same names; other keys are left out. An input named `body` gets the whole body. So a flow
 with an input `order` takes `?order=ord_7Hk2Lw` or `{"order": "ord_7Hk2Lw"}`. The run uses the trigger's
@@ -194,7 +224,7 @@ with an input `order` takes `?order=ord_7Hk2Lw` or `{"order": "ord_7Hk2Lw"}`. Th
 | Answer | When |
 | --- | --- |
 | `200` with the output as JSON | The run passed. The body is what the Output block received, or `null`. |
-| `401` | The token is missing or wrong. |
+| `401` | The token is missing or wrong, and no signed flow accepted the delivery's signature. |
 | `404` | No allowed flow answers that method and path; the error lists the ones that do. |
 | `409` | The run wasn't started: the window's environment is protected, no environment is chosen for a flow that needs one, or more than one flow answers the method and path. The body says which. |
 | `413` | The body is larger than 8 MB. The flow is not run. |

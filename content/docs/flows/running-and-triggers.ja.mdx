@@ -143,12 +143,33 @@ curl -X POST http://127.0.0.1:52817/order-status \
   -H "Authorization: Bearer <token>"
 ```
 
+#### 送信元による署名 [#signed-by-the-sender]
+
+GitHubやShopifyのようなサービスは、Echolotのトークンを送れませんが、配信ごとに署名します。ヘッダーに、あなたと共有したシークレットで作った生のボディのHMACが入ります。その署名を検証するフローは、トークンなしでも配信を受け付けます。
+
+1. 共有シークレットを`webhook_secret`のような[シークレット変数](/docs/workspaces/secrets)に保存します。
+2. <strong>Webhook</strong>の下で、<strong>送信元が署名</strong>にチェックを入れます。
+3. 送信元が署名を入れる<strong>ヘッダー</strong>（`X-Hub-Signature-256`など）、その変数としての<strong>シークレット</strong>（`{{webhook_secret}}`。フローのファイルは共有されるため、値は書きません）、<strong>署名</strong>のアルゴリズム（<strong>HMAC-SHA256</strong>、<strong>HMAC-SHA512</strong>、<strong>HMAC-SHA1</strong>）とエンコーディング（<strong>16進数</strong>または<strong>Base64</strong>）、そして送信元がダイジェストの前に書く<strong>プレフィックス</strong>があればそれ（GitHubなら`sha256=`）を入力します。
+
+<Shot id="flows-webhook-signature" alt="開始ブロックのトリガー。POSTと/order-statusでWebhookにチェックが入り、送信元が署名にヘッダーX-Hub-Signature-256、シークレット{{webhook_secret}}、HMAC-SHA256、16進数、プレフィックスsha256=が設定されている" />
+
+トークンのない配信が受け付けられるのは、そのメソッドとパスに応答する許可済みのフローがちょうど1つで、そのフローが署名付きであり、ヘッダーがボディと一致する場合だけです。シークレットは、実行の変数と同じ場所（トリガーの環境、ワークスペース、グローバル変数）から読み取られます。それ以外の場合はトークンがないときと同じ`401`が返るため、どちらも持たない呼び出し元にはフローについて何もわかりません。トークンを含む配信は、署名の有無にかかわらず、これまでどおり受け付けられます。アプリと`echolot flow serve`は同じように署名を検証します。
+
+署名付きのフローを試すには、自分でボディに署名します。
+
+```sh
+body='{"order": "ord_7Hk2Lw"}'
+signature=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" -hex | sed 's/.* //')
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "X-Hub-Signature-256: sha256=$signature" -H "Content-Type: application/json" -d "$body"
+```
+
 <strong>Order status on webhook</strong>は、サインインして注文を取得し、その注文を返します。クエリ文字列とJSONボディのキーは、同じ名前のフローの入力を埋めます。それ以外のキーは使われません。`body`という名前の入力には、ボディ全体が入ります。そのため、入力`order`があるフローは、`?order=ord_7Hk2Lw`または`{"order": "ord_7Hk2Lw"}`を受け取れます。実行にはトリガーの[環境](#where-triggered-runs-send)が使われます。
 
 | 応答 | 条件 |
 | --- | --- |
 | 出力をJSONにした`200` | 実行が成功しました。ボディは出力ブロックが受け取った内容、またはなければ`null`です。 |
-| `401` | トークンがないか、間違っています。 |
+| `401` | トークンがないか間違っていて、配信の署名を受け入れた署名付きのフローもありません。 |
 | `404` | そのメソッドとパスに応答する許可済みのフローがありません。エラーには応答できるものの一覧が入ります。 |
 | `409` | 実行が開始されませんでした。ウインドウの環境が保護されている、環境が必要なフローに環境が選ばれていない、またはそのメソッドとパスに複数のフローが応答します。ボディにどれかが示されます。 |
 | `413` | ボディが8 MBを超えています。フローは実行されません。 |

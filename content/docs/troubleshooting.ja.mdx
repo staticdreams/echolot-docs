@@ -195,6 +195,11 @@ Echolotはリクエストのファイルを書き込めませんでした。デ�
 キーチェーンがない場合（Linux、CI、または`ECHOLOT_KEYCHAIN=0`）、ツールは、`ECHOLOT_SECRET_<NAME>`という名前の環境変数からシークレットを読み取ります。たとえば、シークレット変数`password`には`ECHOLOT_SECRET_PASSWORD`です。CIのシークレット設定で設定してください。[CI](/docs/cli/ci)を参照してください。
 
 </Accordion>
+<Accordion title="Echolotまたはecholotに機密情報の使用を許可するか、macOSに確認される">
+
+アプリとecholot.devのコマンドラインツールはキーチェーンの項目を共有しているため、確認されません。ソースからビルドしたものとApp Store版は、シークレットをログインキーチェーンに保存します。そこではmacOSが、もう一方のプログラムが項目を読み取る前に、ワークスペースごとに1回確認します。**常に許可**を選んでください。CIでは、ツールがこの確認で止まらないように、`CI`または`ECHOLOT_KEYCHAIN=0`を設定します。[シークレット](/docs/workspaces/secrets#where-the-values-live)を参照してください。
+
+</Accordion>
 <Accordion title="Echolotは…にストレージを作成できませんでした">
 
 Echolotはストレージフォルダを作成できませんでした。多くの場合、空き容量またはアクセス権が足りないことが原因です。Echolotを再起動するまで、レスポンスは一時フォルダに保存されます。容量を空けるか、フォルダのアクセス権を修正して（**設定 › 情報 › レスポンスと履歴 › Finderに表示**で場所が分かります）、再起動してください。

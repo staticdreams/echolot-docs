@@ -100,5 +100,61 @@
       670,
       430
     ]
+  },
+  {
+    "id": "ai-agents-sessions",
+    "page": "ai/agents",
+    "scene": "tools/scenes.ts: Alpenglow with -agents.enabled YES and -agentToolsets flows,requests,sessions. A client named Claude Code connects through echolot mcp serve (relayed to the app) and calls open_session on realtime/order-updates; Allow Once on the approval sheet. Then the Agents popover in the page header.",
+    "frame": "the top of the Agents popover: the client, Open sessions with Stop, Recent calls",
+    "crop": [
+      812,
+      58,
+      442,
+      230
+    ],
+    "crops": {
+      "de": [
+        801,
+        58,
+        442,
+        230
+      ],
+      "es": [
+        834,
+        58,
+        442,
+        230
+      ],
+      "fr": [
+        780,
+        58,
+        442,
+        230
+      ],
+      "ja": [
+        845,
+        58,
+        442,
+        230
+      ],
+      "ko": [
+        856,
+        58,
+        442,
+        230
+      ],
+      "ru": [
+        812,
+        58,
+        442,
+        230
+      ],
+      "zh": [
+        866,
+        58,
+        442,
+        230
+      ]
+    }
   }
 ]

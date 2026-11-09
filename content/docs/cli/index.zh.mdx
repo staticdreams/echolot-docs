@@ -25,13 +25,17 @@ description: "安装 echolot 命令，并了解所有命令共有的内容：机
   </Tab>
   <Tab value="来自发行版的 Zip">
     每个发行版都附有单独的工具 `echolot-<version>-macos.zip`，位于[发行版页面](https://github.com/staticdreams/echolot-public/releases)。
-    它只包含一个文件 `echolot`，与 App 一样经过签名和公证。解压后将它移到你 `PATH` 上的某个文件夹：
+    它包含工具的包 `EcholotCLI.app`（与 App 一样经过签名和公证），以及指向包内工具的链接 `echolot`。请把两者放在一起：
+    包中带有让工具共用 App 钥匙串项的内容，没有它，工具无法启动。将两者解压到一个单独的文件夹中，再从你 `PATH` 上的某个文件夹链接 `echolot`：
 
     ```sh
-    unzip echolot-0.5.0-macos.zip
-    sudo mv echolot /usr/local/bin/
+    sudo mkdir -p /usr/local/lib/echolot
+    sudo unzip -o echolot-0.9.0-macos.zip -d /usr/local/lib/echolot
+    sudo ln -sf /usr/local/lib/echolot/echolot /usr/local/bin/echolot
     echolot --version
     ```
+
+    在 CI 运行器上，将它解压到一个文件夹，并把该文件夹加入 `PATH`；参见 [CI](/docs/cli/ci)。
 
     在没有 App 的 Mac 上、CI 运行器上，或配合 App Store 版时，请使用这个 zip。
   </Tab>

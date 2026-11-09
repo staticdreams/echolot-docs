@@ -257,6 +257,15 @@ Sin llavero (Linux, CI o `ECHOLOT_KEYCHAIN=0`), la herramienta lee los secretos 
 ajustes de secretos de tu CI. Consulta [CI](/docs/cli/ci).
 
 </Accordion>
+<Accordion title="macOS pregunta si Echolot o echolot pueden usar su información confidencial">
+
+La app y la herramienta de línea de comandos de echolot.dev comparten sus elementos del llavero y no preguntan. Las
+compilaciones hechas desde el código fuente, y la edición de la App Store, guardan los secretos en el llavero de inicio
+de sesión, donde macOS pregunta una vez por espacio de trabajo antes de que el otro programa lea un elemento: elige
+**Permitir siempre**. En CI, define `CI` o `ECHOLOT_KEYCHAIN=0` para que la herramienta nunca se quede esperando la
+pregunta. Consulta [Secretos](/docs/workspaces/secrets#where-the-values-live).
+
+</Accordion>
 <Accordion title="Echolot no ha podido crear su almacenamiento en …">
 
 Echolot no ha podido crear su carpeta de almacenamiento, normalmente por falta de espacio libre o de permisos. Las

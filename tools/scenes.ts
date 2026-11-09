@@ -1,5 +1,5 @@
 // The screenshot scenes: one function per shot (or a few shots that share a set-up). See tools/drive.ts.
-import { ROOT, WORKSPACE, viewMode, clickAt, secondary, setValue, type, openSettings, settingsPane, clickIndex, pickMenu, rowMenu, scratchWorkspace, scroll, press, launch, open, openAll, requestTab, responseTab, send, shoot, sleep, state, grab, hotkey, tree, windows, run } from './drive'
+import { ROOT, WORKSPACE, viewMode, clickAt, secondary, setValue, type, openSettings, settingsPane, clickIndex, pickMenu, rowMenu, scratchWorkspace, scroll, press, launch, open, openAll, requestTab, responseTab, send, shoot, sleep, state, grab, hotkey, tree, windows, run, type Node } from './drive'
 import { join } from 'node:path'
 import { readFileSync } from 'node:fs'
 
@@ -191,7 +191,136 @@ async function proposeScript(workspace: string) {
   return client
 }
 
+
+// ── Live gRPC calls, signed webhooks, agents' sessions, secret warnings (Nov 9, 2026) ──
+
+/** Alpenglow's Order status on webhook flow, with the sender's signature it accepts instead of the token. */
+const SIGNED_WEBHOOK_FLOW = (flow: string) => flow.replace('path = "/order-status"\n', 'path = "/order-status"\n\n[webhook.signature]\nheader = "X-Hub-Signature-256"\nsecret = "{{webhook_secret}}"\nalgorithm = "sha256"\nencoding = "hex"\nprefix = "sha256="\n')
+/** workspace.toml with a secret variable for the webhook's signing secret (no value on this Mac). */
+const WITH_WEBHOOK_SECRET = () => readFileSync(join(WORKSPACE, 'workspace.toml'), 'utf8').trimEnd() + '\n\n[[variables]]\nname = "webhook_secret"\nsecret = true\n'
+
+/** An MCP client named Claude Code that connects through `echolot mcp serve` (relayed to the app) and makes one call; kill it when done. */
+async function agentCall(workspace: string, name: string, args: object) {
+  const client = Bun.spawn([ECHOLOT_CLI, 'mcp', 'serve', workspace], { stdin: 'pipe', stdout: 'pipe', stderr: 'pipe' })
+  const send = (message: object) => { client.stdin.write(JSON.stringify(message) + '\n'); client.stdin.flush() }
+  send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'Claude Code', version: '1.0' } } })
+  const reader = client.stdout.getReader()
+  let text = ''
+  const deadline = Date.now() + 10_000
+  while (!text.includes('"id":1') && Date.now() < deadline) {
+    const { value, done } = await reader.read()
+    if (done) break
+    text += new TextDecoder().decode(value)
+  }
+  reader.releaseLock()
+  send({ jsonrpc: '2.0', method: 'notifications/initialized' })
+  send({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name, arguments: args } })
+  return client
+}
+
+/**
+ * The Agents button in the page header: the top-level element with a value that the environment menu (with a value of
+ * its own) follows. In some languages the breadcrumb before it has a value too.
+ */
+function agentsButton() {
+  const top = tree().filter((n) => n.depth === 1)
+  return top.find((n, i) => /, Value: /.test(n.text) && /, Value: /.test(top[i + 1]?.text ?? ''))
+}
+
 export const SCENES: Record<string, () => Promise<void>> = {
+  /** Inventory › Count stock as a live call: started, two products sent one at a time, the answers in Messages. */
+  async 'requests-grpc-live'() {
+    const workspace = scratchWorkspace('grpc-live', {})
+    await launch({ workspace })
+    await open('Count stock')
+    await requestTab(1) // Message
+    await sleep(1)
+    let nodes = tree()
+    const method = nodes.findIndex((n) => /, Value: CountStock$/.test(n.text))
+    // Live call: the first unticked box after the method picker.
+    const live = nodes.slice(method).find((n) => /, Value: 0$/.test(n.text))
+    if (!live) throw new Error('no Live call box')
+    clickIndex(live.index)
+    await sleep(1)
+    hotkey('CmdOrCtrl+r') // Start Call
+    await sleep(2.5)
+    const message = (sku: string) => {
+      nodes = tree()
+      const editor = nodes.find((n) => /\{/.test(n.text) && /"sku"/.test(n.text))
+      if (!editor) throw new Error('no message editor')
+      setValue(editor.index, `{\n  "sku": "${sku}"\n}`)
+    }
+    message('TNT-MH-2P')
+    await sleep(0.8)
+    hotkey('Shift+CmdOrCtrl+Return') // Send Message
+    await sleep(2)
+    message('PCK-TIT-30')
+    await sleep(0.8)
+    hotkey('Shift+CmdOrCtrl+Return')
+    await sleep(2)
+    await responseTab(0) // Messages
+    await sleep(1.5)
+    await shoot('requests-grpc-live')
+    hotkey('CmdOrCtrl+r') // End Call
+    await sleep(1)
+  },
+  /** The Start block of Order status on webhook with Signed by the sender on: header, secret, HMAC-SHA256, hex, prefix. */
+  async 'flows-webhook-signature'() {
+    const flow = readFileSync(join(WORKSPACE, 'flows/order-status-webhook.flow.toml'), 'utf8')
+    const workspace = scratchWorkspace('signed-webhook', { 'flows/order-status-webhook.flow.toml': SIGNED_WEBHOOK_FLOW(flow), 'workspace.toml': WITH_WEBHOOK_SECRET() })
+    await launch({ workspace, page: 'flows', height: 896 })
+    await open('Order status on webhook')
+    await sleep(1.5)
+    hotkey('Alt+CmdOrCtrl+0') // Fit
+    await sleep(1.2)
+    clickAt(Number(process.env.START_X ?? 132), Number(process.env.START_Y ?? 458)) // the Start block
+    await sleep(1.5)
+    await shoot('flows-webhook-signature')
+  },
+  /** The Agents popover while Claude Code keeps Realtime › Order updates open: the session with Stop, the client, its calls. */
+  async 'ai-agents-sessions'() {
+    // Ten minutes, so the session is still open for both captures (the request's own limit is shorter).
+    const updates = readFileSync(join(WORKSPACE, 'requests/realtime/order-updates.ws.toml'), 'utf8').trimEnd() + '\n\n[settings]\nstream-limit = 600.0\n'
+    const workspace = scratchWorkspace('agent-sessions', { 'requests/realtime/order-updates.ws.toml': updates })
+    await launch({ workspace, args: ['-agents.enabled', 'YES', '-agentToolsets', 'flows,requests,sessions'] })
+    await sleep(4)
+    const client = await agentCall(workspace, 'open_session', { path: 'realtime/order-updates' })
+    try {
+      // Its saved messages go out when it opens, so the approval sheet asks first: Allow Once is its last button.
+      let sheet: Node[] = []
+      for (let i = 0; i < 20 && !sheet.length; i++) {
+        await sleep(0.5)
+        const nodes = tree()
+        const at = nodes.findIndex((n) => n.text.includes('Claude Code'))
+        if (at >= 0) sheet = nodes.slice(at).filter((n) => n.depth === 2 && /^\S+$/.test(n.text))
+      }
+      if (!sheet.length) throw new Error('the approval sheet did not show')
+      clickIndex(sheet[sheet.length - 1].index)
+      await sleep(4)
+      await shoot('ai-agents-sessions', {
+        prep: async () => { const button = agentsButton(); if (button) clickIndex(button.index); await sleep(1) },
+        post: () => { press('Escape') },
+      })
+    } finally {
+      client.kill()
+      await sleep(1)
+    }
+  },
+  /** Workspace variables with a new secret, webhook_secret, and an ordinary word typed as its value: the warning under it. */
+  async 'workspaces-secret-advice'() {
+    const workspace = scratchWorkspace('secret-advice', { 'workspace.toml': WITH_WEBHOOK_SECRET() })
+    await launch({ workspace, page: 'environments' })
+    await sleep(1.5)
+    clickAt(Number(process.env.SECRET_X ?? 983), Number(process.env.SECRET_Y ?? 523)) // its value field
+    await sleep(0.8)
+    type('breadcrumbs')
+    await sleep(1)
+    await shoot('workspaces-secret-advice')
+    // Typed, never stored: the field emptied before the app quits, so nothing reaches the Keychain.
+    hotkey('CmdOrCtrl+a')
+    press('Delete')
+    await sleep(0.5)
+  },
   /** The editor of a WebSocket route: kind, path, the Open response, what it sends once open, a reply. */
   async 'mocks-route-websocket'() {
     const workspace = scratchWorkspace('mocks-live', { 'mocks/shop-live.toml': MOCK_LIVE })

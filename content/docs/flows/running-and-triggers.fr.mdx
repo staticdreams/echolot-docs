@@ -195,6 +195,37 @@ curl -X POST http://127.0.0.1:52817/order-status \
   -H "Authorization: Bearer <token>"
 ```
 
+#### Signé par l’expéditeur [#signed-by-the-sender]
+
+Des services comme GitHub ou Shopify ne peuvent pas envoyer le jeton d’Echolot, mais ils signent chaque livraison : un
+en-tête contient un HMAC du corps brut, calculé avec un secret que vous partagez avec eux. Un flux qui vérifie cette
+signature accepte leurs livraisons sans le jeton.
+
+1. Gardez le secret partagé dans une [variable secrète](/docs/workspaces/secrets), par exemple `webhook_secret`.
+2. Sous **Webhook**, cochez **Signé par l’expéditeur**.
+3. Renseignez l’**En-tête** dans lequel l’expéditeur signe (par exemple `X-Hub-Signature-256`), le **Secret** sous
+   forme de cette variable (`{{webhook_secret}}` : jamais la valeur, puisque les fichiers de flux sont partagés),
+   l’algorithme de la **Signature** (**HMAC-SHA256**, **HMAC-SHA512** ou **HMAC-SHA1**) et son encodage (**Hex** ou
+   **Base64**), ainsi que le **Préfixe** que l’expéditeur écrit avant l’empreinte, s’il y en a un (`sha256=` pour
+   GitHub).
+
+<Shot id="flows-webhook-signature" alt="Les Déclencheurs du bloc Démarrer : Webhook coché avec POST et /order-status, et Signé par l’expéditeur avec l’en-tête X-Hub-Signature-256, le secret {{webhook_secret}}, HMAC-SHA256, Hex et le préfixe sha256=" />
+
+Une livraison sans le jeton n’est acceptée que si exactement un flux autorisé répond à sa méthode et à son chemin, que
+ce flux est signé et que l’en-tête correspond au corps. Le secret est lu là où le sont les variables de l’exécution :
+l’environnement du déclencheur, l’espace de travail et les variables globales. Tout le reste reçoit le même `401`
+qu’un jeton absent : un appelant qui n’a ni l’un ni l’autre n’apprend donc rien de vos flux. Une livraison qui porte le
+jeton est acceptée comme avant, signée ou non. L’app et `echolot flow serve` vérifient les signatures de la même façon.
+
+Pour essayer un flux signé, signez vous-même un corps :
+
+```sh
+body='{"order": "ord_7Hk2Lw"}'
+signature=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" -hex | sed 's/.* //')
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "X-Hub-Signature-256: sha256=$signature" -H "Content-Type: application/json" -d "$body"
+```
+
 **Order status on webhook** se connecte, récupère la commande et répond avec elle. La chaîne de requête et les clés d’un
 corps JSON renseignent les entrées du flux portant les mêmes noms ; les autres clés sont ignorées. Une entrée nommée
 `body` reçoit tout le corps. Un flux avec une entrée `order` accepte donc `?order=ord_7Hk2Lw` ou
@@ -203,7 +234,7 @@ corps JSON renseignent les entrées du flux portant les mêmes noms ; les autre
 | Réponse | Quand |
 | --- | --- |
 | `200` avec la sortie en JSON | L’exécution a réussi. Le corps est ce que le bloc Sortie a reçu, ou `null`. |
-| `401` | Le jeton est absent ou erroné. |
+| `401` | Le jeton est absent ou erroné, et aucun flux signé n’a accepté la signature de la livraison. |
 | `404` | Aucun flux autorisé ne répond à cette méthode et ce chemin ; l’erreur liste ceux qui répondent. |
 | `409` | L’exécution n’a pas été lancée : l’environnement de la fenêtre est protégé, aucun environnement n’est choisi pour un flux qui en a besoin, ou plusieurs flux répondent à la méthode et au chemin. Le corps dit lequel. |
 | `413` | Le corps dépasse 8 Mo. Le flux n’est pas exécuté. |

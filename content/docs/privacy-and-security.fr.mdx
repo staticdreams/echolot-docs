@@ -23,8 +23,8 @@ chose. Cette page liste ce qu’Echolot fait, et seulement cela.
 Les valeurs secrètes n’entrent jamais dans les fichiers de l’espace de travail : vous pouvez donc valider un espace de
 travail dans Git.
 
-- **Les variables secrètes** sont stockées uniquement dans votre trousseau de session. Le fichier nomme la variable ; sa
-  valeur est dans le trousseau. Voir [Secrets](/docs/workspaces/secrets).
+- **Les variables secrètes** sont stockées uniquement dans le trousseau. Le fichier nomme la variable ; sa valeur est
+  dans le trousseau. Voir [Secrets](/docs/workspaces/secrets).
 - **Les importations** déplacent les mots de passe, jetons et clés qu’elles trouvent dans l’auth et les en-têtes
   d’identification vers des variables secrètes, et le rapport d’importation les nomme, jamais leurs valeurs. Voir
   [Importation](/docs/get-started/importing).
@@ -34,8 +34,9 @@ travail dans Git.
 - **Les clés de modèle** de l’Assistant, les **jetons de connexion MCP** et le **mot de passe du proxy** sont aussi dans
   le trousseau. Un mot de passe de proxy ou une phrase secrète de certificat saisi en clair affiche un avertissement avec
   **Placer dans le trousseau**.
-- L’outil en ligne de commande lit les mêmes éléments du trousseau. macOS demande une fois avant qu’une autre app ou
-  l’autre édition lise un élément ; choisissez **Toujours autoriser**.
+- L’outil en ligne de commande lit les mêmes éléments du trousseau. L’app et l’outil de echolot.dev les partagent sans
+  rien demander ; l’édition App Store et les builds compilées depuis les sources peuvent demander une fois : choisissez
+  **Toujours autoriser**.
 
 ## Les identifiants restent avec leur serveur [#credentials-stay-with-their-server]
 

@@ -7,7 +7,9 @@
 //   bun tools/shots.ts --lang de [<id> …]   a language's captures (.work/captures/de/, from tools/drive.ts) into
 //                                 public/shots/de/ and src/lib/shots.l10n.json
 //
-// A shot request may carry "crop": [x, y, width, height] in points of the window (the capture is 2x).
+// A shot request may carry "crop": [x, y, width, height] in points of the window (the capture is 2x), and "crops":
+// { "<lang>": [x, y, width, height] } for languages whose longer words move what is shown (a popover under a wider
+// header button, an inspector whose text wraps further).
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import sharp from 'sharp'
 
@@ -21,7 +23,8 @@ const outDir = `${root}public/shots${lang ? `/${lang}` : ''}`
 mkdirSync(outDir, { recursive: true })
 const manifestPath = `${root}src/lib/shots${lang ? '.l10n' : ''}.json`
 
-type Request = { id: string; crop?: [number, number, number, number]; cropPx?: [number, number, number, number] }
+type Box = [number, number, number, number]
+type Request = { id: string; crop?: Box; crops?: Record<string, Box>; cropPx?: Box }
 const requests = new Map<string, Request>()
 for (const file of readdirSync(`${root}shots`).filter((f) => f.endsWith('.json'))) {
   for (const r of JSON.parse(readFileSync(`${root}shots/${file}`, 'utf8')) as Request[]) requests.set(r.id, r)
@@ -45,7 +48,7 @@ for (const id of ids) {
     console.warn(`${id}: needs both ${id}-light.png and ${id}-dark.png`)
     continue
   }
-  const crop = requests.get(id)?.crop
+  const crop = (lang ? requests.get(id)?.crops?.[lang] : undefined) ?? requests.get(id)?.crop
   let size = { width: 0, height: 0 }
   for (const [i, mode] of ['light', 'dark'].entries()) {
     let image = sharp(files[i])

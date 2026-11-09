@@ -170,7 +170,9 @@ echolot mcp serve /path/to/Alpenglow.echolot
 - `--env` 仍然有效：未指定环境的工具调用会使用它。
 - App 退出并重新打开后，客户端会在下一次调用时跟随它到新端口。App 关闭了该工作区时，调用会失败，并提示在开启**设置 › 智能体**的情况下打开它。
 
-是否经由 App 只在命令启动时决定一次。要切换，请重新连接客户端。
+**App 之后打开工作区时。** 在 App 没有打开该工作区时启动的客户端，会由命令自行提供服务，直到 App 在开启**设置 › 智能体**的情况下打开该工作区。
+此后，它的调用会在几秒内改为经由 App 进行，无需重新连接：客户端会收到工具列表已更改的通知，一条日志消息也会说明发生了什么。
+命令独立运行时存在的内容仍留在命令中：响应句柄、打开的会话以及本次会话的批准。`--headless` 永远不会移交。
 
 **独立运行。** 没有 App 时，没有人可以询问，所以策略本该询问的操作会被拒绝：
 
@@ -198,6 +200,7 @@ echolot mcp serve /path/to/Alpenglow.echolot
 | `mcp-servers` | 添加、更改、检查和删除 MCP 服务器。 |
 | `history` | 打开、比较和删除过去的交换记录。 |
 | `flow-editing` | 读取、绘制和删除流程；`try_flow` 在用户批准后运行一次（无界面时没有人可以批准，所以会被拒绝）。 |
+| `sessions` | 让 WebSocket、Socket.IO 和 MQTT 会话在多次调用之间保持打开：`open_session`、`read_session`、`send_on_session` 和 `close_session`。参见[智能体保持打开的会话](/docs/ai/agents#sessions-agents-keep-open)。 |
 
 任何工具集都从不向智能体提供智能体策略、代理、证书、认证设置和脚本。
 

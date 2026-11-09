@@ -563,6 +563,7 @@ to = "signin.run"
 | `[mcp]` | フローをツールとしてエージェントに提供します：`tool`（その名前）と`description`。 |
 | `[schedule]` | スケジュールで実行します：`every-minutes`、または`cron`（`"0 6 * * *"`など）、そして実行が使う環境`environment`（省略するとウインドウの環境。保護された環境は使いません）。 |
 | `[webhook]` | リクエストが届いたときに実行します：`method`（デフォルトは`POST`）、`path`、スケジュールと同様の`environment`。 |
+| `[webhook.signature]` | 送信元の署名をトークンの代わりに使えるようにします：`header`、`secret`（1つの`{{variable}}`）、`algorithm`（`sha256`、`sha512`、`sha1`。デフォルトは`sha256`）、`encoding`（`hex`または`base64`。デフォルトは`hex`）、`prefix`（`sha256=`のような、ダイジェストの前のテキスト）。 |
 | `[[inputs]]` | 入力：`name`、`type`（`any`、`text`、`number`、`bool`、`object`、`list`、`secret`）、`description`、`default`、`required`。 |
 | `[[blocks]]` | ブロック：`id`、`kind`、`title`、`position`（キャンバス上の`[x, y]`）、`paused`、`color`、そして種類ごとの設定を持つ`[blocks.settings]`。 |
 | `[[wires]]` | 接続：`from`と`to`。それぞれ`block.port`。 |

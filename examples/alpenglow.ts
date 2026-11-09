@@ -204,6 +204,18 @@ const folders: Folder[] = [
         },
       },
       {
+        slug: 'count-stock',
+        kind: 'grpc',
+        top: {
+          name: 'Count stock',
+          url: '{{grpcURL}}',
+          proto: 'specs/inventory.proto',
+          service: 'alpenglow.inventory.v1.Inventory',
+          rpc: 'CountStock',
+          message: '{\n  "sku": "TNT-MH-2P"\n}',
+        },
+      },
+      {
         slug: 'reserve-stock',
         kind: 'grpc',
         top: {

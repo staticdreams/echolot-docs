@@ -71,6 +71,28 @@ der Nachrichtentyp nicht hat, wird abgelehnt, damit ein Tippfehler nicht unbemer
 Bei **Inventory › Watch stock**, einem Server-Streaming-Aufruf, nennt die Nachricht die zu beobachtenden Produkte, und
 die Antwort ist die Liste der Lagerbestände, die der Server gesendet hat.
 
+## Live-Aufrufe [#live-calls]
+
+Ein Streaming-Aufruf sendet normalerweise alle Nachrichten, die du geschrieben hast, auf einmal. Ein Live-Aufruf hält den
+Stream der Anfrage offen, sodass du Nachrichten einzeln sendest und die Antworten auf jede siehst, bevor du die nächste
+schreibst: Bei einer bidirektionalen Methode funktioniert das wie ein Gespräch, oder bei einem Client-Stream, den du von
+Hand füttern willst.
+
+1. Hake im Tab **Nachricht** die Option **Live-Aufruf** an.
+2. Wähle **Aufruf starten** (<kbd>⌘R</kbd>). Der Aufruf wird geöffnet.
+3. Schreib eine Nachricht und wähle **Nachricht senden** (<kbd>⇧⌘↩</kbd>). Ändere sie und sende sie so oft du willst
+   erneut.
+4. **Stream beenden** sagt dem Server, dass keine Nachrichten mehr kommen; seine Antworten kommen weiterhin an.
+   **Aufruf beenden** (<kbd>⌘R</kbd>) schließt den Aufruf.
+
+**Nachrichten** im Antwortbereich listet laufend auf, was du gesendet hast und was zurückkam, mit **Alle**, **Gesendet**
+und **Empfangen** und einem Filter. Wenn der Aufruf endet, steht er mit seinem Status im Verlauf, wie jeder Aufruf.
+
+<Shot id="requests-grpc-live" alt="Inventory › Count stock als Live-Aufruf: „Live-Aufruf“ angehakt, die Nachricht für PCK-TIT-30, „Stream beenden“ und „Nachricht senden“, und „Nachrichten“ mit zwei gesendeten Nachrichten, auf die jeweils der Bestand in drei Lagern folgt" />
+
+**Inventory › Count stock** ist eine bidirektionale Methode des Beispiels: Für jedes Produkt, das du sendest, kommt sein
+Bestand in jedem Lager zurück.
+
 ## Status, Metadaten und Trailer [#status-metadata-and-trailers]
 
 gRPC meldet den Verlauf eines Aufrufs in seinem Status, der nach den Nachrichten in den Trailern ankommt. Die

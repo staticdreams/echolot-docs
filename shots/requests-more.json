@@ -54,6 +54,12 @@
     "frame": "window"
   },
   {
+    "id": "requests-grpc-live",
+    "page": "requests/grpc",
+    "scene": "tools/scenes.ts: a copy of Alpenglow, with the local gRPC server running (examples/servers, bun run grpc). Inventory › Count stock, Message tab: tick Live call, Start Call (⌘R), send {\"sku\": \"TNT-MH-2P\"} and then {\"sku\": \"PCK-TIT-30\"} with Send Message (⇧⌘↩). Response pane on Messages: two sent, six received.",
+    "frame": "window"
+  },
+  {
     "id": "requests-websocket-log",
     "page": "requests/websocket-and-sse",
     "scene": "Alpenglow, no environment. Open Realtime › Order updates, Connect, then choose Send on the saved Subscribe message and on Ping. Wait for three or four order events. Request editor on Messages (Subprotocols empty, the two saved messages); response pane on Messages with the sent messages and received events, one JSON event expanded with More.",

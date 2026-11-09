@@ -71,6 +71,26 @@ type doesn't have is refused, so a typo doesn't go unnoticed.
 For **Inventory › Watch stock**, a server-streaming call, the message names the products to watch and the response
 is the list of stock levels the server sent.
 
+## Live calls
+
+A streaming call usually sends every message you wrote at once. A live call keeps the request stream open, so you send
+messages one at a time and see the answers to each before you write the next: for a bidirectional method that works
+like a conversation, or a client stream you want to feed by hand.
+
+1. On the **Message** tab, tick **Live call**.
+2. Choose **Start Call** (<kbd>⌘R</kbd>). The call opens.
+3. Write a message and choose **Send Message** (<kbd>⇧⌘↩</kbd>). Change it and send again as often as you like.
+4. **End Stream** tells the server no more messages come; its answers still arrive. **End Call** (<kbd>⌘R</kbd>)
+   closes the call.
+
+**Messages** in the response pane lists what you sent and what came back as it happens, with **All**, **Sent** and
+**Received** and a filter. When the call ends, it is in history with its status, like any call.
+
+<Shot id="requests-grpc-live" alt="Inventory › Count stock as a live call: Live call ticked, the message for PCK-TIT-30, End Stream and Send Message, and Messages with two sent messages, each followed by the stock in three warehouses" />
+
+**Inventory › Count stock** is a bidirectional method of the example: each product you send gets its stock in every
+warehouse back.
+
 ## Status, metadata and trailers
 
 gRPC reports how a call went in its status, which arrives in the trailers after the messages. The response summary

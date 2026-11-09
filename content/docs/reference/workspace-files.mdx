@@ -577,6 +577,7 @@ to = "signin.run"
 | `[mcp]` | Offers the flow to agents as a tool: `tool` (its name) and `description`. |
 | `[schedule]` | Runs it on a schedule: `every-minutes`, or `cron` (such as `"0 6 * * *"`), and `environment`, the environment its runs use (the window's when left out, never a protected one). |
 | `[webhook]` | Runs it when a request arrives: `method` (default `POST`), `path` and `environment`, as for a schedule. |
+| `[webhook.signature]` | Lets the sender's signature stand in for the token: `header`, `secret` (a single `{{variable}}`), `algorithm` (`sha256`, `sha512` or `sha1`; default `sha256`), `encoding` (`hex` or `base64`; default `hex`) and `prefix` (the text before the digest, such as `sha256=`). |
 | `[[inputs]]` | Its inputs: `name`, `type` (`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
 | `[[blocks]]` | Its blocks: `id`, `kind`, `title`, `position` (`[x, y]` on the canvas), `paused`, `color`, and `[blocks.settings]` with the kind's settings. |
 | `[[wires]]` | Links: `from` and `to`, each `block.port`. |

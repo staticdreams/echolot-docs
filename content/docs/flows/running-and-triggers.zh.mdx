@@ -149,13 +149,39 @@ curl -X POST http://127.0.0.1:52817/order-status \
   -H "Authorization: Bearer <token>"
 ```
 
+#### 由发送方签名 [#signed-by-the-sender]
+
+GitHub 或 Shopify 这类服务无法发送 Echolot 的令牌，但它们会为每次投递签名：一个标头中存放原始正文的 HMAC，使用你与它们共享的密钥生成。
+检查该签名的流程无需令牌即可接收它们的投递。
+
+1. 将共享密钥存放在一个[机密变量](/docs/workspaces/secrets)中，例如 `webhook_secret`。
+2. 在 <strong>Webhook</strong> 下，勾选<strong>由发送方签名</strong>。
+3. 填写发送方用来放置签名的<strong>标头</strong>（例如 `X-Hub-Signature-256`）；<strong>密钥</strong>填写为该变量
+   （`{{webhook_secret}}`：绝不要填写值本身，因为流程文件是共享的）；选择<strong>签名</strong>的算法（<strong>HMAC-SHA256</strong>、<strong>HMAC-SHA512</strong>
+   或 <strong>HMAC-SHA1</strong>）和编码（<strong>十六进制</strong>或 <strong>Base64</strong>）；如果发送方在摘要前写有<strong>前缀</strong>，也一并填写（GitHub 为 `sha256=`）。
+
+<Shot id="flows-webhook-signature" alt="“开始”块的“触发器”：勾选了 Webhook，方法为 POST，路径为 /order-status；勾选了“由发送方签名”，标头为 X-Hub-Signature-256，密钥为 {{webhook_secret}}，HMAC-SHA256、十六进制，前缀为 sha256=" />
+
+不带令牌的投递只有在以下情况下才会被接收：恰好有一个已允许的流程应答其方法和路径，该流程启用了签名，并且标头与正文相符。密钥从运行读取变量的地方读取：
+触发器的环境、工作区和全局变量。其他情况都会得到与缺少令牌时相同的 `401`，因此两者都没有的调用方无法得知你的流程的任何信息。带有令牌的投递照旧被接收，
+无论是否签名。App 和 `echolot flow serve` 以同样的方式检查签名。
+
+要试用启用了签名的流程，请自己为正文签名：
+
+```sh
+body='{"order": "ord_7Hk2Lw"}'
+signature=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" -hex | sed 's/.* //')
+curl -X POST http://127.0.0.1:52817/order-status \
+  -H "X-Hub-Signature-256: sha256=$signature" -H "Content-Type: application/json" -d "$body"
+```
+
 <strong>Order status on webhook</strong> 先登录，获取订单，然后用订单作答。查询参数和 JSON 正文的键会填充流程中同名的输入；其他键会被忽略。名为 `body` 的输入获得整个正文。
 因此，有一个输入 `order` 的流程可以接受 `?order=ord_7Hk2Lw` 或 `{"order": "ord_7Hk2Lw"}`。运行使用触发器的[环境](#where-triggered-runs-send)。
 
 | 应答 | 时机 |
 | --- | --- |
 | `200`，附 JSON 形式的输出 | 运行通过。正文是“输出”块收到的内容，或 `null`。 |
-| `401` | 令牌缺失或错误。 |
+| `401` | 令牌缺失或错误，并且没有启用签名的流程接受该投递的签名。 |
 | `404` | 没有已允许的流程应答该方法和路径；错误信息会列出能应答的那些。 |
 | `409` | 运行未启动：窗口的环境受保护、需要环境的流程没有选择环境，或者有多个流程应答该方法和路径。正文会说明是哪种情况。 |
 | `413` | 正文大于 8 MB。流程不会运行。 |

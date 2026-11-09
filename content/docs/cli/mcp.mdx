@@ -184,7 +184,11 @@ does. `--headless` serves on its own anyway. Through the app:
 - When the app quits and opens again, the client follows it to its new port on the next call. While the app has the
   workspace closed, calls fail with a message saying to open it with **Settings › Agents** on.
 
-Whether it goes through the app is decided once, when the command starts. To switch, reconnect the client.
+**When the app opens the workspace later.** A client started while the app didn't have the workspace open is served
+on its own until the app opens it with **Settings › Agents** on. Then its calls go through the app, within a few
+seconds and without reconnecting: the client hears that the tool list changed, and a log message says what happened.
+What lived in the command on its own stays there: response handles, open sessions and approvals for the session.
+`--headless` never hands over.
 
 **On its own.** Without the app, nobody can be asked, so what the policy would ask about is refused:
 
@@ -215,6 +219,7 @@ never allowed outright. The keys are in [workspace files](/docs/reference/worksp
 | `mcp-servers` | Adding, changing, checking and deleting MCP servers. |
 | `history` | Opening, comparing and deleting past exchanges. |
 | `flow-editing` | Reading, drawing and deleting flows; `try_flow` runs one once after the person approves it (headless, nobody can, so it is refused). |
+| `sessions` | Keeping WebSocket, Socket.IO and MQTT sessions open across calls: `open_session`, `read_session`, `send_on_session` and `close_session`. See [Sessions agents keep open](/docs/ai/agents#sessions-agents-keep-open). |
 
 The agent policy, proxy, certificates, auth settings and scripts are never offered to agents, in any toolset.
 

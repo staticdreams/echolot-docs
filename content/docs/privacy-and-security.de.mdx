@@ -21,7 +21,7 @@ schaltest etwas ein. Diese Seite listet, was Echolot tut – und nur das.
 
 Geheime Werte kommen nie in Dateien des Arbeitsbereichs, sodass du einen Arbeitsbereich in Git einchecken kannst.
 
-- **Secret-Variablen** liegen nur in deinem Anmelde-Schlüsselbund. Die Datei nennt die Variable; ihr Wert steht im
+- **Secret-Variablen** liegen nur im Schlüsselbund. Die Datei nennt die Variable; ihr Wert steht im
   Schlüsselbund. Siehe [Secrets](/docs/workspaces/secrets).
 - **Importe** verschieben Passwörter, Tokens und Schlüssel, die sie in Auth- und Anmelde-Headern finden, in
   Secret-Variablen, und der Importbericht nennt sie, nie ihre Werte. Siehe [Importieren](/docs/get-started/importing).
@@ -32,8 +32,9 @@ Geheime Werte kommen nie in Dateien des Arbeitsbereichs, sodass du einen Arbeits
 - **Modellschlüssel** für den Assistenten, **MCP-Anmelde-Tokens** und das **Proxy-Passwort** liegen ebenfalls im
   Schlüsselbund. Ein Proxy-Passwort oder eine Zertifikat-Passphrase, die als Klartext eingetippt wurde, zeigt eine
   Warnung mit **In den Schlüsselbund verschieben**.
-- Das Befehlszeilentool liest dieselben Einträge im Schlüsselbund. macOS fragt einmal, bevor eine andere App oder die
-  andere Edition einen Eintrag liest; wähle **Immer erlauben**.
+- Das Befehlszeilentool liest dieselben Einträge im Schlüsselbund. Die App und das Tool von echolot.dev teilen sie,
+  ohne zu fragen; die Version aus dem App Store und aus dem Quellcode gebaute Builds fragen vielleicht einmal: Wähle
+  **Immer erlauben**.
 
 ## Anmeldedaten bleiben bei ihrem Server [#credentials-stay-with-their-server]
 
