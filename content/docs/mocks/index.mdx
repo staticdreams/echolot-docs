@@ -13,7 +13,9 @@ exists, or while the real one is down. A mock answers from two sources, alone or
   from its schemas. Requests that break the spec get a `400` that says why, so the mock also tells you when a client
   sends the wrong thing.
 
-For answers that need code or state, a mock can also have [routes in JavaScript](/docs/mocks/scripted-routes).
+Routes can also stream server-sent events, take WebSocket and Socket.IO connections, and a mock can run an MQTT broker
+beside them, for live screens. See [streams, sockets and MQTT](/docs/mocks/streams-and-sockets). For answers that need
+code or state, a mock can also have [routes in JavaScript](/docs/mocks/scripted-routes).
 
 Open the page with **Mocks** in the sidebar's module switcher, or <kbd>⌘</kbd><kbd>4</kbd>.
 
@@ -37,7 +39,7 @@ adds one, **Change** › **Stop Serving the Spec** takes it away.
 ## Starting and stopping
 
 Click **Start** (<kbd>⌘</kbd><kbd>R</kbd>). The bar at the top shows the mock's address, such as
-`http://127.0.0.1:4010`. When the mock serves a spec whose server URL has a path (`https://demo.echolot.dev/v1`), the
+`http://127.0.0.1:4010`, and its broker's beside it when it has [one](/docs/mocks/streams-and-sockets#the-mqtt-broker). When the mock serves a spec whose server URL has a path (`https://demo.echolot.dev/v1`), the
 address ends with it (`http://127.0.0.1:4010/v1`) and the mock answers under it; requests may leave that path out, too.
 The copy button next to the address copies it.
 
@@ -79,7 +81,8 @@ without stopping. A port another program uses can't be taken: Echolot says so; c
 
 A request goes to the first of these that has an answer for its method and path:
 
-1. The mock's [routes in JavaScript](/docs/mocks/scripted-routes). A route that sets nothing passes the request on.
+1. The mock's [routes in JavaScript](/docs/mocks/scripted-routes). A route that sets nothing passes the request on;
+   its sockets (`mock.ws`, `mock.sse`) take the connections they match.
 2. Its [routes made by hand](/docs/mocks/routes). A route can have several responses; a request can ask for one by
    name or status, rules on the request choose others, and otherwise the route's default answers.
 3. The spec's operations, as below.
@@ -155,5 +158,6 @@ with its settings and routes, spec or not, for CI or a container. See [echolot m
 [`echolot fake`](/docs/cli/fake) makes fake data from the same templates, for fixtures and seed data.
 
 Agents can start mocks and read their logs through Echolot's MCP server, and, when the **Mocks** toolset is on, create
-mocks, add and change routes, generate fake data and make requests from routes. See
+mocks, add and change routes (streams and sockets too), add a broker, generate fake data and make requests from
+routes. They can't save routes in JavaScript: they propose them, and you review them before they run. See
 [Agents](/docs/ai/agents).

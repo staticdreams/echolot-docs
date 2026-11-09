@@ -1,15 +1,16 @@
 ---
 title: "echolot mcp"
-description: "MCPサーバと、モデルから見たそのツールをチェックし、サインインし、AIエージェントにワークスペースを提供し、MCPクライアントを設定します。"
+description: "MCPサーバと、モデルから見たそのツールをチェックし、MCPサーバを呼び出し、サインインし、AIエージェントにワークスペースを提供し、MCPクライアントを設定します。"
 ---
 
-`echolot mcp` は、2つの方向でMCPサーバを扱います。`check` と `sign-in` は、[MCPサーバのページ](/docs/mcp-servers)と同じように、他者のサーバと通信します。
+`echolot mcp` は、2つの方向でMCPサーバを扱います。`check`、`call`、`sign-in` は、[MCPサーバのページ](/docs/mcp-servers)と同じように、他者のサーバと通信します。
 `serve` と `setup` は、あなたのワークスペースをMCPサーバにして、Claude CodeやCursorなどのAIエージェントがそのリクエストを一覧表示、送信、テストできるようにします。
 [エージェント](/docs/ai/agents)を参照してください。
 
 | サブコマンド | 動作 |
 | --- | --- |
 | `echolot mcp check` | MCPサーバに接続し、提供している内容を一覧表示します。`--quality` は、モデルから見たツールの状態を報告します。 |
+| `echolot mcp call` | ワークスペースのMCPサーバのツールを呼び出すか、リソースを読み取るか、プロンプトを取得し、結果をJSONで出力します。 |
 | `echolot mcp sign-in` | OAuthを要求するワークスペースのMCPサーバにサインインします。 |
 | `echolot mcp sign-out` | このMacでのそのサインインを破棄します。 |
 | `echolot mcp serve` | MCP経由でエージェントにワークスペースを提供します。 |
@@ -19,9 +20,10 @@ description: "MCPサーバと、モデルから見たそのツールをチェッ
 
 ```sh
 echolot mcp check [--url <url>] [--header <header> ...] [--env <env> ...] [--verbose] [--timeout <seconds>] [--quality] [--strict] [--as <provider>] -- [<command> ...]
+echolot mcp check --server <server> [--workspace <workspace>] [--verbose] [--quality] [--strict]
 ```
 
-`--url` でStreamable HTTPのエンドポイントを指定するか、`--` の後にstdioサーバを起動するコマンドを指定します。Echolotは、サーバがステートレスなプロトコル（2026-07-28）か、
+`--url` でStreamable HTTPのエンドポイントを指定するか、`--` の後にstdioサーバを起動するコマンド、または `--server` でワークスペースのサーバを指定します。Echolotは、サーバがステートレスなプロトコル（2026-07-28）か、
 ハンドシェイクのある以前のプロトコルのどちらを使うかを判別し、ツール、リソース、プロンプトを一覧表示します。
 
 ```sh
@@ -48,6 +50,18 @@ stdioサーバの場合：
 echolot mcp check -- npx -y @modelcontextprotocol/server-everything
 echolot mcp check -e API_KEY=demo -- uvx some-mcp-server --flag
 ```
+
+### ワークスペースのサーバ [#a-workspaces-server]
+
+`--server` は、ワークスペースに保存されたサーバを、`mcp-servers` フォルダ内のファイル名（`.toml` なし）でチェックします。
+アドレスやコマンド、ヘッダー、環境、シークレット、OAuthのサインインはアプリと同じようにワークスペースから取得されるため、
+どれもコマンドラインに書く必要はありません。コマンドラインに書くと、シェルの履歴に残ってしまいます。
+
+```sh
+echolot mcp check --server alpenglow-mcp -w Alpenglow.echolot --quality
+```
+
+失敗したチェックは標準エラーに出力され、Echolotが分かる場合は直し方も示されます。コマンドは終了コード1で終了します。`--as` は `--server` と併用できません。
 
 ### モデルから見たツール [#how-a-model-sees-the-tools]
 
@@ -81,6 +95,35 @@ Nothing a model would stumble over.
 | `--quality` | モデルから見たツールの状態を報告します：プロバイダごとのコスト、スキーマと説明の問題。 |
 | `--strict` | `--quality` と併用：問題があるとき終了コード1で終了します。 |
 | `--as <provider>` | プロバイダのAPIが受け取る形でツール一覧だけを出力します：`anthropic`、`openai`、`gemini`。 |
+| `--server <server>` | ワークスペースのMCPサーバ（`.toml` なしのファイル名）。そのヘッダー、シークレット、サインインが適用されます。 |
+| `-w`、`--workspace <folder>` | `--server` を含むワークスペース。デフォルトはカレントフォルダ。 |
+
+## echolot mcp call [#echolot-mcp-call]
+
+```sh
+echolot mcp call <server> (--tool <name> | --resource <uri> | --prompt <name>) [--args <json>] [--workspace <workspace>] [--environment <env>]
+```
+
+ワークスペースのMCPサーバのツールを1つ呼び出すか、リソースを1つ読み取るか、プロンプトを1つ取得します。アプリのMCPリクエストと同じように、
+サーバのヘッダー、シークレット、OAuthのサインインが適用されます。結果はJSONで標準出力に出力されます。
+
+```sh
+echolot mcp call alpenglow-mcp --tool search_catalog --args '{"query": "ultralight tent", "limit": 3}' -w Alpenglow.echolot
+```
+
+ツールがエラーを報告した場合（`isError`）や、サーバがJSON-RPCエラーで応答した場合、終了コードは1になり、標準エラーにサーバの応答内容が出力されます。
+
+| オプション | 意味 |
+| --- | --- |
+| `<server>` | ワークスペースの `mcp-servers` フォルダにあるサーバのファイル名（`.toml` なし）。 |
+| `--tool <name>` | 呼び出すツール。 |
+| `--resource <uri>` | 読み取るリソース（URIで指定）。 |
+| `--prompt <name>` | 取得するプロンプト。 |
+| `--args <json>` | JSONオブジェクトとしての引数。`{{variables}}` を使えます。`-` は標準入力から読み込みます。デフォルトは `{}`。 |
+| `-w`、`--workspace <folder>` | ワークスペースのフォルダ。デフォルトはカレントフォルダ。 |
+| `--environment <env>` | サーバの設定と引数を解決する変数を持つ環境。 |
+
+`--tool`、`--resource`、`--prompt` のいずれか1つを指定します。
 
 ## echolot mcp sign-in と sign-out [#echolot-mcp-sign-in-and-sign-out]
 
@@ -123,8 +166,18 @@ MCP経由でエージェントにワークスペースを提供します。エ�
 echolot mcp serve /path/to/Alpenglow.echolot
 ```
 
+パスを指定しない場合は、カレントフォルダのワークスペース、またはそのフォルダにある唯一の `*.echolot` ワークスペースを提供します。
+
 **アプリが開いている場合。** Echolotアプリがワークスペースを開いていて、エージェントを許可している場合（**設定 › エージェント**）、クライアントはアプリに接続されます。
-承認が必要な操作はアプリがあなたに確認し、エージェントの動作も確認できます。`--headless` を指定すると、それでも単独で提供します。
+承認が必要な操作はアプリがあなたに確認し、エージェントの動作も確認できます。`--headless` を指定すると、それでも単独で提供します。アプリを経由する場合：
+
+- クライアントが受け取るツールセットは、`--toolsets` ではなく、アプリの**設定 › エージェント**で決まります。両者が異なる場合、
+  標準エラーに、アプリが提供するツールセットと、このクライアントのためにアプリでオンにすべきツールセットが出力されます。
+- `--env` は引き続き有効です。環境を指定しないツール呼び出しはその環境を使います。
+- アプリを終了して再び開くと、クライアントは次の呼び出しで新しいポートに追従します。アプリがワークスペースを閉じている間、
+  呼び出しは失敗し、**設定 › エージェント**をオンにしてワークスペースを開くよう伝えるメッセージが表示されます。
+
+アプリを経由するかどうかは、コマンドの開始時に一度だけ決まります。切り替えるには、クライアントを接続し直してください。
 
 **単独で動作する場合。** アプリがない場合は確認できる相手がいないため、ポリシーで確認が必要な操作は拒否されます。
 
@@ -174,7 +227,7 @@ Clients send the header  Authorization: Bearer 6f1c…
 | --- | --- |
 | `--env <env>` | 環境を指定しない呼び出しが使う環境。 |
 | `--policy <policy>` | `standard`、`readonly`、`permissive`。デフォルトは `standard`。 |
-| `--toolsets <list>` | 提供するツールグループ（カンマ区切り）、または `all`。デフォルトは `requests,flows`。 |
+| `--toolsets <list>` | 提供するツールグループ（カンマ区切り）、または `all`。デフォルトは `requests,flows`。アプリを経由する場合は、アプリの**設定 › エージェント**で決まります。 |
 | `--http <port>` | stdioの代わりに、このポートで127.0.0.1にStreamable HTTPを提供します（`0` で自動選択）。 |
 | `-v`、`--verbose` | すべてのメッセージを標準エラーに出力します。 |
 | `--headless` | Echolotアプリがこのワークスペースを開いていても、単独で提供します。 |
@@ -234,5 +287,5 @@ echolot mcp setup cursor -w Alpenglow.echolot
 | コード | 条件 |
 | --- | --- |
 | `0` | 接続した、サインインした、停止されるまで提供した、または出力した。 |
-| `1` | `check` が接続できなかったかチェックが失敗した、`--quality --strict` が問題を検出した、または `sign-in` が失敗したかサーバがOAuthを要求しなかった。 |
+| `1` | `check` が接続できなかったかチェックが失敗した、`--quality --strict` が問題を検出した、`call` がエラーを受け取った、または `sign-in` が失敗したかサーバがOAuthを要求しなかった。 |
 | `64` | オプションが正しくない、不明なポリシーまたはクライアント、不明な環境、または `[agents]` セクションでエージェントがオフになっているワークスペース。 |

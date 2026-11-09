@@ -85,6 +85,10 @@ server, with the same rules as for agents.
 | `result` | out | What the tool returned. |
 | `fail` | out | Why it failed. |
 
+The tool can also be named as agents know it from Echolot's MCP server: `run_requests` runs `run_collection` (with
+`stop_on_failure` for `bail`, and the paths run in the order given), `list_requests` runs `list_workspace`. A flow an
+agent drew with those names runs as it is.
+
 A Tool block can't run another flow; use a Flow block for that.
 
 <Edition only="direct">

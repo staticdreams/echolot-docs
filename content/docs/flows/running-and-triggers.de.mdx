@@ -132,8 +132,8 @@ Führe einen Flow von selbst aus, alle paar Minuten oder nach einem Kalender.
 3. Klicke auf **Erlauben**.
 
 Sobald der Zeitplan erlaubt ist, zeigt der Inspektor **Nächster Durchlauf** mit Datum und Uhrzeit. Geplante Durchläufe
-finden statt, solange das Fenster des Arbeitsbereichs offen ist, mit der Umgebung, die zum Zeitpunkt des Durchlaufs im
-Fenster aktiv ist, und beginnen mit den Standardwerten der Eingaben. Ein Durchlauf, der verpasst wurde, weil der Mac
+finden statt, solange das Fenster des Arbeitsbereichs offen ist, in der unten beschriebenen Umgebung, und beginnen mit
+den Standardwerten der Eingaben. Ein Durchlauf, der verpasst wurde, weil der Mac
 schlief oder das Fenster geschlossen war, läuft einmal, wenn Echolot das nächste Mal nachsieht; ein Flow, der noch
 läuft, wird nicht erneut gestartet. Ein fehlgeschlagener geplanter Durchlauf zeigt eine Mitteilung. Um Zeitpläne ohne
 die App laufen zu lassen, nimm [`echolot flow serve`](#run-from-the-command-line).
@@ -152,6 +152,21 @@ eingeschränkt, genügt es, wenn einer passt.
 
 Blöcke der Gruppe „Personen“ können bei einem geplanten Durchlauf niemanden fragen, deshalb schlagen sie dort fehl.
 
+### Wohin ausgelöste Durchläufe senden [#where-triggered-runs-send]
+
+Ein Zeitplan und ein Webhook haben jeweils ein Menü **Umgebung**:
+
+- **Die des Fensters (nicht wenn geschützt)**, der Standard: Durchläufe nutzen die Umgebung, die beim Start im Fenster
+  gewählt ist. Solange diese [geschützt](/docs/workspaces/protected-environments) ist, laufen sie nicht: Ein Monitor
+  sendet nie an die Produktion, nur weil jemand das Fenster darauf gelassen hat.
+- Eine Umgebung mit Namen: Durchläufe nutzen immer sie, egal was das Fenster zeigt. Wer den Flow erlaubt, erlaubt ihm,
+  dorthin zu senden, geschützt oder nicht, und eine Änderung der Umgebung fragt erneut nach deiner Erlaubnis.
+
+Ist gar keine Umgebung gewählt, wird ein Flow, dessen Anfragen Variablen lesen, die nur Umgebungen festlegen, nicht
+ausgeführt, statt bei jedem Takt fehlzuschlagen. Ein Durchlauf, der nicht stattfindet, steht mit dem Grund unter
+**Durchläufe von** dem Flow, und ein Webhook beantwortet ihn mit `409`. In der Datei des Flows ist die Umgebung
+`environment = "production"` unter `[schedule]` oder `[webhook]`.
+
 ### Webhook [#webhook]
 
 Starte einen Flow, wenn etwas eine Anfrage an eine lokale Adresse sendet.
@@ -166,11 +181,16 @@ Sobald der Webhook erlaubt ist, zeigt der Inspektor die Adresse, etwa `POST http
 Der Port wird einmal pro Arbeitsbereich gewählt und beibehalten.
 
 Aufrufer müssen das Token des Arbeitsbereichs senden, das Echolot beim ersten Mal erzeugt und im Schlüsselbund
-aufbewahrt. Jedes davon funktioniert:
+aufbewahrt. Es ist ein Token pro Arbeitsbereich, dasselbe in der App und in `echolot flow serve`, und es bleibt über
+Neustarts hinweg gleich, sodass Adressen, die du weitergegeben hast, weiter funktionieren. Jedes davon funktioniert:
 
 - der Header `Authorization: Bearer <token>`;
 - der Header `X-Echolot-Token: <token>`;
-- der Query-Parameter `?token=<token>`.
+- der Query-Parameter `?token=<token>`, für Absender, die keine Header setzen können. URLs landen in Logs, darum ist
+  ein Header besser; das Token wird dem Flow nie als Eingabe übergeben.
+
+`echolot flow serve --rotate-token` ersetzt das Token, wenn es nach außen gelangt sein könnte; Absender brauchen dann das
+neue.
 
 ```sh
 curl -X POST http://127.0.0.1:52817/order-status \
@@ -180,13 +200,14 @@ curl -X POST http://127.0.0.1:52817/order-status \
 **Order status on webhook** meldet sich an, holt die Bestellung und antwortet mit ihr. Die Query und die Schlüssel eines
 JSON-Bodys füllen die gleichnamigen Eingaben des Flows; andere Schlüssel bleiben außen vor. Eine Eingabe namens `body`
 bekommt den ganzen Body. Ein Flow mit einer Eingabe `order` nimmt also `?order=ord_7Hk2Lw` oder
-`{"order": "ord_7Hk2Lw"}`. Der Durchlauf nutzt die aktive Umgebung des Fensters.
+`{"order": "ord_7Hk2Lw"}`. Der Durchlauf nutzt die [Umgebung](#where-triggered-runs-send) des Auslösers.
 
 | Antwort | Wann |
 | --- | --- |
 | `200` mit der Ausgabe als JSON | Der Durchlauf war erfolgreich. Der Body ist, was beim Block „Ausgabe“ angekommen ist, oder `null`. |
 | `401` | Das Token fehlt oder ist falsch. |
 | `404` | Kein erlaubter Flow antwortet auf diese Methode und diesen Pfad; der Fehler listet die auf, die es tun. |
+| `409` | Der Durchlauf wurde nicht gestartet: Die Umgebung des Fensters ist geschützt, für einen Flow, der eine Umgebung braucht, ist keine gewählt, oder mehr als ein Flow antwortet auf die Methode und den Pfad. Der Body sagt, was davon. |
 | `413` | Der Body ist größer als 8 MB. Der Flow wird nicht ausgeführt. |
 | `500` | Der Durchlauf ist fehlgeschlagen. Der Body enthält `error` und die ID des Durchlaufs. |
 | `503` | Der Durchlauf wurde gestoppt. |

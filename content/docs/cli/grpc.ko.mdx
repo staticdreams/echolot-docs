@@ -51,7 +51,7 @@ alpenglow.inventory.v1.Inventory
 ## echolot grpc call [#echolot-grpc-call]
 
 ```sh
-echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--stream] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
 ```
 
 `<method>`는 `package.Service/Method`입니다. 메시지는 JSON이며 기본값은 `{}`이고, `-d -`는 표준 입력에서 읽습니다.
@@ -63,13 +63,25 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
   --proto Alpenglow.echolot/specs/inventory.proto
 ```
 
-상태, 받은 메시지 수, 소요 시간은 표준 오류로 나갑니다. `OK`가 아닌 상태는 1로 종료합니다.
+상태, 받은 메시지 수, 소요 시간은 표준 오류로 나갑니다. `OK`가 아닌 상태는 1로 종료합니다. 스키마로 디코딩할 수 없는 응답도
+마찬가지이며, 이때 표준 오류는 서비스 자체의 `.proto` 파일로 `--proto`를 지정하라고 제안합니다.
+
+### 서버 스트림 [#server-streams]
+
+서버 스트리밍 메서드의 메시지는 출력이 터미널이거나 `--stream`을 지정하면 도착하는 대로 한 줄에 JSON 객체 하나씩 출력됩니다. 출력을
+파이프로 넘기고 `--stream`이 없으면 메시지는 호출이 끝난 뒤 JSON 배열 하나로 출력됩니다.
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/WatchStock \
+  -d '{"skus": ["TNT-MH-2P"]}' --proto Alpenglow.echolot/specs/inventory.proto --stream | jq .
+```
 
 | 옵션 | 의미 |
 | --- | --- |
 | `-d`, `--data <json>` | JSON 메시지. `-`는 표준 입력에서 읽습니다. 기본값은 `{}`입니다. |
 | `--deadline <ms>` | `grpc-timeout`으로 보내는 데드라인(밀리초). |
 | `--compress <algorithm>` | 보내는 메시지를 압축합니다: `gzip` 또는 `deflate`. 압축된 응답은 어느 쪽이든 읽습니다. |
+| `--stream` | 서버 스트림의 메시지를 도착하는 대로 한 줄에 JSON 객체 하나씩 출력합니다. 터미널에서는 기본값입니다. |
 | `--proto <file>` | 서비스를 설명하는 `.proto` 파일. import하는 파일은 그 옆에 있어야 합니다. 없으면 서버의 리플렉션에 묻습니다. |
 | `-H`, `--header <header>` | `'Name: value'` 형식의 메타데이터. 반복할 수 있습니다. |
 | `-k`, `--insecure` | TLS 인증서 검증을 건너뜁니다. |
@@ -83,5 +95,5 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
 | 코드 | 조건 |
 | --- | --- |
 | `0` | `describe`가 서비스를 찾았습니다. `call`이 `OK` 상태로 끝났습니다. |
-| `1` | 서버에 연결하거나 설명을 얻을 수 없었거나, 호출의 상태가 `OK`가 아니었습니다. |
+| `1` | 서버에 연결하거나 설명을 얻을 수 없었거나, 호출의 상태가 `OK`가 아니었거나, 응답을 디코딩할 수 없었습니다. |
 | `64` | 잘못된 옵션. |

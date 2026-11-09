@@ -1,16 +1,17 @@
 ---
 title: "echolot mcp"
-description: "Prüfe MCP-Server und wie ein Modell ihre Tools sieht, melde dich bei ihnen an, stelle einen Arbeitsbereich KI-Agenten bereit und richte MCP-Clients ein."
+description: "Prüfe MCP-Server, rufe sie auf und sieh, wie ein Modell ihre Tools sieht, melde dich bei ihnen an, stelle einen Arbeitsbereich KI-Agenten bereit und richte MCP-Clients ein."
 ---
 
-`echolot mcp` arbeitet mit MCP-Servern in zwei Richtungen. `check` und `sign-in` sprechen mit dem Server von jemand
-anderem, wie es die [Seite „MCP-Server“](/docs/mcp-servers) tut. `serve` und `setup` machen deinen Arbeitsbereich zu
+`echolot mcp` arbeitet mit MCP-Servern in zwei Richtungen. `check`, `call` und `sign-in` sprechen mit dem Server von
+jemand anderem, wie es die [Seite „MCP-Server“](/docs/mcp-servers) tut. `serve` und `setup` machen deinen Arbeitsbereich zu
 einem MCP-Server, sodass KI-Agenten wie Claude Code oder Cursor seine Anfragen auflisten, senden und testen können;
 siehe [Agenten](/docs/ai/agents).
 
 | Unterbefehl | Was er macht |
 | --- | --- |
 | `echolot mcp check` | Verbindet sich mit einem MCP-Server und listet auf, was er bietet; `--quality` berichtet, wie ein Modell seine Tools sieht. |
+| `echolot mcp call` | Ruft ein Tool auf, liest eine Ressource oder holt einen Prompt vom MCP-Server eines Arbeitsbereichs und gibt das Ergebnis als JSON aus. |
 | `echolot mcp sign-in` | Meldet dich bei einem MCP-Server eines Arbeitsbereichs an, der OAuth verlangt. |
 | `echolot mcp sign-out` | Vergisst diese Anmeldung auf diesem Mac. |
 | `echolot mcp serve` | Stellt einen Arbeitsbereich Agenten über MCP bereit. |
@@ -20,10 +21,11 @@ siehe [Agenten](/docs/ai/agents).
 
 ```sh
 echolot mcp check [--url <url>] [--header <header> ...] [--env <env> ...] [--verbose] [--timeout <seconds>] [--quality] [--strict] [--as <provider>] -- [<command> ...]
+echolot mcp check --server <server> [--workspace <workspace>] [--verbose] [--quality] [--strict]
 ```
 
-Gib mit `--url` einen Streamable-HTTP-Endpunkt an oder nach `--` den Befehl, der einen stdio-Server startet. Echolot
-findet heraus, ob der Server das zustandslose Protokoll (2026-07-28) spricht oder ein früheres mit Handshake, und listet
+Gib mit `--url` einen Streamable-HTTP-Endpunkt an, nach `--` den Befehl, der einen stdio-Server startet, oder mit
+`--server` den Server eines Arbeitsbereichs. Echolot findet heraus, ob der Server das zustandslose Protokoll (2026-07-28) spricht oder ein früheres mit Handshake, und listet
 seine Tools, Ressourcen und Prompts auf:
 
 ```sh
@@ -50,6 +52,20 @@ Ein stdio-Server:
 echolot mcp check -- npx -y @modelcontextprotocol/server-everything
 echolot mcp check -e API_KEY=demo -- uvx some-mcp-server --flag
 ```
+
+### Der Server eines Arbeitsbereichs [#a-workspaces-server]
+
+`--server` prüft einen Server, der in einem Arbeitsbereich gesichert ist, über seinen Dateinamen im Ordner `mcp-servers`
+ohne `.toml`. Seine Adresse oder sein Befehl, Header, Umgebung, Secrets und OAuth-Anmeldung kommen aus dem
+Arbeitsbereich, wie in der App, sodass nichts davon auf die Befehlszeile muss, wo es im Verlauf deiner Shell landen
+würde:
+
+```sh
+echolot mcp check --server alpenglow-mcp -w Alpenglow.echolot --quality
+```
+
+Eine Prüfung, die fehlschlägt, schreibt in die Standardfehlerausgabe, mit einem Lösungsweg, wo Echolot einen kennt, und
+der Befehl endet mit 1. `--as` passt nicht zu `--server`.
 
 ### Wie ein Modell die Tools sieht [#how-a-model-sees-the-tools]
 
@@ -84,6 +100,37 @@ oder `--as gemini` gibt nur die Liste der Tools aus, wie die API dieses Anbieter
 | `--quality` | Berichten, wie ein Modell die Tools sieht: ihre Kosten pro Anbieter, Probleme bei Schema und Beschreibung. |
 | `--strict` | Mit `--quality`: mit 1 enden, wenn es ein Problem gibt. |
 | `--as <provider>` | Nur die Liste der Tools ausgeben, wie die API eines Anbieters sie erhält: `anthropic`, `openai` oder `gemini`. |
+| `--server <server>` | Der MCP-Server eines Arbeitsbereichs, über seinen Dateinamen ohne `.toml`: Seine Header, Secrets und Anmeldung gelten. |
+| `-w`, `--workspace <folder>` | Der Arbeitsbereich, der `--server` enthält. Standard: der aktuelle Ordner. |
+
+## echolot mcp call [#echolot-mcp-call]
+
+```sh
+echolot mcp call <server> (--tool <name> | --resource <uri> | --prompt <name>) [--args <json>] [--workspace <workspace>] [--environment <env>]
+```
+
+Ruft ein Tool auf, liest eine Ressource oder holt einen Prompt vom MCP-Server eines Arbeitsbereichs, so wie es eine
+MCP-Anfrage in der App tut: Die Header, Secrets und OAuth-Anmeldung des Servers gelten. Das Ergebnis wird als JSON in
+die Standardausgabe ausgegeben.
+
+```sh
+echolot mcp call alpenglow-mcp --tool search_catalog --args '{"query": "ultralight tent", "limit": 3}' -w Alpenglow.echolot
+```
+
+Der Exit-Code ist 1, wenn das Tool einen Fehler meldet (`isError`) oder der Server mit einem JSON-RPC-Fehler antwortet;
+die Standardfehlerausgabe sagt dann, was der Server gesagt hat.
+
+| Option | Bedeutung |
+| --- | --- |
+| `<server>` | Der Dateiname des Servers im Ordner `mcp-servers` des Arbeitsbereichs, ohne `.toml`. |
+| `--tool <name>` | Das Tool, das aufgerufen wird. |
+| `--resource <uri>` | Die Ressource, die gelesen wird, über ihre URI. |
+| `--prompt <name>` | Der Prompt, der geholt wird. |
+| `--args <json>` | Die Argumente als JSON-Objekt, mit `{{variables}}`; `-` liest sie aus der Standardeingabe. Standard `{}`. |
+| `-w`, `--workspace <folder>` | Der Ordner des Arbeitsbereichs. Standard: der aktuelle Ordner. |
+| `--environment <env>` | Die Umgebung, deren Variablen die Einstellungen des Servers und die Argumente auflösen. |
+
+Gib eine der Optionen `--tool`, `--resource` und `--prompt` an.
 
 ## echolot mcp sign-in und sign-out [#echolot-mcp-sign-in-and-sign-out]
 
@@ -130,9 +177,21 @@ einem Client als stdio-Server hinzu, dessen Befehl lautet:
 echolot mcp serve /path/to/Alpenglow.echolot
 ```
 
+Ohne Pfad stellt er den Arbeitsbereich im aktuellen Ordner bereit, oder den einen `*.echolot`-Arbeitsbereich darin.
+
 **Mit geöffneter App.** Hat die App Echolot den Arbeitsbereich geöffnet und lässt Agenten herein (**Einstellungen ›
 Agenten**), wird der Client zur App durchgestellt. Die App fragt dich dann, ob du genehmigst, was eine Genehmigung
-braucht, und du siehst, was der Agent tut. `--headless` stellt trotzdem auf eigene Faust bereit.
+braucht, und du siehst, was der Agent tut. `--headless` stellt trotzdem auf eigene Faust bereit. Über die App:
+
+- **Einstellungen › Agenten** in der App entscheidet, welche Tool-Sets der Client bekommt, nicht `--toolsets`. Weichen
+  sie ab, sagt die Standardfehlerausgabe, welche Tool-Sets die App anbietet und welche du dort für diesen Client
+  einschalten musst.
+- `--env` zählt weiterhin: Tool-Aufrufe, die keine Umgebung nennen, nutzen sie.
+- Wird die App beendet und wieder geöffnet, folgt der Client ihr beim nächsten Aufruf zu ihrem neuen Port. Solange die
+  App den Arbeitsbereich geschlossen hat, schlagen Aufrufe mit einer Meldung fehl, die sagt, dass du ihn mit
+  eingeschaltetem **Einstellungen › Agenten** öffnen sollst.
+
+Ob es über die App geht, wird einmal entschieden, wenn der Befehl startet. Zum Wechseln verbinde den Client neu.
 
 **Auf eigene Faust.** Ohne die App kann niemand gefragt werden, daher wird abgelehnt, wonach die Richtlinie fragen
 würde:
@@ -188,7 +247,7 @@ Setze `ECHOLOT_MCP_TOKEN`, um das Token selbst zu wählen.
 | --- | --- |
 | `--env <env>` | Die Umgebung, die Aufrufe nutzen, wenn sie keine nennen. |
 | `--policy <policy>` | `standard`, `readonly` oder `permissive`. Standard `standard`. |
-| `--toolsets <list>` | Die Tool-Gruppen, die angeboten werden, durch Kommas getrennt, oder `all`. Standard `requests,flows`. |
+| `--toolsets <list>` | Die Tool-Gruppen, die angeboten werden, durch Kommas getrennt, oder `all`. Standard `requests,flows`. Über die App entscheidet ihr **Einstellungen › Agenten**. |
 | `--http <port>` | Streamable HTTP auf 127.0.0.1 an diesem Port bereitstellen (`0` wählt einen) statt stdio. |
 | `-v`, `--verbose` | Jede Nachricht in die Standardfehlerausgabe ausgeben. |
 | `--headless` | Auf eigene Faust bereitstellen, auch wenn die App Echolot diesen Arbeitsbereich geöffnet hat. |
@@ -249,5 +308,5 @@ echolot mcp setup cursor -w Alpenglow.echolot
 | Code | Wann |
 | --- | --- |
 | `0` | Verbunden, angemeldet, bereitgestellt bis zum Stopp oder ausgegeben. |
-| `1` | `check` konnte sich nicht verbinden oder eine Prüfung schlug fehl, `--quality --strict` fand ein Problem, oder `sign-in` schlug fehl oder der Server verlangte kein OAuth. |
+| `1` | `check` konnte sich nicht verbinden oder eine Prüfung schlug fehl, `--quality --strict` fand ein Problem, `call` bekam einen Fehler, oder `sign-in` schlug fehl oder der Server verlangte kein OAuth. |
 | `64` | Eine falsche Option, eine unbekannte Richtlinie oder ein unbekannter Client, eine unbekannte Umgebung oder ein Arbeitsbereich, dessen Abschnitt `[agents]` Agenten ausschaltet. |

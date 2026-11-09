@@ -75,6 +75,15 @@ Mock of Storefront: 3 routes at http://127.0.0.1:4321 (Ctrl-C stops it)
 각 줄에는 응답한 경로와, 괄호 안에 그 경로가 준 응답이 표시됩니다. 본문의 가짜 값은 요청마다 새로 만들어집니다. 서버 없이 가짜 데이터를
 만들려면 [echolot fake](/docs/cli/fake)를 참조하십시오.
 
+스트림과 소켓은 앱에서와 같이 작동합니다. 서버 전송 이벤트를 스트리밍하는 경로, WebSocket과 Socket.IO 경로, 그리고 모의 서버와 함께
+자체 포트에서 시작되는 모의 서버의 MQTT 브로커입니다.
+
+```text
+Mock of Shop live: 2 routes at http://127.0.0.1:4019, MQTT broker at mqtt://127.0.0.1:1883 (Ctrl-C stops it)
+```
+
+[스트림, 소켓, MQTT](/docs/mocks/streams-and-sockets)를 참조하십시오.
+
 ## 옵션 [#options]
 
 | 옵션 | 의미 |

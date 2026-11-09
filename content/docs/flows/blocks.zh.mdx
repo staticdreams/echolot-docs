@@ -74,6 +74,9 @@ description: "流程可以包含的每一种块，它们的设置和端口，以
 | `result` | 出 | 工具返回的内容。 |
 | `fail` | 出 | 失败的原因。 |
 
+也可以用智能体在 Echolot 的 MCP 服务器中所知的名称来指定工具：`run_requests` 运行 `run_collection`（`stop_on_failure` 对应 `bail`，
+路径按给出的顺序运行），`list_requests` 运行 `list_workspace`。智能体用这些名称绘制的流程可以原样运行。
+
 “工具”块不能运行另一个流程；请改用“流程”块。
 
 <Edition only="direct">

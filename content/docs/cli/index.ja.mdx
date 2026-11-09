@@ -57,7 +57,7 @@ description: "echolotコマンドのインストール方法と、すべての�
 | [`echolot run`](/docs/cli/run) | ワークスペース、その一部のフォルダやリクエスト、またはPostmanコレクションを、チェックとレポート付きで実行します。 |
 | [`echolot validate`](/docs/cli/validate) | ワークスペースのすべてのファイルが読み込めること、すべてのリクエストが解決できることをチェックします。 |
 | [`echolot import`、`echolot export`](/docs/cli/import-export) | コレクションをワークスペースに読み込み、ワークスペースをPostman、Insomnia、Bruno、Echolotの形式で書き出します。 |
-| [`echolot mcp`](/docs/cli/mcp) | MCPサーバのチェックとサインイン、エージェントへのワークスペースの提供、クライアント設定の出力を行います。 |
+| [`echolot mcp`](/docs/cli/mcp) | MCPサーバのチェック、呼び出し、サインイン、エージェントへのワークスペースの提供、クライアント設定の出力を行います。 |
 | [`echolot spec`](/docs/cli/spec) | OpenAPIドキュメントをリントし、仕様に追従するフォルダへの仕様変更をチェックして適用します。 |
 | [`echolot graphql diff`](/docs/cli/graphql) | 2つのGraphQLスキーマを比較し、すべての変更を評価します。 |
 | [`echolot grpc`](/docs/cli/grpc) | gRPCサービスを記述し、そのメソッドを呼び出します。 |
@@ -81,7 +81,8 @@ description: "echolotコマンドのインストール方法と、すべての�
 
 ワークスペースを扱うコマンドは、`workspace.toml` があるフォルダを指定します。引数として受け取るもの（`echolot run Alpenglow.echolot`）と、
 `-w` または `--workspace` で受け取るもの（`echolot flow list -w Alpenglow.echolot`）があります。どちらかは各コマンドのページに書かれています。
-省略できる場合は、カレントフォルダが使われます。
+省略できる場合は、カレントフォルダが使われます。`workspace.toml` がなく、`*.echolot` のワークスペースをちょうど1つ含むフォルダは、
+そのワークスペースとして扱われます。そのため、プロジェクトのルートフォルダからパスなしで `echolot mcp serve` を実行できます。
 
 `--env` は、環境をファイル名から `.toml` を除いたもの（`staging`）で指定します。`run`、`validate`、`flow` では、環境の名前（`Staging`）でも指定できます。
 `--env` を指定しない場合、リクエストはワークスペース自身の変数で解決されます。[環境](/docs/workspaces/environments)を参照してください。
@@ -133,7 +134,7 @@ echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
 | 終了コード | 意味 |
 | --- | --- |
 | `0` | すべて成功し、すべてのチェックに合格しました。 |
-| `1` | 何かが失敗しました：レスポンスがない、チェックやテストの失敗、問題の検出（`validate`、`spec lint`）、破壊的変更（`graphql diff`）、OK以外のgRPCステータス、MQTT接続の拒否、完了しなかったエージェント。 |
+| `1` | 何かが失敗しました：レスポンスがない、チェックやテストの失敗、問題の検出（`validate`、`spec lint`）、破壊的変更（`graphql diff`）、OK以外のgRPCステータスやデコードできない応答、MQTT接続の拒否、失敗したMCP呼び出し（`mcp call`）、完了しなかったエージェント。 |
 | `22` | `echolot send` のみ：レスポンスのステータスが400以上でした。`curl --fail` と同じです。 |
 | `64` | コマンドライン自体が正しくありません：不明なオプション、存在しないファイル、存在しない環境。理由が出力されます。 |
 

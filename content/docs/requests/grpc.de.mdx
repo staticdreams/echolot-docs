@@ -98,4 +98,6 @@ Zertifikatsregeln des Arbeitsbereichs, sodass eigene CA-Zertifikate und Client-Z
 ## In der Befehlszeile [#from-the-command-line]
 
 `echolot grpc describe` listet die Services und Methoden eines Servers auf, und `echolot grpc call` führt einen Aufruf aus
-und beendet sich bei einem anderen Status als `OK` mit 1. Siehe [echolot grpc](/docs/cli/grpc).
+und beendet sich bei einem anderen Status als `OK` oder einer Antwort, die er nicht dekodieren kann, mit 1. In einem
+Terminal oder mit `--stream` werden die Nachrichten eines Server-Streams ausgegeben, sobald sie ankommen, ein JSON-Objekt
+pro Zeile. Siehe [echolot grpc](/docs/cli/grpc).

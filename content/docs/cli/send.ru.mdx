@@ -114,11 +114,12 @@ echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolo
 ```
 
 **Socket.IO.** `--socketio` говорит на Socket.IO через URL `http(s)://` или `ws(s)://`. Каждая входная строка — это
-событие: его имя, затем аргументы в JSON (`chat {"text": "hi"}`; массив — это несколько аргументов). События печатаются
-как `name [arguments]`, подтверждения — как `ack id [arguments]`.
+событие: его имя, затем аргументы в JSON (`chat {"text": "hi"}`; массив — это несколько аргументов). `?` после
+имени просит сервер подтвердить событие: `message? {"text": "Grüezi!"}`. События печатаются как `name [arguments]`,
+подтверждения — как `ack id [arguments]`.
 
 ```sh
-echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+echo 'message? {"text": "Grüezi!"}' | echolot send http://localhost:3001 --socketio --namespace /support --listen 5
 ```
 
 Серверы, на которых можно это попробовать, см. в [запросах Socket.IO](/docs/requests/socket-io).
@@ -144,7 +145,7 @@ echolot send http://localhost:3001 --socketio --namespace /support --auth '{"tok
 | `--http2` | Отправлять только по HTTP/2: ALPN поверх TLS, prior knowledge поверх обычного HTTP. |
 | `--http3` | Отправлять только по HTTP/3, поверх QUIC: только `https://`, без прокси; macOS 27 и новее, а также Linux. |
 | `--subprotocol <name>` | Для URL `ws://` и `wss://`: подпротокол, который предлагается. Можно повторять. |
-| `--socketio` | Говорить на Socket.IO; каждая входная строка — `event [JSON arguments]`. |
+| `--socketio` | Говорить на Socket.IO; каждая входная строка — `event [JSON arguments]` или `event? [JSON arguments]`, чтобы запросить подтверждение. |
 | `--namespace <namespace>` | Для `--socketio`: пространство имён, к которому присоединиться. По умолчанию — путь URL, иначе `/`. |
 | `--auth <json>` | Для `--socketio`: данные авторизации, объект JSON. |
 | `--socketio-version <version>` | Для `--socketio`: версия Socket.IO на сервере, `4` (также для 3) или `2`. По умолчанию 4. |

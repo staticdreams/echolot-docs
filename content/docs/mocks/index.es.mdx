@@ -14,8 +14,10 @@ juntas:
   ejemplos o un cuerpo creado a partir de sus esquemas. Las solicitudes que incumplen la especificación reciben un
   `400` que explica el motivo, así que el mock también te avisa cuando un cliente envía algo incorrecto.
 
-Para respuestas que necesitan código o estado, un mock también puede tener
-[rutas en JavaScript](/docs/mocks/scripted-routes).
+Las rutas también pueden emitir eventos enviados por el servidor y aceptar conexiones WebSocket y Socket.IO, y un mock
+puede ejecutar a su lado un broker MQTT, para pantallas en directo. Mira
+[streams, sockets y MQTT](/docs/mocks/streams-and-sockets). Para respuestas que necesitan código o estado, un mock
+también puede tener [rutas en JavaScript](/docs/mocks/scripted-routes).
 
 Abre la página con **Mocks** en el selector de módulos de la barra lateral, o con <kbd>⌘</kbd><kbd>4</kbd>.
 
@@ -41,7 +43,8 @@ quita.
 ## Iniciar y detener [#starting-and-stopping]
 
 Haz clic en **Inicio** (<kbd>⌘</kbd><kbd>R</kbd>). La barra superior muestra la dirección del mock, como
-`http://127.0.0.1:4010`. Cuando el mock sirve una especificación cuya URL de servidor tiene una ruta
+`http://127.0.0.1:4010`, y la de su broker al lado cuando tiene [uno](/docs/mocks/streams-and-sockets#the-mqtt-broker).
+Cuando el mock sirve una especificación cuya URL de servidor tiene una ruta
 (`https://demo.echolot.dev/v1`), la dirección termina con ella (`http://127.0.0.1:4010/v1`) y el mock responde bajo esa
 ruta; las solicitudes también pueden omitirla. El botón de copiar que hay junto a la dirección la copia.
 
@@ -87,7 +90,7 @@ Echolot te lo dice; elige otro puerto.
 Una solicitud va a la primera de estas fuentes que tenga una respuesta para su método y su ruta:
 
 1. Las [rutas en JavaScript](/docs/mocks/scripted-routes) del mock. Una ruta que no fija nada pasa la solicitud a la
-   siguiente.
+   siguiente; sus sockets (`mock.ws`, `mock.sse`) aceptan las conexiones que coinciden con ellos.
 2. Sus [rutas creadas a mano](/docs/mocks/routes). Una ruta puede tener varias respuestas; una solicitud puede pedir una
    por su nombre o su estado, unas reglas sobre la solicitud eligen otras y, si no, responde la predeterminada de la
    ruta.
@@ -170,5 +173,6 @@ de un espacio de trabajo con sus ajustes y sus rutas, con o sin especificación,
 para fixtures y datos iniciales.
 
 Los agentes pueden iniciar mocks y leer sus registros mediante el servidor MCP de Echolot y, cuando el conjunto de
-herramientas **Mocks** está activado, crear mocks, añadir y cambiar rutas, generar datos falsos y crear solicitudes a
-partir de rutas. Consulta [Agentes](/docs/ai/agents).
+herramientas **Mocks** está activado, crear mocks, añadir y cambiar rutas (también streams y sockets), añadir un broker, generar datos falsos y crear
+solicitudes a partir de rutas. No pueden guardar rutas en JavaScript: las proponen, y tú las revisas antes de que se
+ejecuten. Consulta [Agentes](/docs/ai/agents).

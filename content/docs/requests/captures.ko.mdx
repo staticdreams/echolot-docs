@@ -53,6 +53,27 @@ description: "토큰이나 ID 같은 응답의 값을 보낼 때마다 변수에
 | **쿠키** | 이름으로 지정하는, 응답이 설정하는 쿠키. | `session` |
 | **상태** | 상태 코드. | |
 | **본문** | 텍스트로 읽은 본문 전체. | |
+| **첫 메시지** | WebSocket, Socket.IO, MQTT 세션이 받은 메시지 중 그 위치에 값이 있는 첫 메시지 안의 JSONPath. | `$.id` |
+| **마지막 메시지** | 같은 방식으로, 그런 메시지 중 마지막 메시지에서 읽습니다. 업데이트 스트림이 보고한 최신 상태입니다. | `$[0].id` |
+
+### 실시간 세션의 값 [#values-from-realtime-sessions]
+
+**첫 메시지**와 **마지막 메시지**는 WebSocket, Socket.IO, MQTT 요청에서 제공됩니다. 이 캡처는 [실행](/docs/requests/runner), 명령줄,
+에이전트처럼 사용자 없이 요청이 실행될 때 값을 저장합니다. 요청이 연결하고, 저장된 메시지를 보내고, 수신하고, 닫으면 캡처가 메시지
+로그를 읽습니다. 받은 메시지는 각각 JSON으로 읽습니다. Socket.IO 이벤트의 인수는 배열이므로 `$[0].id`는 첫 번째 인수의 `id`입니다.
+Echolot이 보낸 메시지는 제외하고 받은 메시지만 셉니다.
+
+경로 옆의 **전체** 필드는 읽을 메시지를 좁힙니다. Socket.IO 이벤트의 이름(확인 응답에는 그것이 답하는 이벤트의 이름이 붙습니다)이나
+`+`와 `#`을 쓸 수 있는 MQTT 토픽 필터를 씁니다. 비워 두면 모든 메시지를 읽습니다.
+
+```toml
+[[captures]]
+variable = "temperature"
+from = "last-message"
+path = "$.celsius"
+on = "warehouses/+/temperature"
+scope = "environment"
+```
 
 ## 환경 또는 작업 공간 [#environment-or-workspace]
 

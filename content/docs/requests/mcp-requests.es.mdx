@@ -86,7 +86,12 @@ Todas las llamadas se conservan en el [Historial](/docs/workspaces/history).
 
 En la pestaña **Pruebas**:
 
-- **Error de MCP** igual a `false` se supera cuando la llamada tuvo éxito. Un fallo muestra el mensaje del servidor.
+- **Error de MCP** dice cómo falló una llamada. Su valor es `false` cuando la llamada tuvo éxito, `tool` cuando falló la
+  propia herramienta (un resultado marcado como error, que un modelo lee y con el que puede actuar), o `protocol` cuando
+  el servidor respondió con un error JSON-RPC (rompió o rechazó la llamada). **es igual a** `true` acepta cualquiera de
+  los dos fallos. Así, **Error de MCP** igual a `false` se supera si hay éxito, e igual a `tool` se supera con una
+  herramienta que informa de una entrada incorrecta como debe. **existe** se supera con cualquier fallo y **no existe**
+  sin ninguno. Una comprobación fallida muestra el mensaje del servidor.
 - **Esquema de salida de la herramienta** comprueba el `structuredContent` del resultado con el `outputSchema` que declara
   la herramienta. Falla si la herramienta no declara ninguno o si el resultado no tiene `structuredContent`.
 - **Valor JSON** comprueba cualquier valor del resultado, como `$.structuredContent.results.length` es mayor que `0`, o
@@ -102,5 +107,5 @@ Consulta [scripts y pruebas](/docs/requests/scripts-and-tests) para ver todas la
 
 ## Desde la línea de comandos [#from-the-command-line]
 
-`echolot run` ejecuta las solicitudes MCP guardadas con sus comprobaciones, y `echolot mcp check` inspecciona un servidor.
-Consulta [echolot mcp](/docs/cli/mcp).
+`echolot run` ejecuta las solicitudes MCP guardadas con sus comprobaciones, `echolot mcp call` llama a una herramienta,
+lee un recurso u obtiene un prompt, y `echolot mcp check` inspecciona un servidor. Consulta [echolot mcp](/docs/cli/mcp).

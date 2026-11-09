@@ -1,14 +1,15 @@
 ---
 title: "echolot mcp"
-description: "检查 MCP 服务器以及模型如何看待它们的工具，登录它们，向 AI 智能体提供工作区，并设置 MCP 客户端。"
+description: "检查和调用 MCP 服务器，查看模型如何看待它们的工具，登录它们，向 AI 智能体提供工作区，并设置 MCP 客户端。"
 ---
 
-`echolot mcp` 在两个方向上使用 MCP 服务器。`check` 和 `sign-in` 与别人的服务器通信，就像 [MCP 服务器页面](/docs/mcp-servers)所做的那样。`serve` 和 `setup` 则让你的工作区成为一个 MCP 服务器，
+`echolot mcp` 在两个方向上使用 MCP 服务器。`check`、`call` 和 `sign-in` 与别人的服务器通信，就像 [MCP 服务器页面](/docs/mcp-servers)所做的那样。`serve` 和 `setup` 则让你的工作区成为一个 MCP 服务器，
 使 Claude Code 或 Cursor 等 AI 智能体可以列出、发送和测试它的请求；参见[智能体](/docs/ai/agents)。
 
 | 子命令 | 作用 |
 | --- | --- |
 | `echolot mcp check` | 连接到 MCP 服务器并列出它提供的内容；`--quality` 报告模型如何看待它的工具。 |
+| `echolot mcp call` | 调用工作区中某个 MCP 服务器的工具、读取它的资源或获取它的提示词，并将结果以 JSON 打印出来。 |
 | `echolot mcp sign-in` | 登录工作区中要求 OAuth 的 MCP 服务器。 |
 | `echolot mcp sign-out` | 在这台 Mac 上忘记该登录。 |
 | `echolot mcp serve` | 通过 MCP 向智能体提供工作区。 |
@@ -18,9 +19,10 @@ description: "检查 MCP 服务器以及模型如何看待它们的工具，登�
 
 ```sh
 echolot mcp check [--url <url>] [--header <header> ...] [--env <env> ...] [--verbose] [--timeout <seconds>] [--quality] [--strict] [--as <provider>] -- [<command> ...]
+echolot mcp check --server <server> [--workspace <workspace>] [--verbose] [--quality] [--strict]
 ```
 
-用 `--url` 给出 Streamable HTTP 端点，或在 `--` 之后给出启动 stdio 服务器的命令。Echolot 会判断服务器使用的是无状态协议（2026-07-28）还是带握手的早期协议，并列出它的工具、
+用 `--url` 给出 Streamable HTTP 端点，在 `--` 之后给出启动 stdio 服务器的命令，或用 `--server` 给出工作区中的服务器。Echolot 会判断服务器使用的是无状态协议（2026-07-28）还是带握手的早期协议，并列出它的工具、
 资源和提示词：
 
 ```sh
@@ -47,6 +49,17 @@ stdio 服务器：
 echolot mcp check -- npx -y @modelcontextprotocol/server-everything
 echolot mcp check -e API_KEY=demo -- uvx some-mcp-server --flag
 ```
+
+### 工作区中的服务器 [#a-workspaces-server]
+
+`--server` 检查存储在工作区中的服务器，按它在 `mcp-servers` 文件夹中的文件名（不带 `.toml`）指定。它的地址或命令、标头、环境、机密和 OAuth 登录都来自工作区，
+与在 App 中一样，因此这些都不必写在命令行上，否则它们会进入你的 Shell 历史记录：
+
+```sh
+echolot mcp check --server alpenglow-mcp -w Alpenglow.echolot --quality
+```
+
+检查失败时会输出到标准错误，Echolot 知道如何修复时会附上修复方法，命令以 1 退出。`--as` 不能与 `--server` 一起使用。
 
 ### 模型如何看待这些工具 [#how-a-model-sees-the-tools]
 
@@ -78,6 +91,35 @@ Nothing a model would stumble over.
 | `--quality` | 报告模型如何看待这些工具：它们在各提供商处的开销、Schema 和描述问题。 |
 | `--strict` | 与 `--quality` 搭配：有问题时以 1 退出。 |
 | `--as <provider>` | 只打印提供商的 API 所接收的工具列表：`anthropic`、`openai` 或 `gemini`。 |
+| `--server <server>` | 工作区中的 MCP 服务器，按不带 `.toml` 的文件名指定：它的标头、机密和登录都会生效。 |
+| `-w`、`--workspace <folder>` | 包含 `--server` 的工作区。默认：当前文件夹。 |
+
+## echolot mcp call [#echolot-mcp-call]
+
+```sh
+echolot mcp call <server> (--tool <name> | --resource <uri> | --prompt <name>) [--args <json>] [--workspace <workspace>] [--environment <env>]
+```
+
+调用工作区中某个 MCP 服务器的一个工具、读取一个资源或获取一个提示词，方式与 App 中的 MCP 请求相同：服务器的标头、机密和 OAuth 登录都会生效。
+结果以 JSON 输出到标准输出。
+
+```sh
+echolot mcp call alpenglow-mcp --tool search_catalog --args '{"query": "ultralight tent", "limit": 3}' -w Alpenglow.echolot
+```
+
+工具报告错误（`isError`）或服务器以 JSON-RPC 错误应答时，退出码为 1；此时标准错误会说明服务器返回了什么。
+
+| 选项 | 含义 |
+| --- | --- |
+| `<server>` | 服务器在工作区 `mcp-servers` 文件夹中的文件名，不带 `.toml`。 |
+| `--tool <name>` | 要调用的工具。 |
+| `--resource <uri>` | 要读取的资源，按 URI 指定。 |
+| `--prompt <name>` | 要获取的提示词。 |
+| `--args <json>` | 参数，为 JSON 对象，可含 `{{variables}}`；`-` 表示从标准输入读取。默认 `{}`。 |
+| `-w`、`--workspace <folder>` | 工作区文件夹。默认：当前文件夹。 |
+| `--environment <env>` | 用其变量解析服务器设置和参数的环境。 |
+
+`--tool`、`--resource` 和 `--prompt` 三者给出其一。
 
 ## echolot mcp sign-in 和 sign-out [#echolot-mcp-sign-in-and-sign-out]
 
@@ -119,8 +161,16 @@ echolot mcp serve [<workspace>] [--env <env>] [--policy <policy>] [--toolsets <t
 echolot mcp serve /path/to/Alpenglow.echolot
 ```
 
+不带路径时，它提供当前文件夹中的工作区，或其中唯一的 `*.echolot` 工作区。
+
 **App 已打开时。** 当 Echolot App 打开了该工作区并允许智能体访问（**设置 › 智能体**）时，客户端会被转接到 App。随后 App 会请你批准需要批准的操作，你也能看到智能体做了什么。
-`--headless` 则无论如何都自行提供服务。
+`--headless` 则无论如何都自行提供服务。通过 App 时：
+
+- 客户端得到哪些工具集由 App 的**设置 › 智能体**决定，而不是 `--toolsets`。两者不同时，标准错误会说明 App 提供哪些工具集，以及要为这个客户端在那里开启哪些。
+- `--env` 仍然有效：未指定环境的工具调用会使用它。
+- App 退出并重新打开后，客户端会在下一次调用时跟随它到新端口。App 关闭了该工作区时，调用会失败，并提示在开启**设置 › 智能体**的情况下打开它。
+
+是否经由 App 只在命令启动时决定一次。要切换，请重新连接客户端。
 
 **独立运行。** 没有 App 时，没有人可以询问，所以策略本该询问的操作会被拒绝：
 
@@ -169,7 +219,7 @@ Clients send the header  Authorization: Bearer 6f1c…
 | --- | --- |
 | `--env <env>` | 调用未指明环境时使用的环境。 |
 | `--policy <policy>` | `standard`、`readonly` 或 `permissive`。默认 `standard`。 |
-| `--toolsets <list>` | 要提供的工具组，用逗号分隔，或用 `all`。默认 `requests,flows`。 |
+| `--toolsets <list>` | 要提供的工具组，用逗号分隔，或用 `all`。默认 `requests,flows`。通过 App 时，由它的**设置 › 智能体**决定。 |
 | `--http <port>` | 在 127.0.0.1 的此端口上提供 Streamable HTTP（`0` 表示选取一个），而不是 stdio。 |
 | `-v`、`--verbose` | 将每条消息打印到标准错误。 |
 | `--headless` | 即使 Echolot App 打开了此工作区，也自行提供服务。 |
@@ -228,5 +278,5 @@ App 中的**设置 › 智能体**会为你设置同样的这些客户端；参�
 | 退出码 | 何时 |
 | --- | --- |
 | `0` | 已连接、已登录、一直提供服务直到停止，或已打印。 |
-| `1` | `check` 无法连接或检查失败、`--quality --strict` 发现问题，或 `sign-in` 失败或服务器没有要求 OAuth。 |
+| `1` | `check` 无法连接或检查失败、`--quality --strict` 发现问题、`call` 得到错误，或 `sign-in` 失败或服务器没有要求 OAuth。 |
 | `64` | 选项有误、策略或客户端未知、环境未知，或工作区的 `[agents]` 部分关闭了智能体。 |

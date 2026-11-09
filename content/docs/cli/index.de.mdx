@@ -59,7 +59,7 @@ Das Befehlszeilentool läuft nie ab, auch nicht in Beta-Builds der App. Es brauc
 | [`echolot run`](/docs/cli/run) | Führt einen Arbeitsbereich, einige seiner Ordner oder Anfragen oder eine Postman-Sammlung aus, mit Prüfungen und Berichten. |
 | [`echolot validate`](/docs/cli/validate) | Prüft, dass jede Datei eines Arbeitsbereichs lesbar ist und jede Anfrage sich auflöst. |
 | [`echolot import`, `echolot export`](/docs/cli/import-export) | Bringt Sammlungen in einen Arbeitsbereich und schreibt einen Arbeitsbereich als Postman, Insomnia, Bruno oder Echolot aus. |
-| [`echolot mcp`](/docs/cli/mcp) | Prüft MCP-Server, meldet sich bei ihnen an, stellt einen Arbeitsbereich Agenten bereit und gibt Setups für Clients aus. |
+| [`echolot mcp`](/docs/cli/mcp) | Prüft und ruft MCP-Server auf, meldet sich bei ihnen an, stellt einen Arbeitsbereich Agenten bereit und gibt Setups für Clients aus. |
 | [`echolot spec`](/docs/cli/spec) | Prüft OpenAPI-Dokumente und prüft und wendet Änderungen der Spec auf den Ordner an, der der Spec folgt. |
 | [`echolot graphql diff`](/docs/cli/graphql) | Vergleicht zwei GraphQL-Schemas und stuft jede Änderung ein. |
 | [`echolot grpc`](/docs/cli/grpc) | Beschreibt gRPC-Services und ruft ihre Methoden auf. |
@@ -84,7 +84,8 @@ Unterbefehlen nehmen sie genauso: `echolot mcp serve --help`.
 Befehle, die an einem Arbeitsbereich arbeiten, nehmen seinen Ordner, den mit `workspace.toml` darin. Einige nehmen ihn
 als Argument (`echolot run Alpenglow.echolot`), andere mit `-w` oder `--workspace`
 (`echolot flow list -w Alpenglow.echolot`); die Seite jedes Befehls sagt, wie. Wo er optional ist, wird der aktuelle
-Ordner genutzt.
+Ordner genutzt. Ein Ordner ohne `workspace.toml`, der genau einen `*.echolot`-Arbeitsbereich enthält, gilt als dieser
+Arbeitsbereich, sodass `echolot mcp serve` ohne Pfad aus dem Hauptordner eines Projekts funktioniert.
 
 `--env` wählt eine Umgebung nach ihrem Dateinamen ohne `.toml` (`staging`). `run`, `validate` und `flow` nehmen auch
 ihren Namen (`Staging`). Ohne `--env` lösen sich Anfragen mit den eigenen Variablen des Arbeitsbereichs auf. Siehe
@@ -142,7 +143,7 @@ echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
 | Exit-Code | Bedeutung |
 | --- | --- |
 | `0` | Alles hat funktioniert, und jede Prüfung bestand. |
-| `1` | Etwas ist fehlgeschlagen: keine Antwort, eine fehlgeschlagene Prüfung oder ein fehlgeschlagener Test, gefundene Probleme (`validate`, `spec lint`), Breaking Changes (`graphql diff`), ein anderer gRPC-Status als OK, eine abgelehnte MQTT-Verbindung, ein Agent, der nicht fertig wurde. |
+| `1` | Etwas ist fehlgeschlagen: keine Antwort, eine fehlgeschlagene Prüfung oder ein fehlgeschlagener Test, gefundene Probleme (`validate`, `spec lint`), Breaking Changes (`graphql diff`), ein anderer gRPC-Status als OK oder eine Antwort, die sich nicht dekodieren lässt, eine abgelehnte MQTT-Verbindung, ein fehlgeschlagener MCP-Aufruf (`mcp call`), ein Agent, der nicht fertig wurde. |
 | `22` | Nur `echolot send`: Der Status der Antwort war 400 oder höher, wie bei `curl --fail`. |
 | `64` | Die Befehlszeile selbst war falsch: eine unbekannte Option, eine fehlende Datei, eine Umgebung, die es nicht gibt. Der Grund wird ausgegeben. |
 

@@ -96,10 +96,29 @@ Las entregas de QoS 1 y 2 se confirman por ti, en ambos sentidos.
 Cuando la conexión se cierra, la sesión se conserva en el [Historial](/docs/workspaces/history), con el registro como
 cuerpo de la respuesta, de modo que las comprobaciones sobre el **Cuerpo** funcionan con ella.
 
+## Comprobaciones, capturas y ejecuciones [#checks-captures-and-runs]
+
+**Valor en mensajes**, **Mensajes recibidos** y **Cierre de la sesión**, de la pestaña **Pruebas**, comprueban los
+mensajes recibidos, y las capturas **Primer mensaje** y **Último mensaje** los leen, cada carga útil leída como JSON.
+Limita una comprobación o una captura a algunos topics con un filtro de topics en su campo **cualquiera**, como
+`warehouses/+/temperature`. **Cierre de la sesión** lee el código de motivo del broker cuando se desconecta. Consulta
+[comprobaciones en sesiones en tiempo real](/docs/requests/scripts-and-tests#checks-on-realtime-sessions).
+
+En las ejecuciones, `stop-after-acks = true` en el `[settings]` del archivo de la solicitud deja de escuchar cuando el
+broker ha confirmado cada suscripción y cada publicación con QoS 1 o 2. Un broker que rechaza la conexión da un estado en
+las ejecuciones, como `401` para un nombre de usuario o una contraseña incorrectos. Consulta
+[dejar de escuchar antes](/docs/requests/websocket-and-sse#stop-listening-early) y
+[conexiones rechazadas](/docs/requests/websocket-and-sse#refused-connections).
+
 ## MQTT 5.0 [#mqtt-50]
 
 Los códigos de motivo del broker aparecen por su nombre en el registro y cuando se rechaza una conexión, como `Success` o
-`Not authorized`, en ambas versiones. Con **MQTT 5.0** elegido:
+`Not authorized`, en ambas versiones.
+
+Cuando **MQTT 5.0** está elegido y el broker lo rechaza, como hace un broker que solo habla 3.1.1, Echolot vuelve a
+conectarse con MQTT 3.1.1. La primera línea del registro dice con qué protocolo se conectó.
+
+Con **MQTT 5.0** elegido:
 
 - **No local** en una suscripción deja fuera los mensajes de este mismo cliente.
 - **Inicio limpio** sustituye a la **Sesión limpia** de 3.1.1.

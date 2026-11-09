@@ -104,6 +104,51 @@ mock.get("/me", (req, res) => {
 })
 ```
 
+## Sockets [#sockets]
+
+Routen in JavaScript können auch Verbindungen annehmen, für Streams, die eine eigene Logik brauchen:
+
+| Funktion | Nimmt an |
+| --- | --- |
+| `mock.ws(path, handler)` | WebSocket-Verbindungen bei einem `GET` auf den Pfad. |
+| `mock.sse(path, handler)` | Ein `GET` auf den Pfad, beantwortet mit Server-Sent Events (`text/event-stream`), offen gehalten, bis die Route sie beendet. |
+
+Der Handler bekommt den Socket und die Anfrage (`req.params`, `req.query`, `req.headers`, `req.path`):
+
+| Socket | Was es tut |
+| --- | --- |
+| `socket.send(value)` | Sendet eine Nachricht: einen String so, wie er ist, alles andere als JSON. Bei einem Stream setzt `send(value, { event, id })` die Felder `event:` und `id:` des Ereignisses. |
+| `socket.on("message", text => …)` | Läuft für jede Nachricht, die der Client sendet (WebSocket). |
+| `socket.on("close", code => …)` | Läuft, wenn der Client geht. |
+| `socket.close(code, reason)` | Schließt die Verbindung (ein WebSocket-Close-Code, etwa `4000`). Einen Stream beendet `stream.end()`. |
+
+In Mock-Routen warten `setTimeout` und `setInterval` wirklich, sodass ein Socket in seinem eigenen Takt sprechen kann:
+
+```js
+mock.ws("/orders/:id/updates", (socket, req) => {
+  socket.send({ op: "hello", order: req.params.id })
+  socket.on("message", text => {
+    const message = JSON.parse(text)
+    if (message.op === "watch") {
+      setTimeout(() => socket.send({ op: "shipped", order: req.params.id }), 2000)
+    }
+  })
+})
+
+mock.sse("/stock", stream => {
+  let n = 0
+  const timer = setInterval(() => {
+    n += 1
+    stream.send({ n, sku: "TNT-MH-2P", available: 20 - n }, { event: "level", id: String(n) })
+    if (n === 10) { clearInterval(timer); stream.end() }
+  }, 1000)
+})
+```
+
+Sockets in JavaScript antworten vor den von Hand angelegten [WebSocket- und Socket.IO-Routen](/docs/mocks/streams-and-sockets).
+Jede Verbindung ist eine Zeile des Protokolls, mit dem, was in jede Richtung ging. Socket.IO-Namespaces und der
+MQTT-Broker werden nur von Hand angelegt.
+
 ## Grenzen [#limits]
 
 Routen laufen in derselben Sandbox wie [Anfrageskripte](/docs/requests/scripts-and-tests), nicht in Node: kein
@@ -118,7 +163,9 @@ bearbeitet, laufen nicht: Die Karte meldet **Diese Skripte stammen nicht aus Ech
 du sie gelesen und auf **Skripten vertrauen** geklickt hast. Ändern sie sich außerhalb von Echolot erneut, fragt Echolot
 wieder nach.
 
-Agenten können die Routen eines Mocks lesen, aber nie schreiben.
+Agenten können die Routen eines Mocks lesen, aber nie sichern. Sie können Routen vorschlagen: Du siehst ihre Begründung
+und was sich ändert, und nur **Sichern und vertrauen** schreibt sie. Siehe
+[Skripte, die Agenten vorschlagen](/docs/ai/agents#scripts-agents-propose).
 
 ## Über die Befehlszeile [#from-the-command-line]
 

@@ -1,0 +1,177 @@
+---
+title: "Streams, sockets y MQTT"
+description: "Simula datos en directo con rutas que emiten eventos enviados por el servidor, aceptan conexiones WebSocket y Socket.IO, y un broker MQTT que publica en una línea de tiempo y responde a lo que publican los clientes."
+---
+
+Las pantallas en directo necesitan datos en directo: una entrega que se mueve, una carrera que se actualiza vuelta a
+vuelta, un sensor que informa cada segundo. Un mock puede enviar todo eso sin un servidor propio:
+
+- **Eventos enviados por el servidor**: una respuesta HTTP envía eventos en una línea de tiempo en lugar de un cuerpo.
+- **Rutas WebSocket**: una ruta acepta conexiones WebSocket, envía mensajes en cuanto se abre una y responde a lo que
+  envía el cliente.
+- **Rutas Socket.IO**: una ruta es un namespace de Socket.IO, con eventos, respuestas y confirmaciones.
+- **Un broker MQTT** junto al mock: los clientes se suscriben y publican como con cualquier broker, y reciben los
+  mensajes que publica el mock.
+
+Todo se crea a mano en el editor del mock, como las demás [rutas](/docs/mocks/routes), y se guarda en el archivo del
+mock. Para lógica y estado, escribe en su lugar sockets en [JavaScript](/docs/mocks/scripted-routes#sockets).
+
+## Líneas de tiempo [#timelines]
+
+Los streams y los sockets envían sus mensajes en una línea de tiempo. Cada mensaje tiene:
+
+| Campo | Qué es |
+| --- | --- |
+| **ms** | Milisegundos después del mensaje anterior (o después del inicio, para el primero), hasta una hora. |
+| Evento | En los eventos enviados por el servidor, el campo `event:`; en Socket.IO, el evento emitido (`message` si está vacío). |
+| ID | En los eventos enviados por el servidor, el campo `id:`. |
+| Datos | Lo que se envía. Puede llevar datos falsos y partes de la solicitud, como el [cuerpo de una ruta](/docs/mocks/routes#bodies-with-fake-data). |
+
+Los datos también leen `{{stream.index}}` (el número del mensaje en la línea de tiempo, desde 0), `{{stream.number}}`
+(desde 1) y `{{stream.round}}` (qué pasada de la línea de tiempo, desde 0), así que una línea de tiempo que se repite
+puede contar vueltas:
+
+```json
+{ "lap": {{stream.number}}, "at": "{{$isoTimestamp}}" }
+```
+
+Las horas también se pueden desplazar: `{{$isoTimestamp('-90s')}}` es hace 90 segundos, `{{$timestamp('1h')}}` dentro
+de una hora. Consulta [valores dinámicos](/docs/requests/dynamic-values).
+
+**Reproducir** dice cuántas veces se reproduce la línea de tiempo; `0` la reproduce hasta que el cliente se va. Después
+del último mensaje, el menú de al lado elige qué pasa: **terminar la respuesta** o **cerrar la conexión**, o
+**mantenerla abierta**.
+
+## Eventos enviados por el servidor [#server-sent-events]
+
+Abre la respuesta de una ruta HTTP y haz clic en **Transmitir eventos enviados por el servidor en su lugar** debajo de
+su cuerpo. El cuerpo deja paso a una línea de tiempo: añade mensajes con **Añadir un mensaje** y fija el retardo, el
+evento, el ID y los datos de cada uno. **Enviar un cuerpo en su lugar** vuelve a un cuerpo normal.
+
+El mock responde con `Content-Type: text/event-stream` y `Cache-Control: no-cache`, mantiene abierta la conexión y
+escribe cada evento cuando le llega su momento:
+
+```text
+event: status
+id: 1
+data: {"order": "ord_7Hk2Lw", "status": "shipped"}
+
+```
+
+Los datos de varias líneas se envían como varias líneas `data:`. Un stream que se reproduce hasta que el cliente se va
+se detiene cuando el cliente se marcha o el mock se detiene.
+
+```sh
+curl -N http://127.0.0.1:4010/orders/ord_7Hk2Lw/events
+```
+
+## Rutas WebSocket [#websocket-routes]
+
+Elige **WebSocket** en el menú del tipo de la ruta, antes de la ruta. La ruta acepta entonces conexiones WebSocket con
+un `GET` a su ruta, y recibe una respuesta llamada **Abierta** con el estado `101`.
+
+<Shot id="mocks-route-websocket" alt="El editor de una ruta WebSocket: su tipo y su ruta, la respuesta Open con el estado 101, un mensaje enviado al abrirse el socket y una respuesta a un mensaje cuyo campo op es watch" />
+
+Las respuestas de la ruta deciden qué pasa cuando un cliente se conecta, elegidas por sus
+[reglas](/docs/mocks/routes#choosing-a-response) como las de cualquier otra ruta:
+
+- Una respuesta `101` abre la conexión. Las cabeceras que añadas van con la actualización.
+- Cualquier otra respuesta rechaza la conexión con esa respuesta: un `401` con un cuerpo cuando falta un token, por
+  ejemplo. Una respuesta con la regla **Parámetro de consulta** `token` está vacío responde a los clientes que llegan
+  sin él.
+
+Un `GET` sin actualización a una ruta cuya respuesta es `101` recibe `426 Upgrade Required`.
+
+### Enviado al abrirse [#sent-once-open]
+
+Los mensajes de **Enviado al abrirse** van al cliente en cuanto se abre la conexión, cada uno tras su retardo: un
+saludo, un estado del que partir, un stream de actualizaciones. **Cerrar por sí mismo** hace que el mock cierre la
+conexión al cabo de un tiempo, con un código de cierre y un motivo, como `4000` y `Shift over`.
+
+### Respuestas [#replies]
+
+**Respuestas** responde a lo que envía el cliente. Cuando llega un mensaje, lo responde la primera respuesta cuyas
+condiciones se cumplen todas; un mensaje que ninguna respuesta acepta se queda sin respuesta.
+
+- **Añadir condición** comprueba un campo del mensaje, leído como JSON: `op` es `watch`, `user.id` es `*`. Un nombre de
+  campo vacío comprueba el texto entero, para los mensajes que no son JSON. Las reglas de la
+  [página de rutas](/docs/mocks/routes#choosing-a-response) valen aquí: `*` es cualquier valor, un valor vacío significa
+  que falta.
+- **Envíos** es una línea de tiempo de mensajes que vuelven. Leen el mensaje al que responden: `{{message.order}}` es
+  su campo `order`, `{{message}}` el texto entero.
+- **Luego cerrar** cierra la conexión después de enviar, con un código de cierre y un motivo.
+
+Por ejemplo, una respuesta con la condición `op` es `watch` que envía
+`{"op": "shipped", "order": "{{message.order}}"}` tras 500 ms responde a `{"op": "watch", "order": "ord_7Hk2Lw"}` con el
+envío del pedido medio segundo después.
+
+## Rutas Socket.IO [#socketio-routes]
+
+Elige **Socket.IO** en el menú del tipo. Una ruta Socket.IO es un namespace: su ruta es el namespace al que se unen los
+clientes (`/support`, o `/` para el principal). El mock es un servidor Socket.IO 3 y 4 en `/socket.io/`, sobre WebSocket y
+long polling, con la actualización de uno a otro, así que socket.io-client funciona con sus opciones habituales.
+
+La ruta recibe una respuesta llamada **Unido** con el estado `101`:
+
+- Una respuesta `101` deja que el cliente se una al namespace. **Emitido al unirse** es su línea de tiempo; cada
+  mensaje nombra su evento y da los argumentos como un array JSON (`[{"text": "Hello"}]`), o un valor para un único argumento.
+- Cualquier otra respuesta rechaza: el cliente recibe un error de conexión cuyo mensaje es el cuerpo de la respuesta (un
+  objeto JSON tal cual, como `{"message": "token rejected"}`, cualquier otro texto como mensaje).
+
+Las reglas eligen la respuesta como en las demás rutas. Las reglas **Campo del cuerpo** leen la carga de autenticación
+del cliente, así que `token` es `bad` puede rechazar un token. Un namespace que ninguna ruta tiene recibe el error
+`Invalid namespace`.
+
+**Respuestas** responde a las emisiones del cliente: **Cuando el cliente emite** nombra el evento (vacío acepta
+cualquiera), las condiciones leen los argumentos como un array (`0.topic` es el `topic` del primer argumento), y
+**Envíos** emite eventos de vuelta, leyendo `{{message.0.topic}}`. **Responder a su confirmación** devuelve el primer
+mensaje como argumentos de la confirmación, cuando la emisión pidió una. **Luego desconectar** y
+**Desconectar por sí mismo** sacan al cliente del namespace.
+
+## El broker MQTT [#the-mqtt-broker]
+
+Un mock puede ejecutar un broker MQTT en un puerto propio. Haz clic en **Añadir un bróker** en la tarjeta
+**Bróker MQTT**; toma el puerto `1883`, o `1884` cuando el mock ya usa ese. **Quitar bróker** lo quita.
+
+<Shot id="mocks-broker" alt="La tarjeta Bróker MQTT: el puerto 1889, dos mensajes publicados en una línea de tiempo en topics de almacén, uno de ellos retenido con QoS 1, y una respuesta a lo que los clientes publican en warehouse/+/restock" />
+
+El broker es uno de verdad para clientes MQTT 3.1.1 y 5.0 sobre TCP: se conectan, se suscriben y publican como con
+cualquier broker, con QoS 0, 1 y 2, mensajes retenidos y wills. Iniciar el mock lo inicia; la barra superior muestra su
+dirección, como `mqtt://127.0.0.1:1883`.
+
+- **Publicado** es una línea de tiempo que el broker publica desde que arranca el mock: el retardo, el topic, los datos,
+  **QoS** y **Retener** de cada mensaje. Un mensaje retenido espera a los clientes que se suscriben más tarde.
+  **Reproducir** repite la línea de tiempo, `0` mientras el mock se ejecuta.
+- **Respuestas** responde a lo que publican los clientes. **Cuando un cliente publica en** acepta un filtro de topics
+  (`warehouse/+/restock`), las condiciones leen la carga como JSON, y **Publica** envía mensajes de vuelta, a topics que
+  también pueden leer el mensaje: `warehouse/{{message.warehouse}}/orders`. `{{stream.topic}}` es el topic en el que publicó
+  el cliente.
+
+```sh
+echolot mqtt subscribe mqtt://127.0.0.1:1883 'warehouse/#' --count 3
+```
+
+Cambiar el broker mientras el mock se ejecuta vuelve a iniciar el mock.
+
+## El registro [#the-log]
+
+Cada conexión es una línea del [registro](/docs/mocks#the-log), con su estado (`101` para un socket abierto, el estado
+de un rechazo) y los mensajes en ambos sentidos, como líneas JSON, en la respuesta que muestra. Cada cliente MQTT es
+también una línea, con lo que se suscribió, publicó y recibió.
+
+## Solicitudes y agentes [#requests-and-agents]
+
+**Crear solicitudes** crea una solicitud WebSocket para una ruta WebSocket y una solicitud Socket.IO para una ruta
+Socket.IO, con un mensaje por cada respuesta que tiene condiciones, y una solicitud MQTT para el broker, suscrita a todos
+los topics. Consulta [WebSocket y SSE](/docs/requests/websocket-and-sse), [Socket.IO](/docs/requests/socket-io) y
+[MQTT](/docs/requests/mqtt).
+
+Los agentes lo fijan todo: `save_mock_route` acepta el `kind` de una ruta, los `events`, `repeats`, `ends`, `replies` y
+`close` de sus respuestas, y `save_mock` acepta un `broker` o `removeBroker`. Consulta [Agentes](/docs/ai/agents).
+
+## En el espacio de trabajo [#in-the-workspace]
+
+En el archivo del mock, el `kind` de una ruta es `websocket` o `socketio`; la línea de tiempo de una respuesta es
+`[[routes.responses.events]]`, sus respuestas `[[routes.responses.replies]]` con `[[routes.responses.replies.send]]`;
+el broker es `[broker]` con `[[broker.publishes]]` y `[[broker.replies]]`. Consulta
+[archivos del espacio de trabajo](/docs/reference/workspace-files#mocks).

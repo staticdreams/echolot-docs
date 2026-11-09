@@ -1,0 +1,143 @@
+---
+title: "流、套接字和 MQTT"
+description: "用以流的形式发送服务器发送事件的路由、接受 WebSocket 和 Socket.IO 连接的路由，以及按时间线发布并应答客户端发布内容的 MQTT Broker 来模拟实时数据。"
+---
+
+实时屏幕需要实时数据：移动中的配送、逐圈更新的比赛、每秒上报一次的传感器。模拟服务器无需你自己的服务器就能发送这一切：
+
+- **服务器发送事件**：HTTP 响应按时间线发送事件，而不是正文。
+- **WebSocket 路由**：路由接受 WebSocket 连接，连接打开后发送消息，并应答客户端发送的内容。
+- **Socket.IO 路由**：路由是一个 Socket.IO 命名空间，带有事件、回复和确认。
+- 模拟服务器旁边的 **MQTT Broker**：客户端像使用任何 Broker 一样订阅和发布，并收到模拟服务器发布的消息。
+
+所有这些都和其他[路由](/docs/mocks/routes)一样，在模拟服务器的编辑器中手工创建，并存储在模拟服务器的文件中。
+需要逻辑和状态时，请改用 [JavaScript](/docs/mocks/scripted-routes#sockets) 编写套接字。
+
+## 时间线 [#timelines]
+
+流和套接字按时间线发送消息。每条消息包含：
+
+| 字段 | 含义 |
+| --- | --- |
+| **ms** | 在上一条消息之后（第一条则在开始之后）的毫秒数，最长一小时。 |
+| 事件 | 对于服务器发送事件，是 `event:` 字段；对于 Socket.IO，是发出的事件（为空时为 `message`）。 |
+| ID | 对于服务器发送事件，是 `id:` 字段。 |
+| 数据 | 发送的内容。它可以包含示例数据和请求的各个部分，就像[路由的正文](/docs/mocks/routes#bodies-with-fake-data)一样。 |
+
+数据还可以读取 `{{stream.index}}`（消息在时间线中的序号，从 0 开始）、`{{stream.number}}`（从 1 开始）和
+`{{stream.round}}`（时间线播放到第几遍，从 0 开始），因此重复播放的时间线可以计圈数：
+
+```json
+{ "lap": {{stream.number}}, "at": "{{$isoTimestamp}}" }
+```
+
+时间也可以偏移：`{{$isoTimestamp('-90s')}}` 是 90 秒前，`{{$timestamp('1h')}}` 是一小时后。参见[动态值](/docs/requests/dynamic-values)。
+
+**播放**表示时间线播放的次数；`0` 表示一直播放到客户端离开。最后一条消息之后会发生什么，由旁边的菜单选择：**结束响应**、**关闭连接**或**保持打开**。
+
+## 服务器发送事件 [#server-sent-events]
+
+打开 HTTP 路由的响应，点按正文下方的**改为流式发送 Server-Sent Events**。正文会让位给时间线：用**添加一条消息**添加消息，
+并设置每条消息的延迟、事件、ID 和数据。**改为发送正文**会回到普通正文。
+
+模拟服务器以 `Content-Type: text/event-stream` 和 `Cache-Control: no-cache` 应答，保持连接打开，并在每个事件的时间到来时写出它：
+
+```text
+event: status
+id: 1
+data: {"order": "ord_7Hk2Lw", "status": "shipped"}
+
+```
+
+多行数据会作为多个 `data:` 行发送。一直播放到客户端离开的流，会在客户端离开或模拟服务器停止时停止。
+
+```sh
+curl -N http://127.0.0.1:4010/orders/ord_7Hk2Lw/events
+```
+
+## WebSocket 路由 [#websocket-routes]
+
+在路由路径前面的类型菜单中选择 **WebSocket**。之后，该路由接受对其路径的 `GET` 发起的 WebSocket 连接，并得到一个名为**已打开**、状态为 `101` 的响应。
+
+<Shot id="mocks-route-websocket" alt="WebSocket 路由的编辑器：它的类型和路径，状态为 101 的“Open”响应，套接字打开后发送的一条消息，以及应答 op 字段为 watch 的消息的回复" />
+
+客户端连接时发生什么，由路由的响应决定，和其他路由一样按它们的[规则](/docs/mocks/routes#choosing-a-response)选择：
+
+- `101` 响应会打开连接。你添加的标头会随升级一起发送。
+- 其他任何响应都会用该应答拒绝连接：比如缺少令牌时返回带正文的 `401`。规则为**查询参数** `token` 为空的响应，会应答没有带令牌的客户端。
+
+对应答为 `101` 的路由发送不带升级的 `GET`，会得到 `426 Upgrade Required`。
+
+### 打开后发送 [#sent-once-open]
+
+**打开后发送**下的消息会在连接打开后发给客户端，每条在各自的延迟之后发送：问候、初始状态、一连串更新。**自行关闭**会让模拟服务器在一段时间后关闭连接，
+并带上关闭码和原因，比如 `4000` 和 `Shift over`。
+
+### 回复 [#replies]
+
+**回复**应答客户端发送的内容。消息到达时，由第一个所有条件都成立的回复来应答；没有回复接手的消息不会得到应答。
+
+- **添加条件**检查消息中按 JSON 读取的某个字段：`op` 为 `watch`，`user.id` 为 `*`。字段名为空时检查整段文本，用于不是 JSON 的消息。
+  [路由页面](/docs/mocks/routes#choosing-a-response)中的规则在这里同样适用：`*` 表示任意值，值为空表示缺失。
+- **发送**是发回的消息的时间线。它们可以读取所应答的消息：`{{message.order}}` 是它的 `order` 字段，`{{message}}` 是整段文本。
+- **然后关闭**会在发送后关闭连接，并带上关闭码和原因。
+
+例如，一个条件为 `op` 为 `watch`、在 500 毫秒后发送 `{"op": "shipped", "order": "{{message.order}}"}` 的回复，
+会在半秒后用订单已发货的消息应答 `{"op": "watch", "order": "ord_7Hk2Lw"}`。
+
+## Socket.IO 路由 [#socketio-routes]
+
+在类型菜单中选择 **Socket.IO**。Socket.IO 路由是一个命名空间：它的路径就是客户端加入的命名空间（`/support`，或者主命名空间 `/`）。
+模拟服务器是位于 `/socket.io/` 的 Socket.IO 3 和 4 服务器，支持 WebSocket 和长轮询，并支持从后者升级到前者，因此 socket.io-client 使用它通常的选项即可工作。
+
+该路由会得到一个名为**已加入**、状态为 `101` 的响应：
+
+- `101` 响应让客户端加入命名空间。**加入后发出**是它的时间线；每条消息指定它的事件，并以 JSON 数组给出参数（`[{"text": "Hello"}]`），只有一个参数时也可以只给一个值。
+- 其他任何响应都会拒绝：客户端得到一个连接错误，其消息就是响应的正文（JSON 对象原样传递，比如 `{"message": "token rejected"}`，其他文本作为消息）。
+
+规则像在其他路由上一样选择响应。**正文字段**规则读取客户端的认证负载，因此 `token` 为 `bad` 可以拒绝某个令牌。没有任何路由的命名空间会得到错误 `Invalid namespace`。
+
+**回复**应答客户端的发送：**当客户端发出**指定事件（为空时接受任何事件），条件将参数作为数组读取（`0.topic` 是第一个参数的 `topic`），
+**发送**则发回事件，可以读取 `{{message.0.topic}}`。客户端的发送请求确认时，**应答其确认**会把第一条消息作为确认的参数发回。
+**然后断开**和**自行断开**会让客户端离开命名空间。
+
+## MQTT Broker [#the-mqtt-broker]
+
+模拟服务器可以在自己的端口上运行一个 MQTT Broker。在 **MQTT 代理**卡片中点按**添加代理**；它使用端口 `1883`，如果模拟服务器已经使用该端口，则使用 `1884`。
+**移除代理**会将它移除。
+
+<Shot id="mocks-broker" alt="“MQTT 代理”卡片：端口 1889，按时间线发布到仓库主题的两条消息，其中一条以 QoS 1 保留，以及一个应答客户端发布到 warehouse/+/restock 的内容的回复" />
+
+该 Broker 是面向 MQTT 3.1.1 和 5.0 客户端、基于 TCP 的真正 Broker：客户端像使用任何 Broker 一样连接、订阅和发布，支持 QoS 0、1 和 2、保留消息和遗嘱。
+启动模拟服务器即会启动它；顶部的栏会显示它的地址，比如 `mqtt://127.0.0.1:1883`。
+
+- **发布**是 Broker 从模拟服务器启动那一刻起发布的时间线：每条消息的延迟、主题、数据、**QoS** 和**保留**。保留的消息会等待之后订阅的客户端。
+  **播放**会重复时间线，`0` 表示在模拟服务器运行期间一直重复。
+- **回复**应答客户端发布的内容。**当客户端发布到**接受一个主题过滤器（`warehouse/+/restock`），条件将负载作为 JSON 读取，
+  **发布**则把消息发回，发往的主题也可以读取该消息：`warehouse/{{message.warehouse}}/orders`。`{{stream.topic}}` 是客户端发布到的主题。
+
+```sh
+echolot mqtt subscribe mqtt://127.0.0.1:1883 'warehouse/#' --count 3
+```
+
+在模拟服务器运行期间更改 Broker 会重新启动模拟服务器。
+
+## 日志 [#the-log]
+
+每个连接都是[日志](/docs/mocks#the-log)中的一行，在它显示的响应中带有状态（打开的套接字为 `101`，拒绝时为拒绝的状态）以及双向的消息（以 JSON 行表示）。
+每个 MQTT 客户端也是一行，记录它订阅、发布和收到的内容。
+
+## 请求和智能体 [#requests-and-agents]
+
+**创建请求**会为 WebSocket 路由创建 WebSocket 请求，为 Socket.IO 路由创建 Socket.IO 请求，并为每个带条件的回复创建一条消息；
+还会为 Broker 创建订阅了所有主题的 MQTT 请求。参见 [WebSocket 和 SSE](/docs/requests/websocket-and-sse)、[Socket.IO](/docs/requests/socket-io) 和
+[MQTT](/docs/requests/mqtt)。
+
+智能体可以设置所有这些：`save_mock_route` 接受路由的 `kind`，以及它的响应的 `events`、`repeats`、`ends`、`replies` 和 `close`；
+`save_mock` 接受 `broker` 或 `removeBroker`。参见[智能体](/docs/ai/agents)。
+
+## 在工作区中 [#in-the-workspace]
+
+在模拟服务器的文件中，路由的 `kind` 为 `websocket` 或 `socketio`；响应的时间线是 `[[routes.responses.events]]`，
+它的回复是 `[[routes.responses.replies]]` 加上 `[[routes.responses.replies.send]]`；Broker 是 `[broker]`，加上 `[[broker.publishes]]` 和
+`[[broker.replies]]`。参见[工作区文件](/docs/reference/workspace-files#mocks)。

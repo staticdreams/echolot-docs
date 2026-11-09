@@ -97,10 +97,29 @@ Zustellungen mit QoS 1 und 2 werden für dich bestätigt, in beide Richtungen.
 Schließt die Verbindung, wird die Sitzung im [Verlauf](/docs/workspaces/history) behalten, mit dem Log als Body der
 Antwort, sodass Prüfungen auf dem **Body** damit funktionieren.
 
+## Prüfungen, Erfassungen und Durchläufe [#checks-captures-and-runs]
+
+**Wert in Nachrichten**, **Empfangene Nachrichten** und **Sitzungsende** im Tab **Tests** prüfen die empfangenen
+Nachrichten, und die Erfassungen **Erste Nachricht** und **Letzte Nachricht** lesen sie, jede Nutzlast als JSON gelesen.
+Beschränke eine Prüfung oder Erfassung mit einem Topic-Filter in ihrem Feld **beliebig** auf bestimmte Topics, etwa
+`warehouses/+/temperature`. **Sitzungsende** liest den Reason Code des Brokers, wenn er die Verbindung trennt. Siehe
+[Prüfungen auf Echtzeit-Sitzungen](/docs/requests/scripts-and-tests#checks-on-realtime-sessions).
+
+In Durchläufen hört `stop-after-acks = true` unter `[settings]` in der Anfragedatei auf zuzuhören, sobald der Broker
+jedes Abonnement und jede Veröffentlichung mit QoS 1 oder 2 bestätigt hat. Ein Broker, der die Verbindung ablehnt,
+ergibt in Durchläufen einen Status, etwa `401` für einen falschen Benutzernamen oder ein falsches Passwort. Siehe
+[früher aufhören zuzuhören](/docs/requests/websocket-and-sse#stop-listening-early) und
+[abgelehnte Verbindungen](/docs/requests/websocket-and-sse#refused-connections).
+
 ## MQTT 5.0 [#mqtt-50]
 
 Die Reason Codes des Brokers erscheinen im Log und bei einer abgelehnten Verbindung mit ihrem Namen, etwa `Success` oder
-`Not authorized`, in beiden Versionen. Mit gewähltem **MQTT 5.0**:
+`Not authorized`, in beiden Versionen.
+
+Ist **MQTT 5.0** gewählt und lehnt der Broker es ab, wie es ein Broker tut, der nur 3.1.1 spricht, verbindet sich
+Echolot erneut mit MQTT 3.1.1. Die erste Zeile des Logs sagt, mit welchem Protokoll die Verbindung zustande kam.
+
+Mit gewähltem **MQTT 5.0**:
 
 - **No Local** bei einem Abonnement lässt die eigenen Nachrichten dieses Clients weg.
 - **Clean Start** ersetzt **Clean Session** von 3.1.1.

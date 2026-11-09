@@ -81,4 +81,5 @@ gRPC 在状态中报告调用的情况，状态在消息之后的尾部元数据
 
 ## 通过命令行 [#from-the-command-line]
 
-`echolot grpc describe` 列出服务器的服务和方法，`echolot grpc call` 发起调用，遇到不是 `OK` 的状态时以 1 退出。见 [echolot grpc](/docs/cli/grpc)。
+`echolot grpc describe` 列出服务器的服务和方法，`echolot grpc call` 发起调用，遇到不是 `OK` 的状态或无法解码的应答时以 1 退出。在终端中，或者带有 `--stream` 时，服务器流的消息会在到达时逐条打印，
+每行一个 JSON 对象。见 [echolot grpc](/docs/cli/grpc)。

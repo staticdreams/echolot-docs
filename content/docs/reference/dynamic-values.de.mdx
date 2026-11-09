@@ -123,28 +123,38 @@ den Schlüssel, die Nachricht und optional die Ausgabe.
 
 ## Zeit [#time]
 
-Alle diese Werte sind der Moment, in dem die Anfrage gesendet wird.
+Alle diese Werte sind der Moment, in dem die Anfrage gesendet wird, um einen Versatz verschoben, wenn du einen angibst.
 
 | Wert | Argumente | Was er liefert |
 | --- | --- | --- |
-| `$timestamp` | keine | Unix-Zeit in Sekunden: `1793525000`. |
-| `$timestampMs` | keine | Unix-Zeit in Millisekunden: `1793525000123`. |
-| `$isoTimestamp` | keine | ISO 8601 in UTC, mit Millisekunden: `2026-11-01T09:30:00.123Z`. |
+| `$timestamp` | Versatz (optional) | Unix-Zeit in Sekunden: `1793525000`. `{{$timestamp(60)}}` ist in einer Minute. |
+| `$timestampMs` | Versatz (optional) | Unix-Zeit in Millisekunden: `1793525000123`. |
+| `$isoTimestamp` | Versatz (optional) | ISO 8601 in UTC, mit Millisekunden: `2026-11-01T09:30:00.123Z`. `{{$isoTimestamp('-90s')}}` ist vor 90 Sekunden. |
 | `$httpDate` | keine | Ein HTTP-Datum, für `Date` oder `If-Modified-Since`: `Sun, 01 Nov 2026 09:30:00 GMT`. |
 | `$date` | Format, Versatz in Sekunden (optional), Zeitzone (optional) | Die Zeit in einem Unicode-Datumsmuster, um den Versatz verschoben, in der Zeitzone (UTC, sofern nicht angegeben). `{{$date('yyyy-MM-dd')}}`, `{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
 
+Der Versatz von `$timestamp`, `$timestampMs` und `$isoTimestamp` ist eine Zahl von Sekunden oder eine Zahl mit einer
+Einheit: `ms`, `s`, `m`, `h`, `d` oder `w`. Ein `-` verschiebt in die Vergangenheit, ein `+` (oder nichts) in die
+Zukunft: `'-90s'`, `'2h'`, `'-1d'`, `'1w'`. Schreib ihn in Anführungszeichen, als Text; eine einfache Zahl von Sekunden
+darf allein stehen, wie in `{{$timestamp(-3600)}}`. Ein Versatz, der keiner ist, schlägt mit einer Meldung fehl, die
+sagt, was du schreiben sollst.
+
 ## Zufall [#random]
 
-Bei jedem Senden ein neuer Wert.
+Bei jedem Senden ein neuer Wert, außer bei `$sameUUID`.
 
 | Wert | Argumente | Was er liefert |
 | --- | --- | --- |
 | `$uuid` | keine | Eine zufällige UUID in Kleinbuchstaben. Auch `$guid` und `$randomUUID`. `{{$uuid}}` |
+| `$sameUUID` | Name | Eine zufällige UUID, einmal erzeugt und überall wieder geliefert, wo derselbe Name nach ihr fragt: einmal pro Lauf (jede Iteration ihre eigene), außerhalb eines Laufs einmal pro Fenster, in der Befehlszeile einmal pro Befehl. `{{$sameUUID('order')}}` |
 | `$randomInt` | Minimum, Maximum | Eine ganze Zahl zwischen den beiden, beide eingeschlossen. Ein Argument ist das Maximum, ab 0; keines ergibt 0 bis 1000. `{{$randomInt(1, 5)}}` |
 | `$randomString` | Länge, Zeichen (optional) | Zufällige Zeichen, 16, sofern nicht angegeben (bis 4096): Buchstaben und Ziffern oder die angegebenen Zeichen. `{{$randomString(8, 'ABCDEF0123456789')}}` |
 | `$randomHex` | Bytes | Zufällige Bytes als Hex, 16, sofern nicht angegeben (bis 2048); doppelt so viele Ziffern. `{{$randomHex(8)}}` |
 
 **Create order** in Alpenglow sendet `Idempotency-Key: {{$uuid}}`, sodass jede Bestellung, die es aufgibt, eine neue ist.
+Wo mehrere Anfragen eines Laufs denselben Schlüssel senden müssen, etwa eine Anfrage und ihre Wiederholung oder ein
+Anlegen und die Änderung danach, gib ihnen `{{$sameUUID('order')}}`: Jeder Lauf bekommt einen neuen Schlüssel, und jede
+Anfrage, die `order` nennt, sendet ihn.
 
 ## Beispieldaten [#fake-data]
 
@@ -155,7 +165,7 @@ Variablen von Postman, sodass Sammlungen, die sie verwenden, hier echte Werte se
 
 Argumente sind optional; Zahlen reichen von -10^15 bis 10^15. Mock-Bodys können außerdem `$uuid` (als `$randomUUID`),
 `$randomInt`, `$randomString`, `$randomHex`, `$timestamp`, `$timestampMs` und `$isoTimestamp` aus [Zufall](#random) und
-[Zeit](#time) verwenden. Im Terminal füllt [`echolot fake`](/docs/cli/fake) eine Vorlage damit.
+[Zeit](#time) verwenden, die Zeitwerte mit ihrem Versatz. Im Terminal füllt [`echolot fake`](/docs/cli/fake) eine Vorlage damit.
 
 ### Allgemein [#common]
 

@@ -121,3 +121,29 @@ solicitudes como están.
 Una carpeta también puede seguir una especificación de fuera del espacio de trabajo, un archivo o una URL: haz clic con
 el botón derecho en la carpeta en la barra lateral Solicitudes y elige **Vincular a una especificación OpenAPI…**. La
 herramienta de línea de comandos comprueba y aplica cambios con `echolot spec check` y `echolot spec apply`.
+
+## Comprobar respuestas contra una especificación [#checking-responses-against-a-spec]
+
+Una comprobación **Especificación OpenAPI** en la pestaña **Pruebas** de una solicitud valida la respuesta con el esquema
+que la especificación documenta para su operación y su estado. Consulta [scripts y pruebas](/docs/requests/scripts-and-tests).
+La solicitud necesita conocer ambas cosas:
+
+- La operación, `spec-operation` en el archivo de la solicitud, como `GET /products/{sku}`. Las solicitudes creadas a
+  partir de una especificación la tienen.
+- La especificación. Es la que sigue su carpeta, o una carpeta superior. Una solicitud también puede nombrar la suya con
+  `spec` en su archivo, como `spec = "specs/alpenglow.yaml"`. Entonces se comprueba con esa especificación sin que su
+  carpeta la siga, así que no se sincroniza nada de la carpeta: útil para solicitudes a un [mock](/docs/mocks), o para
+  unas pocas solicitudes de una carpeta creadas a mano.
+
+```toml
+spec = "specs/alpenglow.yaml"
+spec-operation = "GET /products/{sku}"
+```
+
+## Importar una especificación en un espacio de trabajo [#importing-a-spec-into-a-workspace]
+
+**Archivo › Importar…** con un documento OpenAPI crea solicitudes que empiezan por `{{baseUrl}}`, y fija `baseUrl` a
+partir de los servidores de la especificación. Cuando el espacio de trabajo o uno de sus entornos ya tiene una variable
+de dirección base (`baseUrl`, `baseURL`, `base_url`, `apiUrl` y similares), las solicitudes usan esa y la importación no
+fija ninguna, así que tus entornos deciden adónde van. El informe de la importación lo dice, con la dirección de servidor
+propia de la especificación. Consulta [importar](/docs/get-started/importing).

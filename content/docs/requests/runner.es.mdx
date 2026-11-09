@@ -54,9 +54,17 @@ Se puede ejecutar cualquier tipo de solicitud:
 - Las solicitudes HTTP, GraphQL y gRPC y las llamadas MCP se envían y se comprueban como cualquier otra.
 - Las solicitudes WebSocket, Socket.IO y MQTT se conectan, envían sus mensajes, eventos o publicaciones guardados que
   están activados para las ejecuciones (y MQTT se suscribe a sus filtros activados), escuchan durante 10 segundos y
-  cierran. El registro de mensajes es la respuesta, así que las comprobaciones sobre el **Cuerpo** funcionan con él. Para
-  escuchar durante otro tiempo, define `stream-limit` (en segundos) en el `[settings]` del archivo de la solicitud.
+  cierran. El registro de mensajes es la respuesta, así que las
+  [comprobaciones de mensajes](/docs/requests/scripts-and-tests#checks-on-realtime-sessions) y las comprobaciones sobre
+  el **Cuerpo** funcionan con él. Para escuchar durante otro tiempo, define `stream-limit` (en segundos) en el
+  `[settings]` del archivo de la solicitud; para parar en cuanto llega la respuesta que esperas, define una
+  [condición de parada](/docs/requests/websocket-and-sse#stop-listening-early). Un servidor que rechaza la conexión
+  también da una respuesta con un estado, así que una comprobación puede esperar el rechazo.
 - Un stream de server-sent events se mantiene durante 10 segundos y después se termina.
+
+Una solicitud cuyas `{{variables}}` no tienen valor en el entorno elegido no se envía: falla, y el resultado nombra la
+variable y el entorno, como `Not sent: {{baseURL}} is not defined in the environment “Staging” or above it.` Elige otro
+entorno, o define la variable.
 
 Un script previo a la solicitud puede omitir una solicitud con `pm.execution.skipRequest()`; el resultado dice **Omitida
 por un script previo**. Un script también puede saltar con `pm.execution.setNextRequest("Request name")`, y terminar la

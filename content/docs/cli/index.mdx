@@ -57,7 +57,7 @@ The command-line tool never expires, also in beta builds of the app. It needs ma
 | [`echolot run`](/docs/cli/run) | Runs a workspace, some of its folders or requests, or a Postman collection, with checks and reports. |
 | [`echolot validate`](/docs/cli/validate) | Checks that every file of a workspace reads and every request resolves. |
 | [`echolot import`, `echolot export`](/docs/cli/import-export) | Brings collections into a workspace and writes a workspace out as Postman, Insomnia, Bruno or Echolot. |
-| [`echolot mcp`](/docs/cli/mcp) | Checks MCP servers, signs in to them, serves a workspace to agents and prints client setups. |
+| [`echolot mcp`](/docs/cli/mcp) | Checks and calls MCP servers, signs in to them, serves a workspace to agents and prints client setups. |
 | [`echolot spec`](/docs/cli/spec) | Lints OpenAPI documents, and checks and applies spec changes to the folder that follows the spec. |
 | [`echolot graphql diff`](/docs/cli/graphql) | Compares two GraphQL schemas and grades every change. |
 | [`echolot grpc`](/docs/cli/grpc) | Describes gRPC services and calls their methods. |
@@ -81,7 +81,9 @@ subcommands take them the same way: `echolot mcp serve --help`.
 
 Commands that work on a workspace take its folder, the one with `workspace.toml` in it. Some take it as an argument
 (`echolot run Alpenglow.echolot`), others with `-w` or `--workspace` (`echolot flow list -w Alpenglow.echolot`); each
-command's page says which. Where it is optional, the current folder is used.
+command's page says which. Where it is optional, the current folder is used. A folder without `workspace.toml` that
+holds exactly one `*.echolot` workspace counts as that workspace, so `echolot mcp serve` with no path works from a
+project's root folder.
 
 `--env` chooses an environment by its file name without `.toml` (`staging`). `run`, `validate` and `flow` also take
 its name (`Staging`). Without `--env`, requests resolve with the workspace's own variables. See
@@ -137,7 +139,7 @@ echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
 | Exit code | Meaning |
 | --- | --- |
 | `0` | Everything worked and every check passed. |
-| `1` | Something failed: no response, a failing check or test, problems found (`validate`, `spec lint`), breaking changes (`graphql diff`), a gRPC status other than OK, a refused MQTT connection, an agent that didn't finish. |
+| `1` | Something failed: no response, a failing check or test, problems found (`validate`, `spec lint`), breaking changes (`graphql diff`), a gRPC status other than OK or an answer that can't be decoded, a refused MQTT connection, an MCP call that failed (`mcp call`), an agent that didn't finish. |
 | `22` | `echolot send` only: the response's status was 400 or more, as with `curl --fail`. |
 | `64` | The command line itself was wrong: an unknown option, a missing file, an environment that doesn't exist. The reason is printed. |
 

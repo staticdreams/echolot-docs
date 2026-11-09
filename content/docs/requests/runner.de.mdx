@@ -57,10 +57,17 @@ Jede Art von Anfrage kann laufen:
 - HTTP-, GraphQL- und gRPC-Anfragen sowie MCP-Aufrufe werden wie alle anderen gesendet und geprüft.
 - WebSocket-, Socket.IO- und MQTT-Anfragen verbinden sich, senden ihre gesicherten Nachrichten, Ereignisse oder
   Veröffentlichungen, die für Durchläufe eingeschaltet sind (und MQTT abonniert seine aktivierten Filter), hören 10
-  Sekunden zu und schließen dann. Das Nachrichtenlog ist die Antwort, sodass Prüfungen auf dem **Body** damit
-  funktionieren. Um eine andere Zeit zuzuhören, setze `stream-limit` (in Sekunden) unter `[settings]` in der
-  Anfragedatei.
+  Sekunden zu und schließen dann. Das Nachrichtenlog ist die Antwort, sodass
+  [Prüfungen auf Nachrichten](/docs/requests/scripts-and-tests#checks-on-realtime-sessions) und Prüfungen auf dem
+  **Body** damit funktionieren. Um eine andere Zeit zuzuhören, setze `stream-limit` (in Sekunden) unter `[settings]` in
+  der Anfragedatei; um aufzuhören, sobald die Antwort da ist, auf die du wartest, setze eine
+  [Stoppbedingung](/docs/requests/websocket-and-sse#stop-listening-early). Ein Server, der die Verbindung ablehnt,
+  ergibt ebenfalls eine Antwort mit einem Status, sodass eine Prüfung die Ablehnung erwarten kann.
 - Ein Server-Sent-Events-Stream wird 10 Sekunden gehalten und dann beendet.
+
+Eine Anfrage, deren `{{variables}}` in der gewählten Umgebung keinen Wert haben, wird nicht gesendet: Sie schlägt fehl,
+und das Ergebnis nennt die Variable und die Umgebung, etwa `Not sent: {{baseURL}} is not defined in the environment
+“Staging” or above it.` Wähle eine andere Umgebung oder lege die Variable fest.
 
 Ein Pre-Request-Skript kann eine Anfrage mit `pm.execution.skipRequest()` überspringen; das Ergebnis sagt
 **Von einem Pre-Request-Skript übersprungen**. Ein Skript kann auch mit `pm.execution.setNextRequest("Request name")`

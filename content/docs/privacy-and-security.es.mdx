@@ -121,9 +121,11 @@ los dejas.
   **Permitir en esta sesión**). Los entornos protegidos y los hosts nuevos siempre preguntan.
 - **Los secretos nunca llegan a un agente.** Los agentes se refieren a los secretos por su nombre. Todo lo que recibe un
   agente, errores incluidos, tiene los valores secretos eliminados, tal como están escritos, en JSON, con codificación
-  porcentual y en Base64. El historial que lee un agente tiene las credenciales enmascaradas.
-- **Nunca se ofrecen.** Las reglas de los agentes, el proxy, los certificados, la autenticación y los scripts no son
-  herramientas que puedan usar los agentes.
+  porcentual y en Base64. El historial que lee un agente tiene las credenciales enmascaradas, y también los campos de
+  credenciales de los cuerpos de respuesta, como un `access_token` que nadie guardó.
+- **Nunca se ofrecen.** Las reglas de los agentes, el proxy, los certificados, la autenticación y guardar scripts no son
+  herramientas que puedan usar los agentes. Un agente puede proponer un script: ves su motivo y el cambio, y solo
+  **Guardar y confiar** lo escribe y confía en él.
 - **Cada llamada queda registrada.** El historial muestra quién envió cada solicitud, los agentes por su nombre, y
   **Agentes** en la ventana enumera las llamadas recientes.
 

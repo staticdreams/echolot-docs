@@ -86,4 +86,4 @@ gRPCは、呼び出しの結果をステータスで報告します。ステー�
 
 ## コマンドラインから [#from-the-command-line]
 
-`echolot grpc describe`は、サーバのサービスとメソッドを一覧します。`echolot grpc call`は呼び出しを行い、`OK`以外のステータスでは1で終了します。[echolot grpc](/docs/cli/grpc)を参照してください。
+`echolot grpc describe`は、サーバのサービスとメソッドを一覧します。`echolot grpc call`は呼び出しを行い、`OK`以外のステータスやデコードできない応答では1で終了します。ターミナルでは、または`--stream`を付けると、サーバストリームのメッセージが届いた順に1行に1つのJSONオブジェクトとして出力されます。[echolot grpc](/docs/cli/grpc)を参照してください。

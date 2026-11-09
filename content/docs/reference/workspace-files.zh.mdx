@@ -246,7 +246,8 @@ secret = true
 | `name` | 请求的名称。 |
 | `url` | URL，含查询字符串。除 MCP 调用外，每种请求都有。 |
 | `docs` | 请求的文档，使用 Markdown。 |
-| `spec-operation` | 它所依据的规范操作，例如 `POST /auth/token`。 |
+| `spec-operation` | 它所依据或遵循的规范操作，例如 `POST /auth/token`。`openapi` 检查会读取它。 |
+| `spec` | 当不是其文件夹的规范时，它的 `openapi` 检查所读取的规范，例如 `specs/alpenglow.yaml`。它的文件夹并不遵循该规范。 |
 | `[[headers]]` | `name`、`value`，以及对已关闭的标头设置 `enabled = false`。 |
 | `[[disabled-params]]` | 已关闭的查询参数：`name`、`value`。开启的参数在 URL 中。 |
 | `[[disabled-form-fields]]` | 已关闭的表单字段：`name`、`value`。 |
@@ -289,6 +290,7 @@ graphql-variables = """
 | 键 | 含义 |
 | --- | --- |
 | `query-file` | 与请求并列、保存查询的文件，`<slug>.graphql`。 |
+| `shared-query` | 代替 `query-file`：多个请求共用的查询文件，相对于工作区文件夹，例如 `queries/search-products.graphql`。它必须是工作区内的 `.graphql` 文件，路径中没有以点开头的名称。编辑查询会写入这个文件。 |
 | `operation` | 查询包含多个操作时，要运行的操作。 |
 | `graphql-variables` | GraphQL 变量，作为 JSON 文本。较旧的文件称之为 `variables`。 |
 | `schema` | 用来检查和补全的 Schema：`specs/` 中的一个文件。 |
@@ -364,9 +366,10 @@ arguments = """
 
 | 键 | 含义 |
 | --- | --- |
-| `target` | 检查的对象：`status`、`header`、`json`、`body`、`time`（毫秒）、`size`（字节）、`schema`（JSON Schema）、`graphql-errors`、`mcp-error`、`mcp-output-schema`、`openapi`、`grpc-status`。 |
+| `target` | 检查的对象：`status`、`header`、`json`、`body`、`time`（毫秒）、`size`（字节）、`schema`（JSON Schema）、`graphql-errors`、`mcp-error`、`mcp-output-schema`、`openapi`、`grpc-status`，以及对 WebSocket、Socket.IO 和 MQTT 请求的 `message`（收到的消息中的某个值）、`message-count` 和 `close`。 |
 | `name` | 对 `header`：标头的名称。 |
-| `path` | 对 `json`：一个 JSONPath，例如 `$.items.length`。 |
+| `path` | 对 `json` 和 `message`：一个 JSONPath，例如 `$.items.length`。 |
+| `on` | 对 `message` 和 `message-count`：只看这个 Socket.IO 事件或 MQTT 主题过滤器的消息。 |
 | `check` | `equals`、`not-equals`、`contains`、`not-contains`、`less-than`、`at-most`、`greater-than`、`at-least`、`exists`、`not-exists`、`matches`（正则表达式）、`is-type`、`is-one-of`、`matches-schema`。 |
 | `expected` | 用来比较的值；不需要值的检查不写入。 |
 | `enabled` | `false` 将其关闭。 |
@@ -378,8 +381,9 @@ arguments = """
 | 键 | 含义 |
 | --- | --- |
 | `variable` | 用来存放值的变量。 |
-| `from` | `json`、`form`、`msgpack`、`xml`、`header`、`cookie`、`status` 或 `body`。 |
+| `from` | `json`、`form`、`msgpack`、`xml`、`header`、`cookie`、`status`、`body`，或者对 WebSocket、Socket.IO 和 MQTT 请求的 `message`（在路径上有值的第一条收到的消息）或 `last-message`（最后一条）。 |
 | `path` | 值所在的位置：JSONPath、XPath、标头或 Cookie 的名称。`status` 和 `body` 不需要。 |
+| `on` | 对 `message` 和 `last-message`：只看这个 Socket.IO 事件或 MQTT 主题过滤器的消息。 |
 | `scope` | `environment`（默认：当前环境）或 `workspace`。 |
 | `secret` | `true` 会把值作为机密存放在钥匙串中。 |
 | `enabled` | `false` 将其关闭。 |
@@ -399,8 +403,13 @@ arguments = """
 | `cookies` | `false` 表示既不发送也不存储 Cookie。 |
 | `http-version` | `automatic`、`http1`、`http2` 或 `http3`。 |
 | `stream-limit` | 监听事件流或会话的秒数。 |
+| `stop-after-messages` | 无人参与运行的会话在收到这么多条消息后停止监听。 |
+| `stop-when` | 收到的消息在这个 JSONPath 上有值时停止。 |
+| `stop-when-equals` | 与 `stop-when` 搭配：仅当该值等于此值时。 |
+| `stop-after-acks` | `true`：在请求的每个 Socket.IO 确认，以及订阅或 QoS 1、2 发布的每个 MQTT 确认都到达后停止。 |
+| `stop-on` | 将 `stop-after-messages` 和 `stop-when` 限定到某个 Socket.IO 事件或 MQTT 主题过滤器。 |
 
-参见[请求设置](/docs/requests/settings)。
+参见[请求设置](/docs/requests/settings)；`stop-` 开头的键参见[提前停止监听](/docs/requests/websocket-and-sse#stop-listening-early)。
 
 ### 认证 [#auth]
 
@@ -503,6 +512,11 @@ body = """{ "error": "no user {{request.params.id}}" }"""
 | `[[scenarios]]` | 为规范的某个操作选定的应答：`operation`（例如 `GET /pets`）、`status`、`example`（示例的名称）。 |
 | `[[routes]]` | 手动创建的路由：`id`（路由更改时保持不变）、`method`（或 `ANY`）、`path`（参数写作 `{id}`）、`summary`、对已关闭的路由设置 `enabled = false`、`response`（默认响应的名称；省略则为第一个）、`request-content-type` 和 `request-body`（根据它创建的请求所发送的内容）。 |
 | `[[routes.responses]]` | 上述路由的一个应答：`name`、`status`、`content-type`、`headers`（`name` 和 `value`）、`rules`（`source` 为 `path`、`query`、`header` 或 `body`；`name`；`value`，`*` 表示任意值，空表示没有）和 `body`。 |
+| `kind`（在 `[[routes]]` 中） | 对于接受连接的路由为 `websocket` 或 `socketio`；HTTP 路由省略。参见[流、套接字和 MQTT](/docs/mocks/streams-and-sockets)。 |
+| `repeat`、`ends`、`close`（在 `[[routes.responses]]` 中） | 用于流：它的事件播放几次（`0` 表示直到客户端离开；省略时为 1），之后发生什么（`close` 或 `hold`；省略时 Server-Sent Events 结束，套接字保持打开），以及模拟服务器自行进行的关闭（`{ after-ms, code, reason }`）。 |
+| `[[routes.responses.events]]` | 响应时间线中的一条消息：`after-ms`（在上一条之后）、`event`（Server-Sent Event 的 `event:` 或 Socket.IO 事件）、`id`（Server-Sent Event 的 `id:`）和 `data`。 |
+| `[[routes.responses.replies]]` | 套接字对消息的应答：`event`（Socket.IO）、`rules`（`body` 规则读取消息）、`ack = true`（应答 Socket.IO 确认）、`close`，以及 `[[routes.responses.replies.send]]` 中的消息（与 `events` 相同）。 |
+| `[broker]` | 模拟服务器的 MQTT Broker：`port`、`repeat`、`[[broker.publishes]]` 中的时间线（`after-ms`、`topic`、`data`、`qos`、`retain`）以及 `[[broker.replies]]` 中的应答（`filter`、`rules` 和 `[[broker.replies.send]]` 消息）。 |
 
 `mocks/<slug>.js` 保存模拟服务器的 JavaScript 路由，它们先于手动创建的路由和规范应答。对于规范的操作，响应从不存放在模拟服务器中：示例要放进规范。参见[模拟服务器](/docs/mocks)、[路由和示例数据](/docs/mocks/routes)和 [JavaScript 路由](/docs/mocks/scripted-routes)。
 
@@ -537,8 +551,8 @@ to = "signin.run"
 | --- | --- |
 | `name`、`description` | 流程的名称和它的作用。 |
 | `[mcp]` | 把流程作为工具提供给智能体：`tool`（它的名称）和 `description`。 |
-| `[schedule]` | 按计划运行：`every-minutes`，或 `cron`（例如 `"0 6 * * *"`）。 |
-| `[webhook]` | 在请求到达时运行：`method`（默认 `POST`）和 `path`。 |
+| `[schedule]` | 按计划运行：`every-minutes`，或 `cron`（例如 `"0 6 * * *"`），以及 `environment`，即它的运行所用的环境（省略时为窗口的环境，绝不会是受保护的环境）。 |
+| `[webhook]` | 在请求到达时运行：`method`（默认 `POST`）、`path` 和 `environment`，与计划相同。 |
 | `[[inputs]]` | 它的输入：`name`、`type`（`any`、`text`、`number`、`bool`、`object`、`list`、`secret`）、`description`、`default`、`required`。 |
 | `[[blocks]]` | 它的块：`id`、`kind`、`title`、`position`（画布上的 `[x, y]`）、`paused`、`color`，以及带有该种类设置的 `[blocks.settings]`。 |
 | `[[wires]]` | 连线：`from` 和 `to`，各为 `block.port`。 |

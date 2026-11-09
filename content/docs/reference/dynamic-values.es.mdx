@@ -123,28 +123,37 @@ admite la clave, el mensaje y, opcionalmente, la salida.
 
 ## Hora [#time]
 
-Todos son el momento en que se envía la solicitud.
+Todos son el momento en que se envía la solicitud, desplazado cuando indicas un desplazamiento.
 
 | Valor | Argumentos | Qué da |
 | --- | --- | --- |
-| `$timestamp` | ninguno | Hora Unix en segundos: `1793525000`. |
-| `$timestampMs` | ninguno | Hora Unix en milisegundos: `1793525000123`. |
-| `$isoTimestamp` | ninguno | ISO 8601 en UTC, con milisegundos: `2026-11-01T09:30:00.123Z`. |
+| `$timestamp` | Desplazamiento (opcional) | Hora Unix en segundos: `1793525000`. `{{$timestamp(60)}}` es dentro de un minuto. |
+| `$timestampMs` | Desplazamiento (opcional) | Hora Unix en milisegundos: `1793525000123`. |
+| `$isoTimestamp` | Desplazamiento (opcional) | ISO 8601 en UTC, con milisegundos: `2026-11-01T09:30:00.123Z`. `{{$isoTimestamp('-90s')}}` es hace 90 segundos. |
 | `$httpDate` | ninguno | Una fecha HTTP, para `Date` o `If-Modified-Since`: `Sun, 01 Nov 2026 09:30:00 GMT`. |
 | `$date` | Formato, desplazamiento en segundos (opcional), zona horaria (opcional) | La hora en un patrón de fecha Unicode, desplazada por el desplazamiento, en la zona horaria (UTC si no se indica). `{{$date('yyyy-MM-dd')}}`, `{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
 
+El desplazamiento de `$timestamp`, `$timestampMs` y `$isoTimestamp` es un número de segundos, o un número con una
+unidad: `ms`, `s`, `m`, `h`, `d` o `w`. Un `-` lo lleva al pasado, un `+` (o nada) al futuro: `'-90s'`, `'2h'`, `'-1d'`,
+`'1w'`. Escríbelo entre comillas, como texto; un número de segundos sin más puede ir solo, como en
+`{{$timestamp(-3600)}}`. Un desplazamiento que no lo es falla con un mensaje que dice qué escribir.
+
 ## Aleatorio [#random]
 
-Un valor nuevo en cada envío.
+Un valor nuevo en cada envío, salvo `$sameUUID`.
 
 | Valor | Argumentos | Qué da |
 | --- | --- | --- |
 | `$uuid` | ninguno | Un UUID aleatorio, en minúsculas. También `$guid` y `$randomUUID`. `{{$uuid}}` |
+| `$sameUUID` | Nombre | Un UUID aleatorio creado una vez y repetido allí donde el mismo nombre lo pida: una vez por ejecución (cada iteración el suyo) y, fuera de una ejecución, una vez por ventana, o una vez por comando en la línea de comandos. `{{$sameUUID('order')}}` |
 | `$randomInt` | Mínimo, máximo | Un número entero entre los dos, ambos incluidos. Con un argumento es el máximo, desde 0; sin ninguno, de 0 a 1000. `{{$randomInt(1, 5)}}` |
 | `$randomString` | Longitud, caracteres (opcional) | Caracteres aleatorios, 16 si no se indica (hasta 4096): letras y dígitos, o los caracteres indicados. `{{$randomString(8, 'ABCDEF0123456789')}}` |
 | `$randomHex` | Bytes | Bytes aleatorios en hexadecimal, 16 si no se indica (hasta 2048); el doble de dígitos. `{{$randomHex(8)}}` |
 
-**Create order** de Alpenglow envía `Idempotency-Key: {{$uuid}}`, así que cada pedido que hace es nuevo.
+**Create order** de Alpenglow envía `Idempotency-Key: {{$uuid}}`, así que cada pedido que hace es nuevo. Donde varias
+solicitudes de una ejecución deben enviar la misma clave, como una solicitud y su reintento o una creación y la
+actualización que le sigue, dales `{{$sameUUID('order')}}`: cada ejecución recibe una clave nueva, y cada solicitud que
+nombra `order` la envía.
 
 ## Datos falsos [#fake-data]
 
@@ -155,7 +164,7 @@ dinámicas de Postman, así que las colecciones que las usan envían aquí valor
 
 Los argumentos son opcionales; los números van de -10^15 a 10^15. Los cuerpos de los mocks también pueden usar `$uuid`
 (como `$randomUUID`), `$randomInt`, `$randomString`, `$randomHex`, `$timestamp`, `$timestampMs` y `$isoTimestamp` de
-[Aleatorio](#random) y [Hora](#time). Desde Terminal, [`echolot fake`](/docs/cli/fake) rellena una plantilla con ellos.
+[Aleatorio](#random) y [Hora](#time), los valores de hora con sus desplazamientos. Desde Terminal, [`echolot fake`](/docs/cli/fake) rellena una plantilla con ellos.
 
 ### Comunes [#common]
 

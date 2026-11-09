@@ -7,6 +7,9 @@ description: "TCP, TLS, WebSocket으로 MQTT 브로커(3.1.1 또는 5.0)의 토�
 기본적으로 MQTT 5.0을 사용하며, 요청하면 3.1.1을 사용합니다. 프로토콜은 TCP(`mqtt://`), TLS(`mqtts://`), WebSocket(`ws://`, `wss://`)을
 지원합니다. 앱에서의 같은 기능은 [MQTT 요청](/docs/requests/mqtt)을 참조하십시오.
 
+`--mqtt-version`이 없으면 MQTT 5.0을 거부하는 브로커에 3.1.1로 한 번 더 시도하며, 표준 오류에 그렇게 알립니다.
+`note: the broker refused MQTT 5; connecting with 3.1.1 (--mqtt-version 3.1.1 skips this)`.
+
 예제는 Alpenglow 요청 **Warehouse sensors**처럼 Mac의 `localhost`에 있는 브로커를 사용합니다. 데모 API는 MQTT를 실행할 수 없습니다.
 
 ## echolot mqtt subscribe [#echolot-mqtt-subscribe]
@@ -70,7 +73,7 @@ QoS 1이나 2에서는 Echolot이 브로커가 모든 메시지를 확인할 때
 
 | 옵션 | 의미 |
 | --- | --- |
-| `--mqtt-version <version>` | 프로토콜 버전: `5` 또는 `3.1.1`. 기본값은 5입니다. |
+| `--mqtt-version <version>` | 프로토콜 버전: `5` 또는 `3.1.1`. 기본값은 5이며, 브로커가 5를 거부하면 3.1.1입니다. |
 | `--client-id <id>` | 클라이언트 ID. 기본값은 `echolot-`와 임의의 접미사입니다. |
 | `-u`, `--user <name>` | 사용자 이름. |
 | `--password <password>` | 암호. `ECHOLOT_MQTT_PASSWORD` 환경 변수를 쓰는 편이 좋습니다. |

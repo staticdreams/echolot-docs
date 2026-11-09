@@ -99,10 +99,30 @@ Les livraisons QoS 1 et 2 sont acquittées pour vous, dans les deux sens.
 Quand la connexion se ferme, la session est conservée dans l’[Historique](/docs/workspaces/history), avec le journal
 comme corps de la réponse : les vérifications sur le **Corps** fonctionnent donc dessus.
 
+## Vérifications, captures et exécutions [#checks-captures-and-runs]
+
+Les vérifications **Valeur dans les messages**, **Messages reçus** et **Fermeture de la session** de l’onglet **Tests**
+vérifient les messages reçus, et les captures **Premier message** et **Dernier message** les lisent, chaque charge utile
+étant lue comme du JSON. Restreignez une vérification ou une capture à certains topics avec un filtre de topic dans son
+champ **tous**, par exemple `warehouses/+/temperature`. **Fermeture de la session** lit le code de motif du broker
+quand il se déconnecte. Voir
+[vérifications sur les sessions en temps réel](/docs/requests/scripts-and-tests#checks-on-realtime-sessions).
+
+Dans les exécutions, `stop-after-acks = true` dans `[settings]` du fichier de la requête arrête l’écoute une fois que
+le broker a acquitté chaque abonnement et chaque publication en QoS 1 ou 2. Un broker qui refuse la connexion donne un
+état dans les exécutions, par exemple `401` pour un nom d’utilisateur ou un mot de passe incorrect. Voir
+[arrêter d’écouter plus tôt](/docs/requests/websocket-and-sse#stop-listening-early) et
+[connexions refusées](/docs/requests/websocket-and-sse#refused-connections).
+
 ## MQTT 5.0 [#mqtt-50]
 
 Les codes de motif du broker apparaissent par leur nom dans le journal et quand une connexion est refusée, comme
-`Success` ou `Not authorized`, dans les deux versions. Avec **MQTT 5.0** choisi :
+`Success` ou `Not authorized`, dans les deux versions.
+
+Quand **MQTT 5.0** est choisi et que le broker le refuse, comme le fait un broker qui ne parle que 3.1.1, Echolot se
+reconnecte en MQTT 3.1.1. La première ligne du journal indique avec quel protocole il s’est connecté.
+
+Avec **MQTT 5.0** choisi :
 
 - **No Local** sur un abonnement exclut les messages de ce client lui-même.
 - **Démarrage vierge** remplace **Session vierge** de la version 3.1.1.

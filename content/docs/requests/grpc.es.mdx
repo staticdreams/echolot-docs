@@ -100,4 +100,5 @@ cliente. Consulta [ajustes de la solicitud](/docs/requests/settings).
 ## Desde la línea de comandos [#from-the-command-line]
 
 `echolot grpc describe` lista los servicios y métodos de un servidor, y `echolot grpc call` hace una llamada y termina con
-1 si el estado no es `OK`. Consulta [echolot grpc](/docs/cli/grpc).
+1 si el estado no es `OK` o si no puede decodificar la respuesta. En un terminal, o con `--stream`, los mensajes de un
+stream del servidor se imprimen a medida que llegan, un objeto JSON por línea. Consulta [echolot grpc](/docs/cli/grpc).

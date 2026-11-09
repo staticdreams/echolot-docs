@@ -98,13 +98,13 @@
   {
     "id": "mocks-route-editor",
     "page": "mocks/routes",
-    "scene": "Window 1320×940 (the screen keeps 896). Copy shots/scenes/mocks/users.toml into the mocks folder. Select Users, click the route GET /users/{id}, and scroll so the editor's card starts just below the address bar (the page's scroll bar at 0.432). The 200 OK response is shown.",
+    "scene": "tools/scenes.ts: a copy of Alpenglow with shots/scenes/mocks/users.toml, GET /users/{id} listed first so it opens selected. Mocks page, window 1320×896, scrolled 4 steps so the route editor's fields are at the top. The 200 OK response is shown.",
     "frame": "the route editor",
     "crop": [
       365,
-      102,
-      885,
-      548
+      118,
+      880,
+      534
     ]
   },
   {
@@ -129,6 +129,30 @@
       245,
       1009,
       542
+    ]
+  },
+  {
+    "id": "mocks-route-websocket",
+    "page": "mocks/streams-and-sockets",
+    "scene": "tools/scenes.ts: a copy of Alpenglow with mocks/shop-live.toml (a WebSocket route first, then a server-sent events route). Mocks page, window 1320×896, the first route selected, scrolled 4 steps so the route's kind and path are at the top.",
+    "frame": "the route editor",
+    "crop": [
+      365,
+      98,
+      880,
+      556
+    ]
+  },
+  {
+    "id": "mocks-broker",
+    "page": "mocks/streams-and-sockets",
+    "scene": "tools/scenes.ts: a copy of Alpenglow with mocks/warehouse-sensors.toml (a broker alone: two publishes, one reply). Mocks page, window 1320×896, scrolled 3 steps so the MQTT Broker card starts near the top.",
+    "frame": "the MQTT Broker card",
+    "crop": [
+      365,
+      140,
+      880,
+      515
     ]
   }
 ]

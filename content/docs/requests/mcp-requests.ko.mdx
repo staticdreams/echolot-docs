@@ -75,7 +75,11 @@ Alpenglow 작업 공간에는 **Agent tools**에 호출이 두 개 있습니다.
 
 **테스트** 탭에서 다음을 쓸 수 있습니다.
 
-- **MCP 오류**가 `false`와 같음은 호출이 성공했을 때 통과합니다. 실패하면 서버의 메시지가 표시됩니다.
+- **MCP 오류**는 호출이 어떻게 실패했는지 알려 줍니다. 값은 호출이 성공하면 `false`, 도구 자체가 실패하면(오류로 표시된 결과로,
+  모델이 읽고 대응할 수 있음) `tool`, 서버가 JSON-RPC 오류로 응답하면(호출을 처리하지 못했거나 거부함) `protocol`입니다. `true`와
+  **같음**은 두 실패 모두에 해당합니다. 따라서 **MCP 오류**가 `false`와 **같음**은 성공했을 때 통과하고, `tool`과 **같음**은 잘못된 입력을
+  제대로 보고하는 도구에서 통과합니다. **있음**은 어떤 실패에서든, **없음**은 실패가 없을 때 통과합니다. 실패한 검사에는 서버의 메시지가
+  표시됩니다.
 - **도구 출력 스키마**는 결과의 `structuredContent`를 도구가 선언한 `outputSchema`와 대조합니다. 도구가 선언하지 않았거나 결과에 `structuredContent`가 없으면
   실패합니다.
 - **JSON 값**은 `$.structuredContent.results.length`가 `0` 초과, `$.content[0].type`이 `text`와 같음처럼 결과의 임의의 값을 검사합니다.
@@ -89,4 +93,5 @@ Alpenglow 작업 공간에는 **Agent tools**에 호출이 두 개 있습니다.
 
 ## 명령줄에서 [#from-the-command-line]
 
-`echolot run`은 저장된 MCP 요청을 검사와 함께 실행하고, `echolot mcp check`는 서버를 점검합니다. [echolot mcp](/docs/cli/mcp)를 참고하십시오.
+`echolot run`은 저장된 MCP 요청을 검사와 함께 실행하고, `echolot mcp call`은 도구를 호출하거나 리소스를 읽거나 프롬프트를
+가져오며, `echolot mcp check`는 서버를 점검합니다. [echolot mcp](/docs/cli/mcp)를 참고하십시오.

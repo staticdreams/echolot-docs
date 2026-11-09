@@ -7,6 +7,9 @@ description: "Подписывайтесь на топики и публикуй
 отправляет их. Обе команды по умолчанию говорят на MQTT 5.0, а на 3.1.1 — если вы попросите, по TCP (`mqtt://`), TLS
 (`mqtts://`) или WebSocket (`ws://`, `wss://`). То же самое в приложении см. в [запросах MQTT](/docs/requests/mqtt).
 
+Без `--mqtt-version` брокер, который отклоняет MQTT 5.0, получает вторую попытку с 3.1.1, и стандартный поток ошибок
+сообщает об этом: `note: the broker refused MQTT 5; connecting with 3.1.1 (--mqtt-version 3.1.1 skips this)`.
+
 В примерах используется брокер на вашем Mac по адресу `localhost`, как в запросе Alpenglow **Warehouse sensors**.
 Демо-API не умеет работать с MQTT.
 
@@ -72,7 +75,7 @@ tail -f readings.log | echolot mqtt publish mqtt://localhost warehouses/bern/log
 
 | Параметр | Значение |
 | --- | --- |
-| `--mqtt-version <version>` | Версия протокола: `5` или `3.1.1`. По умолчанию 5. |
+| `--mqtt-version <version>` | Версия протокола: `5` или `3.1.1`. По умолчанию 5, затем 3.1.1, если брокер отклоняет 5. |
 | `--client-id <id>` | Идентификатор клиента. По умолчанию — `echolot-` и случайный суффикс. |
 | `-u`, `--user <name>` | Имя пользователя. |
 | `--password <password>` | Пароль. Лучше использовать переменную окружения `ECHOLOT_MQTT_PASSWORD`. |

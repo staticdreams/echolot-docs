@@ -55,15 +55,20 @@ description: "用发送时才算出的值填充请求，例如时间戳、UUID�
 | **请求** | `{{$requestHeader('', 'Content-Type')}}`、`{{$requestURL('auth/sign-in')}}`、`{{$requestJSONPath('', '$.lines[0].sku')}}` | 本请求（第一个参数为空）或另一个请求的各个部分，按它们将被发送的样子。 |
 | **编码** | `{{$base64('heidi:alpenglow')}}`、`{{$urlEncode('a b&c')}}`、`{{$jsonEscape('say "hi"')}}`、`{{$basicAuth('heidi', '{{password}}')}}`、`{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`、`{{$newline}}` | 编码或解码后的文本、转义、Basic 认证值、已签名的 JWT。 |
 | **哈希和签名** | `{{$sha256("{{$requestBody('')}}")}}`、`{{$hmacSha256('{{key}}', 'message', 'base64')}}`、`{{$md5('text')}}` | 哈希和 HMAC，除非要求 `base64` 或 `base64url`，否则为十六进制。 |
-| **时间** | `{{$timestamp}}`、`{{$timestampMs}}`、`{{$isoTimestamp}}`、`{{$httpDate}}`、`{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | 发送时间，可以是 Unix 秒或毫秒、ISO 8601、HTTP 日期或你自己的格式，可按秒偏移并指定时区。 |
-| **随机** | `{{$uuid}}`、`{{$randomInt(1, 6)}}`、`{{$randomString(16)}}`、`{{$randomHex(8)}}` | 每次发送都生成新的随机值。`$guid` 和 `$randomUUID` 是 `$uuid` 的其他名称。 |
+| **时间** | `{{$timestamp}}`、`{{$timestampMs}}`、`{{$isoTimestamp('-90s')}}`、`{{$httpDate}}`、`{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | 发送时间，可以是 Unix 秒或毫秒、ISO 8601、HTTP 日期或你自己的格式，可按偏移移动并指定时区。 |
+| **随机** | `{{$uuid}}`、`{{$sameUUID('order')}}`、`{{$randomInt(1, 6)}}`、`{{$randomString(16)}}`、`{{$randomHex(8)}}` | 每次发送都生成新的随机值，`$sameUUID` 除外：同一次运行中给出相同名称的每个请求都得到同一个值。`$guid` 和 `$randomUUID` 是 `$uuid` 的其他名称。 |
 | **示例数据** | `{{$randomFullName}}`、`{{$randomEmail}}`、`{{$randomCity}}`、`{{$randomPrice}}`、`{{$randomLoremSentence}}`、`{{$randomDatePast}}` | 虚构的姓名、地址、公司、价格、日期、lorem ipsum 等，每次发送都是新的，沿用 Postman 的名称。列表把它们分组放在子菜单中。见[示例数据](/docs/reference/dynamic-values#fake-data)。 |
 | **文本** | `{{$lowercase('{{name}}')}}`、`{{$uppercase('chf')}}`、`{{$trim('{{code}}')}}` | 变换后的文本。 |
 | **文件和系统** | `{{$file('data/order.json')}}`、`{{$env('HOME')}}` | 文件的内容（相对于工作区的路径或绝对路径），或 Echolot 进程的环境变量。 |
 
 `$env` 对智能体不可用：当 AI 智能体发送请求时，你 Mac 的环境变量不会进入其中。
 
-Alpenglow 示例在 **Orders › Create order** 中用到了一个：它的 `Idempotency-Key` 标头是 `{{$uuid}}`，所以每个订单都是新的。
+Alpenglow 示例在 **Orders › Create order** 中用到了一个：它的 `Idempotency-Key` 标头是 `{{$uuid}}`，所以每个订单都是新的。如果一次运行中有多个请求要共用一个键，请使用 `{{$sameUUID('order')}}`：它每次运行生成一次
+（运行之外每个窗口一次），每个指定 `order` 的请求都得到同一个值。
+
+`$timestamp`、`$timestampMs` 和 `$isoTimestamp` 接受偏移，用于发送之前或之后的时间：秒数，或者带 `ms`、`s`、`m`、`h`、`d` 或 `w` 的数字，
+用 `-` 表示过去。请用引号写成 `{{$isoTimestamp('-90s')}}` 或 `{{$timestamp('2h')}}`；单纯的秒数可以不加引号，比如 `{{$timestamp(60)}}`。
+参见[参考](/docs/reference/dynamic-values#time)。
 
 ## 来自其他请求响应的值 [#values-from-other-requests-responses]
 

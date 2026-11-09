@@ -1,15 +1,16 @@
 ---
 title: "echolot mcp"
-description: "MCP 서버와 모델이 그 도구를 보는 방식을 확인하고, 로그인하고, 작업 공간을 AI 에이전트에 제공하고, MCP 클라이언트를 설정합니다."
+description: "MCP 서버를 확인하고 호출하며 모델이 그 도구를 보는 방식을 확인하고, 로그인하고, 작업 공간을 AI 에이전트에 제공하고, MCP 클라이언트를 설정합니다."
 ---
 
-`echolot mcp`는 MCP 서버를 두 방향으로 다룹니다. `check`와 `sign-in`은 [MCP 서버 페이지](/docs/mcp-servers)처럼 다른 사람의 서버와
-통신합니다. `serve`와 `setup`은 사용자의 작업 공간을 MCP 서버로 만들어, Claude Code나 Cursor 같은 AI 에이전트가 요청을 나열하고, 보내고,
+`echolot mcp`는 MCP 서버를 두 방향으로 다룹니다. `check`, `call`, `sign-in`은 [MCP 서버 페이지](/docs/mcp-servers)처럼 다른
+사람의 서버와 통신합니다. `serve`와 `setup`은 사용자의 작업 공간을 MCP 서버로 만들어, Claude Code나 Cursor 같은 AI 에이전트가 요청을 나열하고, 보내고,
 테스트할 수 있게 합니다. [에이전트](/docs/ai/agents)를 참조하십시오.
 
 | 하위 명령 | 동작 |
 | --- | --- |
 | `echolot mcp check` | MCP 서버에 연결해 제공하는 기능을 나열합니다. `--quality`는 모델이 그 도구를 보는 방식을 보고합니다. |
+| `echolot mcp call` | 작업 공간의 MCP 서버에서 도구를 호출하거나, 리소스를 읽거나, 프롬프트를 가져와 결과를 JSON으로 출력합니다. |
 | `echolot mcp sign-in` | OAuth를 요구하는 작업 공간의 MCP 서버에 로그인합니다. |
 | `echolot mcp sign-out` | 이 Mac에서 그 로그인을 지웁니다. |
 | `echolot mcp serve` | MCP를 통해 작업 공간을 에이전트에 제공합니다. |
@@ -19,9 +20,11 @@ description: "MCP 서버와 모델이 그 도구를 보는 방식을 확인하�
 
 ```sh
 echolot mcp check [--url <url>] [--header <header> ...] [--env <env> ...] [--verbose] [--timeout <seconds>] [--quality] [--strict] [--as <provider>] -- [<command> ...]
+echolot mcp check --server <server> [--workspace <workspace>] [--verbose] [--quality] [--strict]
 ```
 
-`--url`로 Streamable HTTP 엔드포인트를 지정하거나, `--` 뒤에 stdio 서버를 시작하는 명령을 지정합니다. Echolot은 서버가 상태 비저장
+`--url`로 Streamable HTTP 엔드포인트를 지정하거나, `--` 뒤에 stdio 서버를 시작하는 명령을 지정하거나, `--server`로 작업 공간의 서버를
+지정합니다. Echolot은 서버가 상태 비저장
 프로토콜(2026-07-28)을 쓰는지, 핸드셰이크가 있는 이전 프로토콜을 쓰는지 알아내고, 서버의 도구, 리소스, 프롬프트를 나열합니다.
 
 ```sh
@@ -48,6 +51,18 @@ stdio 서버:
 echolot mcp check -- npx -y @modelcontextprotocol/server-everything
 echolot mcp check -e API_KEY=demo -- uvx some-mcp-server --flag
 ```
+
+### 작업 공간의 서버 [#a-workspaces-server]
+
+`--server`는 작업 공간에 저장된 서버를 `mcp-servers` 폴더 안의 파일 이름(`.toml` 제외)으로 확인합니다. 주소나 명령, 헤더, 환경,
+비밀 값, OAuth 로그인은 앱에서처럼 작업 공간에서 가져오므로, 셸 기록에 남게 될 명령줄에는 아무것도 쓰지 않습니다.
+
+```sh
+echolot mcp check --server alpenglow-mcp -w Alpenglow.echolot --quality
+```
+
+확인이 실패하면 표준 오류에 출력되며, Echolot이 해결 방법을 알면 함께 알려 주고, 명령은 1로 종료합니다. `--as`는 `--server`와 함께 쓸
+수 없습니다.
 
 ### 모델이 도구를 보는 방식 [#how-a-model-sees-the-tools]
 
@@ -81,6 +96,35 @@ Nothing a model would stumble over.
 | `--quality` | 모델이 도구를 보는 방식을 보고합니다. 제공업체별 비용, 스키마와 설명의 문제. |
 | `--strict` | `--quality`와 함께: 문제가 있으면 1로 종료합니다. |
 | `--as <provider>` | 제공업체의 API가 받는 형태의 도구 목록만 출력합니다: `anthropic`, `openai`, `gemini`. |
+| `--server <server>` | 작업 공간의 MCP 서버. `.toml`을 뺀 파일 이름으로 지정하며, 그 헤더, 비밀 값, 로그인이 적용됩니다. |
+| `-w`, `--workspace <folder>` | `--server`가 있는 작업 공간. 기본값은 현재 폴더입니다. |
+
+## echolot mcp call [#echolot-mcp-call]
+
+```sh
+echolot mcp call <server> (--tool <name> | --resource <uri> | --prompt <name>) [--args <json>] [--workspace <workspace>] [--environment <env>]
+```
+
+앱의 MCP 요청처럼 작업 공간의 MCP 서버에서 도구 하나를 호출하거나, 리소스 하나를 읽거나, 프롬프트 하나를 가져옵니다. 서버의 헤더,
+비밀 값, OAuth 로그인이 적용됩니다. 결과는 표준 출력에 JSON으로 출력됩니다.
+
+```sh
+echolot mcp call alpenglow-mcp --tool search_catalog --args '{"query": "ultralight tent", "limit": 3}' -w Alpenglow.echolot
+```
+
+도구가 오류를 보고하거나(`isError`) 서버가 JSON-RPC 오류로 응답하면 종료 코드는 1이며, 이때 표준 오류에 서버가 보낸 내용이 표시됩니다.
+
+| 옵션 | 의미 |
+| --- | --- |
+| `<server>` | 작업 공간의 `mcp-servers` 폴더 안에 있는 서버의 파일 이름(`.toml` 제외). |
+| `--tool <name>` | 호출할 도구. |
+| `--resource <uri>` | 읽을 리소스의 URI. |
+| `--prompt <name>` | 가져올 프롬프트. |
+| `--args <json>` | `{{variables}}`를 포함할 수 있는 JSON 객체 형태의 인수. `-`는 표준 입력에서 읽습니다. 기본값은 `{}`입니다. |
+| `-w`, `--workspace <folder>` | 작업 공간 폴더. 기본값은 현재 폴더입니다. |
+| `--environment <env>` | 서버 설정과 인수를 해석하는 변수의 환경. |
+
+`--tool`, `--resource`, `--prompt` 중 하나를 지정하십시오.
 
 ## echolot mcp sign-in과 sign-out [#echolot-mcp-sign-in-and-sign-out]
 
@@ -124,8 +168,18 @@ MCP를 통해 작업 공간을 에이전트에 제공합니다. 에이전트는 
 echolot mcp serve /path/to/Alpenglow.echolot
 ```
 
+경로가 없으면 현재 폴더의 작업 공간이나, 그 안에 있는 유일한 `*.echolot` 작업 공간을 제공합니다.
+
 **앱이 열려 있을 때.** Echolot 앱에서 작업 공간이 열려 있고 에이전트를 허용하면(**설정 › 에이전트**) 클라이언트는 앱으로 연결됩니다.
-그러면 앱이 승인이 필요한 작업에 대해 사용자에게 묻고, 에이전트가 하는 일을 볼 수 있습니다. `--headless`는 그래도 단독으로 제공합니다.
+그러면 앱이 승인이 필요한 작업에 대해 사용자에게 묻고, 에이전트가 하는 일을 볼 수 있습니다. `--headless`는 그래도 단독으로 제공합니다. 앱을 거칠 때는 다음과 같습니다.
+
+- 클라이언트가 받는 도구 모음은 `--toolsets`가 아니라 앱의 **설정 › 에이전트**가 정합니다. 둘이 다르면 표준 오류에 앱이 제공하는 도구
+  모음과, 이 클라이언트를 위해 앱에서 켜야 할 도구 모음이 표시됩니다.
+- `--env`는 여전히 적용됩니다. 환경을 지정하지 않은 도구 호출은 이 환경을 사용합니다.
+- 앱을 종료했다가 다시 열면 클라이언트는 다음 호출에서 앱의 새 포트를 따라갑니다. 앱에서 작업 공간이 닫혀 있는 동안에는 **설정 ›
+  에이전트**를 켠 채 작업 공간을 열라는 메시지와 함께 호출이 실패합니다.
+
+앱을 거칠지는 명령이 시작될 때 한 번 정해집니다. 바꾸려면 클라이언트를 다시 연결하십시오.
 
 **단독 실행.** 앱이 없으면 물어볼 사람이 없으므로 정책상 묻게 되어 있는 작업은 거부됩니다.
 
@@ -176,7 +230,7 @@ Clients send the header  Authorization: Bearer 6f1c…
 | --- | --- |
 | `--env <env>` | 호출이 환경을 지정하지 않을 때 쓸 환경. |
 | `--policy <policy>` | `standard`, `readonly`, `permissive`. 기본값은 `standard`입니다. |
-| `--toolsets <list>` | 제공할 도구 그룹. 쉼표로 구분하며 `all`도 가능합니다. 기본값은 `requests,flows`입니다. |
+| `--toolsets <list>` | 제공할 도구 그룹. 쉼표로 구분하며 `all`도 가능합니다. 기본값은 `requests,flows`입니다. 앱을 거칠 때는 앱의 **설정 › 에이전트**가 정합니다. |
 | `--http <port>` | stdio 대신 127.0.0.1의 이 포트에서 Streamable HTTP를 제공합니다(`0`이면 포트를 고릅니다). |
 | `-v`, `--verbose` | 모든 메시지를 표준 오류에 출력합니다. |
 | `--headless` | Echolot 앱에서 이 작업 공간이 열려 있어도 단독으로 제공합니다. |
@@ -236,5 +290,5 @@ echolot mcp setup cursor -w Alpenglow.echolot
 | 코드 | 조건 |
 | --- | --- |
 | `0` | 연결했거나, 로그인했거나, 중지될 때까지 제공했거나, 출력했습니다. |
-| `1` | `check`가 연결하지 못했거나 검사가 실패했습니다. `--quality --strict`가 문제를 발견했습니다. 또는 `sign-in`이 실패했거나 서버가 OAuth를 요구하지 않았습니다. |
+| `1` | `check`가 연결하지 못했거나 검사가 실패했습니다. `--quality --strict`가 문제를 발견했습니다. `call`이 오류를 받았습니다. 또는 `sign-in`이 실패했거나 서버가 OAuth를 요구하지 않았습니다. |
 | `64` | 잘못된 옵션, 알 수 없는 정책이나 클라이언트, 알 수 없는 환경, 또는 `[agents]` 섹션이 에이전트를 끈 작업 공간. |

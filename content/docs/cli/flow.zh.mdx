@@ -111,7 +111,7 @@ Created flows/export-tents.flow.toml.
 ## echolot flow serve [#echolot-flow-serve]
 
 ```sh
-echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>] [--rotate-token]
 ```
 
 在每个带计划的流程到期时运行它，并应答带有 Webhook 的流程的 Webhook，直到你用 <kbd>⌃</kbd><kbd>C</kbd> 停止它。在服务器或容器中运行它，可以在没有 App 的情况下让工作区的自动化继续运转。
@@ -124,13 +124,14 @@ echolot flow serve -w Alpenglow.echolot --port 4100
 Serving Alpenglow (Ctrl-C stops it)
   schedule  Morning stock check: 0 6 * * *
   webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
-  token     3f9a…
+  token     3f9a… (this workspace's; send it as Authorization: Bearer; ?token= only for senders without headers, as URLs get logged; --rotate-token replaces it)
 ```
 
 每次运行会打印一行，包含时间、流程、结束的方式和耗时。
 
-**Webhook。** 调用方发送流程的 Webhook 的方法和路径，并用 `Authorization: Bearer <token>`、`X-Echolot-Token` 标头或 URL 中的 `?token=` 带上令牌。流程的输入来自查询和 JSON 正文；名为 `body` 的输入会得到整个正文。
-应答是流程的 JSON 输出；流程失败时为 `500` 并附带错误；没有正确的令牌时为 `401`；对于没有任何流程使用的路径，则为 `404` 并列出现有的路径。
+**Webhook。** 调用方发送流程的 Webhook 的方法和路径，并用 `Authorization: Bearer <token>`、`X-Echolot-Token` 标头或 URL 中的 `?token=` 带上令牌（`?token=` 仅用于无法设置标头的发送方，因为 URL 会被记录到日志；它从不会成为输入）。流程的输入来自查询和 JSON 正文；名为 `body` 的输入会得到整个正文。
+应答是流程的 JSON 输出；流程失败时为 `500` 并附带错误；没有正确的令牌时为 `401`；对于没有任何流程使用的路径，则为 `404` 并列出现有的路径；运行未启动时为 `409`
+（参见[触发的运行发送到哪里](/docs/flows/running-and-triggers#where-triggered-runs-send)）。
 
 ```sh
 curl -X POST http://127.0.0.1:4100/order-status \
@@ -139,7 +140,11 @@ curl -X POST http://127.0.0.1:4100/order-status \
   -d '{"orderId": "ord_7Hk2Lw"}'
 ```
 
-令牌取自 `--token`，否则取自 `ECHOLOT_WEBHOOK_TOKEN`，再否则是 Echolot 打印出来的新令牌。一次 Webhook 运行最长可达两分钟；超过 8 MB 的正文会被整个拒绝。
+令牌取自 `--token`，否则取自 `ECHOLOT_WEBHOOK_TOKEN`，再否则是工作区自己的令牌：只生成一次，保存在钥匙串中并与 App 共用，
+因此你分发出去的地址在重新启动后依然有效。`--rotate-token` 会用一个新令牌替换工作区的令牌。一次 Webhook 运行最长可达两分钟；超过 8 MB 的正文会被整个拒绝。
+
+**环境。** 计划或 Webhook 指定了环境的流程总是使用该环境。对于其他流程，`--env` 就是所用的环境：这是你的选择，即使它是受保护的环境也会使用。
+没有 `--env` 时，请求需要某个环境中变量的流程不会运行。
 
 | 选项 | 含义 |
 | --- | --- |
@@ -147,7 +152,8 @@ curl -X POST http://127.0.0.1:4100/order-status \
 | `--env <env>` | 流程的请求所用的环境。 |
 | `--port <port>` | Webhook 端口；`0` 表示选取一个空闲端口。默认 4100。 |
 | `--share` | 在每个网络接口上应答 Webhook，而不仅是这台机器：用于容器。 |
-| `--token <token>` | Webhook 令牌。默认：`ECHOLOT_WEBHOOK_TOKEN`，否则是新生成并打印的令牌。 |
+| `--token <token>` | Webhook 令牌。默认：`ECHOLOT_WEBHOOK_TOKEN`，否则是工作区自己的令牌，保存在钥匙串中。 |
+| `--rotate-token` | 用新令牌替换工作区的 Webhook 令牌；App 也会使用新令牌。 |
 
 App 中的计划和 Webhook 参见[运行流程与触发器](/docs/flows/running-and-triggers)。
 

@@ -47,7 +47,9 @@ description: "HTTP 요청을 만들고, 보내고, 저장하는 방법과 요청
 있습니다. 변수는 [환경, 작업 공간, 폴더](/docs/workspaces/environments)에서 옵니다.
 
 URL에서 해석되지 않는 부분이 있으면 URL 막대 아래 줄에 **문제 1개**(또는 해당 개수)가 표시됩니다. 클릭하면 어떤 변수가 없는지 볼 수 있습니다. 해석되지
-않은 토큰은 쓴 그대로 전송됩니다.
+않은 토큰은 쓴 그대로 전송됩니다. 단, 보낼 주소가 남지 않는 경우에는 오류가 변수와 환경을 알려 줍니다. 예를 들면
+`“{{baseURL}}/products” uses {{baseURL}}, which is not defined in the environment “Staging” or above it.`입니다.
+[실행](/docs/requests/runner)에서는 해석되지 않은 토큰이 있는 요청은 보내지 않습니다.
 
 요청이 다른 요청의 응답을 읽는데(예: `{{$response('auth/sign-in', '$.access_token')}}`) 그 요청에 아직 응답이 없으면, 아래 줄에
 **“Sign in”을(를) 먼저 보냄**이라고 표시됩니다. Echolot이 이 요청보다 먼저 그 요청을 보냅니다.

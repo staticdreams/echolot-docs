@@ -81,9 +81,23 @@ QoS 1 和 2 的投递在两个方向上都会替你确认。
 
 连接关闭时，会话保存在[历史记录](/docs/workspaces/history)中，日志作为响应正文，所以对 **正文** 的检查也适用于它。
 
+## 检查、捕获和运行 [#checks-captures-and-runs]
+
+**测试**标签页中的**消息中的值**、**收到的消息数**和**会话关闭**检查收到的消息，**第一条消息**和**最后一条消息**捕获则读取它们，每个负载都按 JSON 读取。
+在检查或捕获的**任意**栏中填写主题过滤器（比如 `warehouses/+/temperature`），可以把它限定到某些主题。**会话关闭**读取 Broker 断开连接时的原因码。
+参见[实时会话的检查](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)。
+
+在运行中，请求文件 `[settings]` 中的 `stop-after-acks = true` 会在 Broker 确认了每个订阅以及每个 QoS 1 或 2 的发布后停止监听。
+拒绝连接的 Broker 在运行中会给出一个状态，比如用户名或密码错误时为 `401`。参见[提前停止监听](/docs/requests/websocket-and-sse#stop-listening-early)
+和[被拒绝的连接](/docs/requests/websocket-and-sse#refused-connections)。
+
 ## MQTT 5.0 [#mqtt-50]
 
-Broker 的原因码会按名称显示在日志中，也会在连接被拒绝时显示，例如 `Success` 或 `Not authorized`，两个版本都是如此。选取 **MQTT 5.0** 后：
+Broker 的原因码会按名称显示在日志中，也会在连接被拒绝时显示，例如 `Success` 或 `Not authorized`，两个版本都是如此。
+
+选取 **MQTT 5.0** 而 Broker 拒绝它时（只支持 3.1.1 的 Broker 就会这样），Echolot 会用 MQTT 3.1.1 重新连接。日志的第一行会说明用哪个协议连接。
+
+选取 **MQTT 5.0** 后：
 
 - 订阅上的 **No Local** 会排除这个客户端自己的消息。
 - **全新开始** 取代 3.1.1 的 **清除会话**。

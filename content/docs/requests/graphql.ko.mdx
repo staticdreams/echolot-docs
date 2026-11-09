@@ -41,6 +41,22 @@ query SearchProducts($text: String!, $first: Int = 10) {
 
 <strong>보내기</strong> 또는 <kbd>⌘</kbd><kbd>R</kbd>로 보냅니다.
 
+## 요청 간에 쿼리 공유하기 [#share-a-query-between-requests]
+
+GraphQL 요청은 각자 쿼리를 자기 파일, 요청 옆의 `<slug>.graphql`에 보관합니다. 여러 요청이 변수만 다르게 같은 작업을 보낼 때는 대신
+쿼리 파일 하나를 공유할 수 있습니다. 각 요청의 파일에서 `query-file` 대신 `shared-query`로 지정합니다.
+
+```toml
+shared-query = "queries/search-products.graphql"
+```
+
+경로는 작업 공간 폴더 기준 상대 경로입니다. `.graphql`로 끝나야 하고 작업 공간 안에 있어야 하며, 그 안의 폴더나 파일 이름은 점으로
+시작할 수 없습니다. 아직 없는 파일은 빈 쿼리로 읽히며, 처음 저장할 때 그 파일과 위의 폴더가 만들어집니다.
+
+공유 쿼리가 있는 요청은 그 파일에서 쿼리를 읽고, **쿼리** 탭에서 편집하면 파일에 쓰므로 그 파일을 지정한 모든 요청이 따라 바뀝니다.
+**쿼리** 탭은 편집기 위에 이를 알려 줍니다. **공유 쿼리 queries/search-products.graphql: 여기서 고치면 이 쿼리를 쓰는 모든 요청에서
+바뀝니다.** **이 요청 전용으로 만들기**를 선택하면 이 요청에 쿼리의 사본을 따로 줍니다. 공유 파일과 다른 요청은 그대로 남습니다.
+
 ## 요청이 전송되는 방식 [#how-the-request-is-sent]
 
 주소 앞의 <strong>GQL</strong> 배지는 메뉴입니다. <strong>보내는 방식</strong> 아래에 다음이 있습니다.
@@ -105,8 +121,9 @@ query SearchProducts($text: String!, $first: Int = 10) {
 - <strong>부분 데이터</strong>: 데이터가 오류와 함께 도착했으므로 일부 필드는 실패해서 `null`입니다.
 - <strong>확장 정보</strong>: 응답의 `extensions`. 트레이싱이나 비용 정보 같은 것입니다.
 
-<strong>테스트</strong> 탭에 `0`과 같은 <strong>GraphQL 오류</strong> 검사를 추가하면 오류가 있을 때 실행이 실패합니다. [스크립트와 테스트](/docs/requests/scripts-and-tests)를
-참고하십시오.
+<strong>테스트</strong> 탭에 `0`과 같은 <strong>GraphQL 오류</strong> 검사를 추가하면 오류가 있을 때 실행이 실패합니다. **없음** 검사는 응답에 오류가
+없으면 통과합니다. **있음**은 오류가 하나 이상 있으면 통과하므로, 실패해야 하는 요청에 씁니다.
+[스크립트와 테스트](/docs/requests/scripts-and-tests)를 참고하십시오.
 
 ## 구독과 증분 전달 [#subscriptions-and-incremental-delivery]
 

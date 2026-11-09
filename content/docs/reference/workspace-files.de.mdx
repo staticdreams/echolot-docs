@@ -263,7 +263,8 @@ secret = true
 | `name` | Der Name der Anfrage. |
 | `url` | Die URL, mit ihrem Query-String. Jede Art außer MCP-Aufrufen hat eine. |
 | `docs` | Die Dokumentation der Anfrage, in Markdown. |
-| `spec-operation` | Die Operation der Spec, aus der sie entstand, etwa `POST /auth/token`. |
+| `spec-operation` | Die Operation der Spec, aus der sie entstand oder der sie folgt, etwa `POST /auth/token`. `openapi`-Prüfungen lesen sie. |
+| `spec` | Die Spec, die ihre `openapi`-Prüfungen lesen, etwa `specs/alpenglow.yaml`, wenn es nicht die ihres Ordners ist. Ihr Ordner folgt dieser Spec nicht. |
 | `[[headers]]` | `name`, `value` und `enabled = false` für einen, der aus ist. |
 | `[[disabled-params]]` | Query-Parameter, die abgeschaltet sind: `name`, `value`. Die eingeschalteten stehen in der URL. |
 | `[[disabled-form-fields]]` | Formularfelder, die abgeschaltet sind: `name`, `value`. |
@@ -306,6 +307,7 @@ graphql-variables = """
 | Schlüssel | Bedeutung |
 | --- | --- |
 | `query-file` | Die Datei neben der Anfrage mit der Abfrage, `<slug>.graphql`. |
+| `shared-query` | Statt `query-file`: eine Abfragedatei, die mehrere Anfragen teilen, relativ zum Ordner des Arbeitsbereichs, etwa `queries/search-products.graphql`. Eine `.graphql`-Datei im Arbeitsbereich, in deren Pfad kein Name mit einem Punkt beginnt. Wer die Abfrage bearbeitet, schreibt diese Datei. |
 | `operation` | Die Operation, die ausgeführt wird, wenn die Abfrage mehrere hat. |
 | `graphql-variables` | Die GraphQL-Variablen als JSON-Text. Ältere Dateien nennen ihn `variables`. |
 | `schema` | Das Schema, gegen das geprüft und vervollständigt wird: eine Datei in `specs/`. |
@@ -381,9 +383,10 @@ arguments = """
 
 | Schlüssel | Bedeutung |
 | --- | --- |
-| `target` | Was geprüft wird: `status`, `header`, `json`, `body`, `time` (Millisekunden), `size` (Bytes), `schema` (JSON Schema), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status`. |
+| `target` | Was geprüft wird: `status`, `header`, `json`, `body`, `time` (Millisekunden), `size` (Bytes), `schema` (JSON Schema), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status` und bei WebSocket-, Socket.IO- und MQTT-Anfragen `message` (ein Wert in den empfangenen Nachrichten), `message-count` und `close`. |
 | `name` | Bei `header`: der Name des Headers. |
-| `path` | Bei `json`: ein JSONPath, etwa `$.items.length`. |
+| `path` | Bei `json` und `message`: ein JSONPath, etwa `$.items.length`. |
+| `on` | Bei `message` und `message-count`: nur die Nachrichten dieses Socket.IO-Ereignisses oder MQTT-Topic-Filters. |
 | `check` | `equals`, `not-equals`, `contains`, `not-contains`, `less-than`, `at-most`, `greater-than`, `at-least`, `exists`, `not-exists`, `matches` (ein regulärer Ausdruck), `is-type`, `is-one-of`, `matches-schema`. |
 | `expected` | Der Wert, mit dem verglichen wird; nicht geschrieben bei Prüfungen, die keinen brauchen. |
 | `enabled` | `false` schaltet sie ab. |
@@ -395,8 +398,9 @@ Welche Prüfungen jedes Ziel anbietet, steht unter [Skripte und Tests](/docs/req
 | Schlüssel | Bedeutung |
 | --- | --- |
 | `variable` | Die Variable, in der der Wert abgelegt wird. |
-| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status` oder `body`. |
+| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status`, `body` oder bei WebSocket-, Socket.IO- und MQTT-Anfragen `message` (die erste empfangene Nachricht mit einem Wert am Pfad) oder `last-message` (die letzte). |
 | `path` | Wo der Wert steht: ein JSONPath, ein XPath, ein Header- oder Cookie-Name. Nicht bei `status` und `body`. |
+| `on` | Bei `message` und `last-message`: nur die Nachrichten dieses Socket.IO-Ereignisses oder MQTT-Topic-Filters. |
 | `scope` | `environment` (Standard: die aktive Umgebung) oder `workspace`. |
 | `secret` | `true` legt den Wert als Secret im Schlüsselbund ab. |
 | `enabled` | `false` schaltet sie ab. |
@@ -417,8 +421,14 @@ Eine Antwort ab 400 oder ein Wert, der nicht da ist, lässt die Variable, wie si
 | `cookies` | `false` sendet und speichert keine Cookies. |
 | `http-version` | `automatic`, `http1`, `http2` oder `http3`. |
 | `stream-limit` | Sekunden, die ein Ereignis-Stream oder eine Sitzung abgehört wird. |
+| `stop-after-messages` | Eine Sitzung, die ohne dich läuft, hört auf zuzuhören, sobald so viele Nachrichten empfangen wurden. |
+| `stop-when` | Sie hört auf, sobald eine empfangene Nachricht einen Wert an diesem JSONPath hat. |
+| `stop-when-equals` | Mit `stop-when`: nur, wenn der Wert diesem gleicht. |
+| `stop-after-acks` | `true`: Sie hört auf, sobald jede angeforderte Socket.IO-Bestätigung und jede MQTT-Bestätigung eines Abonnements oder einer Veröffentlichung mit QoS 1 oder 2 eingetroffen ist. |
+| `stop-on` | Beschränkt `stop-after-messages` und `stop-when` auf ein Socket.IO-Ereignis oder einen MQTT-Topic-Filter. |
 
-Siehe [Anfrageeinstellungen](/docs/requests/settings).
+Siehe [Anfrageeinstellungen](/docs/requests/settings) und, für die `stop-`-Schlüssel,
+[früher aufhören zuzuhören](/docs/requests/websocket-and-sse#stop-listening-early).
 
 ### Auth [#auth]
 
@@ -525,6 +535,11 @@ body = """{ "error": "no user {{request.params.id}}" }"""
 | `[[scenarios]]` | Die für eine Operation der Spec gewählte Antwort: `operation` (etwa `GET /pets`), `status`, `example` (der Name des Beispiels). |
 | `[[routes]]` | Eine von Hand angelegte Route: `id` (bleibt gleich, während sich die Route ändert), `method` (oder `ANY`), `path` (`{id}` für einen Parameter), `summary`, `enabled = false` für eine Route, die aus ist, `response` (der Name der Standardantwort; die erste, wenn weggelassen), `request-content-type` und `request-body` (was daraus erstellte Anfragen senden). |
 | `[[routes.responses]]` | Eine Antwort der obigen Route: `name`, `status`, `content-type`, `headers` (`name` und `value`), `rules` (`source` ist `path`, `query`, `header` oder `body`; `name`; `value`, mit `*` für beliebig und leer für keinen) und `body`. |
+| `kind` (in `[[routes]]`) | `websocket` oder `socketio` für eine Route, die Verbindungen annimmt; bei HTTP weggelassen. Siehe [Streams, Sockets und MQTT](/docs/mocks/streams-and-sockets). |
+| `repeat`, `ends`, `close` (in `[[routes.responses]]`) | Bei einem Stream: wie oft seine Ereignisse abgespielt werden (`0` bis der Client geht; 1, wenn weggelassen), was danach kommt (`close` oder `hold`; weggelassen enden Server-Sent Events, und Sockets bleiben offen), und ein Schließen, das der Mock von selbst vornimmt (`{ after-ms, code, reason }`). |
+| `[[routes.responses.events]]` | Eine Nachricht der Zeitleiste der Antwort: `after-ms` (nach der vorigen), `event` (das `event:` eines Server-Sent Event oder das Socket.IO-Ereignis), `id` (das `id:` eines Server-Sent Event) und `data`. |
+| `[[routes.responses.replies]]` | Die Antwort eines Sockets auf eine Nachricht: `event` (Socket.IO), `rules` (`body`-Regeln lesen die Nachricht), `ack = true` (eine Socket.IO-Bestätigung beantworten), `close` und ihre Nachrichten in `[[routes.responses.replies.send]]` (wie `events`). |
+| `[broker]` | Der MQTT-Broker des Mocks: `port`, `repeat`, seine Zeitleiste in `[[broker.publishes]]` (`after-ms`, `topic`, `data`, `qos`, `retain`) und seine Antworten in `[[broker.replies]]` (`filter`, `rules` und Nachrichten in `[[broker.replies.send]]`). |
 
 `mocks/<slug>.js` enthält die Routen des Mocks in JavaScript, die vor den von Hand angelegten Routen und der Spec
 antworten. Für die Operationen der Spec stehen Antworten nie im Mock: Beispiele gehören in die Spec. Siehe
@@ -563,8 +578,8 @@ to = "signin.run"
 | --- | --- |
 | `name`, `description` | Der Name des Flows und was er tut. |
 | `[mcp]` | Bietet den Flow Agenten als Tool an: `tool` (sein Name) und `description`. |
-| `[schedule]` | Führt ihn nach einem Zeitplan aus: `every-minutes` oder `cron` (etwa `"0 6 * * *"`). |
-| `[webhook]` | Führt ihn aus, wenn eine Anfrage eintrifft: `method` (Standard `POST`) und `path`. |
+| `[schedule]` | Führt ihn nach einem Zeitplan aus: `every-minutes` oder `cron` (etwa `"0 6 * * *"`), und `environment`, die Umgebung, die seine Durchläufe nutzen (weggelassen die des Fensters, nie eine geschützte). |
+| `[webhook]` | Führt ihn aus, wenn eine Anfrage eintrifft: `method` (Standard `POST`), `path` und `environment`, wie bei einem Zeitplan. |
 | `[[inputs]]` | Seine Eingaben: `name`, `type` (`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
 | `[[blocks]]` | Seine Blöcke: `id`, `kind`, `title`, `position` (`[x, y]` auf der Arbeitsfläche), `paused`, `color` und `[blocks.settings]` mit den Einstellungen der Art. |
 | `[[wires]]` | Verbindungen: `from` und `to`, jeweils `block.port`. |

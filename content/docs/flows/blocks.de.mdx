@@ -91,6 +91,10 @@ ein Tool eines MCP-Servers aufrufen – mit denselben Regeln wie für Agenten.
 | `result` | aus | Was das Tool zurückgegeben hat. |
 | `fail` | aus | Warum es fehlgeschlagen ist. |
 
+Das Tool kann auch so heißen, wie Agenten es vom MCP-Server von Echolot kennen: `run_requests` führt `run_collection`
+aus (mit `stop_on_failure` für `bail`, und die Pfade laufen in der angegebenen Reihenfolge), `list_requests` führt
+`list_workspace` aus. Ein Flow, den ein Agent mit diesen Namen gezeichnet hat, läuft so, wie er ist.
+
 Ein Block „Tool“ kann keinen anderen Flow ausführen; dafür gibt es den Block „Flow“.
 
 <Edition only="direct">

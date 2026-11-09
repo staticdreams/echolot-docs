@@ -60,6 +60,48 @@ Echolot은 서버의 ping에 직접 응답합니다. 조각을 이어 붙인 메
 
 연결이 닫히면 세션은 [기록](/docs/workspaces/history)에 보관됩니다. 핸드셰이크는 요청으로, 메시지 로그는 응답 본문으로 저장됩니다.
 
+### 검사와 캡처 [#checks-and-captures]
+
+**테스트** 탭은 메시지 로그에 대해 세 가지 검사를 제공합니다. **메시지 값**(받은 각 메시지에 적용하는 JSONPath), **받은 메시지 수**,
+**세션 종료**(서버의 종료 코드와 사유)입니다. [실시간 세션 검사](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)를
+참고하십시오. 캡처는 **첫 메시지**와 **마지막 메시지**로 메시지를 읽습니다. [캡처](/docs/requests/captures#values-from-realtime-sessions)를
+참고하십시오. [Socket.IO](/docs/requests/socket-io)와 [MQTT](/docs/requests/mqtt) 요청에서도 똑같이 동작합니다.
+
+### 일찍 수신 멈추기 [#stop-listening-early]
+
+실행, 명령줄, 에이전트에서 세션은 스트림 제한(`stream-limit`로 바꾸지 않으면 10초)까지, 또는 서버가 닫을 때까지 수신합니다. 멈춤 조건은
+기다리던 것이 도착하는 즉시 세션을 끝냅니다. 요청 파일의 `[settings]`에 설정합니다. 앱에는 아직 이를 위한 필드가 없습니다.
+
+| 키 | 멈추는 시점 |
+| --- | --- |
+| `stop-after-messages` | 이만큼의 메시지를 받았을 때. |
+| `stop-when` | 받은 메시지에 `$.status` 같은 이 JSONPath의 값이 있을 때. |
+| `stop-when-equals` | `stop-when`과 함께: 값이 이것과 같을 때. `{{variables}}`를 쓸 수 있습니다. |
+| `stop-after-acks` | `true`: 확인 응답을 요청한 모든 Socket.IO 이벤트가 확인 응답을 받고, QoS 1 또는 2의 모든 MQTT 게시와 모든 구독이 브로커의 확인 응답을 받았을 때. |
+| `stop-on` | `stop-after-messages`와 `stop-when`을 Socket.IO 이벤트나 MQTT 토픽 필터의 메시지로 좁힙니다. |
+
+어느 조건이든 먼저 충족되면 세션이 끝나며, 로그에 `Stopped listening: 3 messages arrived`처럼 이유가 표시됩니다.
+
+```toml
+[settings]
+stream-limit = 30
+stop-when = "$.status"
+stop-when-equals = "shipped"
+```
+
+### 거부된 연결 [#refused-connections]
+
+서버가 연결을 거부하면, 직접 연결할 때는 오류가 표시됩니다. 실행, 명령줄, 에이전트에서는 거부가 대신 응답이 되므로 검사로 이를 예상할
+수 있습니다.
+
+- 거부된 WebSocket 업그레이드는 서버의 응답, 즉 `401` 같은 상태와 헤더를 보관합니다.
+- 클라이언트의 참여를 거부하는(`connect_error`) Socket.IO 서버는 상태 `403`을 줍니다.
+- 연결을 거부하는 MQTT 브로커는 사유에 따라 상태를 줍니다. 사용자 이름이나 비밀번호가 잘못되면 `401`, 클라이언트에 권한이 없거나 차단되었으면
+  `403`, 브로커를 사용할 수 없거나 바쁘거나 한도를 넘었으면 `503`, 그 밖의 사유는 `400`입니다.
+
+그러면 로그에 거부가 남고, **세션 종료**는 이를 서버가 닫은 것으로 읽습니다. 코드는 업그레이드의 상태나 MQTT 사유 코드이고, 사유는 서버가 한
+말입니다. 따라서 **상태**가 `401`과 같음, 또는 **세션 종료**가 `Not authorized`를 포함은 예상한 거부에서 통과합니다.
+
 ## Server-Sent Events [#server-sent-events]
 
 Server-Sent Events 스트림은 이벤트를 계속 보내는 `text/event-stream` 유형의 HTTP 응답입니다. 일반 HTTP 요청을 사용하십시오. 주소 외에 따로 설정할 것은 없습니다.

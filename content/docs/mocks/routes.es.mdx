@@ -27,12 +27,14 @@ Cada cambio se guarda al instante, y un mock en marcha responde con él al insta
 cualquier cambio, también el de eliminar una ruta. Cuando dos rutas activadas tienen el mismo método y la misma ruta, la
 tarjeta te avisa: solo responde la primera.
 
-<Shot id="mocks-route-editor" alt="El editor de la ruta GET /users/{id}: su método, su ruta y su resumen, las respuestas 200 OK (la predeterminada) y 404 Not found, y el tipo de contenido de la respuesta OK, una cabecera X-Request-Id con {{$randomUUID}} y un cuerpo JSON con request.params.id y valores falsos" />
+<Shot id="mocks-route-editor" alt="El editor de la ruta GET /users/{id}: su tipo (HTTP), su método, su ruta y su resumen, las respuestas 200 OK (la predeterminada) y 404 Not found, y el tipo de contenido de la respuesta OK, una cabecera X-Request-Id con {{$randomUUID}} y un cuerpo JSON con request.params.id y valores falsos" />
 
 ### Método, ruta y resumen [#method-path-and-summary]
 
-- **Ruta**: el método (**GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS**, o **ANY** para todos
-  los métodos) y la ruta. Una solicitud `HEAD` va a una ruta **GET**, sin el cuerpo.
+- **Ruta**: lo que habla la ruta, el método y la ruta. El primer menú es el tipo: **HTTP**, o **WebSocket** y
+  **Socket.IO** para rutas que aceptan conexiones (mira [streams, sockets y MQTT](/docs/mocks/streams-and-sockets)).
+  El método es **GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS**, o **ANY** para todos los
+  métodos. Una solicitud `HEAD` va a una ruta **GET**, sin el cuerpo.
 - Los **parámetros de ruta** se escriben `{id}` o `:id`, uno por cada parte de la ruta: `/users/{id}`,
   `/files/{name}.json`. `:id` se guarda como `{id}`. Una ruta con una parte literal tiene preferencia sobre otra con un
   parámetro, así que `/users/me` responde antes que `/users/{id}`.
@@ -50,7 +52,7 @@ respuesta tiene:
 | **Content-Type** | El `Content-Type` que se envía, como `application/json` o `application/xml`; el menú que hay junto a él tiene los tipos habituales. Vacío no envía ninguno. También decide cómo se escapan los valores del cuerpo. |
 | **Cabeceras** | Cabeceras que se envían con ella. Los valores pueden contener datos falsos y partes de la solicitud, como el cuerpo. |
 | **Reglas** | Cuándo responde esta respuesta en lugar de la predeterminada. Consulta [elegir una respuesta](#choosing-a-response). |
-| **Cuerpo** | Lo que se envía, con números de línea y colores para JSON, XML y HTML. |
+| **Cuerpo** | Lo que se envía, con números de línea y colores para JSON, XML y HTML. **Transmitir eventos enviados por el servidor en su lugar** envía en su lugar eventos en una línea de tiempo; mira [eventos enviados por el servidor](/docs/mocks/streams-and-sockets#server-sent-events). |
 
 La respuesta con una marca de verificación (**Predeterminado**) es la predeterminada de la ruta; **Hacer
 predeterminada** en otra la cambia. El botón de la papelera elimina una respuesta.
@@ -113,6 +115,9 @@ archivos, imágenes y bases de datos. Los nombres son las variables dinámicas d
 para Postman funcionan aquí. Algunos admiten argumentos: `{{$randomInt(1, 100)}}`, `{{$randomPrice(5, 50)}}`,
 `{{$randomLoremWords(5)}}`, `{{$randomElement(active, paused, closed)}}`.
 Los [valores dinámicos](/docs/reference/dynamic-values#fake-data) los listan todos.
+
+Las horas se pueden desplazar: `{{$isoTimestamp('-90s')}}` es hace 90 segundos y `{{$timestamp('2h')}}` dentro de dos
+horas, en segundos o con `ms`, `s`, `m`, `h`, `d` o `w`. Un pedido hecho hace 90 segundos no necesita script.
 
 **Insertar valor**, encima del cuerpo, pone un valor falso donde está el cursor: **Datos falsos** los tiene por grupos.
 

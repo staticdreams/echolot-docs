@@ -41,7 +41,9 @@ description: "创建、发送和存储 HTTP 请求，并熟悉请求页面。"
 列出当前范围内的变量和[动态值](/docs/requests/dynamic-values)。变量显示为一个胶囊标记；将指针停留在上面可查看它的值，连按两下可更改它。变量来自
 [环境、工作区和文件夹](/docs/workspaces/environments)。
 
-如果 URL 中有内容无法解析，URL 栏下方的那一行会显示 **1 个问题**（或相应数量）。点按它可查看缺少哪些变量。无法解析的标记会按原样发送。
+如果 URL 中有内容无法解析，URL 栏下方的那一行会显示 **1 个问题**（或相应数量）。点按它可查看缺少哪些变量。无法解析的标记会按原样发送，除非它们使请求没有可发送的地址：此时错误会指出变量和环境，比如
+`“{{baseURL}}/products” uses {{baseURL}}, which is not defined in the environment “Staging” or above it.` 在[运行](/docs/requests/runner)中，
+不会发送任何带有无法解析标记的请求。
 
 当请求读取另一个请求的响应（例如通过 `{{$response('auth/sign-in', '$.access_token')}}`），而那个请求还没有响应时，这一行会显示
 **先发送“Sign in”**：Echolot 会先发送那个请求，再发送当前请求。

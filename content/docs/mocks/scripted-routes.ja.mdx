@@ -88,6 +88,50 @@ mock.get("/me", (req, res) => {
 })
 ```
 
+## ソケット [#sockets]
+
+JavaScriptのルートは接続も受け付けられます。独自のロジックが必要なストリーム向けです。
+
+| 関数 | 受け付けるもの |
+| --- | --- |
+| `mock.ws(path, handler)` | パスへの `GET` によるWebSocket接続。 |
+| `mock.sse(path, handler)` | パスへの `GET`。Server-Sent Events（`text/event-stream`）で応答し、ルートが終了するまで開いたままにします。 |
+
+ハンドラは、ソケットとリクエスト（`req.params`、`req.query`、`req.headers`、`req.path`）を受け取ります。
+
+| ソケット | 動作 |
+| --- | --- |
+| `socket.send(value)` | メッセージを送信します。文字列はそのまま、それ以外はJSONとして送ります。ストリームでは、`send(value, { event, id })` でイベントの `event:` と `id:` フィールドを設定します。 |
+| `socket.on("message", text => …)` | クライアントがメッセージを送信するたびに実行されます（WebSocket）。 |
+| `socket.on("close", code => …)` | クライアントが切断したときに実行されます。 |
+| `socket.close(code, reason)` | 接続を閉じます（`4000` などのWebSocketのクローズコード）。ストリームは `stream.end()` で終了します。 |
+
+モックのルートでは、`setTimeout` と `setInterval` は実際に待つため、ソケットは自分のタイミングで送信できます。
+
+```js
+mock.ws("/orders/:id/updates", (socket, req) => {
+  socket.send({ op: "hello", order: req.params.id })
+  socket.on("message", text => {
+    const message = JSON.parse(text)
+    if (message.op === "watch") {
+      setTimeout(() => socket.send({ op: "shipped", order: req.params.id }), 2000)
+    }
+  })
+})
+
+mock.sse("/stock", stream => {
+  let n = 0
+  const timer = setInterval(() => {
+    n += 1
+    stream.send({ n, sku: "TNT-MH-2P", available: 20 - n }, { event: "level", id: String(n) })
+    if (n === 10) { clearInterval(timer); stream.end() }
+  }, 1000)
+})
+```
+
+JavaScriptのソケットは、手作業で作った[WebSocketとSocket.IOのルート](/docs/mocks/streams-and-sockets)より先に応答します。
+すべての接続はログの1行になり、双方向でやり取りされた内容が記録されます。Socket.IOの名前空間とMQTTブローカーは、手作業でのみ作成できます。
+
 ## 制限 [#limits]
 
 ルートは、Nodeではなく、[リクエストのスクリプト](/docs/requests/scripts-and-tests)と同じサンドボックスで実行されます。ファイルシステムとネットワークは使えません。
@@ -99,7 +143,8 @@ mock.get("/me", (req, res) => {
 Git、読み込み、ファイルを編集する別のアプリなど、外部から来たルートは実行されません。カードに**これらのスクリプトはEcholotの外部から来たものです**と表示され、内容を読んで**スクリプトを信頼**をクリックするまで、モックは開始しません。
 Echolotの外部で再び変更された場合は、もう一度確認が表示されます。
 
-エージェントはモックのルートを読めますが、書くことはできません。
+エージェントはモックのルートを読めますが、保存することはできません。ルートを提案することはでき、あなたはその理由と変更内容を確認します。
+書き込むのは**保存して信頼**だけです。[エージェントが提案するスクリプト](/docs/ai/agents#scripts-agents-propose)を参照してください。
 
 ## コマンドラインから [#from-the-command-line]
 

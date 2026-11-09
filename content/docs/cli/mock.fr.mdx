@@ -82,6 +82,15 @@ Chaque ligne nomme la route qui a répondu et, entre parenthèses, la réponse q
 corps sont recréées à chaque requête. Pour produire des données fictives sans serveur, voir
 [echolot fake](/docs/cli/fake).
 
+Les streams et les sockets fonctionnent comme dans l’app : routes qui diffusent des server-sent events, routes
+WebSocket et Socket.IO, et le broker MQTT d’un mock, qui démarre sur son propre port avec le mock :
+
+```text
+Mock of Shop live: 2 routes at http://127.0.0.1:4019, MQTT broker at mqtt://127.0.0.1:1883 (Ctrl-C stops it)
+```
+
+Voir [streams, sockets et MQTT](/docs/mocks/streams-and-sockets).
+
 ## Options [#options]
 
 | Option | Signification |

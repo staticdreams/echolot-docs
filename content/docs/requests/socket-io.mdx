@@ -73,6 +73,20 @@ A Socket.IO packet takes at most 1000 attachments, of up to 64 MB together.
 When the connection closes, the session is kept in [History](/docs/workspaces/history), with the log as the response
 body.
 
+## Checks, captures and runs
+
+The **Tests** tab's **Message value**, **Messages received** and **Session close** check the event log, and the
+**First message** and **Last message** captures read it. Each event's arguments are read as one JSON array, so
+`$[0].text` is the `text` of its first argument. Narrow a check or capture to one event by typing its name in its
+**on any** field; an acknowledgement carries the name of the event it answers, so `message` also takes the server's
+acknowledgements of your `message` events. See
+[checks on realtime sessions](/docs/requests/scripts-and-tests#checks-on-realtime-sessions).
+
+In runs, `stop-after-acks = true` in the request file's `[settings]` stops listening once every event that asked for
+an acknowledgement has it. A server that refuses to let the client join gives status `403` in runs, so a check can
+expect it. See [stop listening early](/docs/requests/websocket-and-sse#stop-listening-early) and
+[refused connections](/docs/requests/websocket-and-sse#refused-connections).
+
 ## From the command line
 
 `echolot send --socketio` connects from the terminal: each line you type is an event and its JSON arguments. It also

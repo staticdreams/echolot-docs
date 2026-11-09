@@ -45,6 +45,26 @@ bei einem Dokument mit einer Operation.
 
 Sende mit **Senden** oder <kbd>⌘</kbd><kbd>R</kbd>.
 
+## Eine Abfrage zwischen Anfragen teilen [#share-a-query-between-requests]
+
+Jede GraphQL-Anfrage hält ihre Abfrage in einer eigenen Datei, `<slug>.graphql` neben der Anfrage. Senden mehrere
+Anfragen dieselbe Operation mit unterschiedlichen Variablen, können sie sich stattdessen eine Abfragedatei teilen. Nenne
+sie in der Datei jeder Anfrage mit `shared-query`, anstelle von `query-file`:
+
+```toml
+shared-query = "queries/search-products.graphql"
+```
+
+Der Pfad ist relativ zum Ordner des Arbeitsbereichs. Er muss auf `.graphql` enden und im Arbeitsbereich bleiben, und
+kein Ordner- oder Dateiname darin darf mit einem Punkt beginnen. Eine Datei, die es noch nicht gibt, gilt als leere
+Abfrage; das erste Sichern schreibt sie, samt den Ordnern darüber.
+
+Eine Anfrage mit geteilter Abfrage liest sie aus dieser Datei, und eine Änderung in ihrem Tab **Abfrage** schreibt die
+Datei, sodass jede Anfrage folgt, die sie nennt. Der Tab **Abfrage** sagt das über dem Editor: **Geteilte Query
+queries/search-products.graphql: Eine Änderung hier gilt für jeden Request, der sie nutzt.** Wähle **Für diesen Request
+übernehmen**, um dieser Anfrage eine eigene Kopie der Abfrage zu geben; die geteilte Datei und die anderen Anfragen
+bleiben, wie sie sind.
+
 ## Wie die Anfrage gesendet wird [#how-the-request-is-sent]
 
 Das Badge **GQL** vor der Adresse ist ein Menü. Unter **Senden als**:
@@ -126,7 +146,8 @@ was GraphQL neben den Daten sagt:
 - **Erweiterungen**: die `extensions` der Antwort, etwa Tracing- oder Kosteninformationen.
 
 Füge im Tab **Tests** eine Prüfung **GraphQL-Fehler** mit dem Wert `0` hinzu, damit ein Durchlauf bei ihnen
-fehlschlägt. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests).
+fehlschlägt, oder eine mit **existiert nicht**, die besteht, wenn die Antwort keine Fehler hat. **existiert** besteht,
+wenn sie mindestens einen hat, für eine Anfrage, die fehlschlagen soll. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests).
 
 ## Subscriptions und inkrementelle Auslieferung [#subscriptions-and-incremental-delivery]
 

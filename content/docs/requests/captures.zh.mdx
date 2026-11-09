@@ -50,6 +50,26 @@ description: "在每次发送之后，把响应中的值（例如令牌或 ID）
 | **Cookie** | 按名称读取的、响应所设置的 Cookie。 | `session` |
 | **状态** | 状态码。 | |
 | **正文** | 整个正文，作为文本。 | |
+| **第一条消息** | 指向 WebSocket、Socket.IO 或 MQTT 会话收到的、在该处有值的第一条消息的 JSONPath。 | `$.id` |
+| **最后一条消息** | 同上，但取最后一条这样的消息：即更新流报告的最新状态。 | `$[0].id` |
+
+### 来自实时会话的值 [#values-from-realtime-sessions]
+
+WebSocket、Socket.IO 和 MQTT 请求提供**第一条消息**和**最后一条消息**。它们在请求无人参与运行时存储值，即在[运行器](/docs/requests/runner)中、
+从命令行运行时以及供智能体使用时：请求连接、发送已存储的消息、监听、关闭，然后捕获读取消息日志。每条收到的消息都按 JSON 读取；
+Socket.IO 事件的参数是一个数组，因此 `$[0].id` 是它第一个参数的 `id`。只有收到的消息才算数，Echolot 发送的消息从不计入。
+
+在路径旁边，**任意**用来缩小读取的消息范围：Socket.IO 事件的名称（确认会带上它所应答的事件的名称），或者 MQTT 主题过滤器，其中 `+` 和 `#` 都可使用。
+留空则读取每条消息。
+
+```toml
+[[captures]]
+variable = "temperature"
+from = "last-message"
+path = "$.celsius"
+on = "warehouses/+/temperature"
+scope = "environment"
+```
 
 ## 环境还是工作区 [#environment-or-workspace]
 

@@ -52,7 +52,7 @@ alpenglow.inventory.v1.Inventory
 ## echolot grpc call [#echolot-grpc-call]
 
 ```sh
-echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--stream] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
 ```
 
 `<method>` — это `package.Service/Method`. Сообщение — JSON, по умолчанию `{}`; `-d -` читает его из стандартного
@@ -66,13 +66,26 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
 ```
 
 Статус, число полученных сообщений и время идут в стандартный поток ошибок. Статус, отличный от `OK`, завершает команду
-с кодом 1.
+с кодом 1. Так же завершается ответ, который не удаётся декодировать по схеме; тогда в стандартном потоке ошибок
+предлагается `--proto` с собственным файлом `.proto` сервиса.
+
+### Серверные потоки [#server-streams]
+
+Сообщения метода с серверным потоком печатаются по мере поступления, по одному объекту JSON на строку, когда вывод идёт
+в терминал или задан `--stream`. Если вывод перенаправлен в конвейер и `--stream` не задан, сообщения печатаются после
+завершения вызова, одним массивом JSON.
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/WatchStock \
+  -d '{"skus": ["TNT-MH-2P"]}' --proto Alpenglow.echolot/specs/inventory.proto --stream | jq .
+```
 
 | Параметр | Значение |
 | --- | --- |
 | `-d`, `--data <json>` | Сообщение в формате JSON; `-` читает его из стандартного ввода. По умолчанию `{}`. |
 | `--deadline <ms>` | Срок в миллисекундах, отправляется как `grpc-timeout`. |
 | `--compress <algorithm>` | Сжимать отправляемые сообщения: `gzip` или `deflate`. Сжатые ответы читаются в любом случае. |
+| `--stream` | Печатать сообщения серверного потока по мере поступления, по одному объекту JSON на строку. По умолчанию в терминале. |
 | `--proto <file>` | Файл `.proto`, описывающий сервис, с его импортами рядом. Без него спрашивается рефлексия сервера. |
 | `-H`, `--header <header>` | Метаданные в виде `'Name: value'`. Можно повторять. |
 | `-k`, `--insecure` | Пропустить проверку сертификата TLS. |
@@ -86,5 +99,5 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
 | Код | Когда |
 | --- | --- |
 | `0` | `describe` нашёл сервисы; `call` завершился со статусом `OK`. |
-| `1` | Сервер не удалось достичь или описать либо статус вызова не `OK`. |
+| `1` | Сервер не удалось достичь или описать, статус вызова не `OK` или его ответ не удалось декодировать. |
 | `64` | Неверный параметр. |

@@ -102,6 +102,51 @@ mock.get("/me", (req, res) => {
 })
 ```
 
+## Сокеты [#sockets]
+
+Маршруты на JavaScript тоже могут принимать подключения — для потоков, которым нужна своя логика:
+
+| Функция | Принимает |
+| --- | --- |
+| `mock.ws(path, handler)` | Подключения WebSocket при `GET` на этот путь. |
+| `mock.sse(path, handler)` | `GET` на этот путь, на который отвечают server-sent events (`text/event-stream`); соединение остаётся открытым, пока маршрут его не завершит. |
+
+Обработчик получает сокет и запрос (`req.params`, `req.query`, `req.headers`, `req.path`):
+
+| Сокет | Что делает |
+| --- | --- |
+| `socket.send(value)` | Отправляет сообщение: строку как есть, всё остальное — как JSON. Для потока `send(value, { event, id })` задаёт поля события `event:` и `id:`. |
+| `socket.on("message", text => …)` | Выполняется для каждого сообщения, которое отправляет клиент (WebSocket). |
+| `socket.on("close", code => …)` | Выполняется, когда клиент уходит. |
+| `socket.close(code, reason)` | Закрывает подключение (с кодом закрытия WebSocket, например `4000`). Поток завершает `stream.end()`. |
+
+В маршрутах мока `setTimeout` и `setInterval` действительно ждут, так что сокет может говорить в своё время:
+
+```js
+mock.ws("/orders/:id/updates", (socket, req) => {
+  socket.send({ op: "hello", order: req.params.id })
+  socket.on("message", text => {
+    const message = JSON.parse(text)
+    if (message.op === "watch") {
+      setTimeout(() => socket.send({ op: "shipped", order: req.params.id }), 2000)
+    }
+  })
+})
+
+mock.sse("/stock", stream => {
+  let n = 0
+  const timer = setInterval(() => {
+    n += 1
+    stream.send({ n, sku: "TNT-MH-2P", available: 20 - n }, { event: "level", id: String(n) })
+    if (n === 10) { clearInterval(timer); stream.end() }
+  }, 1000)
+})
+```
+
+Сокеты на JavaScript отвечают раньше [маршрутов WebSocket и Socket.IO](/docs/mocks/streams-and-sockets), созданных
+вручную. Каждое подключение — строка журнала с тем, что прошло в каждую сторону. Пространства имён Socket.IO и
+MQTT-брокер создаются только вручную.
+
 ## Ограничения [#limits]
 
 Маршруты выполняются в той же песочнице, что и [скрипты запросов](/docs/requests/scripts-and-tests), а не в Node: без
@@ -116,7 +161,9 @@ mock.get("/me", (req, res) => {
 запускается, пока вы не прочитаете их и не нажмёте **Доверять скриптам**. Если они снова изменятся вне Echolot,
 Echolot спросит ещё раз.
 
-Агенты могут читать маршруты мока, но никогда не пишут их.
+Агенты могут читать маршруты мока, но никогда не сохраняют их. Они могут предлагать маршруты: вы видите их причину и
+что меняется, и только **Сохранить и доверять** записывает их. См.
+[скрипты, которые предлагают агенты](/docs/ai/agents#scripts-agents-propose).
 
 ## Из командной строки [#from-the-command-line]
 

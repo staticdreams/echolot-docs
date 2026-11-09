@@ -130,11 +130,11 @@ Exécutez un flux tout seul, toutes les tant de minutes ou selon un calendrier.
 3. Cliquez sur **Autoriser**.
 
 Une fois autorisée, l’inspecteur affiche **Prochaine exécution** avec sa date et son heure. Les exécutions planifiées
-ont lieu tant que la fenêtre de l’espace de travail est ouverte, avec l’environnement actif de la fenêtre au moment de
-l’exécution, et démarrent avec les valeurs par défaut des entrées. Une exécution manquée pendant que le Mac dormait ou
-que la fenêtre était fermée s’exécute une fois au prochain contrôle d’Echolot ; un flux encore en cours n’est pas
-redémarré. Une exécution planifiée en échec affiche une notification. Pour exécuter des planifications sans l’app,
-utilisez [`echolot flow serve`](#run-from-the-command-line).
+ont lieu tant que la fenêtre de l’espace de travail est ouverte, dans l’environnement décrit ci-dessous, et démarrent
+avec les valeurs par défaut des entrées. Une exécution manquée pendant que le Mac dormait ou que la fenêtre était fermée
+s’exécute une fois au prochain contrôle d’Echolot ; un flux encore en cours n’est pas redémarré. Une exécution planifiée
+en échec affiche une notification. Pour exécuter des planifications sans l’app, utilisez
+[`echolot flow serve`](#run-from-the-command-line).
 
 Les lignes cron utilisent cinq champs, dans le fuseau horaire de votre Mac : minute (0–59), heure (0–23), jour du mois
 (1–31), mois (1–12 ou `jan`–`dec`) et jour de la semaine (0–7 ou `sun`–`sat` ; 0 et 7 sont dimanche). Chaque champ
@@ -150,6 +150,21 @@ jour de la semaine sont tous deux restreints, il suffit que l’un des deux corr
 
 Les blocs Personnes ne peuvent interroger personne pendant une exécution planifiée : ils y échouent.
 
+### Où envoient les exécutions déclenchées [#where-triggered-runs-send]
+
+Une planification et un webhook ont chacun un menu **Environnement** :
+
+- **Celui de la fenêtre (sauf s'il est protégé)**, par défaut : les exécutions utilisent l’environnement choisi dans la
+  fenêtre au moment où elles démarrent. Tant que celui-ci est [protégé](/docs/workspaces/protected-environments), elles
+  ne s’exécutent pas : une surveillance n’envoie jamais en production parce que quelqu’un a laissé la fenêtre dessus.
+- Un environnement par son nom : les exécutions l’utilisent toujours, quoi qu’affiche la fenêtre. Autoriser le flux
+  l’autorise à envoyer là, protégé ou non, et changer d’environnement redemande votre autorisation.
+
+Quand aucun environnement n’est choisi, un flux dont les requêtes lisent des variables que seuls des environnements
+définissent n’est pas exécuté, plutôt que d’échouer à chaque déclenchement. Une exécution qui n’a pas lieu est listée
+sous **Exécutions de** du flux avec la raison, et un webhook y répond par `409`. Dans le fichier du flux,
+l’environnement est `environment = "production"` sous `[schedule]` ou `[webhook]`.
+
 ### Webhook [#webhook]
 
 Démarrez un flux quand quelque chose envoie une requête à une adresse locale.
@@ -164,11 +179,16 @@ Une fois autorisé, l’inspecteur affiche l’adresse, par exemple `POST http:/
 ouverte. Le port est choisi une fois par espace de travail et conservé.
 
 Les appelants doivent envoyer le jeton de l’espace de travail, qu’Echolot crée la première fois et conserve dans le
-trousseau. L’un de ces moyens suffit :
+trousseau. C’est un seul jeton par espace de travail, le même dans l’app et dans `echolot flow serve`, et il reste le
+même d’un redémarrage à l’autre : les adresses que vous avez données continuent de fonctionner. L’un de ces moyens
+suffit :
 
 - l’en-tête `Authorization: Bearer <token>` ;
 - l’en-tête `X-Echolot-Token: <token>` ;
-- le paramètre de requête `?token=<token>`.
+- le paramètre de requête `?token=<token>`, pour les expéditeurs qui ne peuvent pas définir d’en-têtes. Les URL finissent
+  dans les journaux : préférez un en-tête ; le jeton n’est jamais transmis au flux comme entrée.
+
+`echolot flow serve --rotate-token` remplace le jeton, s’il a pu fuiter ; les expéditeurs ont alors besoin du nouveau.
 
 ```sh
 curl -X POST http://127.0.0.1:52817/order-status \
@@ -178,13 +198,14 @@ curl -X POST http://127.0.0.1:52817/order-status \
 **Order status on webhook** se connecte, récupère la commande et répond avec elle. La chaîne de requête et les clés d’un
 corps JSON renseignent les entrées du flux portant les mêmes noms ; les autres clés sont ignorées. Une entrée nommée
 `body` reçoit tout le corps. Un flux avec une entrée `order` accepte donc `?order=ord_7Hk2Lw` ou
-`{"order": "ord_7Hk2Lw"}`. L’exécution utilise l’environnement actif de la fenêtre.
+`{"order": "ord_7Hk2Lw"}`. L’exécution utilise l’[environnement](#where-triggered-runs-send) du déclencheur.
 
 | Réponse | Quand |
 | --- | --- |
 | `200` avec la sortie en JSON | L’exécution a réussi. Le corps est ce que le bloc Sortie a reçu, ou `null`. |
 | `401` | Le jeton est absent ou erroné. |
 | `404` | Aucun flux autorisé ne répond à cette méthode et ce chemin ; l’erreur liste ceux qui répondent. |
+| `409` | L’exécution n’a pas été lancée : l’environnement de la fenêtre est protégé, aucun environnement n’est choisi pour un flux qui en a besoin, ou plusieurs flux répondent à la méthode et au chemin. Le corps dit lequel. |
 | `413` | Le corps dépasse 8 Mo. Le flux n’est pas exécuté. |
 | `500` | L’exécution a échoué. Le corps contient `error` et l’ID de l’exécution. |
 | `503` | L’exécution a été arrêtée. |

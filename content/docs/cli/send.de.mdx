@@ -115,11 +115,12 @@ echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolo
 ```
 
 **Socket.IO.** `--socketio` spricht Socket.IO über eine URL mit `http(s)://` oder `ws(s)://`. Jede Eingabezeile ist ein
-Ereignis: sein Name, dann seine JSON-Argumente (`chat {"text": "hi"}`; ein Array sind mehrere Argumente). Ereignisse
-werden als `name [arguments]` ausgegeben, Bestätigungen als `ack id [arguments]`.
+Ereignis: sein Name, dann seine JSON-Argumente (`chat {"text": "hi"}`; ein Array sind mehrere Argumente). Ein `?`
+hinter dem Namen bittet den Server, das Ereignis zu bestätigen: `message? {"text": "Grüezi!"}`. Ereignisse werden als
+`name [arguments]` ausgegeben, Bestätigungen als `ack id [arguments]`.
 
 ```sh
-echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+echo 'message? {"text": "Grüezi!"}' | echolot send http://localhost:3001 --socketio --namespace /support --listen 5
 ```
 
 Unter [Socket.IO-Anfragen](/docs/requests/socket-io) findest du Server, an denen du das ausprobieren kannst.
@@ -145,7 +146,7 @@ Unter [Socket.IO-Anfragen](/docs/requests/socket-io) findest du Server, an denen
 | `--http2` | Nur mit HTTP/2 senden: ALPN über TLS, Prior Knowledge über einfaches HTTP. |
 | `--http3` | Nur mit HTTP/3 über QUIC senden: nur `https://`, keine Proxys; macOS 27 und neuer sowie Linux. |
 | `--subprotocol <name>` | Für URLs mit `ws://` und `wss://`: ein Subprotokoll, das angeboten wird. Wiederholbar. |
-| `--socketio` | Socket.IO sprechen; jede Eingabezeile ist `event [JSON arguments]`. |
+| `--socketio` | Socket.IO sprechen; jede Eingabezeile ist `event [JSON arguments]` oder `event? [JSON arguments]`, um eine Bestätigung anzufordern. |
 | `--namespace <namespace>` | Für `--socketio`: der Namespace, dem beigetreten wird. Standard: der Pfad der URL, sonst `/`. |
 | `--auth <json>` | Für `--socketio`: die Auth-Nutzlast, ein JSON-Objekt. |
 | `--socketio-version <version>` | Für `--socketio`: die Socket.IO-Version des Servers, `4` (auch für 3) oder `2`. Standard 4. |

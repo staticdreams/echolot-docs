@@ -83,7 +83,171 @@ client-secret = "{{clientSecret}}"
 scope = "orders:read"
 `
 
+// ── Streams, sockets and MQTT in mocks; scripts agents propose ──────────────
+
+/** A mock whose first route takes WebSocket connections, then one that streams server-sent events. */
+const MOCK_LIVE = `echolot = 1
+name = "Shop live"
+port = 4019
+
+[[routes]]
+id = "updates"
+method = "GET"
+path = "/orders/{id}/updates"
+summary = "Order updates"
+kind = "websocket"
+
+[[routes.responses]]
+name = "Open"
+status = 101
+close = { after-ms = 30000, code = 4000, reason = "Shift over" }
+
+[[routes.responses.events]]
+data = '{"op": "hello", "order": "{{request.params.id}}"}'
+
+[[routes.responses.replies]]
+rules = [{ source = "body", name = "op", value = "watch" }]
+
+[[routes.responses.replies.send]]
+after-ms = 500
+data = '{"op": "shipped", "order": "{{request.params.id}}"}'
+
+[[routes.responses]]
+name = "No token"
+status = 401
+content-type = "application/json"
+body = '{"error": "token required"}'
+rules = [{ source = "query", name = "token", value = "" }]
+
+[[routes]]
+id = "events"
+method = "GET"
+path = "/orders/{id}/events"
+summary = "Order events"
+
+[[routes.responses]]
+name = "Shipping"
+status = 200
+repeat = 0
+
+[[routes.responses.events]]
+event = "position"
+data = '{"order": "{{request.params.id}}", "n": {{stream.index}}}'
+`
+
+/** A mock of a broker alone: no routes, so its broker card comes right after the empty Routes card. */
+const MOCK_BROKER = `echolot = 1
+name = "Warehouse sensors"
+port = 4020
+
+[broker]
+port = 1889
+
+[[broker.publishes]]
+topic = "warehouse/zurich/temperature"
+data = '{"celsius": 18.5, "n": {{stream.index}}}'
+qos = 1
+retain = true
+
+[[broker.publishes]]
+after-ms = 1000
+topic = "warehouse/lyon/temperature"
+data = '{"celsius": 21.0}'
+
+[[broker.replies]]
+filter = "warehouse/+/restock"
+rules = [{ source = "body", name = "sku", value = "*" }]
+
+[[broker.replies.send]]
+after-ms = 500
+topic = "warehouse/{{message.sku}}/orders"
+data = '{"sku": "{{message.sku}}", "status": "ordered"}'
+qos = 1
+`
+
+const ECHOLOT_CLI = process.env.ECHOLOT_CLI ?? '/Users/peter/Projects/Echolot/Echolot/Packages/EcholotKit/.build/debug/echolot'
+
+/** An MCP client that connects through `echolot mcp serve` (relayed to the app) and proposes a script; kill it when done. */
+async function proposeScript(workspace: string) {
+  const client = Bun.spawn([ECHOLOT_CLI, 'mcp', 'serve', workspace], { stdin: 'pipe', stdout: 'pipe', stderr: 'pipe' })
+  const send = (message: object) => { client.stdin.write(JSON.stringify(message) + '\n'); client.stdin.flush() }
+  send({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'Claude Code', version: '1.0' } } })
+  // The call waits for initialize's answer: the app knows the session only then.
+  const reader = client.stdout.getReader()
+  let text = ''
+  const deadline = Date.now() + 10_000
+  while (!text.includes('"id":1') && Date.now() < deadline) {
+    const { value, done } = await reader.read()
+    if (done) break
+    text += new TextDecoder().decode(value)
+  }
+  reader.releaseLock()
+  send({ jsonrpc: '2.0', method: 'notifications/initialized' })
+  send({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'propose_script', arguments: {
+    scope: 'request', path: 'orders/create-order', script: 'pre-request',
+    code: "// One key per order: a retried POST never places it twice.\nconst key = pm.variables.replaceIn('{{$randomUUID}}')\npm.request.headers.upsert({ key: 'Idempotency-Key', value: key })\nconsole.log('Idempotency-Key', key)",
+    why: 'Adds an Idempotency-Key header to every order, so a retried POST never places the same order twice.',
+  } } })
+  return client
+}
+
 export const SCENES: Record<string, () => Promise<void>> = {
+  /** The editor of a WebSocket route: kind, path, the Open response, what it sends once open, a reply. */
+  async 'mocks-route-websocket'() {
+    const workspace = scratchWorkspace('mocks-live', { 'mocks/shop-live.toml': MOCK_LIVE })
+    await launch({ workspace, page: 'mocks', height: 896 })
+    await sleep(1.5)
+    scroll(800, 500, 'down', Number(process.env.SCROLL_WS ?? 4))
+    await sleep(1.2)
+    run([join(ROOT, '.work/activate'), String(state.pid)])
+    await shoot('mocks-route-websocket')
+  },
+  /** The editor of GET /users/{id} (listed first in this copy, so it opens selected): kind, method, path, responses. */
+  async 'mocks-route-editor'() {
+    const users = readFileSync(join(ROOT, 'shots/scenes/mocks/users.toml'), 'utf8')
+    const blocks = users.split(/\n(?=\[\[routes\]\]\n)/)
+    const workspace = scratchWorkspace('mocks-users', { 'mocks/users.toml': [blocks[0], blocks[2], blocks[1], ...blocks.slice(3)].join('\n') })
+    await launch({ workspace, page: 'mocks', height: 896 })
+    await sleep(1.5)
+    scroll(800, 500, 'down', Number(process.env.SCROLL_USERS ?? 4))
+    await sleep(1.2)
+    run([join(ROOT, '.work/activate'), String(state.pid)])
+    await shoot('mocks-route-editor')
+  },
+  /** The MQTT Broker card of a mock that is a broker alone. */
+  async 'mocks-broker'() {
+    const workspace = scratchWorkspace('mocks-broker', { 'mocks/warehouse-sensors.toml': MOCK_BROKER })
+    await launch({ workspace, page: 'mocks', height: 896 })
+    await sleep(1.5)
+    scroll(800, 500, 'down', Number(process.env.SCROLL_BROKER ?? 3))
+    await sleep(1.2)
+    run([join(ROOT, '.work/activate'), String(state.pid)])
+    await shoot('mocks-broker')
+  },
+  /** An agent's proposal: the sheet with its reason and the script's lines. */
+  async 'ai-script-proposal'() {
+    await launch({ args: ['-agents.enabled', 'YES'] })
+    await sleep(4)
+    let client = await proposeScript(WORKSPACE)
+    try {
+      // The sheet names the client, which is the same in every language; a client that came too early tries again.
+      let shown = false
+      for (let attempt = 0; attempt < 3 && !shown; attempt++) {
+        for (let i = 0; i < 16 && !shown; i++) {
+          await sleep(0.5)
+          shown = tree().some((n) => n.text.includes('Claude Code'))
+        }
+        if (!shown) { client.kill(); await sleep(2); client = await proposeScript(WORKSPACE) }
+      }
+      if (!shown) throw new Error('the proposal sheet did not show')
+      await sleep(1)
+      run([join(ROOT, '.work/activate'), String(state.pid)])
+      await shoot('ai-script-proposal')
+    } finally {
+      client.kill()
+      await sleep(1)
+    }
+  },
   // ── Get started and the tutorials' window shots ────────────────────────────
   /** The whole window: Auth › Sign in and Catalog › List products as tabs, the response as a JSON tree. */
   async 'get-started-window'() {

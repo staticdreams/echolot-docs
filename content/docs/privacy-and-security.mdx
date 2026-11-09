@@ -110,8 +110,9 @@ Agents such as Claude Code, Cursor or Codex can use a workspace through Echolot'
   you (**Deny**, **Allow Once**, **Allow for This Session**). Protected environments and new hosts always ask.
 - **Secrets never reach an agent.** Agents refer to secrets by name. Everything an agent gets back, errors included,
   has secret values removed, as written, in JSON, percent-encoded and Base64. History an agent reads has credentials
-  masked.
-- **Never offered.** The agent policy, proxy, certificates, auth and scripts are not tools agents can use.
+  masked, and so do credential fields in response bodies, such as an `access_token` nobody stored.
+- **Never offered.** The agent policy, proxy, certificates, auth and saving scripts are not tools agents can use. An
+  agent can propose a script: you see its reason and the change, and only **Save and Trust** writes and trusts it.
 - **Every call is recorded.** History shows who sent each request, agents by name, and **Agents** in the window lists
   recent calls.
 

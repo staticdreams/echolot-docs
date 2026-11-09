@@ -131,8 +131,7 @@ Ejecuta un flujo por sí solo, cada cierto número de minutos o según un calend
 3. Haz clic en **Permitir**.
 
 Una vez permitida, el inspector muestra **Próxima ejecución** con su fecha y hora. Las ejecuciones programadas ocurren
-mientras la ventana del espacio de trabajo está abierta, con el entorno activo de la ventana en el momento de la
-ejecución, y empiezan con los valores predeterminados de las entradas. Una ejecución que se pierde mientras el Mac
+mientras la ventana del espacio de trabajo está abierta, en el entorno que se describe más abajo, y empiezan con los valores predeterminados de las entradas. Una ejecución que se pierde mientras el Mac
 dormía o la ventana estaba cerrada se ejecuta una vez la próxima vez que Echolot mira; un flujo que sigue ejecutándose
 no se vuelve a iniciar. Una ejecución programada que falla muestra una notificación. Para ejecutar programaciones sin la
 app, usa [`echolot flow serve`](#run-from-the-command-line).
@@ -151,6 +150,21 @@ que coincida uno de los dos.
 
 Los bloques de personas no pueden preguntar a nadie durante una ejecución programada, así que fallan en ella.
 
+### Dónde envían las ejecuciones activadas [#where-triggered-runs-send]
+
+Una programación y un webhook tienen cada uno un menú **Entorno**:
+
+- **El de la ventana (no si está protegido)**, la opción predeterminada: las ejecuciones usan el entorno elegido en la
+  ventana cuando empiezan. Mientras ese entorno está [protegido](/docs/workspaces/protected-environments), no se
+  ejecutan: un monitor nunca envía a producción porque alguien dejó la ventana en él.
+- Un entorno por su nombre: las ejecuciones siempre lo usan, muestre lo que muestre la ventana. Permitir el flujo le
+  permite enviar ahí, esté protegido o no, y cambiar el entorno vuelve a pedirte permiso.
+
+Cuando no hay ningún entorno elegido, un flujo cuyas solicitudes leen variables que solo definen los entornos no se
+ejecuta, en lugar de fallar en cada intervalo. Una ejecución que no ocurre aparece en **Ejecuciones de** ese flujo con
+el motivo, y un webhook la responde con `409`. En el archivo del flujo, el entorno es `environment = "production"` bajo
+`[schedule]` o `[webhook]`.
+
 ### Webhook [#webhook]
 
 Inicia un flujo cuando algo envía una solicitud a una dirección local.
@@ -164,11 +178,16 @@ Una vez permitido, el inspector muestra la dirección, como `POST http://127.0.0
 y **Copiar token**. Echolot escucha solo en este Mac (127.0.0.1) mientras la ventana está abierta. El puerto se elige
 una vez por espacio de trabajo y se conserva.
 
-Quien llama debe enviar el token del espacio de trabajo, que Echolot crea la primera vez y guarda en el llavero.
-Cualquiera de estas opciones sirve:
+Quien llama debe enviar el token del espacio de trabajo, que Echolot crea la primera vez y guarda en el llavero. Es
+un token por espacio de trabajo, el mismo en la app y en `echolot flow serve`, y no cambia al reiniciar, así que las
+direcciones que hayas dado siguen funcionando. Cualquiera de estas opciones sirve:
 
-- la cabecera `Authorization: Bearer <token>`; - la cabecera `X-Echolot-Token: <token>`; - el parámetro de consulta
-  `?token=<token>`.
+- la cabecera `Authorization: Bearer <token>`;
+- la cabecera `X-Echolot-Token: <token>`;
+- el parámetro de consulta `?token=<token>`, para quien no puede fijar cabeceras. Las URL acaban en los registros, así
+  que mejor una cabecera; el token nunca se pasa al flujo como entrada.
+
+`echolot flow serve --rotate-token` sustituye el token, por si pudo filtrarse; quien envía necesita entonces el nuevo.
 
 ```sh
 curl -X POST http://127.0.0.1:52817/order-status \
@@ -178,13 +197,14 @@ curl -X POST http://127.0.0.1:52817/order-status \
 **Order status on webhook** inicia sesión, obtiene el pedido y responde con él. La consulta y las claves de un cuerpo
 JSON rellenan las entradas del flujo que tienen el mismo nombre; las demás claves se omiten. Una entrada llamada `body`
 recibe el cuerpo entero. Así, un flujo con una entrada `order` acepta `?order=ord_7Hk2Lw` o `{"order": "ord_7Hk2Lw"}`.
-La ejecución usa el entorno activo de la ventana.
+La ejecución usa el [entorno](#where-triggered-runs-send) del activador.
 
 | Respuesta | Cuándo |
 | --- | --- |
 | `200` con la salida como JSON | La ejecución se ha superado. El cuerpo es lo que ha recibido el bloque Salida, o `null`. |
 | `401` | Falta el token o es incorrecto. |
 | `404` | Ningún flujo permitido responde a ese método y esa ruta; el error enumera los que sí. |
+| `409` | La ejecución no se inició: el entorno de la ventana está protegido, no hay entorno elegido para un flujo que lo necesita, o más de un flujo responde a ese método y esa ruta. El cuerpo dice cuál. |
 | `413` | El cuerpo supera los 8 MB. El flujo no se ejecuta. |
 | `500` | La ejecución ha fallado. El cuerpo tiene `error` y el id de la ejecución. |
 | `503` | La ejecución se ha detenido. |

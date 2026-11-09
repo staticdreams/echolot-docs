@@ -20,11 +20,14 @@ description: "モックのルートを手書きで作成します。JSON、XML�
 変更はすべてすぐに保存され、動作中のモックにもすぐに反映されます。**編集 › 取り消す**で、ルートの削除も含め、どの変更も元に戻せます。
 オンの2つのルートが同じメソッドとパスを持つ場合、カードに警告が表示されます。応答するのは最初のルートだけです。
 
-<Shot id="mocks-route-editor" alt="ルートGET /users/{id}のエディタ。メソッド、パス、概要、レスポンス200 OK（デフォルト）と404 Not found、OKレスポンスのコンテントタイプ、{{$randomUUID}}を値とするX-Request-Idヘッダー、request.params.idとダミーの値を含むJSONボディが表示されている" />
+<Shot id="mocks-route-editor" alt="ルートGET /users/{id}のエディタ。種類（HTTP）、メソッド、パス、概要、レスポンス200 OK（デフォルト）と404 Not found、OKレスポンスのコンテントタイプ、{{$randomUUID}}を値とするX-Request-Idヘッダー、request.params.idとダミーの値を含むJSONボディが表示されている" />
 
 ### メソッド、パス、概要 [#method-path-and-summary]
 
-- **ルート**：メソッド（**GET**、**POST**、**PUT**、**PATCH**、**DELETE**、**HEAD**、**OPTIONS**、またはすべてのメソッドを表す**ANY**）とパス。`HEAD`リクエストは、ボディなしで**GET**ルートに渡されます。
+- **ルート**：ルートが扱うもの、メソッド、パス。最初のメニューは種類で、**HTTP**、または接続を受け付けるルート向けの**WebSocket**と
+  **Socket.IO**です（[ストリーム、ソケット、MQTT](/docs/mocks/streams-and-sockets)を参照）。
+  メソッドは**GET**、**POST**、**PUT**、**PATCH**、**DELETE**、**HEAD**、**OPTIONS**、またはすべてのメソッドを表す**ANY**です。
+  `HEAD`リクエストは、ボディなしで**GET**ルートに渡されます。
 - **パスパラメータ**は`{id}`または`:id`と書き、パスの1つの部分につき1つ使います。`/users/{id}`、`/files/{name}.json`のようになります。`:id`は`{id}`として保存されます。固定の部分を持つルートはパラメータを持つルートより優先されるため、`/users/me`は`/users/{id}`より先に応答します。
 - **概要**は、ルートの用途を説明します。ルートから作成したリクエストは、これを名前にします。
 
@@ -39,7 +42,7 @@ description: "モックのルートを手書きで作成します。JSON、XML�
 | **Content-Type** | 送信される`Content-Type`。`application/json`や`application/xml`など。横のメニューによく使うタイプが並んでいます。空の場合は送信しません。ボディ内の値のエスケープ方法も、これで決まります。 |
 | **ヘッダー** | 一緒に送信されるヘッダー。ボディと同じように、値にダミーデータやリクエストの一部を含められます。 |
 | **ルール** | デフォルトの代わりにこのレスポンスが応答する条件。[レスポンスの選択](#choosing-a-response)を参照してください。 |
-| **ボディ** | 送信される内容。JSON、XML、HTMLでは行番号と色が付きます。 |
+| **ボディ** | 送信される内容。JSON、XML、HTMLでは行番号と色が付きます。**代わりに Server-Sent Events をストリーム**は、ボディの代わりにタイムライン上のイベントを送信します。[Server-Sent Events](/docs/mocks/streams-and-sockets#server-sent-events)を参照してください。 |
 
 チェックマークが付いたレスポンスがルートの**デフォルト**で、別のレスポンスの**デフォルトにする**で変更できます。ゴミ箱ボタンで、レスポンスを削除します。
 
@@ -93,6 +96,9 @@ curl -i http://127.0.0.1:4010/users/0     # 404
 名前はPostmanの動的変数と同じなので、Postman向けに書いたテンプレートがそのまま使えます。
 引数を取るものもあります：`{{$randomInt(1, 100)}}`、`{{$randomPrice(5, 50)}}`、`{{$randomLoremWords(5)}}`、`{{$randomElement(active, paused, closed)}}`。
 すべての一覧は[動的な値](/docs/reference/dynamic-values#fake-data)にあります。
+
+時刻はずらせます。`{{$isoTimestamp('-90s')}}` は90秒前、`{{$timestamp('2h')}}` は2時間後です。単位は秒、または `ms`、`s`、`m`、`h`、`d`、`w` で指定します。
+90秒前に入った注文にスクリプトは要りません。
 
 ボディの上の**値を挿入**は、カーソルの位置にダミーの値を挿入します。**ダミーデータ**にグループ別に並んでいます。
 

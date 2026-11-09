@@ -44,6 +44,9 @@ description: "HTTPリクエストを作成、送信、保存し、リクエス�
 変数は、[環境、ワークスペース、フォルダ](/docs/workspaces/environments)から取得されます。
 
 URLの中に解決できないものがあると、URLバーの下の行に**1件の問題**（または問題の件数）と表示されます。クリックすると、どの変数が足りないか分かります。解決されないトークンは、書いたままで送信されます。
+ただし、送信先のアドレスがなくなる場合は除きます。その場合、エラーは変数と環境を示します。たとえば
+`“{{baseURL}}/products” uses {{baseURL}}, which is not defined in the environment “Staging” or above it.` のように表示されます。
+[実行](/docs/requests/runner)では、解決されないトークンを含むリクエストは送信されません。
 
 リクエストがほかのリクエストのレスポンスを読み取る場合（たとえば`{{$response('auth/sign-in', '$.access_token')}}`）、そのリクエストにまだレスポンスがないと、
 行に**先に「Sign in」を送信**と表示されます。Echolotは、そのリクエストを先に送信してから、このリクエストを送信します。

@@ -259,7 +259,8 @@ secret = true
 | `name` | 요청의 이름. |
 | `url` | 쿼리 문자열이 포함된 URL. MCP 호출을 제외한 모든 종류에 있습니다. |
 | `docs` | 요청의 문서(Markdown). |
-| `spec-operation` | 요청을 만든 명세의 작업. 예: `POST /auth/token`. |
+| `spec-operation` | 요청을 만들었거나 요청이 따르는 명세의 작업. 예: `POST /auth/token`. `openapi` 검사가 이 값을 읽습니다. |
+| `spec` | 요청의 `openapi` 검사가 읽는 명세. 폴더의 명세가 아닐 때 지정합니다. 예: `specs/alpenglow.yaml`. 폴더는 그 명세를 따르지 않습니다. |
 | `[[headers]]` | `name`, `value`, 꺼진 헤더에는 `enabled = false`. |
 | `[[disabled-params]]` | 꺼진 쿼리 매개변수: `name`, `value`. 켜져 있는 것은 URL에 있습니다. |
 | `[[disabled-form-fields]]` | 꺼진 폼 필드: `name`, `value`. |
@@ -302,6 +303,7 @@ graphql-variables = """
 | 키 | 의미 |
 | --- | --- |
 | `query-file` | 쿼리가 들어 있는 요청 옆의 파일, `<slug>.graphql`. |
+| `shared-query` | `query-file` 대신: 여러 요청이 공유하는 쿼리 파일. 작업 공간 폴더 기준 상대 경로입니다. 예: `queries/search-products.graphql`. 작업 공간 안의 `.graphql` 파일이어야 하며, 경로 안의 어떤 이름도 점으로 시작할 수 없습니다. 쿼리를 편집하면 이 파일에 씁니다. |
 | `operation` | 쿼리에 작업이 여러 개일 때 실행할 작업. |
 | `graphql-variables` | JSON 텍스트로 된 GraphQL 변수. 예전 파일에서는 `variables`라고 합니다. |
 | `schema` | 요청을 검사하고 자동 완성하는 기준이 되는 스키마: `specs/`의 파일. |
@@ -377,9 +379,10 @@ arguments = """
 
 | 키 | 의미 |
 | --- | --- |
-| `target` | 검사 대상: `status`, `header`, `json`, `body`, `time`(밀리초), `size`(바이트), `schema`(JSON 스키마), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status`. |
+| `target` | 검사 대상: `status`, `header`, `json`, `body`, `time`(밀리초), `size`(바이트), `schema`(JSON 스키마), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status`, 그리고 WebSocket, Socket.IO, MQTT 요청의 `message`(받은 메시지 안의 값), `message-count`, `close`. |
 | `name` | `header`의 경우 헤더의 이름. |
-| `path` | `json`의 경우 `$.items.length` 같은 JSONPath. |
+| `path` | `json`과 `message`의 경우 `$.items.length` 같은 JSONPath. |
+| `on` | `message`와 `message-count`의 경우: 이 Socket.IO 이벤트나 MQTT 토픽 필터의 메시지만. |
 | `check` | `equals`, `not-equals`, `contains`, `not-contains`, `less-than`, `at-most`, `greater-than`, `at-least`, `exists`, `not-exists`, `matches`(정규 표현식), `is-type`, `is-one-of`, `matches-schema`. |
 | `expected` | 비교할 값. 값이 필요 없는 검사에는 기록하지 않습니다. |
 | `enabled` | `false`이면 끕니다. |
@@ -391,8 +394,9 @@ arguments = """
 | 키 | 의미 |
 | --- | --- |
 | `variable` | 값을 저장할 변수. |
-| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status`, `body`. |
+| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status`, `body`, 또는 WebSocket, Socket.IO, MQTT 요청의 `message`(경로에 값이 있는 첫 번째 받은 메시지)나 `last-message`(마지막 메시지). |
 | `path` | 값이 있는 위치: JSONPath, XPath, 헤더 또는 쿠키 이름. `status`와 `body`에는 쓰지 않습니다. |
+| `on` | `message`와 `last-message`의 경우: 이 Socket.IO 이벤트나 MQTT 토픽 필터의 메시지만. |
 | `scope` | `environment`(기본값: 활성 환경) 또는 `workspace`. |
 | `secret` | `true`이면 값을 비밀 값으로 키체인에 저장합니다. |
 | `enabled` | `false`이면 끕니다. |
@@ -412,8 +416,14 @@ arguments = """
 | `cookies` | `false`이면 쿠키를 보내지도 저장하지도 않습니다. |
 | `http-version` | `automatic`, `http1`, `http2`, `http3`. |
 | `stream-limit` | 이벤트 스트림이나 세션을 수신하는 시간(초). |
+| `stop-after-messages` | 사용자 없이 실행되는 세션은 이만큼의 메시지를 받으면 수신을 멈춥니다. |
+| `stop-when` | 받은 메시지에 이 JSONPath의 값이 있으면 멈춥니다. |
+| `stop-when-equals` | `stop-when`과 함께: 값이 이것과 같을 때만. |
+| `stop-after-acks` | `true`: 요청한 모든 Socket.IO 확인 응답과, 구독 및 QoS 1 또는 2 게시의 모든 MQTT 확인 응답이 도착하면 멈춥니다. |
+| `stop-on` | `stop-after-messages`와 `stop-when`을 Socket.IO 이벤트나 MQTT 토픽 필터로 좁힙니다. |
 
-[요청 설정](/docs/requests/settings)을 참고하세요.
+[요청 설정](/docs/requests/settings)을 참고하세요. `stop-` 키는
+[일찍 수신 멈추기](/docs/requests/websocket-and-sse#stop-listening-early)를 참고하세요.
 
 ### 인증 [#auth]
 
@@ -518,6 +528,11 @@ body = """{ "error": "no user {{request.params.id}}" }"""
 | `[[scenarios]]` | 명세의 작업에 대해 고른 응답: `operation`(예: `GET /pets`), `status`, `example`(예제의 이름). |
 | `[[routes]]` | 직접 만든 경로: `id`(경로가 바뀌어도 그대로 유지됨), `method`(또는 `ANY`), `path`(매개변수는 `{id}`), `summary`, 꺼진 경로에는 `enabled = false`, `response`(기본 응답의 이름. 생략하면 첫 번째), `request-content-type`과 `request-body`(이 경로에서 만든 요청이 보내는 것). |
 | `[[routes.responses]]` | 위 경로의 응답 하나: `name`, `status`, `content-type`, `headers`(`name`과 `value`), `rules`(`source`는 `path`, `query`, `header`, `body`. `name`. `value`는 아무 값이나 `*`, 없음은 빈 값), `body`. |
+| `kind`(`[[routes]]` 안) | 연결을 받는 경로는 `websocket` 또는 `socketio`. HTTP는 생략합니다. [스트림, 소켓, MQTT](/docs/mocks/streams-and-sockets)를 참고하세요. |
+| `repeat`, `ends`, `close`(`[[routes.responses]]` 안) | 스트림의 경우: 이벤트가 재생되는 횟수(`0`은 클라이언트가 떠날 때까지, 생략하면 1), 이벤트 뒤에 오는 것(`close` 또는 `hold`. 생략하면 서버 전송 이벤트는 끝나고 소켓은 열린 채로 남습니다), 모의 서버가 스스로 닫는 것(`{ after-ms, code, reason }`). |
+| `[[routes.responses.events]]` | 응답의 타임라인에 있는 메시지 하나: `after-ms`(앞의 메시지 이후), `event`(서버 전송 이벤트의 `event:` 또는 Socket.IO 이벤트), `id`(서버 전송 이벤트의 `id:`), `data`. |
+| `[[routes.responses.replies]]` | 메시지에 대한 소켓의 응답: `event`(Socket.IO), `rules`(`body` 규칙은 메시지를 읽습니다), `ack = true`(Socket.IO 확인 응답에 답함), `close`, 그리고 `[[routes.responses.replies.send]]` 안의 메시지(`events`와 같은 형식). |
+| `[broker]` | 모의 서버의 MQTT 브로커: `port`, `repeat`, `[[broker.publishes]]` 안의 타임라인(`after-ms`, `topic`, `data`, `qos`, `retain`), `[[broker.replies]]` 안의 응답(`filter`, `rules`, `[[broker.replies.send]]` 메시지). |
 
 `mocks/<slug>.js`에는 모의 서버의 JavaScript 경로가 있으며, 직접 만든 경로와 명세보다 먼저 응답합니다. 명세의 작업에 대한 응답은 모의 서버에
 저장되지 않고, 예제는 명세에 들어갑니다. [모의 서버](/docs/mocks), [경로와 가짜 데이터](/docs/mocks/routes),
@@ -554,8 +569,8 @@ to = "signin.run"
 | --- | --- |
 | `name`, `description` | 플로의 이름과 하는 일. |
 | `[mcp]` | 플로를 에이전트에 도구로 제공합니다: `tool`(이름)과 `description`. |
-| `[schedule]` | 일정에 따라 실행합니다: `every-minutes` 또는 `cron`(예: `"0 6 * * *"`). |
-| `[webhook]` | 요청이 도착하면 실행합니다: `method`(기본값 `POST`)와 `path`. |
+| `[schedule]` | 일정에 따라 실행합니다: `every-minutes` 또는 `cron`(예: `"0 6 * * *"`), 그리고 실행이 사용하는 환경인 `environment`(생략하면 윈도우의 환경이며, 보호된 환경은 사용하지 않음). |
+| `[webhook]` | 요청이 도착하면 실행합니다: `method`(기본값 `POST`), `path`, 그리고 일정과 같은 `environment`. |
 | `[[inputs]]` | 플로의 입력: `name`, `type`(`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
 | `[[blocks]]` | 플로의 블록: `id`, `kind`, `title`, `position`(캔버스의 `[x, y]`), `paused`, `color`, 그리고 종류별 설정이 있는 `[blocks.settings]`. |
 | `[[wires]]` | 연결: `from`과 `to`, 각각 `block.port`. |

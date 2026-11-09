@@ -56,7 +56,10 @@ ihren Wert zu sehen, und doppelklicke darauf, um ihn zu ändern. Variablen stamm
 [Umgebungen, dem Arbeitsbereich und Ordnern](/docs/workspaces/environments).
 
 Lässt sich etwas in der URL nicht auflösen, steht in der Zeile unter der URL-Leiste **1 Problem** (oder entsprechend
-mehr). Klicke darauf, um zu sehen, welche Variablen fehlen. Nicht aufgelöste Platzhalter werden unverändert gesendet.
+mehr). Klicke darauf, um zu sehen, welche Variablen fehlen. Nicht aufgelöste Platzhalter werden unverändert gesendet,
+außer dort, wo keine Adresse übrig bleibt, an die gesendet werden kann: Dann nennt der Fehler die Variablen und die
+Umgebung, etwa `“{{baseURL}}/products” uses {{baseURL}}, which is not defined in the environment “Staging” or above it.`
+In [Durchläufen](/docs/requests/runner) wird keine Anfrage mit einem nicht aufgelösten Platzhalter gesendet.
 
 Liest die Anfrage die Antwort einer anderen Anfrage (zum Beispiel mit `{{$response('auth/sign-in', '$.access_token')}}`)
 und hat diese noch keine Antwort, steht in der Zeile **Sendet zuerst „Sign in“**: Echolot sendet diese Anfrage vor

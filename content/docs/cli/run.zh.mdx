@@ -47,11 +47,18 @@ All 7 requests passed  11/11 checks passed · 0.90 s
 - `--env` 接受不带 `.toml` 的环境文件名（`staging`）或它的名称（`Staging`）。
 - 每个请求的检查及其 `pm.test` 结果都会计入。请求没有得到响应或检查失败时即为失败；此时运行以 1 退出。
 - 捕获到变量中的响应、来自 OAuth 2 客户端凭据的令牌，以及脚本设置的值，都会像在 App 中一样延续到本次运行的后续请求。脚本的值只在本次运行中有效，绝不会写入文件。
+- [捕获](/docs/requests/captures)同样只在本次运行中保存在内存里，包括机密的捕获，并在报告中被遮盖。环境文件和钥匙串保持原样，
+  因此 CI 中的运行会让工作区保持干净。在 Alpenglow 中，**Sign in** 捕获 `{{token}}`，**Who am I** 和 Orders 文件夹在同一次运行中稍后发送它。
+  `--save-captures` 会像 App 一样写入捕获的值：写入环境的文件或工作区，机密的值写入钥匙串。
 
-<Callout type="warn">
-  没有钥匙串时（在 CI 中、在 Linux 上，或使用 `ECHOLOT_KEYCHAIN=0`），捕获到**机密**变量中的响应不会保留给下一个请求。在 Alpenglow 中，**Sign in** 将 `{{token}}`
-  捕获为机密，所以在这样的运行中，**Who am I** 和 Orders 文件夹会得到 401。对于这类运行，请自己设置 `ECHOLOT_SECRET_TOKEN`，或捕获到非机密的变量中。
-</Callout>
+### 无法解析的变量 [#variables-that-dont-resolve]
+
+运行从不发送 `{{variables}}` 没有值的请求。该请求会失败，并说明缺少哪个变量、在哪个环境中，比如
+`Not sent: {{baseURL}} is not defined in the environment “Staging” or above it.`
+
+对于声明为机密却没有值的变量，消息会指出为它提供值的环境变量：
+`Not sent: the secret {{token}} has no value here. Set ECHOLOT_SECRET_TOKEN (or add it to --secrets).` 如果设置了
+`ECHOLOT_SECRET_<NAME>`，但工作区没有把该变量声明为机密，消息会改为说明这一点。参见[机密](/docs/cli#secrets)。
 
 ## 数据驱动的运行 [#data-driven-runs]
 
@@ -144,6 +151,7 @@ echolot run shop.postman_collection.json --env-file staging.postman_environment.
 | `--reporter <name>` | `console`、`junit`、`json`、`html` 或 `har`。可重复；省略时为 `console`。 |
 | `-o`、`--out <file>` | 每个非 console 报告器的文件，顺序与 `--reporter` 相同；缺失时输出到标准输出。 |
 | `--secrets <file>` | 包含机密值的 `NAME=value` 行文件，作为 `ECHOLOT_SECRET_<NAME>` 变量的补充。 |
+| `--save-captures` | 像 App 一样将捕获的值写入工作区的环境文件，机密的值写入钥匙串。不带它时，这些值只在本次运行中有效。 |
 | `-k`、`--insecure` | 跳过 TLS 证书验证。 |
 | `--proxy <url>` | 通过此代理发送：`http://host:port`、`https://…`、`socks5://user:password@host:port`。 |
 | `--no-proxy` | 直接连接，忽略 `HTTP_PROXY` 等变量。 |

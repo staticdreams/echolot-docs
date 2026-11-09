@@ -45,6 +45,26 @@ Laissez le champ vide pour un document qui n’a qu’une opération.
 
 Envoyez avec **Envoyer** ou <kbd>⌘</kbd><kbd>R</kbd>.
 
+## Partager une query entre requêtes [#share-a-query-between-requests]
+
+Chaque requête GraphQL garde sa query dans son propre fichier, `<slug>.graphql` à côté de la requête. Quand plusieurs
+requêtes envoient la même opération avec des variables différentes, elles peuvent partager un seul fichier de query à
+la place. Nommez-le dans le fichier de chaque requête avec `shared-query`, au lieu de `query-file` :
+
+```toml
+shared-query = "queries/search-products.graphql"
+```
+
+Le chemin est relatif au dossier de l’espace de travail. Il doit se terminer par `.graphql` et rester dans l’espace de
+travail, et aucun nom de dossier ou de fichier qu’il contient ne peut commencer par un point. Un fichier qui n’existe
+pas encore se lit comme une query vide ; le premier enregistrement l’écrit, ainsi que les dossiers au-dessus.
+
+Une requête avec une query partagée la lit dans ce fichier, et une modification dans son onglet **Query** écrit le
+fichier : chaque requête qui le nomme suit. L’onglet **Query** le signale au-dessus de l’éditeur : **Requête partagée
+queries/search-products.graphql : une modification ici la change pour chaque requête qui l'utilise.** Choisissez
+**La rendre propre à cette requête** pour donner à cette requête sa propre copie de la query ; le fichier partagé et
+les autres requêtes restent tels quels.
+
 ## Comment la requête est envoyée [#how-the-request-is-sent]
 
 Le badge **GQL** devant l’adresse est un menu. Sous **Envoyer via** :
@@ -127,7 +147,8 @@ lit aussi ce que GraphQL dit à côté des données :
 - **Extensions** : les `extensions` de la réponse, comme des informations de traçage ou de coût.
 
 Ajoutez dans l’onglet **Tests** une vérification **Erreurs GraphQL** égale à `0` pour qu’une exécution échoue dans ce
-cas. Voir [scripts et tests](/docs/requests/scripts-and-tests).
+cas, ou une qui **n’existe pas**, qui réussit quand la réponse n’a pas d’erreurs. **existe** réussit quand elle en a au
+moins une, pour une requête qui doit échouer. Voir [scripts et tests](/docs/requests/scripts-and-tests).
 
 ## Abonnements et livraison incrémentale [#subscriptions-and-incremental-delivery]
 

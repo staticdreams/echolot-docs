@@ -92,6 +92,10 @@ especificación o llamar a una herramienta de un servidor MCP, con las mismas re
 | `result` | salida | Lo que ha devuelto la herramienta. |
 | `fail` | salida | Por qué ha fallado. |
 
+La herramienta también se puede nombrar como la conocen los agentes por el servidor MCP de Echolot: `run_requests`
+ejecuta `run_collection` (con `stop_on_failure` para `bail`, y las rutas ejecutadas en el orden indicado), y
+`list_requests` ejecuta `list_workspace`. Un flujo que un agente dibujó con esos nombres se ejecuta tal cual.
+
 Un bloque Herramienta no puede ejecutar otro flujo; para eso usa un bloque Flujo.
 
 <Edition only="direct">

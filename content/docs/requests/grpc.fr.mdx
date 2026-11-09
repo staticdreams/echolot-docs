@@ -101,4 +101,6 @@ Voir [réglages de la requête](/docs/requests/settings).
 ## Depuis la ligne de commande [#from-the-command-line]
 
 `echolot grpc describe` liste les services et les méthodes d’un serveur, et `echolot grpc call` effectue un appel et se
-termine avec le code 1 pour un état autre que `OK`. Voir [echolot grpc](/docs/cli/grpc).
+termine avec le code 1 pour un état autre que `OK` ou une réponse qu’il ne peut pas décoder. Dans un terminal, ou avec
+`--stream`, les messages d’un stream serveur s’affichent à mesure qu’ils arrivent, un objet JSON par ligne. Voir
+[echolot grpc](/docs/cli/grpc).

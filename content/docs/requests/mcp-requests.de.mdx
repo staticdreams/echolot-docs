@@ -85,7 +85,12 @@ Jeder Aufruf wird im [Verlauf](/docs/workspaces/history) behalten.
 
 Im Tab **Tests**:
 
-- **MCP-Fehler** gleich `false` besteht, wenn der Aufruf erfolgreich war. Ein Fehlschlag zeigt die Meldung des Servers.
+- **MCP-Fehler** sagt, wie ein Aufruf fehlgeschlagen ist. Sein Wert ist `false`, wenn der Aufruf erfolgreich war,
+  `tool`, wenn das Tool selbst fehlschlug (ein als Fehler markiertes Ergebnis, das ein Modell liest und auf das es
+  reagieren kann), oder `protocol`, wenn der Server mit einem JSON-RPC-Fehler antwortete (er ist abgestürzt oder hat den
+  Aufruf abgelehnt). **ist gleich** `true` nimmt beide Fehlschläge. **MCP-Fehler** gleich `false` besteht also bei
+  Erfolg, und gleich `tool` besteht bei einem Tool, das eine falsche Eingabe meldet, wie es soll. **existiert** besteht
+  bei jedem Fehlschlag und **existiert nicht** bei keinem. Eine fehlgeschlagene Prüfung zeigt die Meldung des Servers.
 - **Ausgabeschema des Tools** prüft den `structuredContent` des Ergebnisses gegen das `outputSchema`, das das Tool
   deklariert. Es schlägt fehl, wenn das Tool keines deklariert oder das Ergebnis keinen `structuredContent` hat.
 - **JSON-Wert** prüft einen beliebigen Wert des Ergebnisses, etwa `$.structuredContent.results.length` ist größer als
@@ -100,5 +105,5 @@ Alle Prüfungen und Vergleiche stehen unter [Skripte und Tests](/docs/requests/s
 
 ## In der Befehlszeile [#from-the-command-line]
 
-`echolot run` führt gesicherte MCP-Anfragen mit ihren Prüfungen aus, und `echolot mcp check` untersucht einen Server.
-Siehe [echolot mcp](/docs/cli/mcp).
+`echolot run` führt gesicherte MCP-Anfragen mit ihren Prüfungen aus, `echolot mcp call` ruft ein Tool auf, liest eine
+Ressource oder holt einen Prompt, und `echolot mcp check` untersucht einen Server. Siehe [echolot mcp](/docs/cli/mcp).

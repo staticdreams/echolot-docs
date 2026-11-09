@@ -55,7 +55,10 @@ variable se muestra como una píldora; pasa el puntero por ella para ver su valo
 variables vienen de [los entornos, el espacio de trabajo y las carpetas](/docs/workspaces/environments).
 
 Si algo de la URL no se puede resolver, la línea bajo la barra de la URL dice **1 problema** (o cuántos). Haz clic en ella
-para ver qué variables faltan. Los tokens sin resolver se envían tal como están escritos.
+para ver qué variables faltan. Los tokens sin resolver se envían tal como están escritos, salvo cuando no dejan ninguna
+dirección a la que enviar: entonces el error nombra las variables y el entorno, como
+`“{{baseURL}}/products” uses {{baseURL}}, which is not defined in the environment “Staging” or above it.` En las
+[ejecuciones](/docs/requests/runner) no se envía ninguna solicitud con un token sin resolver.
 
 Cuando la solicitud lee la respuesta de otra solicitud (por ejemplo con `{{$response('auth/sign-in', '$.access_token')}}`)
 y esa solicitud aún no tiene respuesta, la línea dice **Primero envía “Sign in”**: Echolot envía esa solicitud antes que

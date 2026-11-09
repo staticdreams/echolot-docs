@@ -90,6 +90,10 @@ outil d’un serveur MCP, avec les mêmes règles que pour les agents.
 | `result` | sortie | Ce que l’outil a renvoyé. |
 | `fail` | sortie | Pourquoi il a échoué. |
 
+L’outil peut aussi être nommé comme les agents le connaissent par le serveur MCP d’Echolot : `run_requests` exécute
+`run_collection` (avec `stop_on_failure` pour `bail`, et les chemins exécutés dans l’ordre donné), `list_requests`
+exécute `list_workspace`. Un flux qu’un agent a dessiné avec ces noms s’exécute tel quel.
+
 Un bloc Outil ne peut pas exécuter un autre flux ; utilisez pour cela un bloc Flux.
 
 <Edition only="direct">

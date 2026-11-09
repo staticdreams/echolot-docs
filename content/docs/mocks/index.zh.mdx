@@ -8,7 +8,8 @@ description: "本地模拟服务器，由你手写的路由（可使用示例数
 - **手动创建的路由**：一个方法、一个路径，以及它应答的 JSON、XML 或文本。正文可以包含每次请求都会变化的示例数据（`{{$randomFullName}}`、`{{$randomEmail}}`），也可以引用请求的各个部分（`{{request.params.id}}`）。无需规范。参见[路由和示例数据](/docs/mocks/routes)。
 - **OpenAPI 规范**：每个操作都用规范记录的响应、示例，或根据其 Schema 生成的正文来应答。违反规范的请求会得到一个说明原因的 `400`，因此客户端发送了错误内容时，模拟服务器也会告诉你。
 
-如果应答需要代码或状态，模拟服务器还可以使用 [JavaScript 路由](/docs/mocks/scripted-routes)。
+路由还可以流式发送 Server-Sent Events、接受 WebSocket 和 Socket.IO 连接，模拟服务器还可以在它们旁边运行一个 MQTT Broker，用于实时屏幕。
+参见[流、套接字和 MQTT](/docs/mocks/streams-and-sockets)。如果应答需要代码或状态，模拟服务器还可以使用 [JavaScript 路由](/docs/mocks/scripted-routes)。
 
 在边栏的模块切换器中选择**模拟服务器**，或按 <kbd>⌘</kbd><kbd>4</kbd>，即可打开该页面。
 
@@ -27,7 +28,7 @@ description: "本地模拟服务器，由你手写的路由（可使用示例数
 
 ## 启动和停止 [#starting-and-stopping]
 
-点按**开始**（<kbd>⌘</kbd><kbd>R</kbd>）。顶部的栏会显示模拟服务器的地址，例如 `http://127.0.0.1:4010`。如果模拟服务器提供服务的规范的服务器 URL 带有路径（`https://demo.echolot.dev/v1`），地址会以该路径结尾（`http://127.0.0.1:4010/v1`），模拟服务器也在该路径下应答；请求也可以省略该路径。地址旁边的拷贝按钮会拷贝地址。
+点按**开始**（<kbd>⌘</kbd><kbd>R</kbd>）。顶部的栏会显示模拟服务器的地址，例如 `http://127.0.0.1:4010`；如果它有 [Broker](/docs/mocks/streams-and-sockets#the-mqtt-broker)，旁边还会显示 Broker 的地址。如果模拟服务器提供服务的规范的服务器 URL 带有路径（`https://demo.echolot.dev/v1`），地址会以该路径结尾（`http://127.0.0.1:4010/v1`），模拟服务器也在该路径下应答；请求也可以省略该路径。地址旁边的拷贝按钮会拷贝地址。
 
 在“终端”中试试：
 
@@ -60,7 +61,8 @@ curl http://127.0.0.1:4010/users
 
 请求会交给下面第一个对其方法和路径有应答的来源：
 
-1. 模拟服务器的 [JavaScript 路由](/docs/mocks/scripted-routes)。什么都不设置的路由会把请求传给下一个来源。
+1. 模拟服务器的 [JavaScript 路由](/docs/mocks/scripted-routes)。什么都不设置的路由会把请求传给下一个来源；
+   它的套接字（`mock.ws`、`mock.sse`）接收与之匹配的连接。
 2. 它的[手动创建的路由](/docs/mocks/routes)。一个路由可以有多个响应；请求可以按名称或状态要求其中一个，请求上的规则会选择其他的，否则由路由的默认响应应答。
 3. 规范的操作，见下文。
 
@@ -115,4 +117,5 @@ curl http://127.0.0.1:4010/users
 
 `echolot mock alpenglow.yaml` 提供规范文件的服务，`echolot mock -w <workspace> <mock>` 则提供工作区中某个模拟服务器的服务，带着它的设置和路由，无论有没有规范，适用于 CI 或容器。参见 [echolot mock](/docs/cli/mock)。[`echolot fake`](/docs/cli/fake) 根据相同的模板生成示例数据，用于测试夹具和种子数据。
 
-智能体可以通过 Echolot 的 MCP 服务器启动模拟服务器并读取它们的日志；当**模拟服务器**工具集开启时，还可以创建模拟服务器、添加和更改路由、生成示例数据，并根据路由创建请求。参见[智能体](/docs/ai/agents)。
+智能体可以通过 Echolot 的 MCP 服务器启动模拟服务器并读取它们的日志；当**模拟服务器**工具集开启时，还可以创建模拟服务器、添加和更改路由（包括流和套接字）、添加 Broker、生成示例数据，并根据路由创建请求。
+它们不能存储 JavaScript 路由：它们会提出路由，由你审阅后才会运行。参见[智能体](/docs/ai/agents)。

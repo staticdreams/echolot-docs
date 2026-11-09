@@ -84,6 +84,50 @@ mock.get("/me", (req, res) => {
 })
 ```
 
+## 套接字 [#sockets]
+
+JavaScript 路由也可以接受连接，用于需要自己逻辑的流：
+
+| 函数 | 接受 |
+| --- | --- |
+| `mock.ws(path, handler)` | 对该路径的 `GET` 发起的 WebSocket 连接。 |
+| `mock.sse(path, handler)` | 对该路径的 `GET`，以 Server-Sent Events（`text/event-stream`）应答并保持打开，直到路由结束它。 |
+
+处理程序会得到套接字和请求（`req.params`、`req.query`、`req.headers`、`req.path`）：
+
+| 套接字 | 作用 |
+| --- | --- |
+| `socket.send(value)` | 发送一条消息：字符串原样发送，其他内容以 JSON 发送。对于流，`send(value, { event, id })` 设置事件的 `event:` 和 `id:` 字段。 |
+| `socket.on("message", text => …)` | 客户端每发送一条消息就运行一次（WebSocket）。 |
+| `socket.on("close", code => …)` | 客户端离开时运行。 |
+| `socket.close(code, reason)` | 关闭连接（WebSocket 关闭码，比如 `4000`）。对于流，用 `stream.end()` 结束它。 |
+
+在模拟服务器路由中，`setTimeout` 和 `setInterval` 真的会等待，因此套接字可以按自己的节奏说话：
+
+```js
+mock.ws("/orders/:id/updates", (socket, req) => {
+  socket.send({ op: "hello", order: req.params.id })
+  socket.on("message", text => {
+    const message = JSON.parse(text)
+    if (message.op === "watch") {
+      setTimeout(() => socket.send({ op: "shipped", order: req.params.id }), 2000)
+    }
+  })
+})
+
+mock.sse("/stock", stream => {
+  let n = 0
+  const timer = setInterval(() => {
+    n += 1
+    stream.send({ n, sku: "TNT-MH-2P", available: 20 - n }, { event: "level", id: String(n) })
+    if (n === 10) { clearInterval(timer); stream.end() }
+  }, 1000)
+})
+```
+
+JavaScript 中的套接字先于手工创建的 [WebSocket 和 Socket.IO 路由](/docs/mocks/streams-and-sockets)应答。每个连接都是日志中的一行，
+记录双向往来的内容。Socket.IO 命名空间和 MQTT Broker 只能手工创建。
+
 ## 限制 [#limits]
 
 路由与[请求脚本](/docs/requests/scripts-and-tests)在同一个沙盒中运行，而不是 Node：没有文件系统，也没有网络。每个请求最多运行 2 秒 JavaScript，脚本启动也有 2 秒。抛出错误的处理程序会以 `500` 加上该错误应答，日志中也会显示。
@@ -92,7 +136,8 @@ mock.get("/me", (req, res) => {
 
 路由是在你的 Mac 上运行的代码，因此遵循与请求脚本相同的规则。你在 Echolot 中编写并存储的路由会运行。来自外部的路由，即通过 Git、导入或其他 App 编辑文件而来的，则不会运行：卡片会显示**这些脚本来自 Echolot 之外**，在你阅读并点按**信任脚本**之前，模拟服务器不会启动。如果它们在 Echolot 之外再次更改，Echolot 会再次询问。
 
-智能体可以读取模拟服务器的路由，但绝不会写入。
+智能体可以读取模拟服务器的路由，但绝不能存储它们。它们可以提出路由：你会看到它们的理由和有哪些更改，只有**保存并信任**才会写入。
+参见[智能体提出的脚本](/docs/ai/agents#scripts-agents-propose)。
 
 ## 通过命令行 [#from-the-command-line]
 

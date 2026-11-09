@@ -1,0 +1,162 @@
+---
+title: "스트림, 소켓, MQTT"
+description: "Server-Sent Events를 스트리밍하는 경로, WebSocket과 Socket.IO 연결을 받는 경로, 타임라인에 따라 게시하고 클라이언트가 게시한 것에 응답하는 MQTT 브로커로 실시간 데이터를 모의합니다."
+---
+
+라이브 화면에는 라이브 데이터가 필요합니다. 움직이는 배송, 랩마다 갱신되는 경주, 매초 값을 보고하는 센서 같은 것입니다. 모의 서버는 직접
+서버를 두지 않고도 이 모든 것을 보낼 수 있습니다.
+
+- <strong>서버 전송 이벤트</strong>: HTTP 응답이 본문 대신 타임라인에 따라 이벤트를 보냅니다.
+- <strong>WebSocket 경로</strong>: 경로가 WebSocket 연결을 받고, 연결이 열리면 메시지를 보내며, 클라이언트가 보내는 것에 응답합니다.
+- <strong>Socket.IO 경로</strong>: 경로가 이벤트, 응답, 확인 응답을 갖춘 Socket.IO 네임스페이스가 됩니다.
+- 모의 서버 옆의 <strong>MQTT 브로커</strong>: 클라이언트는 여느 브로커처럼 구독하고 게시하며, 모의 서버가 게시하는 메시지를 받습니다.
+
+모두 다른 [경로](/docs/mocks/routes)처럼 모의 서버의 편집기에서 직접 만들며, 모의 서버의 파일에 저장됩니다. 로직과 상태가 필요하면 대신
+[JavaScript](/docs/mocks/scripted-routes#sockets)로 소켓을 작성하세요.
+
+## 타임라인 [#timelines]
+
+스트림과 소켓은 타임라인에 따라 메시지를 보냅니다. 각 메시지에는 다음이 있습니다.
+
+| 필드 | 내용 |
+| --- | --- |
+| <strong>ms</strong> | 앞의 메시지 이후(첫 메시지는 시작 이후)의 밀리초. 최대 1시간입니다. |
+| 이벤트 | Server-Sent Events에서는 `event:` 필드, Socket.IO에서는 전송하는 이벤트(비어 있으면 `message`). |
+| ID | Server-Sent Events에서는 `id:` 필드. |
+| 데이터 | 보내는 내용. [경로의 본문](/docs/mocks/routes#bodies-with-fake-data)처럼 가짜 데이터와 요청의 일부를 담을 수 있습니다. |
+
+데이터는 `{{stream.index}}`(타임라인에서 메시지의 번호, 0부터), `{{stream.number}}`(1부터), `{{stream.round}}`(타임라인의 몇 번째
+재생인지, 0부터)도 읽으므로, 다시 재생되는 타임라인으로 랩을 셀 수 있습니다.
+
+```json
+{ "lap": {{stream.number}}, "at": "{{$isoTimestamp}}" }
+```
+
+시간도 옮길 수 있습니다. `{{$isoTimestamp('-90s')}}`는 90초 전, `{{$timestamp('1h')}}`는 지금부터 1시간 뒤입니다.
+[동적 값](/docs/requests/dynamic-values)을 참고하세요.
+
+<strong>재생</strong>은 타임라인이 재생되는 횟수입니다. `0`이면 클라이언트가 떠날 때까지 재생합니다. 마지막 메시지 뒤에 일어날 일은 그 옆의 메뉴에서
+고릅니다. <strong>응답 끝내기</strong>, <strong>연결 닫기</strong>, 또는 <strong>열어 두기</strong>입니다.
+
+## 서버 전송 이벤트 [#server-sent-events]
+
+HTTP 경로의 응답을 열고 본문 아래의 <strong>대신 Server-Sent Events 스트리밍</strong>을 클릭합니다. 본문 대신 타임라인이 나타납니다. <strong>메시지 추가</strong>로
+메시지를 추가하고, 각 메시지의 지연, 이벤트, ID, 데이터를 설정합니다. <strong>대신 본문 보내기</strong>는 일반 본문으로 돌아갑니다.
+
+모의 서버는 `Content-Type: text/event-stream`과 `Cache-Control: no-cache`로 응답하고, 연결을 열어 둔 채 각 이벤트를 그 시간이 되면
+씁니다.
+
+```text
+event: status
+id: 1
+data: {"order": "ord_7Hk2Lw", "status": "shipped"}
+
+```
+
+여러 줄의 데이터는 여러 `data:` 줄로 보냅니다. 클라이언트가 떠날 때까지 재생되는 스트림은 클라이언트가 떠나거나 모의 서버가 멈추면
+끝납니다.
+
+```sh
+curl -N http://127.0.0.1:4010/orders/ord_7Hk2Lw/events
+```
+
+## WebSocket 경로 [#websocket-routes]
+
+경로 앞의 경로 종류 메뉴에서 <strong>WebSocket</strong>을 선택합니다. 그러면 경로는 그 경로로 오는 `GET`에서 WebSocket 연결을 받으며, 상태가 `101`인
+<strong>열림</strong>라는 이름의 응답을 갖게 됩니다.
+
+<Shot id="mocks-route-websocket" alt="WebSocket 경로의 편집기: 종류와 경로, 상태 101의 Open 응답, 소켓이 열리면 보내는 메시지, op 필드가 watch인 메시지에 답하는 응답이 보입니다" />
+
+클라이언트가 연결할 때 일어나는 일은 경로의 응답이 정하며, 다른 경로처럼 [규칙](/docs/mocks/routes#choosing-a-response)에 따라
+선택됩니다.
+
+- `101` 응답은 연결을 엽니다. 추가한 헤더는 업그레이드와 함께 갑니다.
+- 그 밖의 응답은 그 응답으로 연결을 거부합니다. 예를 들어 토큰이 없을 때 본문과 함께 `401`을 줍니다. <strong>쿼리 매개변수</strong> `token`이 비어
+  있다는 규칙이 있는 응답은 토큰 없이 오는 클라이언트에 응답합니다.
+
+응답이 `101`인 경로에 업그레이드 없이 `GET`을 보내면 `426 Upgrade Required`를 받습니다.
+
+### 열리면 보내는 메시지 [#sent-once-open]
+
+<strong>열리면 보냄</strong> 아래의 메시지는 연결이 열리면 각자의 지연 뒤에 클라이언트로 갑니다. 인사, 시작 상태, 업데이트 스트림 같은 것입니다.
+<strong>스스로 닫기</strong>를 사용하면 모의 서버가 일정 시간 뒤에 `4000`과 `Shift over` 같은 종료 코드와 사유로 연결을 닫습니다.
+
+### 회신 [#replies]
+
+<strong>회신</strong>은 클라이언트가 보내는 것에 답합니다. 메시지가 도착하면 조건이 모두 충족되는 첫 번째 회신이 답하며, 어느 회신도 받지 않는 메시지에는
+답하지 않습니다.
+
+- <strong>조건 추가</strong>는 JSON으로 읽은 메시지의 필드를 검사합니다. `op`가 `watch`, `user.id`가 `*`인 식입니다. 필드 이름을 비우면 JSON이 아닌
+  메시지를 위해 텍스트 전체를 검사합니다. [경로 페이지](/docs/mocks/routes#choosing-a-response)의 규칙이 여기서도 적용됩니다. `*`는 아무
+  값이나, 빈 값은 없음을 뜻합니다.
+- <strong>전송</strong>은 돌려보내는 메시지의 타임라인입니다. 이 메시지는 답하는 메시지를 읽습니다. `{{message.order}}`은 그 메시지의 `order` 필드,
+  `{{message}}`는 텍스트 전체입니다.
+- <strong>그다음 닫기</strong>는 보낸 뒤 종료 코드와 사유로 연결을 닫습니다.
+
+예를 들어 조건이 `op`가 `watch`이고 500 ms 뒤에 `{"op": "shipped", "order": "{{message.order}}"}`를 보내는 응답은
+`{"op": "watch", "order": "ord_7Hk2Lw"}`에 0.5초 뒤 주문 발송으로 답합니다.
+
+## Socket.IO 경로 [#socketio-routes]
+
+종류 메뉴에서 <strong>Socket.IO</strong>를 선택합니다. Socket.IO 경로는 네임스페이스이며, 그 경로는 클라이언트가 참여하는 네임스페이스입니다(`/support`,
+또는 기본 네임스페이스는 `/`). 모의 서버는 `/socket.io/`에서 WebSocket과 롱 폴링으로 동작하는 Socket.IO 3 및 4 서버이며, 한쪽에서 다른
+쪽으로의 업그레이드도 지원하므로 socket.io-client가 평소 옵션으로 작동합니다.
+
+경로는 상태가 `101`인 <strong>참여함</strong>이라는 이름의 응답을 갖게 됩니다.
+
+- `101` 응답은 클라이언트가 네임스페이스에 참여하게 합니다. <strong>참여하면 emit</strong>이 그 타임라인입니다. 각 메시지는 이벤트 이름을 정하고
+  인수를 JSON 배열(`[{"text": "Hello"}]`)로, 인수가 하나면 값 하나로 줍니다.
+- 그 밖의 응답은 거부합니다. 클라이언트는 응답의 본문을 메시지로 하는 연결 오류를 받습니다(`{"message": "token rejected"}` 같은 JSON
+  객체는 그대로, 그 밖의 텍스트는 메시지로).
+
+다른 경로처럼 규칙이 응답을 고릅니다. <strong>본문 필드</strong> 규칙은 클라이언트의 인증 페이로드를 읽으므로, `token`이 `bad`인 규칙으로 토큰 하나를
+거부할 수 있습니다. 어떤 경로에도 없는 네임스페이스는 `Invalid namespace` 오류를 받습니다.
+
+<strong>회신</strong>은 클라이언트의 전송에 답합니다. <strong>클라이언트가 emit하면</strong>은 이벤트 이름을 정하고(비우면 모든 이벤트), 조건은 인수를 배열로
+읽으며(`0.topic`는 첫 번째 인수의 `topic`), <strong>전송</strong>은 `{{message.0.topic}}`를 읽어 이벤트를 돌려보냅니다. <strong>확인 응답에 답하기</strong>는 전송이
+확인 응답을 요청했을 때 첫 번째 메시지를 확인 응답의 인수로 돌려보냅니다. <strong>그다음 연결 끊기</strong>와 <strong>스스로 연결 끊기</strong>는 클라이언트를
+네임스페이스에서 내보냅니다.
+
+## MQTT 브로커 [#the-mqtt-broker]
+
+모의 서버는 자체 포트에서 MQTT 브로커를 실행할 수 있습니다. <strong>MQTT 브로커</strong> 카드에서 <strong>브로커 추가</strong>를 클릭합니다. 포트 `1883`을
+사용하며, 모의 서버가 이미 그 포트를 쓰고 있으면 `1884`를 사용합니다. <strong>브로커 제거</strong>는 브로커를 없앱니다.
+
+<Shot id="mocks-broker" alt="MQTT 브로커 카드: 포트 1889, 창고 토픽에 타임라인으로 게시되는 메시지 두 개(그중 하나는 QoS 1로 보존), 그리고 클라이언트가 warehouse/+/restock에 게시한 것에 대한 응답" />
+
+이 브로커는 TCP로 연결하는 MQTT 3.1.1 및 5.0 클라이언트를 위한 실제 브로커입니다. 클라이언트는 여느 브로커처럼 연결하고, 구독하고,
+게시하며, QoS 0, 1, 2, 보존 메시지, Will을 사용할 수 있습니다. 모의 서버를 시작하면 브로커도 시작되며, 위쪽 막대에
+`mqtt://127.0.0.1:1883` 같은 주소가 표시됩니다.
+
+- <strong>게시</strong>는 모의 서버가 시작된 순간부터 브로커가 게시하는 타임라인입니다. 각 메시지의 지연, 토픽, 데이터, <strong>QoS</strong>, <strong>Retain</strong>을
+  정합니다. 보존된 메시지는 나중에 구독하는 클라이언트를 기다립니다. <strong>재생</strong>은 타임라인을 반복하며, `0`이면 모의 서버가 실행되는 동안
+  반복합니다.
+- <strong>회신</strong>은 클라이언트가 게시하는 것에 답합니다. <strong>클라이언트가 게시하면:</strong>은 토픽 필터(`warehouse/+/restock`)를 받고, 조건은 페이로드를
+  JSON으로 읽으며, <strong>게시함</strong>은 메시지를 돌려보냅니다. 토픽에서도 메시지를 읽을 수 있습니다. `warehouse/{{message.warehouse}}/orders`처럼
+  씁니다. `{{stream.topic}}`은 클라이언트가 게시한 토픽입니다.
+
+```sh
+echolot mqtt subscribe mqtt://127.0.0.1:1883 'warehouse/#' --count 3
+```
+
+모의 서버가 실행되는 동안 브로커를 바꾸면 모의 서버가 다시 시작됩니다.
+
+## 로그 [#the-log]
+
+모든 연결은 [로그](/docs/mocks#the-log)의 한 줄이 되며, 상태(열린 소켓은 `101`, 거부는 그 상태)와 양방향 메시지를 표시하는 응답 안에
+JSON 줄로 담습니다. 각 MQTT 클라이언트도 구독한 것, 게시한 것, 받은 것과 함께 한 줄이 됩니다.
+
+## 요청과 에이전트 [#requests-and-agents]
+
+<strong>요청 생성</strong>은 WebSocket 경로에는 WebSocket 요청을, Socket.IO 경로에는 Socket.IO 요청을 만들며, 조건이 있는 응답마다 메시지를 하나씩
+넣습니다. 브로커에는 모든 토픽을 구독하는 MQTT 요청을 만듭니다. [WebSocket과 SSE](/docs/requests/websocket-and-sse),
+[Socket.IO](/docs/requests/socket-io), [MQTT](/docs/requests/mqtt)를 참고하세요.
+
+에이전트는 이 모두를 설정합니다. `save_mock_route`는 경로의 `kind`와 응답의 `events`, `repeats`, `ends`, `replies`, `close`를 받고,
+`save_mock`은 `broker` 또는 `removeBroker`를 받습니다. [에이전트](/docs/ai/agents)를 참고하세요.
+
+## 작업 공간에서 [#in-the-workspace]
+
+모의 서버의 파일에서 경로의 `kind`는 `websocket` 또는 `socketio`입니다. 응답의 타임라인은 `[[routes.responses.events]]`, 응답은
+`[[routes.responses.replies]]`와 `[[routes.responses.replies.send]]`이며, 브로커는 `[[broker.publishes]]`와 `[[broker.replies]]`가 있는
+`[broker]`입니다. [작업 공간 파일](/docs/reference/workspace-files#mocks)을 참고하세요.

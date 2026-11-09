@@ -51,13 +51,22 @@ All 7 requests passed  11/11 checks passed · 0.90 s
   the run then exits with 1.
 - Responses captured into variables, tokens from OAuth 2 client credentials, and values scripts set carry on to the
   later requests of the run, as in the app. Script values last for the run only and are never written to files.
+- [Captures](/docs/requests/captures) are kept in memory for the run too, secret ones included, and masked in the
+  reports. The environment files and the Keychain stay as they were, so a run in CI leaves the workspace clean. In
+  Alpenglow, **Sign in** captures `{{token}}`, and **Who am I** and the Orders folder send it later in the same run.
+  `--save-captures` writes captured values as the app does: to the environment's file or the workspace, and secret
+  ones to the Keychain.
 
-<Callout type="warn">
-  Without a Keychain (in CI, on Linux, or with `ECHOLOT_KEYCHAIN=0`), a response capture into a **secret** variable
-  isn't kept for the next request. In Alpenglow, **Sign in** captures `{{token}}` as a secret, so **Who am I** and
-  the Orders folder get a 401 in such a run. Set `ECHOLOT_SECRET_TOKEN` yourself, or capture into a variable that
-  isn't secret, for runs like these.
-</Callout>
+### Variables that don't resolve
+
+A run never sends a request whose `{{variables}}` have no value. The request fails instead, and says which variable
+is missing and in which environment, such as `Not sent: {{baseURL}} is not defined in the environment “Staging” or
+above it.`
+
+For a variable declared as a secret that has no value, the message names the environment variable that gives it one:
+`Not sent: the secret {{token}} has no value here. Set ECHOLOT_SECRET_TOKEN (or add it to --secrets).` When
+`ECHOLOT_SECRET_<NAME>` is set but the workspace doesn't declare the variable as a secret, it says that instead. See
+[secrets](/docs/cli#secrets).
 
 ## Data-driven runs
 
@@ -155,6 +164,7 @@ To keep working with a collection, [import it](/docs/cli/import-export) instead.
 | `--reporter <name>` | `console`, `junit`, `json`, `html` or `har`. Repeatable; `console` when omitted. |
 | `-o`, `--out <file>` | The file for each non-console reporter, in the order of `--reporter`; standard output when missing. |
 | `--secrets <file>` | A file of `NAME=value` lines with secret values, in addition to `ECHOLOT_SECRET_<NAME>` variables. |
+| `--save-captures` | Write captured values to the workspace's environment files, and secret ones to the Keychain, as the app does. Without it they last for the run only. |
 | `-k`, `--insecure` | Skip TLS certificate verification. |
 | `--proxy <url>` | Send through this proxy: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
 | `--no-proxy` | Connect directly, ignoring `HTTP_PROXY` and the others. |

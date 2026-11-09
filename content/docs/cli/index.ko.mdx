@@ -57,7 +57,7 @@ description: "echolot 명령을 설치하고, 모든 명령이 공유하는 비�
 | [`echolot run`](/docs/cli/run) | 작업 공간, 그 일부 폴더나 요청, 또는 Postman 컬렉션을 검사와 보고서와 함께 실행합니다. |
 | [`echolot validate`](/docs/cli/validate) | 작업 공간의 모든 파일을 읽을 수 있는지, 모든 요청이 해석되는지 확인합니다. |
 | [`echolot import`, `echolot export`](/docs/cli/import-export) | 컬렉션을 작업 공간으로 가져오고, 작업 공간을 Postman, Insomnia, Bruno, Echolot 형식으로 내보냅니다. |
-| [`echolot mcp`](/docs/cli/mcp) | MCP 서버를 확인하고, 로그인하고, 작업 공간을 에이전트에 제공하고, 클라이언트 설정을 출력합니다. |
+| [`echolot mcp`](/docs/cli/mcp) | MCP 서버를 확인하고 호출하고, 로그인하고, 작업 공간을 에이전트에 제공하고, 클라이언트 설정을 출력합니다. |
 | [`echolot spec`](/docs/cli/spec) | OpenAPI 문서를 린트하고, 명세를 따르는 폴더에 대한 명세 변경을 확인하고 적용합니다. |
 | [`echolot graphql diff`](/docs/cli/graphql) | 두 GraphQL 스키마를 비교하고 모든 변경의 등급을 매깁니다. |
 | [`echolot grpc`](/docs/cli/grpc) | gRPC 서비스를 설명하고 메서드를 호출합니다. |
@@ -81,7 +81,9 @@ description: "echolot 명령을 설치하고, 모든 명령이 공유하는 비�
 
 작업 공간에서 동작하는 명령은 `workspace.toml`이 들어 있는 작업 공간 폴더를 받습니다. 인수로 받는 명령도 있고
 (`echolot run Alpenglow.echolot`), `-w` 또는 `--workspace`로 받는 명령도 있습니다(`echolot flow list -w Alpenglow.echolot`).
-어느 쪽인지는 각 명령의 페이지에 나와 있습니다. 생략할 수 있는 경우에는 현재 폴더를 사용합니다.
+어느 쪽인지는 각 명령의 페이지에 나와 있습니다. 생략할 수 있는 경우에는 현재 폴더를 사용합니다. `workspace.toml`이 없는 폴더에
+`*.echolot` 작업 공간이 정확히 하나 있으면 그 작업 공간으로 간주하므로, 프로젝트의 루트 폴더에서 경로 없이 `echolot mcp serve`를
+실행할 수 있습니다.
 
 `--env`는 `.toml`을 뺀 파일 이름(`staging`)으로 환경을 선택합니다. `run`, `validate`, `flow`는 환경 이름(`Staging`)도 받습니다.
 `--env`가 없으면 요청은 작업 공간 자체의 변수로 해석됩니다. [환경](/docs/workspaces/environments)을 참조하십시오.
@@ -132,7 +134,7 @@ echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
 | 종료 코드 | 의미 |
 | --- | --- |
 | `0` | 모두 정상 작동했고 모든 검사를 통과했습니다. |
-| `1` | 무언가 실패했습니다. 응답 없음, 실패한 검사나 테스트, 발견된 문제(`validate`, `spec lint`), 호환되지 않는 변경(`graphql diff`), OK가 아닌 gRPC 상태, 거부된 MQTT 연결, 끝내지 못한 에이전트 등입니다. |
+| `1` | 무언가 실패했습니다. 응답 없음, 실패한 검사나 테스트, 발견된 문제(`validate`, `spec lint`), 호환되지 않는 변경(`graphql diff`), OK가 아닌 gRPC 상태나 디코딩할 수 없는 응답, 거부된 MQTT 연결, 실패한 MCP 호출(`mcp call`), 끝내지 못한 에이전트 등입니다. |
 | `22` | `echolot send` 전용입니다. 응답 상태가 400 이상이었습니다. `curl --fail`과 같습니다. |
 | `64` | 명령줄 자체가 잘못되었습니다. 알 수 없는 옵션, 없는 파일, 존재하지 않는 환경 등입니다. 이유가 출력됩니다. |
 

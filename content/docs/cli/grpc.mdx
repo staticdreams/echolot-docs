@@ -53,7 +53,7 @@ fields of its request.
 ## echolot grpc call
 
 ```sh
-echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--stream] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
 ```
 
 `<method>` is `package.Service/Method`. The message is JSON, `{}` by default; `-d -` reads it from standard input. For a
@@ -66,13 +66,25 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
 ```
 
 The status, the number of messages received and the time go to standard error. A status other than `OK` exits
-with 1.
+with 1. So does an answer that can't be decoded with the schema; standard error then suggests `--proto` with the service's own
+`.proto` file.
+
+### Server streams
+
+A server-streaming method's messages print as they arrive, one JSON object per line, when the output is a terminal or
+with `--stream`. With the output piped and no `--stream`, the messages print once the call ends, as one JSON array.
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/WatchStock \
+  -d '{"skus": ["TNT-MH-2P"]}' --proto Alpenglow.echolot/specs/inventory.proto --stream | jq .
+```
 
 | Option | Meaning |
 | --- | --- |
 | `-d`, `--data <json>` | The message as JSON; `-` reads it from standard input. Default `{}`. |
 | `--deadline <ms>` | The deadline in milliseconds, sent as `grpc-timeout`. |
 | `--compress <algorithm>` | Compress the messages sent: `gzip` or `deflate`. Compressed answers are read either way. |
+| `--stream` | Print a server stream's messages as they arrive, one JSON object per line. The default on a terminal. |
 | `--proto <file>` | A `.proto` file describing the service, with its imports beside it. Without it, the server's reflection is asked. |
 | `-H`, `--header <header>` | Metadata as `'Name: value'`. Repeatable. |
 | `-k`, `--insecure` | Skip TLS certificate verification. |
@@ -86,5 +98,5 @@ others) are built in, so a `.proto` file that imports them needs nothing beside 
 | Code | When |
 | --- | --- |
 | `0` | `describe` found the services; `call` ended with status `OK`. |
-| `1` | The server couldn't be reached or described, or the call's status wasn't `OK`. |
+| `1` | The server couldn't be reached or described, the call's status wasn't `OK`, or its answer couldn't be decoded. |
 | `64` | A wrong option. |

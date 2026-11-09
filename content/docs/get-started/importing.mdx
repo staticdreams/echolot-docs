@@ -14,7 +14,7 @@ you in a report what it could not bring across.
 | **cURL** | A `curl …` command, pasted or in a text file | One request: method, address, headers, body, Basic auth and settings such as redirects and TLS checks. |
 | **Postman** | Collection v2.0 and v2.1, environments (`.json`) | Folders, requests, auth, collection variables, pre-request and test scripts; environments become [environments](/docs/workspaces/environments). |
 | **Insomnia** | v4 JSON exports, v5 YAML collections | Folders, requests, auth, environments. |
-| **OpenAPI** | OpenAPI 3.0 and 3.1, Swagger 2.0, JSON or YAML | A request for every operation, with its parameters, an example body and the auth of its security scheme. The server address becomes the variable `{{baseUrl}}`. |
+| **OpenAPI** | OpenAPI 3.0 and 3.1, Swagger 2.0, JSON or YAML | A request for every operation, with its parameters, an example body and the auth of its security scheme. The server address becomes the variable `{{baseUrl}}`, unless the workspace already has a base address variable, such as `{{baseURL}}`: then the requests use that one. |
 | **HAR** | HTTP Archive 1.2 from a browser or a proxy (`.har`) | The API calls of the session, one folder per host when there were several. |
 | **Paw** | Paw and RapidAPI for Mac documents (`.paw`) | Groups, requests, environments; Paw's dynamic values become Echolot's [variables and dynamic values](/docs/requests/dynamic-values) where they can. |
 | **Bruno** | A collection folder (with `bruno.json` or `.bru` files) | Folders, requests, auth, environments, scripts and tests as written. |

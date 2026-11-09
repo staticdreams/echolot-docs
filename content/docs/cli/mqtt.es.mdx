@@ -7,6 +7,9 @@ description: "Suscríbete a topics y publica mensajes en brokers MQTT, versión 
 envía. Ambos hablan MQTT 5.0 de forma predeterminada y 3.1.1 si lo pides, sobre TCP (`mqtt://`), TLS (`mqtts://`) o
 WebSocket (`ws://`, `wss://`). Mira [solicitudes MQTT](/docs/requests/mqtt) para lo mismo en la app.
 
+Sin `--mqtt-version`, un broker que rechaza MQTT 5.0 recibe un segundo intento con 3.1.1, y la salida de error estándar
+lo dice: `note: the broker refused MQTT 5; connecting with 3.1.1 (--mqtt-version 3.1.1 skips this)`.
+
 Los ejemplos usan un broker en tu Mac, en `localhost`, como hace la solicitud **Warehouse sensors** de Alpenglow. La API
 de demostración no puede ejecutar MQTT.
 
@@ -73,7 +76,7 @@ publicó.
 
 | Opción | Significado |
 | --- | --- |
-| `--mqtt-version <version>` | La versión del protocolo: `5` o `3.1.1`. Predeterminado 5. |
+| `--mqtt-version <version>` | La versión del protocolo: `5` o `3.1.1`. Predeterminado 5, y después 3.1.1 si el broker rechaza 5. |
 | `--client-id <id>` | El id de cliente. Predeterminado: `echolot-` y un sufijo aleatorio. |
 | `-u`, `--user <name>` | El nombre de usuario. |
 | `--password <password>` | La contraseña. Es mejor la variable de entorno `ECHOLOT_MQTT_PASSWORD`. |

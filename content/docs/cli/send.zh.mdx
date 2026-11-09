@@ -98,11 +98,11 @@ echolot send https://demo.echolot.dev/v1/orders/events --listen 0
 echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolot.dev/v1/orders --listen 5
 ```
 
-**Socket.IO。** `--socketio` 在 `http(s)://` 或 `ws(s)://` URL 上使用 Socket.IO。每个输入行是一个事件：先是它的名称，然后是它的 JSON 参数（`chat {"text": "hi"}`；数组表示多个参数）。
+**Socket.IO。** `--socketio` 在 `http(s)://` 或 `ws(s)://` URL 上使用 Socket.IO。每个输入行是一个事件：先是它的名称，然后是它的 JSON 参数（`chat {"text": "hi"}`；数组表示多个参数）。名称后面加 `?` 会请服务器确认该事件：`message? {"text": "Grüezi!"}`。
 事件以 `name [arguments]` 打印，确认以 `ack id [arguments]` 打印。
 
 ```sh
-echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+echo 'message? {"text": "Grüezi!"}' | echolot send http://localhost:3001 --socketio --namespace /support --listen 5
 ```
 
 可以拿来试验的服务器，参见 [Socket.IO 请求](/docs/requests/socket-io)。
@@ -128,7 +128,7 @@ echolot send http://localhost:3001 --socketio --namespace /support --auth '{"tok
 | `--http2` | 只使用 HTTP/2 发送：TLS 上用 ALPN，纯 HTTP 上用先验知识。 |
 | `--http3` | 只使用 HTTP/3 发送，基于 QUIC：仅限 `https://`，不支持代理；macOS 27 及更高版本，以及 Linux。 |
 | `--subprotocol <name>` | 用于 `ws://` 和 `wss://` URL：要提供的子协议。可重复。 |
-| `--socketio` | 使用 Socket.IO；每个输入行是 `event [JSON arguments]`。 |
+| `--socketio` | 使用 Socket.IO；每个输入行是 `event [JSON arguments]`，或者用 `event? [JSON arguments]` 请求确认。 |
 | `--namespace <namespace>` | 用于 `--socketio`：要加入的命名空间。默认：URL 的路径，否则为 `/`。 |
 | `--auth <json>` | 用于 `--socketio`：认证负载，一个 JSON 对象。 |
 | `--socketio-version <version>` | 用于 `--socketio`：服务器的 Socket.IO 版本，`4`（也适用于 3）或 `2`。默认 4。 |

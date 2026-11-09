@@ -86,5 +86,5 @@ gRPC는 호출이 어떻게 진행되었는지를 메시지 뒤 트레일러로 
 
 ## 명령줄에서 [#from-the-command-line]
 
-`echolot grpc describe`는 서버의 서비스와 메서드를 나열하고, `echolot grpc call`은 호출을 수행하며 상태가 `OK`가 아니면 종료 코드 1로 끝납니다.
-[echolot grpc](/docs/cli/grpc)를 참고하십시오.
+`echolot grpc describe`는 서버의 서비스와 메서드를 나열하고, `echolot grpc call`은 호출을 수행하며 상태가 `OK`가 아니거나 디코딩할 수 없는 응답이면 종료 코드 1로 끝납니다.
+터미널에서나 `--stream`을 지정하면 서버 스트림의 메시지는 도착하는 대로 한 줄에 JSON 객체 하나씩 출력됩니다. [echolot grpc](/docs/cli/grpc)를 참고하십시오.

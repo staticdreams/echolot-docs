@@ -70,6 +70,15 @@ Mock of Storefront: 3 routes at http://127.0.0.1:4321 (Ctrl-C stops it)
 
 每行都会指出应答的路由，并在括号中给出它返回的响应。正文中的示例值会为每个请求重新生成。要在没有服务器的情况下生成示例数据，参见 [echolot fake](/docs/cli/fake)。
 
+流和套接字的工作方式与 App 中相同：流式发送 Server-Sent Events 的路由、WebSocket 和 Socket.IO 路由，以及模拟服务器的 MQTT Broker，
+它随模拟服务器在自己的端口上启动：
+
+```text
+Mock of Shop live: 2 routes at http://127.0.0.1:4019, MQTT broker at mqtt://127.0.0.1:1883 (Ctrl-C stops it)
+```
+
+参见[流、套接字和 MQTT](/docs/mocks/streams-and-sockets)。
+
 ## 选项 [#options]
 
 | 选项 | 含义 |

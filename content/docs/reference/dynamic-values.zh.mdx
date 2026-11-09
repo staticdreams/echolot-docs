@@ -112,34 +112,40 @@ X-Signature: {{$hmacSha256(apiSecret, $requestBody(''))}}
 
 ## 时间 [#time]
 
-这些值都取发送请求的那一刻。
+这些值都取发送请求的那一刻；给出偏移时，按偏移移动。
 
 | 值 | 参数 | 返回什么 |
 | --- | --- | --- |
-| `$timestamp` | 无 | 以秒计的 Unix 时间：`1793525000`。 |
-| `$timestampMs` | 无 | 以毫秒计的 Unix 时间：`1793525000123`。 |
-| `$isoTimestamp` | 无 | UTC 的 ISO 8601 格式，含毫秒：`2026-11-01T09:30:00.123Z`。 |
+| `$timestamp` | 偏移（可选） | 以秒计的 Unix 时间：`1793525000`。`{{$timestamp(60)}}` 是一分钟后。 |
+| `$timestampMs` | 偏移（可选） | 以毫秒计的 Unix 时间：`1793525000123`。 |
+| `$isoTimestamp` | 偏移（可选） | UTC 的 ISO 8601 格式，含毫秒：`2026-11-01T09:30:00.123Z`。`{{$isoTimestamp('-90s')}}` 是 90 秒前。 |
 | `$httpDate` | 无 | HTTP 日期，用于 `Date` 或 `If-Modified-Since`：`Sun, 01 Nov 2026 09:30:00 GMT`。 |
 | `$date` | 格式、偏移秒数（可选）、时区（可选） | 按 Unicode 日期模式格式化的时间，按偏移量平移，位于指定时区（未指定则为 UTC）。`{{$date('yyyy-MM-dd')}}`、`{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
 
+`$timestamp`、`$timestampMs` 和 `$isoTimestamp` 的偏移是秒数，或者带单位的数字：`ms`、`s`、`m`、`h`、`d` 或 `w`。`-` 表示往过去移动，
+`+`（或不写）表示往将来移动：`'-90s'`、`'2h'`、`'-1d'`、`'1w'`。请用引号把它写成文本；单纯的秒数可以不加引号，比如 `{{$timestamp(-3600)}}`。
+无效的偏移会失败，并给出应该怎么写的提示。
+
 ## 随机 [#random]
 
-每次发送都会生成新值。
+每次发送都会生成新值，`$sameUUID` 除外。
 
 | 值 | 参数 | 返回什么 |
 | --- | --- | --- |
 | `$uuid` | 无 | 一个小写的随机 UUID。也可用 `$guid` 和 `$randomUUID`。`{{$uuid}}` |
+| `$sameUUID` | 名称 | 只生成一次的随机 UUID，在同一名称请求它的地方都给出同一个值：每次运行一次（每次迭代各自一个），运行之外每个窗口一次，在命令行中则每条命令一次。`{{$sameUUID('order')}}` |
 | `$randomInt` | 最小值、最大值 | 两者之间的整数，包含两端。只给一个参数时它是最大值，从 0 起；不给参数则为 0 到 1000。`{{$randomInt(1, 5)}}` |
 | `$randomString` | 长度、字符（可选） | 随机字符，未指定时为 16 个（最多 4096 个）：字母和数字，或指定的字符。`{{$randomString(8, 'ABCDEF0123456789')}}` |
 | `$randomHex` | 字节数 | 十六进制的随机字节，未指定时为 16 个（最多 2048 个）；数字个数是字节数的两倍。`{{$randomHex(8)}}` |
 
-Alpenglow 的 **Create order** 发送 `Idempotency-Key: {{$uuid}}`，因此它下的每一笔订单都是新的。
+Alpenglow 的 **Create order** 发送 `Idempotency-Key: {{$uuid}}`，因此它下的每一笔订单都是新的。如果一次运行中有多个请求必须发送同一个键，比如一个请求及其重试，
+或者一个创建请求和随后的更新请求，请给它们 `{{$sameUUID('order')}}`：每次运行得到一个新键，所有指定 `order` 的请求都发送这个键。
 
 ## 示例数据 [#fake-data]
 
 为请求正文、测试数据和[模拟路由](/docs/mocks/routes#bodies-with-fake-data)生成的虚构值：姓名、地址、公司、价格、日期、乱数假文等，每次发送都不同。这些名称就是 Postman 的动态变量，因此使用它们的集合在这里会发送真实的值。在 `{{` 列表中，它们位于**示例数据**下，按分组排列。
 
-参数都是可选的；数字范围为 -10^15 到 10^15。模拟服务器的正文还可以使用[随机](#random)和[时间](#time)中的 `$uuid`（即 `$randomUUID`）、`$randomInt`、`$randomString`、`$randomHex`、`$timestamp`、`$timestampMs` 和 `$isoTimestamp`。在“终端”中，[`echolot fake`](/docs/cli/fake) 用它们填充模板。
+参数都是可选的；数字范围为 -10^15 到 10^15。模拟服务器的正文还可以使用[随机](#random)和[时间](#time)中的 `$uuid`（即 `$randomUUID`）、`$randomInt`、`$randomString`、`$randomHex`、`$timestamp`、`$timestampMs` 和 `$isoTimestamp`，时间值可带偏移。在“终端”中，[`echolot fake`](/docs/cli/fake) 用它们填充模板。
 
 ### 常用 [#common]
 

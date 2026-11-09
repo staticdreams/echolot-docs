@@ -15,8 +15,10 @@ ou ensemble :
   à partir de ses schémas. Les requêtes qui ne respectent pas la spec reçoivent un `400` qui explique pourquoi : le mock
   vous dit donc aussi quand un client envoie quelque chose d’incorrect.
 
-Pour des réponses qui demandent du code ou un état, un mock peut aussi avoir des
-[routes en JavaScript](/docs/mocks/scripted-routes).
+Les routes peuvent aussi diffuser des server-sent events et accepter des connexions WebSocket et Socket.IO, et un mock
+peut faire tourner un broker MQTT à côté, pour des écrans en direct. Voir
+[streams, sockets et MQTT](/docs/mocks/streams-and-sockets). Pour des réponses qui demandent du code ou un état, un mock
+peut aussi avoir des [routes en JavaScript](/docs/mocks/scripted-routes).
 
 Ouvrez la page avec **Mocks** dans le sélecteur de module de la barre latérale, ou avec <kbd>⌘</kbd><kbd>4</kbd>.
 
@@ -41,9 +43,10 @@ Un mock de routes peut aussi servir une spec, et un mock de spec peut avoir des 
 ## Démarrer et arrêter [#starting-and-stopping]
 
 Cliquez sur **Démarrer** (<kbd>⌘</kbd><kbd>R</kbd>). La barre en haut indique l’adresse du mock, par exemple
-`http://127.0.0.1:4010`. Quand le mock sert une spec dont l’URL de serveur comporte un chemin
-(`https://demo.echolot.dev/v1`), l’adresse se termine par ce chemin (`http://127.0.0.1:4010/v1`) et le mock répond en
-dessous ; les requêtes peuvent aussi omettre ce chemin. Le bouton de copie à côté de l’adresse la copie.
+`http://127.0.0.1:4010`, et celle de son broker à côté quand il en a
+[un](/docs/mocks/streams-and-sockets#the-mqtt-broker). Quand le mock sert une spec dont l’URL de serveur comporte un
+chemin (`https://demo.echolot.dev/v1`), l’adresse se termine par ce chemin (`http://127.0.0.1:4010/v1`) et le mock
+répond en dessous ; les requêtes peuvent aussi omettre ce chemin. Le bouton de copie à côté de l’adresse la copie.
 
 Essayez-le depuis Terminal :
 
@@ -85,7 +88,8 @@ pas être pris : Echolot vous le dit ; choisissez un autre port.
 
 Une requête va au premier de ces éléments qui a une réponse pour sa méthode et son chemin :
 
-1. Les [routes en JavaScript](/docs/mocks/scripted-routes) du mock. Une route qui ne définit rien transmet la requête.
+1. Les [routes en JavaScript](/docs/mocks/scripted-routes) du mock. Une route qui ne définit rien transmet la requête ;
+   ses sockets (`mock.ws`, `mock.sse`) prennent les connexions qui leur correspondent.
 2. Ses [routes créées à la main](/docs/mocks/routes). Une route peut avoir plusieurs réponses ; une requête peut en demander
    une par son nom ou son état, des règles sur la requête en choisissent d’autres, et sinon c’est la réponse par défaut de
    la route qui répond.
@@ -167,5 +171,6 @@ travail avec ses réglages et ses routes, avec ou sans spec, pour la CI ou un co
 pour des fixtures et des données de départ.
 
 Les agents peuvent démarrer des mocks et lire leurs journaux via le serveur MCP d’Echolot et, quand l’ensemble d’outils
-**Mocks** est activé, créer des mocks, ajouter et modifier des routes, générer des données fictives et créer des requêtes
-à partir de routes. Voir [Agents](/docs/ai/agents).
+**Mocks** est activé, créer des mocks, ajouter et modifier des routes (streams et sockets compris), ajouter un broker,
+générer des données fictives et créer des requêtes à partir de routes. Ils ne peuvent pas enregistrer de routes en
+JavaScript : ils les proposent, et vous les examinez avant qu’elles ne s’exécutent. Voir [Agents](/docs/ai/agents).

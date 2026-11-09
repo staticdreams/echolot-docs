@@ -44,8 +44,14 @@ description: "폴더, 몇 개의 요청 또는 작업 공간 전체를 검사와
 
 - HTTP, GraphQL, gRPC 요청과 MCP 호출은 다른 요청과 마찬가지로 전송되고 검사됩니다.
 - WebSocket, Socket.IO, MQTT 요청은 연결하고, 실행에서 켜 둔 저장된 메시지, 이벤트, 게시를 보내고(MQTT는 사용 설정된 필터도 구독), 10초 동안 수신한 다음 닫습니다.
-  메시지 로그가 응답이므로 <strong>본문</strong>에 대한 검사가 동작합니다. 수신 시간을 바꾸려면 요청 파일의 `[settings]`에 `stream-limit`(초)을 설정합니다.
+  메시지 로그가 응답이므로 [메시지 검사](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)와 **본문**에 대한 검사가 동작합니다.
+  수신 시간을 바꾸려면 요청 파일의 `[settings]`에 `stream-limit`(초)을 설정합니다. 기다리던 응답이 오는 즉시 멈추려면
+  [멈춤 조건](/docs/requests/websocket-and-sse#stop-listening-early)을 설정합니다. 연결을 거부하는 서버도 상태가 있는 응답을 주므로,
+  검사로 거부를 예상할 수 있습니다.
 - Server-Sent Events 스트림은 10초 동안 유지된 뒤 끝납니다.
+
+선택한 환경에서 `{{variables}}`에 값이 없는 요청은 보내지 않습니다. 요청은 실패하고, 결과에 변수와 환경이 표시됩니다. 예를 들면
+`Not sent: {{baseURL}} is not defined in the environment “Staging” or above it.`입니다. 다른 환경을 선택하거나 변수를 정의하십시오.
 
 사전 요청 스크립트는 `pm.execution.skipRequest()`로 요청을 건너뛸 수 있습니다. 결과에는 <strong>사전 요청 스크립트가 건너뜀</strong>이라고 표시됩니다. 스크립트는
 `pm.execution.setNextRequest("Request name")`으로 다른 요청으로 이동할 수도 있고, `pm.execution.setNextRequest(null)`로 실행을 끝낼 수도 있습니다. 계속

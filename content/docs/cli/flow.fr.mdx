@@ -118,7 +118,7 @@ indique lesquelles. Voir [modèles](/docs/flows/templates).
 ## echolot flow serve [#echolot-flow-serve]
 
 ```sh
-echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>] [--rotate-token]
 ```
 
 Exécute chaque flux planifié quand il est dû, et répond aux webhooks des flux qui en ont un, jusqu’à ce que vous
@@ -133,16 +133,18 @@ echolot flow serve -w Alpenglow.echolot --port 4100
 Serving Alpenglow (Ctrl-C stops it)
   schedule  Morning stock check: 0 6 * * *
   webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
-  token     3f9a…
+  token     3f9a… (this workspace's; send it as Authorization: Bearer; ?token= only for senders without headers, as URLs get logged; --rotate-token replaces it)
 ```
 
 Chaque exécution affiche une ligne avec l’heure, le flux, comment il s’est terminé et combien de temps il a pris.
 
 **Webhooks.** Un appelant envoie la méthode et le chemin du webhook du flux, avec le jeton sous la forme
-`Authorization: Bearer <token>`, d’un en-tête `X-Echolot-Token`, ou de `?token=` dans l’URL. Les entrées du flux
-viennent de la requête et d’un corps JSON ; une entrée nommée `body` reçoit le corps entier. La réponse est la sortie
-du flux en JSON, `500` avec l’erreur quand le flux a échoué, `401` sans le bon jeton, et `404` avec les chemins
-existants pour un chemin qu’aucun flux n’a.
+`Authorization: Bearer <token>`, d’un en-tête `X-Echolot-Token`, ou de `?token=` dans l’URL (seulement pour les expéditeurs qui ne
+peuvent pas définir d’en-têtes, car les URL finissent dans les journaux ; il ne devient jamais une entrée). Les entrées
+du flux viennent de la requête et d’un corps JSON ; une entrée nommée `body` reçoit le corps entier. La réponse est la
+sortie du flux en JSON, `500` avec l’erreur quand le flux a échoué, `401` sans le bon jeton, `404` avec les chemins
+existants pour un chemin qu’aucun flux n’a, et `409` quand l’exécution n’a pas été lancée (voir [où envoient les
+exécutions déclenchées](/docs/flows/running-and-triggers#where-triggered-runs-send)).
 
 ```sh
 curl -X POST http://127.0.0.1:4100/order-status \
@@ -151,8 +153,14 @@ curl -X POST http://127.0.0.1:4100/order-status \
   -d '{"orderId": "ord_7Hk2Lw"}'
 ```
 
-Le jeton est `--token`, sinon `ECHOLOT_WEBHOOK_TOKEN`, sinon un nouveau jeton qu’Echolot affiche. Une exécution de webhook
-peut durer jusqu’à deux minutes ; un corps de plus de 8 Mo est refusé en entier.
+Le jeton est `--token`, sinon `ECHOLOT_WEBHOOK_TOKEN`, sinon celui de l’espace de travail : créé une fois, conservé
+dans le trousseau et partagé avec l’app, pour que les adresses que vous avez données survivent aux redémarrages.
+`--rotate-token` remplace le jeton de l’espace de travail par un nouveau. Une exécution de webhook peut durer jusqu’à
+deux minutes ; un corps de plus de 8 Mo est refusé en entier.
+
+**Environnements.** Un flux dont la planification ou le webhook nomme un environnement utilise toujours celui-là. Pour
+les autres, `--env` est l’environnement : votre choix, utilisé même quand il est protégé. Sans `--env`, un flux dont les
+requêtes ont besoin des variables d’un environnement n’est pas exécuté.
 
 | Option | Signification |
 | --- | --- |
@@ -160,7 +168,8 @@ peut durer jusqu’à deux minutes ; un corps de plus de 8 Mo est refusé en en
 | `--env <env>` | L’environnement qu’utilisent les requêtes des flux. |
 | `--port <port>` | Le port des webhooks ; `0` en choisit un libre. 4100 par défaut. |
 | `--share` | Répondre aux webhooks sur toutes les interfaces réseau, pas seulement cette machine : pour les conteneurs. |
-| `--token <token>` | Le jeton des webhooks. Par défaut : `ECHOLOT_WEBHOOK_TOKEN`, sinon un nouveau jeton, affiché. |
+| `--token <token>` | Le jeton des webhooks. Par défaut : `ECHOLOT_WEBHOOK_TOKEN`, sinon celui de l’espace de travail, conservé dans le trousseau. |
+| `--rotate-token` | Remplacer le jeton des webhooks de l’espace de travail par un nouveau ; l’app l’utilise aussi. |
 
 Voir [exécuter des flux et déclencheurs](/docs/flows/running-and-triggers) pour les planifications et les webhooks dans
 l’app.

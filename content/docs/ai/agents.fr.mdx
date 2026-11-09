@@ -112,7 +112,7 @@ hôte. Pour l’Assistant intégré, **Réglages › Assistant › Demander avan
 
 | Ensemble d’outils | Ce que les agents peuvent en faire |
 | --- | --- |
-| **Requêtes** | Lister, lire, créer et envoyer des requêtes ; réponses, historique, GraphQL, mocks en cours d’exécution |
+| **Requêtes** | Lister, lire, créer et envoyer des requêtes ; réponses, historique, GraphQL, mocks en cours d’exécution ; proposer des scripts que vous examinez |
 | **Flux** | Exécuter les flux proposés aux agents, répondre à ce qu’ils demandent |
 | **Espace de travail** | Créer, renommer, déplacer, dupliquer et supprimer des dossiers et des requêtes ; l’authentification des dossiers ; les variables de l’espace de travail ; enregistrer des données recueillies sous forme de fichiers |
 | **Environnements** | Créer, modifier et supprimer des environnements |
@@ -132,9 +132,24 @@ Quand vous changez les ensembles d’outils, les fenêtres ouvertes recommencent
 reconnectez vos clients pour l’obtenir.
 
 **Jamais proposés**, dans aucun ensemble d’outils : modifier les règles des agents, le proxy, les certificats,
-l’authentification de l’espace de travail, les réglages de dossier au-delà de leur authentification, les scripts
-(scripts de requête, de dossier et de mock), et l’authentification qui récupère ou signe avec des secrets (OAuth 2.0,
-AWS, JWT et similaires). Cela vous revient à vous seul.
+l’authentification de l’espace de travail, les réglages de dossier au-delà de leur authentification, l’enregistrement
+de scripts (scripts de requête, de dossier et de mock ; les agents les [proposent](#scripts-agents-propose) à la
+place), et l’authentification qui récupère ou signe avec des secrets (OAuth 2.0, AWS, JWT et similaires). Cela vous
+revient à vous seul.
+
+Les agents créent tous les types de requêtes : `create_request` prend un `kind` (`http`, `graphql`, `websocket`,
+`socketio`, `mqtt`, `grpc` ou `mcp`) et la partie propre à ce type, comme une requête GraphQL et ses variables, des
+messages WebSocket, des émissions Socket.IO, des abonnements et messages MQTT, une méthode et un message gRPC, ou un
+appel MCP ; `update_request` les modifie. Ils règlent aussi les `settings` d’une requête (délai d’attente, limite de
+stream, version HTTP, redirections, décompression, cookies), jamais la vérification TLS ni le mode brut.
+
+Certaines choses entrent dans l’espace de travail sans passer par le modèle :
+
+- `import` lit un fichier du projet (dans le dossier de l’espace de travail ou le dossier qui le contient, jamais un
+  dossier caché, jusqu’à 10 Mo) ou récupère une URL : une longue spec n’est donc pas recopiée jeton par jeton.
+- `fetch_graphql_schema` enregistre le schéma d’un serveur GraphQL dans `specs/` et y relie la requête.
+- `save_response` écrit le corps d’une réponse, ou un fichier transporté par un message WebSocket, Socket.IO ou MQTT,
+  dans l’espace de travail.
 
 Les agents peuvent donner aux requêtes et aux dossiers une authentification **Jeton Bearer**,
 **Auth Basic** ou **Clé d’API**, et faire conserver aux requêtes des valeurs de leurs réponses (le jeton d’une connexion pour les requêtes qui suivent) :
@@ -189,6 +204,30 @@ Un nouvel hôte est un hôte qu’aucune requête ni aucun environnement de l’
 a commencé à servir. Des données lues par un agent pourraient partir par là : il demande donc toujours, comme pour les
 envois vers un [environnement protégé](/docs/workspaces/protected-environments).
 
+## Scripts proposés par les agents [#scripts-agents-propose]
+
+Les agents n’enregistrent jamais de code qui s’exécute. Quand la réponse est un script, comme un script de pré-requête
+qui signe une requête, un script de test, ou les [routes en JavaScript](/docs/mocks/scripted-routes) d’un mock qui gardent
+les commandes d’un client, un agent le propose avec `propose_script`, après avoir lu ce qui existe avec `read_scripts`. Il peut
+proposer le script de pré-requête ou de test d’une requête, d’un dossier ou de tout l’espace de travail, ou les routes
+d’un mock.
+
+Echolot vérifie d’abord le code : il doit compiler, faire au plus 64 Ko et n’écrire aucun mot de passe ni jeton (il les
+lit dans des variables). Une feuille vous montre ensuite la raison de l’agent et ce qui change, ligne par ligne :
+
+<Shot id="ai-script-proposal" alt="Un agent propose un script de pré-requête pour une requête : sa raison, et les lignes du script marquées comme ajoutées, avec Refuser et Enregistrer et approuver" />
+
+- **Enregistrer et approuver** écrit le script et approuve ce code : il s’exécute sans redemander.
+- **Refuser** laisse tout tel quel, tout comme <kbd>⎋</kbd>. Aucune touche n’enregistre une proposition.
+
+Chaque proposition demande, quoi que disent les règles et **Demander avant**, et **Autoriser pour cette session** n’en
+couvre jamais aucune. Un script que vous avez modifié pendant que la feuille était ouverte n’est pas écrasé ; l’agent
+est invité à regarder de nouveau.
+
+Sans personne à qui demander (`echolot mcp serve` seul, avec des règles qui autorisent les modifications), le script
+est enregistré sans être approuvé : il ne s’exécute pas tant que vous n’ouvrez pas l’espace de travail dans Echolot et
+ne cliquez pas sur **Faire confiance aux scripts** au-dessus. Voir [scripts et tests](/docs/requests/scripts-and-tests).
+
 ## Règles de l’espace de travail [#workspace-rules]
 
 **Réglages de l’espace de travail › Agents** (depuis le menu de l’espace de travail au bas de la barre latérale,
@@ -221,6 +260,11 @@ travail sont approuvées.
   leur nom.
 - **Les identifiants dans l’historique.** Les anciens échanges parviennent aux agents avec leurs en-têtes d’identifiants
   masqués et sans la capture réseau.
+- **Les identifiants dans les réponses.** Les champs d’un corps de réponse nommés comme un identifiant (`access_token`,
+  `refresh_token`, `password`, `client_secret` et similaires, mais pas `token_type` ni `expires_in`) parviennent aux
+  agents masqués, même quand personne ne les a enregistrés comme secret.
+- **Les identifiants dans ce qu’ils écrivent.** Un corps qu’un agent envoie ou enregistre ne peut pas contenir
+  d’identifiant dans un tel champ : ce doit être une `{{variable}}`.
 - **Vos secrets chez un autre hôte.** Quand l’envoi d’un agent est redirigé vers un hôte que l’espace de travail
   n’utilise pas, ses en-têtes d’identifiants sont supprimés en chemin.
 

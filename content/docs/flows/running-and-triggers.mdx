@@ -123,7 +123,7 @@ Run a flow by itself, every so many minutes or on a calendar.
 3. Click **Allow**.
 
 Once allowed, the inspector shows **Next run** with its date and time. Scheduled runs happen while the workspace's
-window is open, with the window's active environment at the time of the run, and start with the inputs' defaults. A
+window is open, in the environment below, and start with the inputs' defaults. A
 run missed while the Mac slept or the window was closed runs once when Echolot next looks; a flow still running isn't
 started again. A failed scheduled run shows a notification. To run schedules without the app, use
 [`echolot flow serve`](#run-from-the-command-line).
@@ -142,6 +142,21 @@ matching is enough.
 
 People blocks can't ask anyone during a scheduled run, so they fail there.
 
+### Where triggered runs send
+
+A schedule and a webhook each have an **Environment** menu:
+
+- **The window's (not when protected)**, the default: runs use the environment chosen in the window when they start.
+  While that one is [protected](/docs/workspaces/protected-environments), they don't run: a monitor never sends to
+  production because someone left the window on it.
+- An environment by name: runs always use it, whatever the window shows. Allowing the flow allows it to send there,
+  protected or not, and changing the environment asks for your permission again.
+
+When no environment is chosen at all, a flow whose requests read variables that only environments define isn't run,
+rather than failing at every tick. A run that doesn't happen is listed under **Runs of** the flow with the reason, and
+a webhook answers it with `409`. In the flow's file, the environment is `environment = "production"` under
+`[schedule]` or `[webhook]`.
+
 ### Webhook
 
 Start a flow when something sends a request to a local address.
@@ -155,12 +170,16 @@ Once allowed, the inspector shows the address, such as `POST http://127.0.0.1:52
 and **Copy Token**. Echolot listens on this Mac only (127.0.0.1) while the window is open. The port is picked once per
 workspace and kept.
 
-Callers must send the workspace's token, which Echolot makes the first time and keeps in the Keychain. Any of these
-works:
+Callers must send the workspace's token, which Echolot makes the first time and keeps in the Keychain. It is one
+token per workspace, the same in the app and in `echolot flow serve`, and it stays the same across restarts, so
+addresses you gave out keep working. Any of these works:
 
 - the header `Authorization: Bearer <token>`;
 - the header `X-Echolot-Token: <token>`;
-- the query parameter `?token=<token>`.
+- the query parameter `?token=<token>`, for senders that can't set headers. URLs end up in logs, so prefer a header;
+  the token is never passed to the flow as an input.
+
+`echolot flow serve --rotate-token` replaces the token, for one that may have leaked; senders then need the new one.
 
 ```sh
 curl -X POST http://127.0.0.1:52817/order-status \
@@ -169,14 +188,15 @@ curl -X POST http://127.0.0.1:52817/order-status \
 
 **Order status on webhook** signs in, gets the order and answers with it. The query and the keys of a JSON body fill
 the flow's inputs of the same names; other keys are left out. An input named `body` gets the whole body. So a flow
-with an input `order` takes `?order=ord_7Hk2Lw` or `{"order": "ord_7Hk2Lw"}`. The run uses the window's active
-environment.
+with an input `order` takes `?order=ord_7Hk2Lw` or `{"order": "ord_7Hk2Lw"}`. The run uses the trigger's
+[environment](#where-triggered-runs-send).
 
 | Answer | When |
 | --- | --- |
 | `200` with the output as JSON | The run passed. The body is what the Output block received, or `null`. |
 | `401` | The token is missing or wrong. |
 | `404` | No allowed flow answers that method and path; the error lists the ones that do. |
+| `409` | The run wasn't started: the window's environment is protected, no environment is chosen for a flow that needs one, or more than one flow answers the method and path. The body says which. |
 | `413` | The body is larger than 8 MB. The flow is not run. |
 | `500` | The run failed. The body has `error` and the run's id. |
 | `503` | The run was stopped. |

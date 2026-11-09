@@ -1,0 +1,171 @@
+---
+title: Streams, sockets and MQTT
+description: Mock live data with routes that stream server-sent events, take WebSocket and Socket.IO connections, and an MQTT broker that publishes on a timeline and answers what clients publish.
+---
+
+Live screens need live data: a delivery that moves, a race that updates lap by lap, a sensor that reports every
+second. A mock can send all of that without a server of your own:
+
+- **Server-sent events**: an HTTP response sends events on a timeline instead of a body.
+- **WebSocket routes**: a route takes WebSocket connections, sends messages once one opens, and answers what the
+  client sends.
+- **Socket.IO routes**: a route is a Socket.IO namespace, with events, replies and acknowledgements.
+- **An MQTT broker** beside the mock: clients subscribe and publish as with any broker, and get the messages the mock
+  publishes.
+
+All of it is made by hand in the mock's editor, like other [routes](/docs/mocks/routes), and saved in the mock's file.
+For logic and state, write sockets in [JavaScript](/docs/mocks/scripted-routes#sockets) instead.
+
+## Timelines
+
+Streams and sockets send their messages on a timeline. Each message has:
+
+| Field | What it is |
+| --- | --- |
+| **ms** | Milliseconds after the message before it (or after the start, for the first), up to an hour. |
+| Event | For server-sent events, the `event:` field; for Socket.IO, the event emitted (`message` when empty). |
+| ID | For server-sent events, the `id:` field. |
+| Data | What is sent. It can hold fake data and parts of the request, like a [route's body](/docs/mocks/routes#bodies-with-fake-data). |
+
+Data also reads `{{stream.index}}` (the message's number in the timeline, from 0), `{{stream.number}}` (from 1) and
+`{{stream.round}}` (which pass of the timeline, from 0), so a timeline played again can count laps:
+
+```json
+{ "lap": {{stream.number}}, "at": "{{$isoTimestamp}}" }
+```
+
+Times can be moved, too: `{{$isoTimestamp('-90s')}}` is 90 seconds ago, `{{$timestamp('1h')}}` an hour from now. See
+[dynamic values](/docs/requests/dynamic-values).
+
+**Play** says how many times the timeline plays; `0` plays it until the client leaves. After the last message, the
+menu beside it chooses what happens: **end the response** or **close the connection**, or **keep it open**.
+
+## Server-sent events
+
+Open an HTTP route's response and click **Stream Server-Sent Events Instead** under its body. The body gives way to a
+timeline: add messages with **Add a Message**, set each one's delay, event, ID and data. **Send a Body Instead** goes
+back to a plain body.
+
+The mock answers with `Content-Type: text/event-stream` and `Cache-Control: no-cache`, keeps the connection open, and
+writes each event when its time comes:
+
+```text
+event: status
+id: 1
+data: {"order": "ord_7Hk2Lw", "status": "shipped"}
+
+```
+
+Data over several lines is sent as several `data:` lines. A stream that plays until the client leaves stops when the
+client goes or the mock stops.
+
+```sh
+curl -N http://127.0.0.1:4010/orders/ord_7Hk2Lw/events
+```
+
+## WebSocket routes
+
+Choose **WebSocket** in the route's kind menu, before the path. The route then takes WebSocket connections on a `GET`
+to its path, and gets a response named **Open** with the status `101`.
+
+<Shot id="mocks-route-websocket" alt="The editor of a WebSocket route: its kind and path, the Open response with status 101, a message sent once the socket opens, and a reply that answers a message whose op field is watch" />
+
+The route's responses decide what happens when a client connects, chosen by their [rules](/docs/mocks/routes#choosing-a-response)
+like any other route's:
+
+- A `101` response opens the connection. Headers you add go with the upgrade.
+- Any other response refuses the connection with that answer: a `401` with a body for a missing token, for example.
+  A response with the rule **Query parameter** `token` is empty answers clients that come without one.
+
+A `GET` without an upgrade to a route whose answer is `101` gets `426 Upgrade Required`.
+
+### Sent once open
+
+Messages under **Sent once open** go to the client once the connection opens, each after its delay: a greeting, a
+state to start from, a stream of updates. **Close by itself** makes the mock close the connection after a time, with a
+close code and a reason, such as `4000` and `Shift over`.
+
+### Replies
+
+**Replies** answer what the client sends. When a message arrives, the first reply whose conditions all hold answers
+it; a message no reply takes goes unanswered.
+
+- **Add Condition** checks a field of the message, read as JSON: `op` is `watch`, `user.id` is `*`. An empty field
+  name checks the whole text, for messages that aren't JSON. The rules of the [routes page](/docs/mocks/routes#choosing-a-response)
+  hold here: `*` is any value, an empty value means missing.
+- **Sends** is a timeline of messages that go back. They read the message they answer: `{{message.order}}` is its
+  `order` field, `{{message}}` the whole text.
+- **Then close** closes the connection after sending, with a close code and a reason.
+
+For example, a reply with the condition `op` is `watch` that sends
+`{"op": "shipped", "order": "{{message.order}}"}` after 500 ms answers `{"op": "watch", "order": "ord_7Hk2Lw"}` with the
+order shipped half a second later.
+
+## Socket.IO routes
+
+Choose **Socket.IO** in the kind menu. A Socket.IO route is a namespace: its path is the namespace clients join
+(`/support`, or `/` for the main one). The mock is a Socket.IO 3 and 4 server at `/socket.io/`, over WebSocket and long
+polling, with the upgrade from one to the other, so socket.io-client works with its usual options.
+
+The route gets a response named **Joined** with the status `101`:
+
+- A `101` response lets the client join the namespace. **Emitted once joined** is its timeline; each message names
+  its event and gives the arguments as a JSON array (`[{"text": "Hello"}]`), or one value for a single argument.
+- Any other response refuses: the client gets a connection error whose message is the response's body (a JSON object
+  as it is, such as `{"message": "token rejected"}`, other text as the message).
+
+Rules choose the response as on other routes. **Body field** rules read the client's auth payload, so `token` is
+`bad` can refuse one token. A namespace no route has gets the error `Invalid namespace`.
+
+**Replies** answer the client's emits: **When the client emits** names the event (empty takes any), conditions read
+the arguments as an array (`0.topic` is the first argument's `topic`), and **Sends** emits events back, reading
+`{{message.0.topic}}`. **Answer its acknowledgement** sends the first message back as the acknowledgement's
+arguments, when the emit asked for one. **Then disconnect** and **Disconnect by itself** take the client out of the
+namespace.
+
+## The MQTT broker
+
+A mock can run an MQTT broker on a port of its own. Click **Add a Broker** in the **MQTT Broker** card; it takes
+port `1883`, or `1884` when the mock already uses that one. **Remove Broker** takes it away.
+
+<Shot id="mocks-broker" alt="The MQTT Broker card: port 1889, two messages published on a timeline to warehouse topics, one of them retained with QoS 1, and a reply to what clients publish to warehouse/+/restock" />
+
+The broker is a real one for MQTT 3.1.1 and 5.0 clients over TCP: they connect, subscribe and publish as with any
+broker, with QoS 0, 1 and 2, retained messages and wills. Starting the mock starts it; the bar at the top shows its
+address, such as `mqtt://127.0.0.1:1883`.
+
+- **Published** is a timeline the broker publishes from the moment the mock starts: each message's delay, topic,
+  data, **QoS** and **Retain**. A retained message waits for clients that subscribe later. **Play** repeats the
+  timeline, `0` while the mock runs.
+- **Replies** answer what clients publish. **When a client publishes to** takes a topic filter
+  (`warehouse/+/restock`), conditions read the payload as JSON, and **Publishes** sends messages back, to topics that can
+  read the message too: `warehouse/{{message.warehouse}}/orders`. `{{stream.topic}}` is the topic the client published to.
+
+```sh
+echolot mqtt subscribe mqtt://127.0.0.1:1883 'warehouse/#' --count 3
+```
+
+Changing the broker while the mock runs starts the mock again.
+
+## The log
+
+Every connection is a line of the [log](/docs/mocks#the-log), with its status (`101` for an open socket, the status
+of a refusal) and the messages both ways, as JSON lines, in the response it shows. Each MQTT client is a line too,
+with what it subscribed to, published and received.
+
+## Requests and agents
+
+**Create Requests** makes a WebSocket request for a WebSocket route and a Socket.IO request for a Socket.IO route,
+with a message for each reply that has conditions, and an MQTT request for the broker, subscribed to every topic. See
+[WebSocket and SSE](/docs/requests/websocket-and-sse), [Socket.IO](/docs/requests/socket-io) and
+[MQTT](/docs/requests/mqtt).
+
+Agents set all of it: `save_mock_route` takes a route's `kind`, its responses' `events`, `repeats`, `ends`, `replies`
+and `close`, and `save_mock` takes a `broker` or `removeBroker`. See [Agents](/docs/ai/agents).
+
+## In the workspace
+
+In the mock's file, a route's `kind` is `websocket` or `socketio`; a response's timeline is
+`[[routes.responses.events]]`, its replies `[[routes.responses.replies]]` with `[[routes.responses.replies.send]]`; the
+broker is `[broker]` with `[[broker.publishes]]` and `[[broker.replies]]`. See
+[workspace files](/docs/reference/workspace-files#mocks).

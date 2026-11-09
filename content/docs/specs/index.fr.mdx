@@ -119,3 +119,29 @@ arrête le suivi de la spec par le dossier et laisse ses requêtes telles quelle
 Un dossier peut aussi suivre une spec extérieure à l’espace de travail, un fichier ou une URL : faites un clic droit sur
 le dossier dans la barre latérale des requêtes et choisissez **Lier à une spec OpenAPI…**. L’outil en ligne de commande
 vérifie et applique les changements avec `echolot spec check` et `echolot spec apply`.
+
+## Vérifier les réponses par rapport à une spec [#checking-responses-against-a-spec]
+
+Une vérification **Spec OpenAPI** dans l’onglet **Tests** d’une requête valide la réponse par rapport au schéma que la
+spec documente pour son opération et son état. Voir [scripts et tests](/docs/requests/scripts-and-tests). La requête
+doit connaître les deux :
+
+- L’opération, `spec-operation` dans le fichier de la requête, par exemple `GET /products/{sku}`. Les requêtes créées à
+  partir d’une spec l’ont.
+- La spec. C’est celle que suit son dossier, ou un dossier au-dessus. Une requête peut aussi nommer la sienne avec
+  `spec` dans son fichier, par exemple `spec = "specs/alpenglow.yaml"`. Elle se vérifie alors par rapport à cette spec
+  sans que son dossier la suive : rien n’est donc synchronisé dans le dossier. C’est utile pour des requêtes vers un
+  [mock](/docs/mocks), ou pour quelques requêtes d’un dossier créées à la main.
+
+```toml
+spec = "specs/alpenglow.yaml"
+spec-operation = "GET /products/{sku}"
+```
+
+## Importer une spec dans un espace de travail [#importing-a-spec-into-a-workspace]
+
+**Fichier › Importer…** avec un document OpenAPI crée des requêtes qui commencent par `{{baseUrl}}`, et définit
+`baseUrl` à partir des serveurs de la spec. Quand l’espace de travail ou l’un de ses environnements a déjà une variable
+d’adresse de base (`baseUrl`, `baseURL`, `base_url`, `apiUrl` et similaires), les requêtes utilisent celle-là à la
+place et l’import n’en définit aucune : vos environnements décident donc où elles vont. Le rapport d’import le signale,
+avec l’adresse de serveur de la spec elle-même. Voir [importer](/docs/get-started/importing).

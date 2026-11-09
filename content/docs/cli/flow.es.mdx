@@ -117,7 +117,7 @@ dice cuáles. Mira [plantillas](/docs/flows/templates).
 ## echolot flow serve [#echolot-flow-serve]
 
 ```sh
-echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>] [--rotate-token]
 ```
 
 Ejecuta cada flujo con programación cuando le toca y responde a los webhooks de los flujos que tienen uno, hasta que lo
@@ -132,16 +132,18 @@ echolot flow serve -w Alpenglow.echolot --port 4100
 Serving Alpenglow (Ctrl-C stops it)
   schedule  Morning stock check: 0 6 * * *
   webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
-  token     3f9a…
+  token     3f9a… (this workspace's; send it as Authorization: Bearer; ?token= only for senders without headers, as URLs get logged; --rotate-token replaces it)
 ```
 
 Cada ejecución imprime una línea con la hora, el flujo, cómo terminó y cuánto tardó.
 
 **Webhooks.** Quien llama envía el método y la ruta del webhook del flujo, con el token como
-`Authorization: Bearer <token>`, una cabecera `X-Echolot-Token` o `?token=` en la URL. Las entradas del flujo salen de
-la consulta y de un cuerpo JSON; una entrada llamada `body` recibe el cuerpo entero. La respuesta es la salida del
-flujo como JSON, `500` con el error cuando el flujo falló, `401` sin el token correcto y `404` con las rutas que hay
-para una ruta que ningún flujo tiene.
+`Authorization: Bearer <token>`, una cabecera `X-Echolot-Token` o `?token=` en la URL (solo para quien no puede
+fijar cabeceras, ya que las URL quedan en los registros; nunca se convierte en una entrada). Las entradas del flujo
+salen de la consulta y de un cuerpo JSON; una entrada llamada `body` recibe el cuerpo entero. La respuesta es la salida
+del flujo como JSON, `500` con el error cuando el flujo falló, `401` sin el token correcto, `404` con las rutas que hay
+para una ruta que ningún flujo tiene, y `409` cuando la ejecución no se inició (mira
+[dónde envían las ejecuciones activadas](/docs/flows/running-and-triggers#where-triggered-runs-send)).
 
 ```sh
 curl -X POST http://127.0.0.1:4100/order-status \
@@ -150,8 +152,14 @@ curl -X POST http://127.0.0.1:4100/order-status \
   -d '{"orderId": "ord_7Hk2Lw"}'
 ```
 
-El token es `--token`, si no `ECHOLOT_WEBHOOK_TOKEN`, si no uno nuevo que imprime Echolot. La ejecución de un webhook
-puede tardar hasta dos minutos; un cuerpo de más de 8 MB se rechaza entero.
+El token es `--token`, si no `ECHOLOT_WEBHOOK_TOKEN`, si no el propio del espacio de trabajo: se crea una vez, se
+guarda en el llavero y se comparte con la app, así que las direcciones que hayas dado siguen valiendo tras reiniciar.
+`--rotate-token` sustituye el token del espacio de trabajo por uno nuevo. La ejecución de un webhook puede tardar hasta
+dos minutos; un cuerpo de más de 8 MB se rechaza entero.
+
+**Entornos.** Un flujo cuya programación o webhook nombra un entorno usa siempre ese. Para los demás, `--env` es el
+entorno: tu elección, que se usa aunque esté protegido. Sin `--env`, un flujo cuyas solicitudes necesitan variables de
+un entorno no se ejecuta.
 
 | Opción | Significado |
 | --- | --- |
@@ -159,7 +167,8 @@ puede tardar hasta dos minutos; un cuerpo de más de 8 MB se rechaza entero.
 | `--env <env>` | El entorno que usan las solicitudes de los flujos. |
 | `--port <port>` | El puerto de los webhooks; `0` elige uno libre. Predeterminado 4100. |
 | `--share` | Responde a los webhooks en todas las interfaces de red, no solo en esta máquina: para contenedores. |
-| `--token <token>` | El token de los webhooks. Predeterminado: `ECHOLOT_WEBHOOK_TOKEN`, si no uno nuevo, impreso. |
+| `--token <token>` | El token de los webhooks. Predeterminado: `ECHOLOT_WEBHOOK_TOKEN`, si no el propio del espacio de trabajo, guardado en el llavero. |
+| `--rotate-token` | Sustituye el token de los webhooks del espacio de trabajo por uno nuevo; la app también lo usa. |
 
 Mira [ejecutar flujos y activadores](/docs/flows/running-and-triggers) para las programaciones y los webhooks en la app.
 

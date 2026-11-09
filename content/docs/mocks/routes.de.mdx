@@ -27,12 +27,14 @@ Jede Änderung wird sofort gesichert, und ein laufender Mock antwortet sofort da
 nimmst du jede Änderung zurück, auch das Löschen einer Route. Haben zwei Routen, die an sind, dieselbe Methode und
 denselben Pfad, warnt dich die Karte: Nur die erste antwortet.
 
-<Shot id="mocks-route-editor" alt="Der Editor der Route GET /users/{id}: Methode, Pfad und Zusammenfassung, die Antworten 200 OK (der Standard) und 404 Not found sowie Inhaltstyp der Antwort OK, ein Header X-Request-Id mit {{$randomUUID}} und ein JSON-Body mit request.params.id und Beispielwerten" />
+<Shot id="mocks-route-editor" alt="Der Editor der Route GET /users/{id}: Art (HTTP), Methode, Pfad und Zusammenfassung, die Antworten 200 OK (der Standard) und 404 Not found sowie Inhaltstyp der Antwort OK, ein Header X-Request-Id mit {{$randomUUID}} und ein JSON-Body mit request.params.id und Beispielwerten" />
 
 ### Methode, Pfad und Zusammenfassung [#method-path-and-summary]
 
-- **Route**: die Methode (**GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS** oder **ANY** für jede
-  Methode) und der Pfad. Eine `HEAD`-Anfrage geht an eine **GET**-Route, ohne den Body.
+- **Route**: was die Route spricht, die Methode und der Pfad. Das erste Menü ist die Art: **HTTP** oder **WebSocket**
+  und **Socket.IO** für Routen, die Verbindungen annehmen (siehe [Streams, Sockets und MQTT](/docs/mocks/streams-and-sockets)).
+  Die Methode ist **GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS** oder **ANY** für jede
+  Methode. Eine `HEAD`-Anfrage geht an eine **GET**-Route, ohne den Body.
 - **Pfadparameter** schreibst du als `{id}` oder `:id`, einen je Teil des Pfads: `/users/{id}`, `/files/{name}.json`.
   `:id` wird als `{id}` gesichert. Eine Route mit einem wörtlichen Teil hat Vorrang vor einer mit Parameter, `/users/me`
   antwortet also vor `/users/{id}`.
@@ -50,7 +52,7 @@ Jede Antwort hat:
 | **Content-Type** | Der gesendete `Content-Type`, etwa `application/json` oder `application/xml`; das Menü daneben enthält die gängigen Typen. Leer sendet keinen. Er bestimmt auch, wie Werte im Body maskiert werden. |
 | **Header** | Mit der Antwort gesendete Header. Werte können wie der Body Beispieldaten und Teile der Anfrage enthalten. |
 | **Regeln** | Wann diese Antwort statt der Standardantwort antwortet. Siehe [Antwort auswählen](#choosing-a-response). |
-| **Body** | Was gesendet wird, mit Zeilennummern und Farben für JSON, XML und HTML. |
+| **Body** | Was gesendet wird, mit Zeilennummern und Farben für JSON, XML und HTML. **Stattdessen Server-Sent Events streamen** sendet an seiner Stelle Ereignisse auf einer Zeitleiste; siehe [Server-Sent Events](/docs/mocks/streams-and-sockets#server-sent-events). |
 
 Die Antwort mit dem Häkchen ist der **Standard** der Route; **Als Standard festlegen** bei einer anderen ändert das. Der
 Papierkorb-Knopf löscht eine Antwort.
@@ -113,6 +115,10 @@ ipsum, Dateien, Bilder und Datenbanken. Die Namen sind die dynamischen Variablen
 funktionieren hier also. Manche nehmen Argumente: `{{$randomInt(1, 100)}}`, `{{$randomPrice(5, 50)}}`,
 `{{$randomLoremWords(5)}}`, `{{$randomElement(active, paused, closed)}}`. Die
 [dynamischen Werte](/docs/reference/dynamic-values#fake-data) listen jeden einzelnen auf.
+
+Zeiten lassen sich verschieben: `{{$isoTimestamp('-90s')}}` ist vor 90 Sekunden und `{{$timestamp('2h')}}` in zwei
+Stunden, in Sekunden oder mit `ms`, `s`, `m`, `h`, `d` oder `w`. Eine Bestellung von vor 90 Sekunden braucht
+kein Skript.
 
 **Wert einfügen** über dem Body setzt einen Beispielwert an die Stelle des Cursors: **Beispieldaten** enthält sie nach
 Gruppen.

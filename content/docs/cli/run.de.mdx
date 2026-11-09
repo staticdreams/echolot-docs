@@ -53,13 +53,22 @@ All 7 requests passed  11/11 checks passed · 0.90 s
 - Antworten, die in Variablen erfasst wurden, Tokens aus OAuth-2-Client-Credentials und Werte, die Skripte setzen,
   gelten wie in der App für die späteren Anfragen des Laufs weiter. Werte aus Skripten gelten nur für den Lauf und
   werden nie in Dateien geschrieben.
+- [Erfassungen](/docs/requests/captures) werden ebenfalls für den Lauf im Speicher behalten, geheime eingeschlossen, und
+  in den Berichten maskiert. Die Dateien der Umgebungen und der Schlüsselbund bleiben, wie sie waren, sodass ein Lauf in
+  CI den Arbeitsbereich sauber hinterlässt. In Alpenglow erfasst **Sign in** `{{token}}`, und **Who am I** und der
+  Ordner Orders senden es später im selben Lauf. `--save-captures` schreibt erfasste Werte wie die App: in die Datei der
+  Umgebung oder in den Arbeitsbereich, und geheime in den Schlüsselbund.
 
-<Callout type="warn">
-  Ohne Schlüsselbund (in CI, unter Linux oder mit `ECHOLOT_KEYCHAIN=0`) wird die Erfassung einer Antwort in einer als
-  **Geheim** markierten Variable nicht für die nächste Anfrage behalten. In Alpenglow erfasst **Sign in** `{{token}}`
-  als Secret, sodass **Who am I** und der Ordner Orders in so einem Lauf ein 401 bekommen. Setze `ECHOLOT_SECRET_TOKEN`
-  selbst oder erfasse bei solchen Läufen in einer Variable, die kein Secret ist.
-</Callout>
+### Variablen, die sich nicht auflösen [#variables-that-dont-resolve]
+
+Ein Lauf sendet nie eine Anfrage, deren `{{variables}}` keinen Wert haben. Die Anfrage schlägt stattdessen fehl und sagt,
+welche Variable fehlt und in welcher Umgebung, etwa `Not sent: {{baseURL}} is not defined in the environment “Staging” or
+above it.`
+
+Für eine als Secret deklarierte Variable ohne Wert nennt die Meldung die Umgebungsvariable, die ihr einen gibt:
+`Not sent: the secret {{token}} has no value here. Set ECHOLOT_SECRET_TOKEN (or add it to --secrets).` Ist
+`ECHOLOT_SECRET_<NAME>` gesetzt, aber der Arbeitsbereich deklariert die Variable nicht als Secret, sagt sie stattdessen
+das. Siehe [Secrets](/docs/cli#secrets).
 
 ## Datengesteuerte Läufe [#data-driven-runs]
 
@@ -157,6 +166,7 @@ Um mit einer Sammlung weiterzuarbeiten, [importiere sie](/docs/cli/import-export
 | `--reporter <name>` | `console`, `junit`, `json`, `html` oder `har`. Wiederholbar; `console`, wenn weggelassen. |
 | `-o`, `--out <file>` | Die Datei für jeden Reporter außer dem für die Konsole, in der Reihenfolge von `--reporter`; Standardausgabe, wenn sie fehlt. |
 | `--secrets <file>` | Eine Datei mit Zeilen `NAME=value` mit geheimen Werten, zusätzlich zu den Variablen `ECHOLOT_SECRET_<NAME>`. |
+| `--save-captures` | Erfasste Werte in die Dateien der Umgebungen des Arbeitsbereichs schreiben, und geheime in den Schlüsselbund, wie die App. Ohne die Option gelten sie nur für den Lauf. |
 | `-k`, `--insecure` | Die Prüfung des TLS-Zertifikats überspringen. |
 | `--proxy <url>` | Über diesen Proxy senden: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
 | `--no-proxy` | Direkt verbinden und `HTTP_PROXY` und die anderen ignorieren. |

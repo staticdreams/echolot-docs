@@ -59,6 +59,30 @@ quand elle ne l’a pas fait.
 | **Cookie** | Un cookie défini par la réponse, par son nom. | `session` |
 | **État** | Le code d’état. | |
 | **Corps** | Le corps entier, sous forme de texte. | |
+| **Premier message** | Un JSONPath dans le premier message reçu par une session WebSocket, Socket.IO ou MQTT qui a une valeur à cet endroit. | `$.id` |
+| **Dernier message** | La même chose, dans le dernier message de ce genre : le dernier état signalé par un stream de mises à jour. | `$[0].id` |
+
+### Valeurs des sessions en temps réel [#values-from-realtime-sessions]
+
+**Premier message** et **Dernier message** sont proposés sur les requêtes WebSocket, Socket.IO et MQTT. Ils
+enregistrent leur valeur quand la requête s’exécute sans vous, dans l’[exécution](/docs/requests/runner), en ligne de
+commande et pour les agents : la requête se connecte, envoie ses messages enregistrés, écoute, se ferme, et les captures
+lisent le journal des messages. Chaque message reçu est lu comme du JSON ; les arguments d’un événement Socket.IO sont
+un tableau : `$[0].id` est donc l’`id` de son premier argument. Seuls les messages reçus comptent, jamais ceux
+qu’Echolot a envoyés.
+
+À côté du chemin, le champ **tous** restreint les messages lus : le nom d’un événement Socket.IO (un accusé de réception
+porte le nom de l’événement auquel il répond), ou un filtre de topic MQTT, où `+` et `#` fonctionnent. Laissez-le vide
+pour lire tous les messages.
+
+```toml
+[[captures]]
+variable = "temperature"
+from = "last-message"
+path = "$.celsius"
+on = "warehouses/+/temperature"
+scope = "environment"
+```
 
 ## Environnement ou espace de travail [#environment-or-workspace]
 

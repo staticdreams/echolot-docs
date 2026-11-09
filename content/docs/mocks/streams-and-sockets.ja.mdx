@@ -1,0 +1,158 @@
+---
+title: "ストリーム、ソケット、MQTT"
+description: "Server-Sent Eventsをストリーミングし、WebSocketとSocket.IOの接続を受け付けるルートと、タイムラインに沿ってパブリッシュし、クライアントのパブリッシュに応答するMQTTブローカーで、ライブデータをモックします。"
+---
+
+ライブ画面にはライブデータが必要です。移動する配達、周回ごとに更新されるレース、毎秒報告するセンサーなどです。
+モックは、自分のサーバがなくても、これらすべてを送信できます。
+
+- <strong>Server-Sent Events</strong>：HTTPレスポンスが、ボディの代わりにタイムラインに沿ってイベントを送信します。
+- <strong>WebSocketのルート</strong>：ルートがWebSocketの接続を受け付け、接続が開くとメッセージを送信し、クライアントが送信した内容に応答します。
+- <strong>Socket.IOのルート</strong>：ルートがSocket.IOの名前空間になり、イベント、返信、確認応答を扱います。
+- モックと並ぶ<strong>MQTTブローカー</strong>：クライアントはほかのブローカーと同じようにサブスクライブとパブリッシュを行い、モックがパブリッシュするメッセージを受け取ります。
+
+ほかの[ルート](/docs/mocks/routes)と同じように、どれもモックのエディタで手作業で作成し、モックのファイルに保存します。
+ロジックや状態が必要な場合は、代わりに[JavaScript](/docs/mocks/scripted-routes#sockets)でソケットを書きます。
+
+## タイムライン [#timelines]
+
+ストリームとソケットは、タイムラインに沿ってメッセージを送信します。各メッセージには次の項目があります。
+
+| 項目 | 内容 |
+| --- | --- |
+| <strong>ms</strong> | 前のメッセージ（最初のメッセージは開始時点）からのミリ秒。最大1時間です。 |
+| イベント | Server-Sent Eventsでは `event:` フィールド。Socket.IOでは送出するイベント（空の場合は `message`）。 |
+| ID | Server-Sent Eventsでは `id:` フィールド。 |
+| データ | 送信する内容。[ルートのボディ](/docs/mocks/routes#bodies-with-fake-data)と同じように、ダミーデータやリクエストの一部を含められます。 |
+
+データでは、`{{stream.index}}`（タイムライン内のメッセージの番号。0から）、`{{stream.number}}`（1から）、`{{stream.round}}`
+（タイムラインの何周目か。0から）も読めるので、繰り返し再生するタイムラインで周回を数えられます。
+
+```json
+{ "lap": {{stream.number}}, "at": "{{$isoTimestamp}}" }
+```
+
+時刻もずらせます。`{{$isoTimestamp('-90s')}}` は90秒前、`{{$timestamp('1h')}}` は1時間後です。
+[動的な値](/docs/requests/dynamic-values)を参照してください。
+
+<strong>再生</strong>は、タイムラインを再生する回数です。`0` にすると、クライアントが離れるまで再生します。最後のメッセージの後に何が起きるかは、
+その横のメニューで選びます：<strong>応答を終える</strong>、<strong>接続を閉じる</strong>、または<strong>開いたままにする</strong>です。
+
+## Server-Sent Events [#server-sent-events]
+
+HTTPルートのレスポンスを開き、ボディの下の<strong>代わりに Server-Sent Events をストリーム</strong>をクリックします。ボディがタイムラインに替わります。
+<strong>メッセージを追加</strong>でメッセージを追加し、それぞれの遅延、イベント、ID、データを設定します。<strong>代わりに本文を送信</strong>で通常のボディに戻ります。
+
+モックは `Content-Type: text/event-stream` と `Cache-Control: no-cache` で応答し、接続を開いたままにして、時刻が来るたびに各イベントを書き込みます。
+
+```text
+event: status
+id: 1
+data: {"order": "ord_7Hk2Lw", "status": "shipped"}
+
+```
+
+複数行のデータは、複数の `data:` 行として送信されます。クライアントが離れるまで再生するストリームは、クライアントが離れるかモックが停止すると止まります。
+
+```sh
+curl -N http://127.0.0.1:4010/orders/ord_7Hk2Lw/events
+```
+
+## WebSocketのルート [#websocket-routes]
+
+パスの前にあるルートの種類のメニューで<strong>WebSocket</strong>を選びます。するとルートは、パスへの `GET` でWebSocketの接続を受け付けるようになり、
+ステータス `101` の<strong>オープン</strong>という名前のレスポンスが作られます。
+
+<Shot id="mocks-route-websocket" alt="WebSocketルートのエディタ。種類とパス、ステータス101のOpenレスポンス、接続が開いたときに送信されるメッセージ、opフィールドがwatchのメッセージに応答する返信" />
+
+クライアントが接続したときの動作は、ルートのレスポンスで決まります。ほかのルートと同じように、レスポンスは[ルール](/docs/mocks/routes#choosing-a-response)で選ばれます。
+
+- `101` のレスポンスは接続を開きます。追加したヘッダーはアップグレードとともに送信されます。
+- それ以外のレスポンスは、その応答で接続を拒否します。たとえば、トークンがない場合にボディ付きの `401` を返します。
+  <strong>クエリパラメータ</strong> `token` が空というルールのレスポンスは、トークンなしで来たクライアントに応答します。
+
+応答が `101` のルートに、アップグレードなしの `GET` が来ると、`426 Upgrade Required` が返ります。
+
+### 接続後に送信 [#sent-once-open]
+
+<strong>接続後に送信</strong>の下のメッセージは、接続が開いた後、それぞれの遅延の後にクライアントに送られます。挨拶、開始時の状態、更新のストリームなどです。
+<strong>自動で閉じる</strong>を使うと、一定時間後に、クローズコードと理由（`4000` と `Shift over` など）を付けてモックが接続を閉じます。
+
+### 返信 [#replies]
+
+<strong>返信</strong>は、クライアントが送信した内容に応答します。メッセージが届くと、条件がすべて成り立つ最初の返信が応答します。
+どの返信にも当てはまらないメッセージには、応答しません。
+
+- <strong>条件を追加</strong>は、JSONとして読んだメッセージのフィールドをチェックします：`op` が `watch`、`user.id` が `*` などです。フィールド名を空にすると、
+  JSONではないメッセージ向けに、テキスト全体をチェックします。[ルートのページ](/docs/mocks/routes#choosing-a-response)のルールがここでも成り立ちます。
+  `*` は任意の値、空の値は存在しないことを意味します。
+- <strong>送信</strong>は、返送するメッセージのタイムラインです。応答先のメッセージを読めます。`{{message.order}}` はその `order` フィールド、
+  `{{message}}` はテキスト全体です。
+- <strong>その後閉じる</strong>は、送信後に、クローズコードと理由を付けて接続を閉じます。
+
+たとえば、条件が `op` が `watch` で、500 ms後に `{"op": "shipped", "order": "{{message.order}}"}` を送信する返信は、
+`{"op": "watch", "order": "ord_7Hk2Lw"}` に対して、0.5秒後にその注文の発送を返します。
+
+## Socket.IOのルート [#socketio-routes]
+
+種類のメニューで<strong>Socket.IO</strong>を選びます。Socket.IOのルートは名前空間で、そのパスがクライアントの参加する名前空間です
+（`/support`、またはメインの名前空間なら `/`）。モックは `/socket.io/` で動くSocket.IO 3・4のサーバで、WebSocketとロングポーリングを使い、
+一方から他方へのアップグレードにも対応するため、socket.io-clientは通常のオプションで動作します。
+
+ルートには、ステータス `101` の<strong>参加済み</strong>という名前のレスポンスが作られます。
+
+- `101` のレスポンスは、クライアントを名前空間に参加させます。<strong>参加後に emit</strong>がそのタイムラインです。各メッセージはイベント名を指定し、
+  引数をJSON配列（`[{"text": "Hello"}]`）、または引数が1つなら1つの値で指定します。
+- それ以外のレスポンスは拒否します。クライアントは、レスポンスのボディをメッセージとする接続エラーを受け取ります
+  （JSONオブジェクトは `{"message": "token rejected"}` のようにそのまま、それ以外のテキストはメッセージとして）。
+
+ほかのルートと同じように、ルールでレスポンスが選ばれます。<strong>ボディのフィールド</strong>のルールはクライアントの認証ペイロードを読むので、
+`token` が `bad` というルールで特定のトークンを拒否できます。どのルートにもない名前空間には、エラー `Invalid namespace` が返ります。
+
+<strong>返信</strong>は、クライアントの送出に応答します。<strong>クライアントが emit したとき</strong>でイベントを指定し（空の場合はすべて）、条件は引数を配列として読みます
+（`0.topic` は最初の引数の `topic`）。<strong>送信</strong>はイベントを送り返し、`{{message.0.topic}}` を読めます。<strong>確認応答に答える</strong>は、送出が確認応答を求めた場合に、
+最初のメッセージを確認応答の引数として送り返します。<strong>その後切断</strong>と<strong>自動で切断</strong>は、クライアントを名前空間から外します。
+
+## MQTTブローカー [#the-mqtt-broker]
+
+モックは、専用のポートでMQTTブローカーを動かせます。<strong>MQTT ブローカー</strong>カードで<strong>ブローカーを追加</strong>をクリックします。ポートは `1883`、
+モックがすでにそれを使っている場合は `1884` になります。<strong>ブローカーを削除</strong>で取り除きます。
+
+<Shot id="mocks-broker" alt="MQTTブローカーのカード。ポート1889、倉庫のトピックにタイムラインでパブリッシュされる2つのメッセージ（1つはQoS 1で保持）、warehouse/+/restockへのクライアントのパブリッシュに対する返信" />
+
+このブローカーは、TCP経由のMQTT 3.1.1と5.0のクライアント向けの本物のブローカーです。クライアントはほかのブローカーと同じように接続、サブスクライブ、
+パブリッシュでき、QoS 0、1、2、保持メッセージ、ウィルも使えます。モックを開始するとブローカーも開始し、上部のバーに `mqtt://127.0.0.1:1883` のような
+アドレスが表示されます。
+
+- <strong>パブリッシュ</strong>は、モックの開始時からブローカーがパブリッシュするタイムラインです。各メッセージの遅延、トピック、データ、<strong>QoS</strong>、<strong>Retain</strong>を設定します。
+  保持メッセージは、後からサブスクライブするクライアントを待ちます。<strong>再生</strong>はタイムラインを繰り返し、`0` にするとモックが動いている間ずっと繰り返します。
+- <strong>返信</strong>は、クライアントのパブリッシュに応答します。<strong>クライアントがパブリッシュしたとき：</strong>にはトピックフィルタ（`warehouse/+/restock`）を指定し、
+  条件はペイロードをJSONとして読みます。<strong>パブリッシュ</strong>はメッセージを送り返し、その送信先のトピックでもメッセージを読めます：
+  `warehouse/{{message.warehouse}}/orders`。`{{stream.topic}}` は、クライアントがパブリッシュしたトピックです。
+
+```sh
+echolot mqtt subscribe mqtt://127.0.0.1:1883 'warehouse/#' --count 3
+```
+
+モックの動作中にブローカーを変更すると、モックが再起動します。
+
+## ログ [#the-log]
+
+すべての接続は[ログ](/docs/mocks#the-log)の1行になり、そのステータス（開いたソケットは `101`、拒否の場合はそのステータス）と、
+双方向のメッセージが、表示されるレスポンスの中にJSON行として記録されます。MQTTのクライアントもそれぞれ1行になり、
+サブスクライブ、パブリッシュ、受信した内容が記録されます。
+
+## リクエストとエージェント [#requests-and-agents]
+
+<strong>リクエストを作成</strong>は、WebSocketのルートにはWebSocketリクエストを、Socket.IOのルートにはSocket.IOリクエストを作成し、条件のある返信ごとにメッセージを入れます。
+ブローカーにはMQTTリクエストを作成し、すべてのトピックをサブスクライブします。
+[WebSocketとSSE](/docs/requests/websocket-and-sse)、[Socket.IO](/docs/requests/socket-io)、[MQTT](/docs/requests/mqtt)を参照してください。
+
+エージェントはこれらすべてを設定できます。`save_mock_route` はルートの `kind`、レスポンスの `events`、`repeats`、`ends`、`replies`、`close` を受け取り、
+`save_mock` は `broker` または `removeBroker` を受け取ります。[エージェント](/docs/ai/agents)を参照してください。
+
+## ワークスペース内 [#in-the-workspace]
+
+モックのファイルでは、ルートの `kind` は `websocket` または `socketio` です。レスポンスのタイムラインは `[[routes.responses.events]]`、
+その返信は `[[routes.responses.replies]]` と `[[routes.responses.replies.send]]` です。ブローカーは `[broker]` で、`[[broker.publishes]]` と
+`[[broker.replies]]` を持ちます。[ワークスペースのファイル](/docs/reference/workspace-files#mocks)を参照してください。

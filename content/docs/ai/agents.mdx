@@ -107,7 +107,7 @@ decides what it asks about.
 
 | Toolset | What agents can do with it |
 | --- | --- |
-| **Requests** | List, read, create and send requests; responses, history, GraphQL, mocks running |
+| **Requests** | List, read, create and send requests; responses, history, GraphQL, mocks running; propose scripts for you to review |
 | **Flows** | Run the flows offered to agents, answer what they ask |
 | **Workspace** | Make, rename, move, duplicate and delete folders and requests; folders' auth; workspace variables; save gathered data as files |
 | **Environments** | Make, change and delete environments |
@@ -125,8 +125,22 @@ import, lint specs, start and stop mocks and run the flows offered to agents. It
 When you change the toolsets, open windows start serving again with the new set; reconnect your clients to get it.
 
 **Never offered**, in any toolset: changing the agent rules, the proxy, certificates, the workspace's auth, folder
-settings beyond their auth, scripts (request, folder and mock scripts), and auth that fetches or signs with secrets
-(OAuth 2.0, AWS, JWT and the like). Those are yours alone.
+settings beyond their auth, saving scripts (request, folder and mock scripts; agents [propose](#scripts-agents-propose)
+them instead), and auth that fetches or signs with secrets (OAuth 2.0, AWS, JWT and the like). Those are yours alone.
+
+Agents make every kind of request: `create_request` takes a `kind` (`http`, `graphql`, `websocket`, `socketio`,
+`mqtt`, `grpc` or `mcp`) and that kind's part, such as a GraphQL query and its variables, WebSocket messages,
+Socket.IO emits, MQTT subscriptions and messages, a gRPC method and message, or an MCP call; `update_request` changes
+them. They also set a request's `settings` (timeout, stream limit, HTTP version, redirects, decompression, cookies),
+never TLS verification or raw mode.
+
+Some things come into the workspace without passing through the model:
+
+- `import` reads a file of the project (inside the workspace's folder or the folder it is in, never a hidden folder,
+  up to 10 MB) or fetches a URL, so a long spec isn't typed out token by token.
+- `fetch_graphql_schema` saves a GraphQL server's schema into `specs/` and links the request to it.
+- `save_response` writes a response's body, or a file a WebSocket, Socket.IO or MQTT message carried, into the
+  workspace.
 
 Agents can give requests and folders **bearer**, **basic** or **API key** auth, and make requests keep values from
 their responses (a sign-in's token for the requests after it): `create_request` and `update_request` take `auth` and
@@ -177,6 +191,28 @@ A new host is one that none of the workspace's requests or environments used whe
 Data an agent read could leave through it, so it always asks, as do sends to a
 [protected environment](/docs/workspaces/protected-environments).
 
+## Scripts agents propose
+
+Agents never save code that runs. When a script is the answer, such as a pre-request script that signs a request, a
+test script, or a mock's [routes in JavaScript](/docs/mocks/scripted-routes) that keep the orders a client places, an agent proposes
+it with `propose_script`, after reading what is there with `read_scripts`. It can propose a request's, a folder's or
+the whole workspace's pre-request or test script, or a mock's routes.
+
+Echolot checks the code first: it must compile, be at most 64 KB, and write out no password or token (it reads them
+from variables). Then a sheet shows you the agent's reason and what changes, line by line:
+
+<Shot id="ai-script-proposal" alt="An agent proposes a pre-request script for a request: its reason, and the script's lines marked as added, with Decline and Save and Trust" />
+
+- **Save and Trust** writes the script and trusts that code, so it runs without asking again.
+- **Decline** leaves everything as it was, and so does <kbd>⎋</kbd>. No key saves a proposal.
+
+Every proposal asks, whatever the rules and **Ask before** say, and **Allow for This Session** never covers one. A
+script you changed while the sheet was open isn't overwritten; the agent is told to look again.
+
+With nobody to ask (`echolot mcp serve` on its own, with a policy that allows changes), the script is saved without
+being trusted: it doesn't run until you open the workspace in Echolot and click **Trust Scripts** above it. See
+[scripts and tests](/docs/requests/scripts-and-tests).
+
 ## Workspace rules
 
 **Workspace Settings › Agents** (from the workspace menu at the foot of the sidebar, **Workspace Settings…**) sets
@@ -204,6 +240,11 @@ yourself are trusted.
   plain, JSON, URL-encoded and Base64 form. Agents see secret variables by name only.
 - **Credentials in history.** Past exchanges reach agents with their credential headers masked and without the wire
   capture.
+- **Credentials in responses.** Fields of a response body named like a credential (`access_token`, `refresh_token`,
+  `password`, `client_secret` and the like, but not `token_type` or `expires_in`) reach agents masked, even when
+  nobody stored them as a secret.
+- **Credentials in what they write.** A body an agent sends or saves can't hold a credential in such a field: it
+  must be a `{{variable}}`.
 - **Your secrets on someone else's host.** An agent's send that redirects to a host the workspace doesn't use drops
   its credential headers on the way.
 

@@ -72,7 +72,9 @@ Alpenglow 工作区在 **Agent tools** 中有两个调用：**search_catalog**�
 
 在 **测试** 标签页中：
 
-- **MCP 错误** 等于 `false`，在调用成功时通过。失败时会显示服务器的消息。
+- **MCP 错误**说明调用如何失败。调用成功时它的值为 `false`；工具本身失败时为 `tool`（结果被标记为错误，模型会读取它并据此行动）；
+  服务器以 JSON-RPC 错误应答时为 `protocol`（服务器出错或拒绝了调用）。**等于** `true` 包括这两种失败。因此 **MCP 错误**等于 `false` 在成功时通过，
+  等于 `tool` 则在工具按预期报告错误输入时通过。**存在**在任何失败时通过，**不存在**在没有失败时通过。检查失败时会显示服务器的消息。
 - **工具输出 Schema** 依据工具声明的 `outputSchema` 检查结果的 `structuredContent`。工具没有声明，或结果没有 `structuredContent` 时，检查失败。
 - **JSON 值** 检查结果的任意值，例如 `$.structuredContent.results.length` 大于 `0`，或 `$.content[0].type` 等于 `text`。
 
@@ -84,4 +86,4 @@ Alpenglow 工作区在 **Agent tools** 中有两个调用：**search_catalog**�
 
 ## 通过命令行 [#from-the-command-line]
 
-`echolot run` 运行已存储的 MCP 请求及其检查，`echolot mcp check` 检查服务器。见 [echolot mcp](/docs/cli/mcp)。
+`echolot run` 运行已存储的 MCP 请求及其检查，`echolot mcp call` 调用工具、读取资源或获取提示词，`echolot mcp check` 检查服务器。见 [echolot mcp](/docs/cli/mcp)。

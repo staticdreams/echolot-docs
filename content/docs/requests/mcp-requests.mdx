@@ -82,7 +82,11 @@ Every call is kept in [History](/docs/workspaces/history).
 
 In the **Tests** tab:
 
-- **MCP error** equals `false` passes when the call succeeded. A failure shows the server's message.
+- **MCP error** tells how a call failed. Its value is `false` when the call succeeded, `tool` when the tool itself
+  failed (a result marked as an error, which a model reads and can act on), or `protocol` when the server answered
+  with a JSON-RPC error (it broke or refused the call). **equals** `true` takes either failure. So **MCP error**
+  equals `false` passes on success, and equals `tool` passes on a tool that reports a bad input as it should.
+  **exists** passes on any failure and **does not exist** on none. A failed check shows the server's message.
 - **Tool output schema** checks the result's `structuredContent` against the `outputSchema` the tool declares. It
   fails when the tool declares none, or the result has no `structuredContent`.
 - **JSON value** checks any value of the result, such as `$.structuredContent.results.length` is greater than `0`, or
@@ -97,5 +101,5 @@ See [scripts and tests](/docs/requests/scripts-and-tests) for every check and co
 
 ## From the command line
 
-`echolot run` runs saved MCP requests with their checks, and `echolot mcp check` inspects a server. See
-[echolot mcp](/docs/cli/mcp).
+`echolot run` runs saved MCP requests with their checks, `echolot mcp call` calls a tool, reads a resource or gets a
+prompt, and `echolot mcp check` inspects a server. See [echolot mcp](/docs/cli/mcp).

@@ -266,7 +266,8 @@ secret = true
 | `name` | Название запроса. |
 | `url` | URL вместе со строкой запроса. Есть у всех видов, кроме вызовов MCP. |
 | `docs` | Документация запроса в Markdown. |
-| `spec-operation` | Операция спецификации, из которой он создан, например `POST /auth/token`. |
+| `spec-operation` | Операция спецификации, из которой он создан или которой он следует, например `POST /auth/token`. Её читают проверки `openapi`. |
+| `spec` | Спецификация, которую читают его проверки `openapi`, например `specs/alpenglow.yaml`, если это не спецификация его папки. Его папка этой спецификации не следует. |
 | `[[headers]]` | `name`, `value` и `enabled = false` для выключенного заголовка. |
 | `[[disabled-params]]` | Выключенные параметры запроса: `name`, `value`. Включённые находятся в URL. |
 | `[[disabled-form-fields]]` | Выключенные поля формы: `name`, `value`. |
@@ -309,6 +310,7 @@ graphql-variables = """
 | Ключ | Что значит |
 | --- | --- |
 | `query-file` | Файл с запросом рядом с запросом, `<slug>.graphql`. |
+| `shared-query` | Вместо `query-file`: файл запроса, общий для нескольких запросов, относительно папки рабочего пространства, например `queries/search-products.graphql`. Файл `.graphql` внутри рабочего пространства, ни одно имя в пути к которому не начинается с точки. Правка запроса записывает этот файл. |
 | `operation` | Операция, которую нужно выполнить, если в запросе их несколько. |
 | `graphql-variables` | Переменные GraphQL в виде текста JSON. В старых файлах называется `variables`. |
 | `schema` | Схема, по которой запрос проверяется и дополняется: файл в `specs/`. |
@@ -384,9 +386,10 @@ arguments = """
 
 | Ключ | Что значит |
 | --- | --- |
-| `target` | Что проверяется: `status`, `header`, `json`, `body`, `time` (миллисекунды), `size` (байты), `schema` (JSON Schema), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status`. |
+| `target` | Что проверяется: `status`, `header`, `json`, `body`, `time` (миллисекунды), `size` (байты), `schema` (JSON Schema), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status`, а для запросов WebSocket, Socket.IO и MQTT — `message` (значение в полученных сообщениях), `message-count` и `close`. |
 | `name` | Для `header`: имя заголовка. |
-| `path` | Для `json`: JSONPath, например `$.items.length`. |
+| `path` | Для `json` и `message`: JSONPath, например `$.items.length`. |
+| `on` | Для `message` и `message-count`: только сообщения этого события Socket.IO или фильтра топиков MQTT. |
 | `check` | `equals`, `not-equals`, `contains`, `not-contains`, `less-than`, `at-most`, `greater-than`, `at-least`, `exists`, `not-exists`, `matches` (регулярное выражение), `is-type`, `is-one-of`, `matches-schema`. |
 | `expected` | Значение для сравнения; для проверок, которым оно не нужно, не пишется. |
 | `enabled` | `false` отключает её. |
@@ -398,8 +401,9 @@ arguments = """
 | Ключ | Что значит |
 | --- | --- |
 | `variable` | Переменная, в которую сохраняется значение. |
-| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status` или `body`. |
+| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status`, `body`, а для запросов WebSocket, Socket.IO и MQTT — `message` (первое полученное сообщение, у которого есть значение по пути) или `last-message` (последнее). |
 | `path` | Где находится значение: JSONPath, XPath, имя заголовка или cookie. Не используется для `status` и `body`. |
+| `on` | Для `message` и `last-message`: только сообщения этого события Socket.IO или фильтра топиков MQTT. |
 | `scope` | `environment` (по умолчанию: активное окружение) или `workspace`. |
 | `secret` | `true` сохраняет значение как секрет, в Связке ключей. |
 | `enabled` | `false` отключает его. |
@@ -420,8 +424,14 @@ arguments = """
 | `cookies` | `false` не отправляет и не сохраняет cookie. |
 | `http-version` | `automatic`, `http1`, `http2` или `http3`. |
 | `stream-limit` | Секунд слушать поток событий или сеанс. |
+| `stop-after-messages` | Сеанс, запущенный без вас, перестаёт слушать, как только получено столько сообщений. |
+| `stop-when` | Он останавливается, как только у полученного сообщения есть значение по этому JSONPath. |
+| `stop-when-equals` | Вместе с `stop-when`: только когда значение равно этому. |
+| `stop-after-acks` | `true`: он останавливается, как только пришли все запрошенные подтверждения Socket.IO и все подтверждения MQTT для подписки или публикации с QoS 1 или 2. |
+| `stop-on` | Сужает `stop-after-messages` и `stop-when` до события Socket.IO или фильтра топиков MQTT. |
 
-См. [настройки запроса](/docs/requests/settings).
+См. [настройки запроса](/docs/requests/settings), а о ключах `stop-` —
+[раннюю остановку прослушивания](/docs/requests/websocket-and-sse#stop-listening-early).
 
 ### Авторизация [#auth]
 
@@ -527,6 +537,11 @@ body = """{ "error": "no user {{request.params.id}}" }"""
 | `[[scenarios]]` | Ответ, выбранный для операции спецификации: `operation` (например, `GET /pets`), `status`, `example` (имя примера). |
 | `[[routes]]` | Маршрут, созданный вручную: `id` (не меняется, пока меняется маршрут), `method` (или `ANY`), `path` (`{id}` для параметра), `summary`, `enabled = false` для выключенного маршрута, `response` (имя ответа по умолчанию; если не указано, первый), `request-content-type` и `request-body` (что отправляют созданные из него запросы). |
 | `[[routes.responses]]` | Один ответ маршрута выше: `name`, `status`, `content-type`, `headers` (`name` и `value`), `rules` (`source` — `path`, `query`, `header` или `body`; `name`; `value`, где `*` означает любое, а пустое — отсутствие) и `body`. |
+| `kind` (в `[[routes]]`) | `websocket` или `socketio` для маршрута, который принимает подключения; для HTTP не указывается. См. [потоки, сокеты и MQTT](/docs/mocks/streams-and-sockets). |
+| `repeat`, `ends`, `close` (в `[[routes.responses]]`) | Для потока: сколько раз проигрываются его события (`0` — пока клиент не уйдёт; 1, если не указано), что следует за ними (`close` или `hold`; если не указано, server-sent events заканчиваются, а сокеты остаются открытыми) и закрытие, которое мок выполняет сам (`{ after-ms, code, reason }`). |
+| `[[routes.responses.events]]` | Одно сообщение временной шкалы ответа: `after-ms` (после предыдущего), `event` (`event:` у server-sent event или событие Socket.IO), `id` (`id:` у server-sent event) и `data`. |
+| `[[routes.responses.replies]]` | Ответ сокета на сообщение: `event` (Socket.IO), `rules` (правила `body` читают сообщение), `ack = true` (ответить на подтверждение Socket.IO), `close` и его сообщения в `[[routes.responses.replies.send]]` (как `events`). |
+| `[broker]` | MQTT-брокер мока: `port`, `repeat`, его временная шкала в `[[broker.publishes]]` (`after-ms`, `topic`, `data`, `qos`, `retain`) и его ответы в `[[broker.replies]]` (`filter`, `rules` и сообщения `[[broker.replies.send]]`). |
 
 В `mocks/<slug>.js` хранятся маршруты мока на JavaScript, которые отвечают раньше маршрутов, созданных вручную, и
 спецификации. Для операций спецификации ответы в моке никогда не хранятся: примеры попадают в спецификацию. См.
@@ -565,8 +580,8 @@ to = "signin.run"
 | --- | --- |
 | `name`, `description` | Название сценария и то, что он делает. |
 | `[mcp]` | Предлагает сценарий агентам как инструмент: `tool` (его имя) и `description`. |
-| `[schedule]` | Запускает его по расписанию: `every-minutes` или `cron` (например, `"0 6 * * *"`). |
-| `[webhook]` | Запускает его, когда приходит запрос: `method` (по умолчанию `POST`) и `path`. |
+| `[schedule]` | Запускает его по расписанию: `every-minutes` или `cron` (например, `"0 6 * * *"`), и `environment` — окружение, которое используют его запуски (если не указано — окружение окна, но никогда не защищённое). |
+| `[webhook]` | Запускает его, когда приходит запрос: `method` (по умолчанию `POST`), `path` и `environment`, как для расписания. |
 | `[[inputs]]` | Его входные данные: `name`, `type` (`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
 | `[[blocks]]` | Его блоки: `id`, `kind`, `title`, `position` (`[x, y]` на холсте), `paused`, `color` и `[blocks.settings]` с настройками этого вида. |
 | `[[wires]]` | Связи: `from` и `to`, каждая в виде `block.port`. |

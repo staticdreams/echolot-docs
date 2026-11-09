@@ -52,7 +52,10 @@ variable shows as a pill; rest the pointer on it to see its value, and double-cl
 from [environments, the workspace and folders](/docs/workspaces/environments).
 
 If something in the URL can't be resolved, the line under the URL bar says **1 problem** (or how many). Click it to
-see which variables are missing. Unresolved tokens are sent as written.
+see which variables are missing. Unresolved tokens are sent as written, except where they leave no address to send
+to: then the error names the variables and the environment, such as `“{{baseURL}}/products” uses {{baseURL}}, which
+is not defined in the environment “Staging” or above it.` In [runs](/docs/requests/runner), no request with an
+unresolved token is sent.
 
 When the request reads another request's response (for example with `{{$response('auth/sign-in', '$.access_token')}}`)
 and that request has no response yet, the line says **Sends “Sign in” first**: Echolot sends that request before

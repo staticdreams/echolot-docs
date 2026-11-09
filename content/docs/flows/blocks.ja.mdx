@@ -73,6 +73,10 @@ description: "フローに置けるすべての種類のブロックを、設定
 | `result` | 出力 | ツールが返した内容。 |
 | `fail` | 出力 | 失敗した理由。 |
 
+ツールは、エージェントがEcholotのMCPサーバで知っている名前でも指定できます。`run_requests` は `run_collection` を実行し
+（`bail` は `stop_on_failure` になり、パスは指定した順に実行されます）、`list_requests` は `list_workspace` を実行します。
+エージェントがこれらの名前で作図したフローは、そのまま実行されます。
+
 ツールブロックから別のフローは実行できません。その場合はフローブロックを使います。
 
 <Edition only="direct">

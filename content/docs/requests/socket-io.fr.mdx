@@ -80,6 +80,22 @@ Un paquet Socket.IO accepte au plus 1 000 pièces jointes, jusqu’à 64 Mo au t
 Quand la connexion se ferme, la session est conservée dans l’[Historique](/docs/workspaces/history), avec le journal
 comme corps de la réponse.
 
+## Vérifications, captures et exécutions [#checks-captures-and-runs]
+
+Les vérifications **Valeur dans les messages**, **Messages reçus** et **Fermeture de la session** de l’onglet **Tests**
+vérifient le journal des événements, et les captures **Premier message** et **Dernier message** le lisent. Les arguments
+de chaque événement sont lus comme un seul tableau JSON : `$[0].text` est donc le `text` de son premier argument.
+Restreignez une vérification ou une capture à un événement en tapant son nom dans son champ **tous** ; un accusé de
+réception porte le nom de l’événement auquel il répond : `message` prend donc aussi les accusés de réception du serveur
+pour vos événements `message`. Voir
+[vérifications sur les sessions en temps réel](/docs/requests/scripts-and-tests#checks-on-realtime-sessions).
+
+Dans les exécutions, `stop-after-acks = true` dans `[settings]` du fichier de la requête arrête l’écoute une fois que
+chaque événement qui a demandé un accusé de réception l’a reçu. Un serveur qui refuse de laisser le client rejoindre
+donne l’état `403` dans les exécutions : une vérification peut donc s’y attendre. Voir
+[arrêter d’écouter plus tôt](/docs/requests/websocket-and-sse#stop-listening-early) et
+[connexions refusées](/docs/requests/websocket-and-sse#refused-connections).
+
 ## Depuis la ligne de commande [#from-the-command-line]
 
 `echolot send --socketio` se connecte depuis le terminal : chaque ligne que vous tapez est un événement et ses arguments

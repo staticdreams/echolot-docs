@@ -116,7 +116,7 @@ See [templates](/docs/flows/templates).
 ## echolot flow serve
 
 ```sh
-echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>] [--rotate-token]
 ```
 
 Runs every flow with a schedule when it is due, and answers the webhooks of flows that have one, until you stop it
@@ -131,15 +131,17 @@ echolot flow serve -w Alpenglow.echolot --port 4100
 Serving Alpenglow (Ctrl-C stops it)
   schedule  Morning stock check: 0 6 * * *
   webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
-  token     3f9a…
+  token     3f9a… (this workspace's; send it as Authorization: Bearer; ?token= only for senders without headers, as URLs get logged; --rotate-token replaces it)
 ```
 
 Each run prints a line with the time, the flow, how it ended and how long it took.
 
 **Webhooks.** A caller sends the method and path of the flow's webhook, with the token as
-`Authorization: Bearer <token>`, an `X-Echolot-Token` header, or `?token=` in the URL. The flow's inputs come from the query and from a JSON
+`Authorization: Bearer <token>`, an `X-Echolot-Token` header, or `?token=` in the URL (only for senders that can't set
+headers, as URLs get logged; it never becomes an input). The flow's inputs come from the query and from a JSON
 body; an input named `body` gets the whole body. The answer is the flow's output as JSON, `500` with the error when
-the flow failed, `401` without the right token, and `404` with the paths there are for a path no flow has.
+the flow failed, `401` without the right token, `404` with the paths there are for a path no flow has, and `409` when
+the run wasn't started (see [where triggered runs send](/docs/flows/running-and-triggers#where-triggered-runs-send)).
 
 ```sh
 curl -X POST http://127.0.0.1:4100/order-status \
@@ -148,8 +150,13 @@ curl -X POST http://127.0.0.1:4100/order-status \
   -d '{"orderId": "ord_7Hk2Lw"}'
 ```
 
-The token is `--token`, else `ECHOLOT_WEBHOOK_TOKEN`, else a new one that Echolot prints. A webhook run may take up to
-two minutes; a body over 8 MB is refused whole.
+The token is `--token`, else `ECHOLOT_WEBHOOK_TOKEN`, else the workspace's own: made once, kept in the Keychain and
+shared with the app, so addresses you gave out survive restarts. `--rotate-token` replaces the workspace's token with
+a new one. A webhook run may take up to two minutes; a body over 8 MB is refused whole.
+
+**Environments.** A flow whose schedule or webhook names an environment always uses that one. For the others, `--env`
+is the environment: your choice, used even when it's protected. Without `--env`, a flow whose requests need an
+environment's variables isn't run.
 
 | Option | Meaning |
 | --- | --- |
@@ -157,7 +164,8 @@ two minutes; a body over 8 MB is refused whole.
 | `--env <env>` | The environment the flows' requests use. |
 | `--port <port>` | The webhook port; `0` picks a free one. Default 4100. |
 | `--share` | Answer webhooks on every network interface, not only this machine: for containers. |
-| `--token <token>` | The webhook token. Default: `ECHOLOT_WEBHOOK_TOKEN`, else a new one, printed. |
+| `--token <token>` | The webhook token. Default: `ECHOLOT_WEBHOOK_TOKEN`, else the workspace's own, kept in the Keychain. |
+| `--rotate-token` | Replace the workspace's webhook token with a new one; the app uses it too. |
 
 See [running flows and triggers](/docs/flows/running-and-triggers) for schedules and webhooks in the app.
 

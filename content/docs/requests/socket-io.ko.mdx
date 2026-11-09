@@ -64,6 +64,19 @@ Socket.IO 패킷은 첨부 파일을 최대 1000개, 합계 최대 64 MB까지 �
 
 연결이 닫히면 세션은 로그를 응답 본문으로 하여 [기록](/docs/workspaces/history)에 보관됩니다.
 
+## 검사, 캡처, 실행 [#checks-captures-and-runs]
+
+**테스트** 탭의 **메시지 값**, **받은 메시지 수**, **세션 종료** 검사는 이벤트 로그를 검사하고, **첫 메시지**와 **마지막 메시지** 캡처는
+그 로그를 읽습니다. 각 이벤트의 인수는 하나의 JSON 배열로 읽으므로 `$[0].text`는 첫 번째 인수의 `text`입니다. 검사나 캡처를 한 이벤트로
+좁히려면 **전체** 필드에 그 이름을 입력합니다. 확인 응답에는 그것이 답하는 이벤트의 이름이 붙으므로, `message`는 사용자의 `message`
+이벤트에 대한 서버의 확인 응답도 받습니다. [실시간 세션 검사](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)를
+참고하십시오.
+
+실행에서는 요청 파일의 `[settings]`에 `stop-after-acks = true`를 지정하면 확인 응답을 요청한 모든 이벤트가 확인 응답을 받은 뒤 수신을
+멈춥니다. 클라이언트의 참여를 거부하는 서버는 실행에서 상태 `403`을 주므로 검사로 이를 예상할 수 있습니다.
+[일찍 수신 멈추기](/docs/requests/websocket-and-sse#stop-listening-early)와
+[거부된 연결](/docs/requests/websocket-and-sse#refused-connections)을 참고하십시오.
+
 ## 명령줄에서 [#from-the-command-line]
 
 `echolot send --socketio`는 터미널에서 연결합니다. 입력하는 각 줄이 이벤트와 그 JSON 인수입니다. 저장된 `.sio.toml` 요청도 실행합니다. [echolot send](/docs/cli/send)를

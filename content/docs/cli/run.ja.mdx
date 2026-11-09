@@ -49,12 +49,20 @@ All 7 requests passed  11/11 checks passed · 0.90 s
 - 各リクエストのチェックと `pm.test` の結果が集計されます。リクエストは、レスポンスがない場合やチェックが失敗した場合に失敗となり、実行は終了コード1で終わります。
 - 変数にキャプチャされたレスポンス、OAuth 2のクライアント認証情報で取得したトークン、スクリプトが設定した値は、アプリと同じように、実行中の後続のリクエストに引き継がれます。
   スクリプトの値はその実行の間だけ有効で、ファイルに書き込まれることはありません。
+- [キャプチャ](/docs/requests/captures)も、シークレットのものを含めて実行の間だけメモリに保持され、レポートではマスクされます。
+  環境のファイルとキーチェーンは変更されないため、CIでの実行はワークスペースを汚しません。Alpenglowでは、**Sign in** が `{{token}}` をキャプチャし、
+  同じ実行の中で後から **Who am I** とOrdersフォルダがそれを送信します。`--save-captures` を指定すると、キャプチャした値をアプリと同じように書き込みます。
+  環境のファイルまたはワークスペースに、シークレットのものはキーチェーンに書き込みます。
 
-<Callout type="warn">
-  キーチェーンがない場合（CI、Linux、`ECHOLOT_KEYCHAIN=0` の場合）、**シークレット**変数へのレスポンスのキャプチャは、次のリクエストに引き継がれません。
-  Alpenglowでは、**Sign in** が `{{token}}` をシークレットとしてキャプチャするため、このような実行では **Who am I** とOrdersフォルダが401になります。
-  このような実行では、`ECHOLOT_SECRET_TOKEN` を自分で設定するか、シークレットではない変数にキャプチャしてください。
-</Callout>
+### 解決できない変数 [#variables-that-dont-resolve]
+
+実行では、値のない `{{variables}}` を含むリクエストは決して送信されません。代わりにそのリクエストは失敗し、どの変数がどの環境で足りないかを示します。
+たとえば `Not sent: {{baseURL}} is not defined in the environment “Staging” or above it.` のように表示されます。
+
+シークレットとして宣言された変数に値がない場合、メッセージはその値を与える環境変数の名前を示します：
+`Not sent: the secret {{token}} has no value here. Set ECHOLOT_SECRET_TOKEN (or add it to --secrets).`
+`ECHOLOT_SECRET_<NAME>` が設定されているのに、ワークスペースがその変数をシークレットとして宣言していない場合は、そのことが示されます。
+[シークレット](/docs/cli#secrets)を参照してください。
 
 ## データ駆動の実行 [#data-driven-runs]
 
@@ -149,6 +157,7 @@ echolot run shop.postman_collection.json --env-file staging.postman_environment.
 | `--reporter <name>` | `console`、`junit`、`json`、`html`、`har`。複数回指定できます。省略すると `console`。 |
 | `-o`、`--out <file>` | コンソール以外の各レポーターのファイル。`--reporter` の順に指定します。ない場合は標準出力。 |
 | `--secrets <file>` | シークレットの値を書いた `NAME=value` 行のファイル。`ECHOLOT_SECRET_<NAME>` 変数に加えて使います。 |
+| `--save-captures` | キャプチャした値を、アプリと同じように、ワークスペースの環境のファイルに、シークレットのものはキーチェーンに書き込みます。指定しない場合は、その実行の間だけ有効です。 |
 | `-k`、`--insecure` | TLS証明書の検証をスキップします。 |
 | `--proxy <url>` | このプロキシ経由で送信します：`http://host:port`、`https://…`、`socks5://user:password@host:port`。 |
 | `--no-proxy` | `HTTP_PROXY` などを無視して直接接続します。 |

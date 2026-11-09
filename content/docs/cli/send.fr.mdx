@@ -117,12 +117,12 @@ echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolo
 ```
 
 **Socket.IO.** `--socketio` parle Socket.IO sur une URL `http(s)://` ou `ws(s)://`. Chaque ligne d’entrée est un
-événement : son nom, puis ses arguments JSON (`chat {"text": "hi"}` ; un tableau donne plusieurs arguments). Les
-événements s’affichent sous la forme `name [arguments]`, les accusés de réception sous la forme
-`ack id [arguments]`.
+événement : son nom, puis ses arguments JSON (`chat {"text": "hi"}` ; un tableau donne plusieurs arguments). Un `?`
+après le nom demande au serveur d’accuser réception de l’événement : `message? {"text": "Grüezi!"}`. Les événements
+s’affichent sous la forme `name [arguments]`, les accusés de réception sous la forme `ack id [arguments]`.
 
 ```sh
-echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+echo 'message? {"text": "Grüezi!"}' | echolot send http://localhost:3001 --socketio --namespace /support --listen 5
 ```
 
 Voir [Requêtes Socket.IO](/docs/requests/socket-io) pour des serveurs sur lesquels essayer cela.
@@ -148,7 +148,7 @@ Voir [Requêtes Socket.IO](/docs/requests/socket-io) pour des serveurs sur lesqu
 | `--http2` | Envoyer en HTTP/2 uniquement : ALPN sur TLS, connaissance préalable en HTTP simple. |
 | `--http3` | Envoyer en HTTP/3 uniquement, sur QUIC : `https://` uniquement, sans proxy ; macOS 27 et ultérieur, et Linux. |
 | `--subprotocol <name>` | Pour les URL `ws://` et `wss://` : un sous-protocole à proposer. Répétable. |
-| `--socketio` | Parler Socket.IO ; chaque ligne d’entrée est `event [JSON arguments]`. |
+| `--socketio` | Parler Socket.IO ; chaque ligne d’entrée est `event [JSON arguments]`, ou `event? [JSON arguments]` pour demander un accusé de réception. |
 | `--namespace <namespace>` | Pour `--socketio` : l’espace de noms à rejoindre. Par défaut : le chemin de l’URL, sinon `/`. |
 | `--auth <json>` | Pour `--socketio` : la charge utile d’authentification, un objet JSON. |
 | `--socketio-version <version>` | Pour `--socketio` : la version de Socket.IO du serveur, `4` (aussi pour 3) ou `2`. 4 par défaut. |

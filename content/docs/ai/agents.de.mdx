@@ -110,7 +110,7 @@ erfragt, legst du unter **Einstellungen › Assistent › Vorher fragen** fest.
 
 | Tool-Set | Was Agenten damit tun können |
 | --- | --- |
-| **Anfragen** | Anfragen auflisten, lesen, erstellen und senden; Antworten, Verlauf, GraphQL, laufende Mocks |
+| **Anfragen** | Anfragen auflisten, lesen, erstellen und senden; Antworten, Verlauf, GraphQL, laufende Mocks; Skripte vorschlagen, die du prüfst |
 | **Flows** | Flows ausführen, die Agenten angeboten werden, und ihre Fragen beantworten |
 | **Arbeitsbereich** | Ordner und Anfragen anlegen, umbenennen, verschieben, duplizieren und löschen; Auth der Ordner; Variablen des Arbeitsbereichs; gesammelte Daten als Dateien sichern |
 | **Umgebungen** | Umgebungen anlegen, ändern und löschen |
@@ -130,8 +130,24 @@ Wenn du die Tool-Sets änderst, stellen geöffnete Fenster sich neu bereit mit d
 damit sie ihn bekommen.
 
 **Nie angeboten**, in keinem Tool-Set: die Regeln für Agenten ändern, der Proxy, Zertifikate, die Auth des
-Arbeitsbereichs, Ordnereinstellungen jenseits ihrer Auth, Skripte (Skripte von Anfragen, Ordnern und Mocks) und Auth,
-die mit Secrets etwas abruft oder signiert (OAuth 2.0, AWS, JWT und dergleichen). Das bleibt allein dir überlassen.
+Arbeitsbereichs, Ordnereinstellungen jenseits ihrer Auth, das Sichern von Skripten (Skripte von Anfragen, Ordnern und
+Mocks; Agenten [schlagen sie stattdessen vor](#scripts-agents-propose)) und Auth, die mit Secrets etwas abruft oder
+signiert (OAuth 2.0, AWS, JWT und dergleichen). Das bleibt allein dir überlassen.
+
+Agenten erstellen jede Art von Anfrage: `create_request` nimmt eine `kind` (`http`, `graphql`, `websocket`, `socketio`,
+`mqtt`, `grpc` oder `mcp`) und den Teil dieser Art, etwa eine GraphQL-Query mit ihren Variablen, WebSocket-Nachrichten,
+Socket.IO-Emits, MQTT-Abonnements und -Nachrichten, eine gRPC-Methode mit ihrer Nachricht oder einen MCP-Aufruf;
+`update_request` ändert sie. Sie setzen auch die `settings` einer Anfrage (Zeitüberschreitung, Stream-Limit,
+HTTP-Version, Weiterleitungen, Dekomprimierung, Cookies), nie die TLS-Prüfung oder den Rohmodus.
+
+Manches kommt in den Arbeitsbereich, ohne durch das Modell zu gehen:
+
+- `import` liest eine Datei des Projekts (im Ordner des Arbeitsbereichs oder in dem Ordner, in dem er liegt, nie in
+  einem versteckten Ordner, bis 10 MB) oder ruft eine URL ab, damit eine lange Spec nicht Token für Token abgetippt
+  wird.
+- `fetch_graphql_schema` sichert das Schema eines GraphQL-Servers in `specs/` und verknüpft die Anfrage damit.
+- `save_response` schreibt den Body einer Antwort oder eine Datei, die eine WebSocket-, Socket.IO- oder MQTT-Nachricht
+  mitbrachte, in den Arbeitsbereich.
 
 Agenten können Anfragen und Ordnern die Auth **Bearer**, **Basic** oder **API-Schlüssel** geben und dafür sorgen, dass
 Anfragen Werte aus ihren Antworten behalten (das Token einer Anmeldung für die Anfragen danach): `create_request` und
@@ -186,6 +202,31 @@ Ein neuer Host ist einer, den keine Anfrage und keine Umgebung des Arbeitsbereic
 bereitzustellen. Daten, die ein Agent gelesen hat, könnten über ihn abfließen, darum fragt es immer, ebenso bei
 Anfragen an eine [geschützte Umgebung](/docs/workspaces/protected-environments).
 
+## Skripte, die Agenten vorschlagen [#scripts-agents-propose]
+
+Agenten sichern nie Code, der ausgeführt wird. Ist ein Skript die Antwort, etwa ein Pre-Request-Skript, das eine Anfrage
+signiert, ein Test-Skript oder die [Routen in JavaScript](/docs/mocks/scripted-routes) eines Mocks, die die Bestellungen eines Clients behalten,
+schlägt ein Agent es mit `propose_script` vor, nachdem er mit `read_scripts` gelesen hat, was da ist. Er kann das
+Pre-Request- oder Test-Skript einer Anfrage, eines Ordners oder des ganzen Arbeitsbereichs vorschlagen, oder die Routen
+eines Mocks.
+
+Echolot prüft den Code zuerst: Er muss kompilieren, darf höchstens 64 KB groß sein und kein Passwort und kein Token
+ausschreiben (er liest sie aus Variablen). Dann zeigt dir ein Blatt die Begründung des Agenten und Zeile für Zeile, was
+sich ändert:
+
+<Shot id="ai-script-proposal" alt="Ein Agent schlägt ein Pre-Request-Skript für eine Anfrage vor: seine Begründung und die Zeilen des Skripts, als hinzugefügt markiert, mit „Ablehnen“ und „Sichern und vertrauen“" />
+
+- **Sichern und vertrauen** schreibt das Skript und vertraut diesem Code, sodass er ohne erneute Rückfrage läuft.
+- **Ablehnen** lässt alles, wie es war, ebenso <kbd>⎋</kbd>. Keine Taste sichert einen Vorschlag.
+
+Jeder Vorschlag fragt nach, egal was die Regeln und **Vorher fragen** sagen, und **Für diese Sitzung erlauben** deckt
+nie einen ab. Ein Skript, das du geändert hast, während das Blatt offen war, wird nicht überschrieben; der Agent wird
+aufgefordert, noch einmal nachzusehen.
+
+Ist niemand da, den Echolot fragen kann (`echolot mcp serve` allein, mit einer Richtlinie, die Änderungen erlaubt),
+wird das Skript gesichert, ohne dass ihm vertraut wird: Es läuft erst, wenn du den Arbeitsbereich in Echolot öffnest und
+darüber auf **Skripten vertrauen** klickst. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests).
+
 ## Regeln des Arbeitsbereichs [#workspace-rules]
 
 **Arbeitsbereichseinstellungen › Agenten** (im Arbeitsbereichsmenü am Fuß der Seitenleiste, **Arbeitsbereichseinstellungen …**)
@@ -214,6 +255,11 @@ zu übernehmen. Regeln, die du selbst in den Arbeitsbereichseinstellungen festle
   der einfachen, der JSON-, der URL-kodierten und der Base64-Form. Agenten sehen geheime Variablen nur mit Namen.
 - **Zugangsdaten im Verlauf.** Frühere Austausche erreichen Agenten mit maskierten Header für Zugangsdaten und ohne den
   Mitschnitt der Übertragung.
+- **Zugangsdaten in Antworten.** Felder im Body einer Antwort, deren Name nach Zugangsdaten aussieht (`access_token`,
+  `refresh_token`, `password`, `client_secret` und dergleichen, aber nicht `token_type` oder `expires_in`), erreichen
+  Agenten maskiert, auch wenn niemand sie als Secret gespeichert hat.
+- **Zugangsdaten in dem, was sie schreiben.** Ein Body, den ein Agent sendet oder sichert, darf in einem solchen Feld
+  keine Zugangsdaten enthalten: Es muss eine `{{variable}}` sein.
 - **Deine Secrets auf dem Host eines anderen.** Leitet eine Anfrage eines Agenten auf einen Host um, den der
   Arbeitsbereich nicht nutzt, verliert sie unterwegs ihre Header für Zugangsdaten.
 

@@ -25,12 +25,14 @@ Every change is saved at once, and a running mock answers with it at once. **Edi
 deleting a route too. When two routes that are on have the same method and path, the card warns you: only the first
 one answers.
 
-<Shot id="mocks-route-editor" alt="The editor of the route GET /users/{id}: its method, path and summary, the responses 200 OK (the default) and 404 Not found, and the OK response's content type, an X-Request-Id header of {{$randomUUID}}, and a JSON body with request.params.id and fake values" />
+<Shot id="mocks-route-editor" alt="The editor of the route GET /users/{id}: its kind (HTTP), method, path and summary, the responses 200 OK (the default) and 404 Not found, and the OK response's content type, an X-Request-Id header of {{$randomUUID}}, and a JSON body with request.params.id and fake values" />
 
 ### Method, path and summary
 
-- **Route**: the method (**GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS**, or **ANY** for every
-  method) and the path. A `HEAD` request goes to a **GET** route, without the body.
+- **Route**: what the route speaks, the method and the path. The first menu is the kind: **HTTP**, or **WebSocket** and
+  **Socket.IO** for routes that take connections (see [streams, sockets and MQTT](/docs/mocks/streams-and-sockets)).
+  The method is **GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS**, or **ANY** for every method.
+  A `HEAD` request goes to a **GET** route, without the body.
 - **Path parameters** are written `{id}` or `:id`, one per part of the path: `/users/{id}`, `/files/{name}.json`.
   `:id` is saved as `{id}`. A route with a literal part wins over one with a parameter, so `/users/me` answers before
   `/users/{id}`.
@@ -48,7 +50,7 @@ has:
 | **Content-Type** | The `Content-Type` sent, such as `application/json` or `application/xml`; the menu beside it has the common types. Empty sends none. It also decides how values in the body are escaped. |
 | **Headers** | Headers sent with it. Values can hold fake data and parts of the request, like the body. |
 | **Rules** | When this response answers instead of the default. See [choosing a response](#choosing-a-response). |
-| **Body** | What is sent, with line numbers and colours for JSON, XML and HTML. |
+| **Body** | What is sent, with line numbers and colours for JSON, XML and HTML. **Stream Server-Sent Events Instead** sends events on a timeline in its place; see [server-sent events](/docs/mocks/streams-and-sockets#server-sent-events). |
 
 The response with a check mark is the route's **Default**; **Make Default** on another one changes it. The trash
 button deletes a response.
@@ -110,6 +112,9 @@ files, images and databases. The names are Postman's dynamic variables, so templ
 Some take arguments: `{{$randomInt(1, 100)}}`, `{{$randomPrice(5, 50)}}`, `{{$randomLoremWords(5)}}`,
 `{{$randomElement(active, paused, closed)}}`. [Dynamic values](/docs/reference/dynamic-values#fake-data) lists every
 one.
+
+Times can be moved: `{{$isoTimestamp('-90s')}}` is 90 seconds ago and `{{$timestamp('2h')}}` two hours from now, in
+seconds or with `ms`, `s`, `m`, `h`, `d` or `w`. An order placed 90 seconds ago needs no script.
 
 **Insert Value** above the body puts a fake value where the cursor is: **Fake Data** has them by group.
 

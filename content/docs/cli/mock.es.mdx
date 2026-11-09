@@ -80,6 +80,15 @@ Mock of Storefront: 3 routes at http://127.0.0.1:4321 (Ctrl-C stops it)
 Cada línea nombra la ruta que respondió y, entre paréntesis, la respuesta que dio. Los valores ficticios de los cuerpos
 se generan de nuevo en cada solicitud. Para generar datos ficticios sin un servidor, mira [echolot fake](/docs/cli/fake).
 
+Los streams y los sockets funcionan como en la app: rutas que emiten eventos enviados por el servidor, rutas WebSocket y
+Socket.IO, y el broker MQTT de un mock, que arranca en su propio puerto con el mock:
+
+```text
+Mock of Shop live: 2 routes at http://127.0.0.1:4019, MQTT broker at mqtt://127.0.0.1:1883 (Ctrl-C stops it)
+```
+
+Mira [streams, sockets y MQTT](/docs/mocks/streams-and-sockets).
+
 ## Opciones [#options]
 
 | Opción | Significado |

@@ -8,6 +8,10 @@ description: "Abonniere Topics und veröffentliche Nachrichten bei MQTT-Brokern,
 (`mqtts://`) oder WebSocket (`ws://`, `wss://`). Dasselbe in der App findest du unter
 [MQTT-Anfragen](/docs/requests/mqtt).
 
+Ohne `--mqtt-version` bekommt ein Broker, der MQTT 5.0 ablehnt, einen zweiten Versuch mit 3.1.1, und die
+Standardfehlerausgabe sagt das:
+`note: the broker refused MQTT 5; connecting with 3.1.1 (--mqtt-version 3.1.1 skips this)`.
+
 Die Beispiele nutzen einen Broker auf deinem Mac unter `localhost`, wie es die Anfrage **Warehouse sensors** von
 Alpenglow tut. Die Demo-API kann kein MQTT.
 
@@ -74,7 +78,7 @@ sagt es, wie viele es veröffentlicht hat.
 
 | Option | Bedeutung |
 | --- | --- |
-| `--mqtt-version <version>` | Die Protokollversion: `5` oder `3.1.1`. Standard 5. |
+| `--mqtt-version <version>` | Die Protokollversion: `5` oder `3.1.1`. Standard 5, dann 3.1.1, wenn der Broker 5 ablehnt. |
 | `--client-id <id>` | Die Client-ID. Standard: `echolot-` und ein zufälliges Suffix. |
 | `-u`, `--user <name>` | Der Benutzername. |
 | `--password <password>` | Das Passwort. Besser die Umgebungsvariable `ECHOLOT_MQTT_PASSWORD` nutzen. |

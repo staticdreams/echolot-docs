@@ -78,6 +78,21 @@ Ein Socket.IO-Paket nimmt höchstens 1000 Anhänge auf, zusammen bis zu 64 MB.
 Schließt die Verbindung, wird die Sitzung im [Verlauf](/docs/workspaces/history) behalten, mit dem Log als Body der
 Antwort.
 
+## Prüfungen, Erfassungen und Durchläufe [#checks-captures-and-runs]
+
+**Wert in Nachrichten**, **Empfangene Nachrichten** und **Sitzungsende** im Tab **Tests** prüfen das Ereignislog, und
+die Erfassungen **Erste Nachricht** und **Letzte Nachricht** lesen es. Die Argumente jedes Ereignisses werden als ein
+JSON-Array gelesen, `$[0].text` ist also der `text` seines ersten Arguments. Beschränke eine Prüfung oder Erfassung auf
+ein Ereignis, indem du seinen Namen in ihr Feld **beliebig** tippst; eine Bestätigung trägt den Namen des Ereignisses,
+auf das sie antwortet, sodass `message` auch die Bestätigungen des Servers für deine `message`-Ereignisse nimmt. Siehe
+[Prüfungen auf Echtzeit-Sitzungen](/docs/requests/scripts-and-tests#checks-on-realtime-sessions).
+
+In Durchläufen hört `stop-after-acks = true` unter `[settings]` in der Anfragedatei auf zuzuhören, sobald jedes
+Ereignis, das eine Bestätigung angefordert hat, sie bekommen hat. Ein Server, der den Client nicht beitreten lässt,
+ergibt in Durchläufen den Status `403`, sodass eine Prüfung ihn erwarten kann. Siehe
+[früher aufhören zuzuhören](/docs/requests/websocket-and-sse#stop-listening-early) und
+[abgelehnte Verbindungen](/docs/requests/websocket-and-sse#refused-connections).
+
 ## In der Befehlszeile [#from-the-command-line]
 
 `echolot send --socketio` verbindet sich vom Terminal aus: Jede Zeile, die du tippst, ist ein Ereignis mit seinen

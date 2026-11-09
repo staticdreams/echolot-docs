@@ -45,8 +45,14 @@ description: "フォルダ、いくつかのリクエスト、ワークスペー
 
 - HTTP、GraphQL、gRPCのリクエストとMCP呼び出しは、ほかのリクエストと同じように送信され、チェックされます。
 - WebSocket、Socket.IO、MQTTのリクエストは、接続し、実行用に有効にしてある保存済みのメッセージ、イベント、パブリッシュを送信し（MQTTは有効なフィルタをサブスクライブします）、10秒間待ち受けて閉じます。
-  メッセージログがレスポンスなので、<strong>ボディ</strong>に対するチェックを使えます。待ち受け時間を変えるには、リクエストファイルの`[settings]`で`stream-limit`（秒）を設定します。
+  メッセージログがレスポンスなので、[メッセージのチェック](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)と<strong>ボディ</strong>に対するチェックを使えます。
+  待ち受け時間を変えるには、リクエストファイルの`[settings]`で`stream-limit`（秒）を設定します。待っている答えが届いたらすぐに止めるには、
+  [停止条件](/docs/requests/websocket-and-sse#stop-listening-early)を設定します。接続を拒否したサーバもステータス付きのレスポンスを返すので、
+  チェックで拒否を期待できます。
 - Server-Sent Eventsのストリームは、10秒間保持されてから終了します。
+
+選んだ環境で`{{variables}}`に値がないリクエストは送信されません。そのリクエストは失敗し、結果に変数と環境が示されます。たとえば
+`Not sent: {{baseURL}} is not defined in the environment “Staging” or above it.` のように表示されます。別の環境を選ぶか、変数を定義してください。
 
 リクエスト前スクリプトは、`pm.execution.skipRequest()`でリクエストをスキップできます。結果には<strong>プリリクエストスクリプトによってスキップ</strong>と表示されます。
 スクリプトは`pm.execution.setNextRequest("Request name")`で移動することも、`pm.execution.setNextRequest(null)`で実行を終了することもできます。

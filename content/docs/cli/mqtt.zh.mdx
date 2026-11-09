@@ -6,6 +6,9 @@ description: "在 MQTT Broker（3.1.1 或 5.0 版）上订阅主题并发布消�
 `echolot mqtt` 在终端中与 MQTT Broker 通信：`subscribe` 在消息到达时打印它们，`publish` 则发送消息。两者默认使用 MQTT 5.0，需要时可使用 3.1.1，支持 TCP（`mqtt://`）、
 TLS（`mqtts://`）或 WebSocket（`ws://`、`wss://`）。App 中的对应功能参见 [MQTT 请求](/docs/requests/mqtt)。
 
+不带 `--mqtt-version` 时，拒绝 MQTT 5.0 的 Broker 会再用 3.1.1 尝试一次，标准错误会说明这一点：
+`note: the broker refused MQTT 5; connecting with 3.1.1 (--mqtt-version 3.1.1 skips this)`。
+
 示例使用你 Mac 上 `localhost` 的 Broker，与 Alpenglow 请求 **Warehouse sensors** 一样。演示 API 无法运行 MQTT。
 
 ## echolot mqtt subscribe [#echolot-mqtt-subscribe]
@@ -66,7 +69,7 @@ tail -f readings.log | echolot mqtt publish mqtt://localhost warehouses/bern/log
 
 | 选项 | 含义 |
 | --- | --- |
-| `--mqtt-version <version>` | 协议版本：`5` 或 `3.1.1`。默认 5。 |
+| `--mqtt-version <version>` | 协议版本：`5` 或 `3.1.1`。默认 5，Broker 拒绝 5 时改用 3.1.1。 |
 | `--client-id <id>` | 客户端 ID。默认：`echolot-` 加一个随机后缀。 |
 | `-u`、`--user <name>` | 用户名。 |
 | `--password <password>` | 密码。建议改用环境变量 `ECHOLOT_MQTT_PASSWORD`。 |

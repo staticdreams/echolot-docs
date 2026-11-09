@@ -75,8 +75,8 @@ dernière ligne.
 | **Requêtes** | `{{$requestHeader('', 'Content-Type')}}`, `{{$requestURL('auth/sign-in')}}`, `{{$requestJSONPath('', '$.lines[0].sku')}}` | Des parties de cette requête (premier argument vide) ou d’une autre, telles qu’elles seraient envoyées. |
 | **Encodage** | `{{$base64('heidi:alpenglow')}}`, `{{$urlEncode('a b&c')}}`, `{{$jsonEscape('say "hi"')}}`, `{{$basicAuth('heidi', '{{password}}')}}`, `{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`, `{{$newline}}` | Du texte encodé ou décodé, des échappements, une valeur d’auth Basic, un JWT signé. |
 | **Hachages et signatures** | `{{$sha256("{{$requestBody('')}}")}}`, `{{$hmacSha256('{{key}}', 'message', 'base64')}}`, `{{$md5('text')}}` | Des hachages et des HMAC, en hexadécimal sauf si vous demandez `base64` ou `base64url`. |
-| **Temps** | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | L’heure d’envoi, en secondes ou millisecondes Unix, en ISO 8601, en date HTTP ou dans votre propre format, décalée d’un nombre de secondes et dans un fuseau horaire. |
-| **Aléatoire** | `{{$uuid}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | De nouvelles valeurs aléatoires à chaque envoi. `$guid` et `$randomUUID` sont d’autres noms de `$uuid`. |
+| **Temps** | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp('-90s')}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | L’heure d’envoi, en secondes ou millisecondes Unix, en ISO 8601, en date HTTP ou dans votre propre format, avec un décalage et dans un fuseau horaire. |
+| **Aléatoire** | `{{$uuid}}`, `{{$sameUUID('order')}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | De nouvelles valeurs aléatoires à chaque envoi, sauf `$sameUUID`, qui est la même pour chaque requête d’une exécution qui donne le même nom. `$guid` et `$randomUUID` sont d’autres noms de `$uuid`. |
 | **Données fictives** | `{{$randomFullName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomLoremSentence}}`, `{{$randomDatePast}}` | Des noms, adresses, entreprises, prix, dates, lorem ipsum et plus encore, inventés et nouveaux à chaque envoi, sous les noms de Postman. La liste les regroupe en sous-menus. Voir [les données fictives](/docs/reference/dynamic-values#fake-data). |
 | **Texte** | `{{$lowercase('{{name}}')}}`, `{{$uppercase('chf')}}`, `{{$trim('{{code}}')}}` | Du texte transformé. |
 | **Fichiers et système** | `{{$file('data/order.json')}}`, `{{$env('HOME')}}` | Le contenu d’un fichier (chemin relatif à l’espace de travail, ou chemin absolu), ou une variable d’environnement du processus Echolot. |
@@ -85,7 +85,14 @@ dernière ligne.
 votre Mac n’y sont pas accessibles.
 
 L’exemple Alpenglow en utilise une dans **Orders › Create order** : son en-tête `Idempotency-Key` vaut `{{$uuid}}`, si
-bien que chaque commande est nouvelle.
+bien que chaque commande est nouvelle. Pour une clé que plusieurs requêtes d’une exécution partagent, utilisez
+`{{$sameUUID('order')}}` : elle est créée une fois par exécution (et une fois par fenêtre hors exécution), et chaque
+requête qui nomme `order` reçoit la même.
+
+`$timestamp`, `$timestampMs` et `$isoTimestamp` acceptent un décalage, pour une heure avant ou après l’envoi : des
+secondes, ou un nombre avec `ms`, `s`, `m`, `h`, `d` ou `w`, avec `-` pour le passé. Écrivez-le entre guillemets,
+`{{$isoTimestamp('-90s')}}` ou `{{$timestamp('2h')}}` ; un simple nombre de secondes peut rester seul,
+`{{$timestamp(60)}}`. Voir la [référence](/docs/reference/dynamic-values#time).
 
 ## Valeurs issues des réponses d’autres requêtes [#values-from-other-requests-responses]
 

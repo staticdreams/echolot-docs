@@ -69,6 +69,53 @@ the connection with code 1009.
 When the connection closes, the session is kept in [History](/docs/workspaces/history): the handshake as the request,
 and the message log as the response body.
 
+### Checks and captures
+
+The **Tests** tab offers three checks on the message log: **Message value** (a JSONPath tried on each message
+received), **Messages received** and **Session close** (the server's close code and reason). See
+[checks on realtime sessions](/docs/requests/scripts-and-tests#checks-on-realtime-sessions). Captures read the
+messages with **First message** and **Last message**: see [captures](/docs/requests/captures#values-from-realtime-sessions).
+These work the same for [Socket.IO](/docs/requests/socket-io) and [MQTT](/docs/requests/mqtt) requests.
+
+### Stop listening early
+
+In runs, from the command line and for agents, a session listens until the stream limit, 10 seconds unless
+`stream-limit` says otherwise, or until the server closes it. A stop condition ends it as soon as what you wait for
+has come. Set it in the request file's `[settings]`; the app has no field for it yet.
+
+| Key | Stops when |
+| --- | --- |
+| `stop-after-messages` | This many messages were received. |
+| `stop-when` | A received message has a value at this JSONPath, such as `$.status`. |
+| `stop-when-equals` | With `stop-when`: the value equals this. `{{variables}}` work in it. |
+| `stop-after-acks` | `true`: every Socket.IO event that asked for an acknowledgement has it, and every MQTT publish at QoS 1 or 2 and every subscribe has the broker's. |
+| `stop-on` | Narrows `stop-after-messages` and `stop-when` to the messages of a Socket.IO event or an MQTT topic filter. |
+
+Whichever condition holds first ends the session, and the log says why, such as `Stopped listening: 3 messages
+arrived`.
+
+```toml
+[settings]
+stream-limit = 30
+stop-when = "$.status"
+stop-when-equals = "shipped"
+```
+
+### Refused connections
+
+When the server refuses the connection, connecting by hand shows the error. In runs, from the command line and for
+agents, the refusal is a response instead, so its checks can expect it:
+
+- A refused WebSocket upgrade keeps the server's answer: its status, such as `401`, and its headers.
+- A Socket.IO server that refuses to let the client join (`connect_error`) gives status `403`.
+- An MQTT broker that refuses the connection gives a status by its reason: `401` for a bad user name or password,
+  `403` when the client isn't authorized or is banned, `503` when the broker is unavailable, busy or over a limit,
+  and `400` for any other reason.
+
+The log then holds the refusal, which **Session close** reads as a close by the server: its code is the
+upgrade's status or the MQTT reason code, and its reason is what the server said. So **Status** equals `401`, or
+**Session close** contains `Not authorized`, passes on a refusal you expect.
+
 ## Server-sent events
 
 A server-sent events stream is an HTTP response of type `text/event-stream` that keeps sending events. Use a normal

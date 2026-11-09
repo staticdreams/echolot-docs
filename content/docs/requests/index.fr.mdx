@@ -56,7 +56,10 @@ dessus pour voir sa valeur, et double-cliquez pour la modifier. Les variables vi
 [environnements, de l’espace de travail et des dossiers](/docs/workspaces/environments).
 
 Si un élément de l’URL ne peut pas être résolu, la ligne sous la barre d’URL indique **1 problème** (ou le nombre
-correspondant). Cliquez dessus pour voir quelles variables manquent. Les jetons non résolus sont envoyés tels quels.
+correspondant). Cliquez dessus pour voir quelles variables manquent. Les jetons non résolus sont envoyés tels quels,
+sauf quand ils ne laissent aucune adresse où envoyer : l’erreur nomme alors les variables et l’environnement, par
+exemple `“{{baseURL}}/products” uses {{baseURL}}, which is not defined in the environment “Staging” or above it.` Dans
+les [exécutions](/docs/requests/runner), aucune requête avec un jeton non résolu n’est envoyée.
 
 Quand la requête lit la réponse d’une autre requête (par exemple avec `{{$response('auth/sign-in', '$.access_token')}}`)
 et que cette autre requête n’a pas encore de réponse, la ligne indique **Envoie « Sign in » d’abord** : Echolot envoie

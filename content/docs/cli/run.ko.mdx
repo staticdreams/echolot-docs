@@ -49,12 +49,20 @@ All 7 requests passed  11/11 checks passed · 0.90 s
 - 각 요청의 검사와 `pm.test` 결과가 집계됩니다. 응답이 없거나 검사가 실패하면 요청이 실패하며, 이때 실행은 1로 종료됩니다.
 - 변수로 캡처한 응답, OAuth 2 클라이언트 자격 증명으로 받은 토큰, 스크립트가 설정한 값은 앱에서와 같이 같은 실행의 이후 요청으로
   이어집니다. 스크립트 값은 그 실행 동안만 유지되며 파일에는 기록되지 않습니다.
+- [캡처](/docs/requests/captures)도 비밀 값을 포함해 그 실행 동안 메모리에 보관되며, 보고서에서는 가려집니다. 환경 파일과 키체인은
+  그대로 남으므로 CI에서의 실행은 작업 공간을 깨끗하게 둡니다. Alpenglow에서 **Sign in**은 `{{token}}`을 캡처하고, **Who am I**와
+  Orders 폴더가 같은 실행에서 나중에 그 값을 보냅니다. `--save-captures`는 캡처한 값을 앱처럼 씁니다. 환경의 파일이나 작업 공간에
+  쓰고, 비밀 값은 키체인에 씁니다.
 
-<Callout type="warn">
-  키체인이 없으면(CI, Linux, `ECHOLOT_KEYCHAIN=0`) **비밀** 변수로 캡처한 응답은 다음 요청으로 이어지지 않습니다. Alpenglow에서
-  **Sign in**은 `{{token}}`을 비밀 값으로 캡처하므로, 이런 실행에서는 **Who am I**와 Orders 폴더가 401을 받습니다. 이런 실행에서는
-  `ECHOLOT_SECRET_TOKEN`을 직접 설정하거나, 비밀 값이 아닌 변수로 캡처하십시오.
-</Callout>
+### 해석되지 않는 변수 [#variables-that-dont-resolve]
+
+실행은 `{{variables}}`에 값이 없는 요청을 절대 보내지 않습니다. 대신 요청이 실패하며, 어느 변수가 어느 환경에서 빠졌는지 알려 줍니다.
+예를 들면 `Not sent: {{baseURL}} is not defined in the environment “Staging” or above it.`입니다.
+
+비밀 값으로 선언되었지만 값이 없는 변수의 경우, 메시지는 그 값을 주는 환경 변수를 알려 줍니다.
+`Not sent: the secret {{token}} has no value here. Set ECHOLOT_SECRET_TOKEN (or add it to --secrets).`
+`ECHOLOT_SECRET_<NAME>`이 설정되었지만 작업 공간이 그 변수를 비밀 값으로 선언하지 않았다면 그렇게 알려 줍니다.
+[비밀 값](/docs/cli#secrets)을 참조하십시오.
 
 ## 데이터 기반 실행 [#data-driven-runs]
 
@@ -150,6 +158,7 @@ echolot run shop.postman_collection.json --env-file staging.postman_environment.
 | `--reporter <name>` | `console`, `junit`, `json`, `html`, `har`. 반복할 수 있으며, 생략하면 `console`입니다. |
 | `-o`, `--out <file>` | 콘솔이 아닌 각 리포터의 파일. `--reporter`의 순서를 따르며, 없으면 표준 출력입니다. |
 | `--secrets <file>` | `ECHOLOT_SECRET_<NAME>` 변수에 더해 비밀 값을 담은 `NAME=value` 줄로 이루어진 파일. |
+| `--save-captures` | 앱처럼 캡처한 값을 작업 공간의 환경 파일에 쓰고, 비밀 값은 키체인에 씁니다. 없으면 그 실행 동안만 유지됩니다. |
 | `-k`, `--insecure` | TLS 인증서 검증을 건너뜁니다. |
 | `--proxy <url>` | 이 프록시를 통해 보냅니다: `http://host:port`, `https://…`, `socks5://user:password@host:port`. |
 | `--no-proxy` | `HTTP_PROXY` 등을 무시하고 직접 연결합니다. |

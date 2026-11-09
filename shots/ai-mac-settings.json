@@ -88,5 +88,17 @@
     "page": "settings",
     "scene": "Settings › Agents in the direct download: Let agents use open workspaces on, Alpenglow among the recent workspaces under Claude Desktop, Tools for agents at the default (Requests and Flows). Retake in the App Store edition, where Command-line tool replaces Claude Desktop.",
     "frame": "the Settings window"
+  },
+  {
+    "id": "ai-script-proposal",
+    "page": "ai/agents",
+    "scene": "tools/scenes.ts: Alpenglow with -agents.enabled YES; a client named Claude Code connects through echolot mcp serve (relayed to the app) and calls propose_script for the pre-request script of orders/create-order.",
+    "frame": "the proposal sheet",
+    "crop": [
+      325,
+      210,
+      670,
+      430
+    ]
   }
 ]

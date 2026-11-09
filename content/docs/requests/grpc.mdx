@@ -97,4 +97,5 @@ certificate rules, so custom CA certificates and client certificates work. See
 ## From the command line
 
 `echolot grpc describe` lists a server's services and methods, and `echolot grpc call` makes a call and exits with 1
-on a status other than `OK`. See [echolot grpc](/docs/cli/grpc).
+on a status other than `OK` or an answer it can't decode. On a terminal, or with `--stream`, a server stream's messages
+print as they arrive, one JSON object per line. See [echolot grpc](/docs/cli/grpc).

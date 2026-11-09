@@ -58,6 +58,30 @@ nicht.
 | **Cookie** | Ein Cookie, das die Antwort setzt, nach Namen. | `session` |
 | **Status** | Der Statuscode. | |
 | **Body** | Der ganze Body als Text. | |
+| **Erste Nachricht** | Ein JSONPath in die erste Nachricht, die eine WebSocket-, Socket.IO- oder MQTT-Sitzung empfangen hat und die dort einen Wert hat. | `$.id` |
+| **Letzte Nachricht** | Dasselbe in der letzten solchen Nachricht: der neueste Stand, den ein Stream von Aktualisierungen gemeldet hat. | `$[0].id` |
+
+### Werte aus Echtzeit-Sitzungen [#values-from-realtime-sessions]
+
+**Erste Nachricht** und **Letzte Nachricht** gibt es bei WebSocket-, Socket.IO- und MQTT-Anfragen. Sie sichern ihren
+Wert, wenn die Anfrage ohne dich läuft, in der [Ausführung](/docs/requests/runner), in der Befehlszeile und für
+Agenten: Die Anfrage verbindet sich, sendet ihre gesicherten Nachrichten, hört zu, schließt, und die Erfassungen lesen
+das Nachrichtenlog. Jede empfangene Nachricht wird als JSON gelesen; die Argumente eines Socket.IO-Ereignisses sind ein
+Array, `$[0].id` ist also die `id` seines ersten Arguments. Nur empfangene Nachrichten zählen, nie die, die Echolot
+gesendet hat.
+
+Neben dem Pfad schränkt **beliebig** die gelesenen Nachrichten ein: auf den Namen eines Socket.IO-Ereignisses (eine
+Bestätigung trägt den Namen des Ereignisses, auf das sie antwortet) oder einen MQTT-Topic-Filter, in dem `+` und `#`
+funktionieren. Lass das Feld leer, um jede Nachricht zu lesen.
+
+```toml
+[[captures]]
+variable = "temperature"
+from = "last-message"
+path = "$.celsius"
+on = "warehouses/+/temperature"
+scope = "environment"
+```
 
 ## Umgebung oder Arbeitsbereich [#environment-or-workspace]
 

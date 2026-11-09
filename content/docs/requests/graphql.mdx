@@ -44,6 +44,26 @@ for a document with one operation.
 
 Send with **Send** or <kbd>⌘</kbd><kbd>R</kbd>.
 
+## Share a query between requests
+
+Each GraphQL request keeps its query in its own file, `<slug>.graphql` beside the request. When several requests send
+the same operation with different variables, they can share one query file instead. Name it in each request's file
+with `shared-query`, in place of `query-file`:
+
+```toml
+shared-query = "queries/search-products.graphql"
+```
+
+The path is relative to the workspace folder. It must end in `.graphql` and stay inside the workspace, and no folder
+or file name in it may start with a dot. A file that isn't there yet reads as an empty query; the first
+save writes it, and the folders above it.
+
+A request with a shared query reads it from that file, and an edit in its **Query** tab writes the file, so every
+request that names it follows. The **Query** tab says so above the editor: **Shared query
+queries/search-products.graphql: an edit here changes it for every request that uses it.** Choose **Make It This
+Request's Own** to give this request its own copy of the query; the shared file and the other requests stay as they
+are.
+
 ## How the request is sent
 
 The **GQL** badge before the address is a menu. Under **Send as**:
@@ -118,8 +138,9 @@ what GraphQL says beside the data:
 - **Partial data**: data came back together with errors, so some fields are `null` because they failed.
 - **Extensions**: the response's `extensions`, such as tracing or cost information.
 
-Add a **GraphQL errors** check that equals `0` in the **Tests** tab to make a run fail on them. See
-[scripts and tests](/docs/requests/scripts-and-tests).
+Add a **GraphQL errors** check that equals `0` in the **Tests** tab to make a run fail on them, or one that **does not
+exist**, which passes when the response has no errors. **exists** passes when it has at least one, for a request that
+should fail. See [scripts and tests](/docs/requests/scripts-and-tests).
 
 ## Subscriptions and incremental delivery
 

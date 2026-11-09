@@ -27,12 +27,15 @@ Chaque modification est enregistrée immédiatement, et un mock en cours d’ex�
 Annuler** annule n’importe quelle modification, y compris la suppression d’une route. Quand deux routes activées ont la
 même méthode et le même chemin, la carte vous prévient : seule la première répond.
 
-<Shot id="mocks-route-editor" alt="L’éditeur de la route GET /users/{id} : sa méthode, son chemin et son résumé, les réponses 200 OK (par défaut) et 404 Not found, et pour la réponse OK son type de contenu, un en-tête X-Request-Id valant {{$randomUUID}}, et un corps JSON avec request.params.id et des valeurs fictives" />
+<Shot id="mocks-route-editor" alt="L’éditeur de la route GET /users/{id} : son type (HTTP), sa méthode, son chemin et son résumé, les réponses 200 OK (par défaut) et 404 Not found, et pour la réponse OK son type de contenu, un en-tête X-Request-Id valant {{$randomUUID}}, et un corps JSON avec request.params.id et des valeurs fictives" />
 
 ### Méthode, chemin et résumé [#method-path-and-summary]
 
-- **Route** : la méthode (**GET**, **POST**, **PUT**, **PATCH**, **DELETE**, **HEAD**, **OPTIONS**, ou **ANY** pour
-  toutes les méthodes) et le chemin. Une requête `HEAD` va à une route **GET**, sans le corps.
+- **Route** : ce que parle la route, la méthode et le chemin. Le premier menu est le type : **HTTP**, ou **WebSocket**
+  et **Socket.IO** pour les routes qui acceptent des connexions (voir
+  [streams, sockets et MQTT](/docs/mocks/streams-and-sockets)). La méthode est **GET**, **POST**, **PUT**, **PATCH**,
+  **DELETE**, **HEAD**, **OPTIONS**, ou **ANY** pour toutes les méthodes. Une requête `HEAD` va à une route **GET**,
+  sans le corps.
 - Les **paramètres de chemin** s’écrivent `{id}` ou `:id`, un par partie du chemin : `/users/{id}`, `/files/{name}.json`.
   `:id` est enregistré sous la forme `{id}`. Une route avec une partie littérale l’emporte sur une route avec un
   paramètre : `/users/me` répond avant `/users/{id}`.
@@ -50,7 +53,7 @@ ajoute une. Chaque réponse a :
 | **Content-Type** | Le `Content-Type` envoyé, par exemple `application/json` ou `application/xml` ; le menu à côté propose les types courants. Vide, il n’en envoie aucun. Il détermine aussi comment les valeurs du corps sont échappées. |
 | **En-têtes** | Les en-têtes envoyés avec elle. Les valeurs peuvent contenir des données fictives et des éléments de la requête, comme le corps. |
 | **Règles** | Quand cette réponse répond à la place de celle par défaut. Voir [choisir une réponse](#choosing-a-response). |
-| **Corps** | Ce qui est envoyé, avec numéros de ligne et couleurs pour JSON, XML et HTML. |
+| **Corps** | Ce qui est envoyé, avec numéros de ligne et couleurs pour JSON, XML et HTML. **Diffuser des Server-Sent Events à la place** envoie à sa place des événements selon une chronologie ; voir [server-sent events](/docs/mocks/streams-and-sockets#server-sent-events). |
 
 La réponse marquée d’une coche est la réponse **Par défaut** de la route ; **Définir par défaut** sur une autre la
 change. Le bouton corbeille supprime une réponse.
@@ -113,6 +116,10 @@ ipsum, fichiers, images et bases de données. Les noms sont les variables dynami
 Postman fonctionnent donc ici. Certaines prennent des arguments : `{{$randomInt(1, 100)}}`, `{{$randomPrice(5, 50)}}`,
 `{{$randomLoremWords(5)}}`, `{{$randomElement(active, paused, closed)}}`.
 [Valeurs dynamiques](/docs/reference/dynamic-values#fake-data) les liste toutes.
+
+Les dates peuvent être décalées : `{{$isoTimestamp('-90s')}}` vaut il y a 90 secondes et `{{$timestamp('2h')}}` dans
+deux heures, en secondes ou avec `ms`, `s`, `m`, `h`, `d` ou `w`. Une commande passée il y a 90 secondes n’a pas besoin de
+script.
 
 **Insérer une valeur** au-dessus du corps place une valeur fictive à l’endroit du curseur : **Données fictives** les
 regroupe par catégorie.

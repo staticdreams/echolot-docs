@@ -60,6 +60,15 @@ Socket.IO 请求连接到 Socket.IO 服务器，加入一个命名空间并保�
 
 连接关闭时，会话保存在[历史记录](/docs/workspaces/history)中，日志作为响应正文。
 
+## 检查、捕获和运行 [#checks-captures-and-runs]
+
+**测试**标签页中的**消息中的值**、**收到的消息数**和**会话关闭**检查事件日志，**第一条消息**和**最后一条消息**捕获则读取它。每个事件的参数都按一个 JSON 数组读取，
+因此 `$[0].text` 是它第一个参数的 `text`。在检查或捕获的**任意**栏中输入事件名称，可以把它限定到这一个事件；确认会带上它所应答的事件的名称，
+因此 `message` 也会接受服务器对你的 `message` 事件的确认。参见[实时会话的检查](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)。
+
+在运行中，请求文件 `[settings]` 中的 `stop-after-acks = true` 会在每个请求确认的事件都得到确认后停止监听。拒绝让客户端加入的服务器在运行中会给出状态 `403`，
+因此检查可以预期它。参见[提前停止监听](/docs/requests/websocket-and-sse#stop-listening-early)和[被拒绝的连接](/docs/requests/websocket-and-sse#refused-connections)。
+
 ## 通过命令行 [#from-the-command-line]
 
 `echolot send --socketio` 在终端中连接：你输入的每一行是一个事件及其 JSON 参数。它还会运行已存储的 `.sio.toml` 请求。见 [echolot send](/docs/cli/send)。

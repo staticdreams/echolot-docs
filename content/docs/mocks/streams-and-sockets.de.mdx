@@ -1,0 +1,179 @@
+---
+title: "Streams, Sockets und MQTT"
+description: "Live-Daten mocken: mit Routen, die Server-Sent Events streamen und WebSocket- und Socket.IO-Verbindungen annehmen, und mit einem MQTT-Broker, der nach einer Zeitleiste veröffentlicht und beantwortet, was Clients veröffentlichen."
+---
+
+Live-Anzeigen brauchen Live-Daten: eine Lieferung, die sich bewegt, ein Rennen, das Runde für Runde aktualisiert wird,
+einen Sensor, der jede Sekunde meldet. Ein Mock kann all das senden, ohne dass du einen eigenen Server brauchst:
+
+- **Server-Sent Events**: Eine HTTP-Antwort sendet statt eines Body Ereignisse nach einer Zeitleiste.
+- **WebSocket-Routen**: Eine Route nimmt WebSocket-Verbindungen an, sendet Nachrichten, sobald eine offen ist, und
+  beantwortet, was der Client sendet.
+- **Socket.IO-Routen**: Eine Route ist ein Socket.IO-Namespace, mit Ereignissen, Antworten und Bestätigungen.
+- **Ein MQTT-Broker** neben dem Mock: Clients abonnieren und veröffentlichen wie bei jedem Broker und bekommen die
+  Nachrichten, die der Mock veröffentlicht.
+
+All das wird im Editor des Mocks von Hand angelegt, wie andere [Routen](/docs/mocks/routes), und in der Datei des Mocks
+gesichert. Für Logik und Zustand schreibst du Sockets stattdessen in [JavaScript](/docs/mocks/scripted-routes#sockets).
+
+## Zeitleisten [#timelines]
+
+Streams und Sockets senden ihre Nachrichten nach einer Zeitleiste. Jede Nachricht hat:
+
+| Feld | Was es ist |
+| --- | --- |
+| **ms** | Millisekunden nach der Nachricht davor (oder nach dem Start, bei der ersten), bis zu einer Stunde. |
+| Ereignis | Bei Server-Sent Events das Feld `event:`; bei Socket.IO das gesendete Ereignis (`message`, wenn leer). |
+| ID | Bei Server-Sent Events das Feld `id:`. |
+| Daten | Was gesendet wird. Es kann Beispieldaten und Teile der Anfrage enthalten, wie der [Body einer Route](/docs/mocks/routes#bodies-with-fake-data). |
+
+Daten lesen außerdem `{{stream.index}}` (die Nummer der Nachricht in der Zeitleiste, ab 0), `{{stream.number}}` (ab 1)
+und `{{stream.round}}` (der wievielte Durchgang der Zeitleiste, ab 0), sodass eine erneut abgespielte Zeitleiste Runden
+zählen kann:
+
+```json
+{ "lap": {{stream.number}}, "at": "{{$isoTimestamp}}" }
+```
+
+Zeiten lassen sich auch verschieben: `{{$isoTimestamp('-90s')}}` ist vor 90 Sekunden, `{{$timestamp('1h')}}` in einer
+Stunde. Siehe [dynamische Werte](/docs/requests/dynamic-values).
+
+**Abspielen** sagt, wie oft die Zeitleiste abgespielt wird; `0` spielt sie ab, bis der Client geht. Nach der letzten
+Nachricht wählt das Menü daneben, was passiert: **die Antwort beenden** oder **die Verbindung schließen**, oder
+**offen halten**.
+
+## Server-Sent Events [#server-sent-events]
+
+Öffne die Antwort einer HTTP-Route und klicke unter ihrem Body auf **Stattdessen Server-Sent Events streamen**. Der Body
+macht einer Zeitleiste Platz: Füge mit **Nachricht hinzufügen** Nachrichten hinzu und lege für jede Verzögerung,
+Ereignis, ID und Daten fest. **Stattdessen Body senden** kehrt zu einem einfachen Body zurück.
+
+Der Mock antwortet mit `Content-Type: text/event-stream` und `Cache-Control: no-cache`, hält die Verbindung offen und
+schreibt jedes Ereignis, wenn seine Zeit kommt:
+
+```text
+event: status
+id: 1
+data: {"order": "ord_7Hk2Lw", "status": "shipped"}
+
+```
+
+Daten über mehrere Zeilen werden als mehrere `data:`-Zeilen gesendet. Ein Stream, der abgespielt wird, bis der Client
+geht, hört auf, wenn der Client geht oder der Mock stoppt.
+
+```sh
+curl -N http://127.0.0.1:4010/orders/ord_7Hk2Lw/events
+```
+
+## WebSocket-Routen [#websocket-routes]
+
+Wähle im Menü für die Art der Route, vor dem Pfad, **WebSocket**. Die Route nimmt dann WebSocket-Verbindungen bei einem
+`GET` auf ihren Pfad an und bekommt eine Antwort namens **Offen** mit dem Status `101`.
+
+<Shot id="mocks-route-websocket" alt="Der Editor einer WebSocket-Route: Art und Pfad, die Antwort „Open“ mit dem Status 101, eine Nachricht, die nach dem Öffnen des Sockets gesendet wird, und eine Antwort auf eine Nachricht, deren Feld op gleich watch ist" />
+
+Die Antworten der Route entscheiden, was passiert, wenn sich ein Client verbindet, gewählt nach ihren
+[Regeln](/docs/mocks/routes#choosing-a-response) wie bei jeder anderen Route:
+
+- Eine Antwort `101` öffnet die Verbindung. Header, die du hinzufügst, gehen mit dem Upgrade mit.
+- Jede andere Antwort lehnt die Verbindung mit dieser Antwort ab: etwa eine `401` mit einem Body bei fehlendem Token.
+  Eine Antwort mit der Regel **Query-Parameter** `token` ist leer beantwortet Clients, die ohne Token kommen.
+
+Ein `GET` ohne Upgrade auf eine Route, deren Antwort `101` ist, bekommt `426 Upgrade Required`.
+
+### Nach dem Öffnen gesendet [#sent-once-open]
+
+Nachrichten unter **Nach dem Öffnen gesendet** gehen an den Client, sobald die Verbindung offen ist, jede nach ihrer
+Verzögerung: eine Begrüßung, ein Anfangszustand, ein Stream von Aktualisierungen. **Selbst schließen** lässt den Mock die
+Verbindung nach einer Zeit schließen, mit einem Close-Code und einem Grund, etwa `4000` und `Shift over`.
+
+### Antworten [#replies]
+
+**Antworten** beantworten, was der Client sendet. Kommt eine Nachricht an, beantwortet sie die erste Antwort, deren
+Bedingungen alle zutreffen; eine Nachricht, die keine Antwort nimmt, bleibt unbeantwortet.
+
+- **Bedingung hinzufügen** prüft ein Feld der Nachricht, als JSON gelesen: `op` ist `watch`, `user.id` ist `*`. Ein
+  leerer Feldname prüft den ganzen Text, für Nachrichten, die kein JSON sind. Die Regeln der
+  [Seite zu Routen](/docs/mocks/routes#choosing-a-response) gelten hier: `*` ist ein beliebiger Wert, ein leerer Wert
+  heißt fehlend.
+- **Gesendet** ist eine Zeitleiste von Nachrichten, die zurückgehen. Sie lesen die Nachricht, die sie beantworten:
+  `{{message.order}}` ist ihr Feld `order`, `{{message}}` der ganze Text.
+- **Dann schließen** schließt die Verbindung nach dem Senden, mit einem Close-Code und einem Grund.
+
+Eine Antwort mit der Bedingung `op` ist `watch`, die nach 500 ms `{"op": "shipped", "order": "{{message.order}}"}`
+sendet, beantwortet zum Beispiel `{"op": "watch", "order": "ord_7Hk2Lw"}` eine halbe Sekunde später mit dem Versand der
+Bestellung.
+
+## Socket.IO-Routen [#socketio-routes]
+
+Wähle im Menü für die Art **Socket.IO**. Eine Socket.IO-Route ist ein Namespace: Ihr Pfad ist der Namespace, dem Clients
+beitreten (`/support` oder `/` für den Haupt-Namespace). Der Mock ist ein Socket.IO-3- und -4-Server unter `/socket.io/`,
+über WebSocket und Long Polling, mit dem Upgrade vom einen zum anderen, sodass socket.io-client mit seinen üblichen
+Optionen funktioniert.
+
+Die Route bekommt eine Antwort namens **Beigetreten** mit dem Status `101`:
+
+- Eine Antwort `101` lässt den Client dem Namespace beitreten. **Nach dem Beitritt gesendet** ist ihre Zeitleiste; jede
+  Nachricht nennt ihr Ereignis und gibt die Argumente als JSON-Array an (`[{"text": "Hello"}]`) oder als einen Wert für ein
+  einzelnes Argument.
+- Jede andere Antwort lehnt ab: Der Client bekommt einen Verbindungsfehler, dessen Meldung der Body der Antwort ist (ein
+  JSON-Objekt so, wie es ist, etwa `{"message": "token rejected"}`, anderer Text als Meldung).
+
+Regeln wählen die Antwort wie bei anderen Routen. Regeln auf ein **Body-Feld** lesen die Auth-Nutzlast des Clients,
+sodass `token` ist `bad` ein Token ablehnen kann. Ein Namespace, den keine Route hat, bekommt den Fehler
+`Invalid namespace`.
+
+**Antworten** beantworten, was der Client sendet: **Wenn der Client sendet** nennt das Ereignis (leer nimmt jedes),
+Bedingungen lesen die Argumente als Array (`0.topic` ist das `topic` des ersten Arguments), und **Gesendet** sendet
+Ereignisse zurück, die `{{message.0.topic}}` lesen. **Bestätigung beantworten** sendet die erste Nachricht als die
+Argumente der Bestätigung zurück, wenn das gesendete Ereignis eine angefordert hat. **Dann trennen** und
+**Selbst trennen** nehmen den Client aus dem Namespace.
+
+## Der MQTT-Broker [#the-mqtt-broker]
+
+Ein Mock kann einen MQTT-Broker auf einem eigenen Port betreiben. Klicke in der Karte **MQTT-Broker** auf
+**Broker hinzufügen**; er nimmt den Port `1883`, oder `1884`, wenn der Mock diesen schon nutzt. **Broker entfernen**
+nimmt ihn wieder weg.
+
+<Shot id="mocks-broker" alt="Die Karte „MQTT-Broker“: Port 1889, zwei Nachrichten, die nach einer Zeitleiste an Lager-Topics veröffentlicht werden, eine davon gehalten mit QoS 1, und eine Antwort auf das, was Clients an warehouse/+/restock veröffentlichen" />
+
+Der Broker ist ein echter für MQTT-3.1.1- und -5.0-Clients über TCP: Sie verbinden sich, abonnieren und veröffentlichen
+wie bei jedem Broker, mit QoS 0, 1 und 2, gehaltenen Nachrichten und Last Wills. Wer den Mock startet, startet ihn mit; die
+Leiste oben zeigt seine Adresse, etwa `mqtt://127.0.0.1:1883`.
+
+- **Veröffentlicht** ist eine Zeitleiste, die der Broker ab dem Start des Mocks veröffentlicht: Verzögerung, Topic,
+  Daten, **QoS** und **Retain** jeder Nachricht. Eine gehaltene Nachricht wartet auf Clients, die später abonnieren.
+  **Abspielen** wiederholt die Zeitleiste, `0` solange der Mock läuft.
+- **Antworten** beantworten, was Clients veröffentlichen. **Wenn ein Client veröffentlicht an** nimmt einen Topic-Filter
+  (`warehouse/+/restock`), Bedingungen lesen die Nutzlast als JSON, und **Veröffentlicht** sendet Nachrichten zurück, an
+  Topics, die ebenfalls die Nachricht lesen können: `warehouse/{{message.warehouse}}/orders`. `{{stream.topic}}` ist das
+  Topic, an das der Client veröffentlicht hat.
+
+```sh
+echolot mqtt subscribe mqtt://127.0.0.1:1883 'warehouse/#' --count 3
+```
+
+Wird der Broker geändert, während der Mock läuft, startet der Mock neu.
+
+## Das Protokoll [#the-log]
+
+Jede Verbindung ist eine Zeile des [Protokolls](/docs/mocks#the-log), mit ihrem Status (`101` für einen offenen Socket,
+der Status einer Ablehnung) und den Nachrichten in beide Richtungen, als JSON-Zeilen, in der Antwort, die sie zeigt.
+Jeder MQTT-Client ist ebenfalls eine Zeile, mit dem, was er abonniert, veröffentlicht und empfangen hat.
+
+## Anfragen und Agenten [#requests-and-agents]
+
+**Anfragen erstellen** erstellt eine WebSocket-Anfrage für eine WebSocket-Route und eine Socket.IO-Anfrage für eine
+Socket.IO-Route, mit einer Nachricht für jede Antwort, die Bedingungen hat, und eine MQTT-Anfrage für den Broker, die
+jedes Topic abonniert. Siehe [WebSocket und SSE](/docs/requests/websocket-and-sse), [Socket.IO](/docs/requests/socket-io)
+und [MQTT](/docs/requests/mqtt).
+
+Agenten legen all das fest: `save_mock_route` nimmt die `kind` einer Route, die `events`, `repeats`, `ends`, `replies`
+und `close` ihrer Antworten, und `save_mock` nimmt einen `broker` oder `removeBroker`. Siehe [Agenten](/docs/ai/agents).
+
+## Im Arbeitsbereich [#in-the-workspace]
+
+In der Datei des Mocks ist die `kind` einer Route `websocket` oder `socketio`; die Zeitleiste einer Antwort ist
+`[[routes.responses.events]]`, ihre Antworten `[[routes.responses.replies]]` mit `[[routes.responses.replies.send]]`;
+der Broker ist `[broker]` mit `[[broker.publishes]]` und `[[broker.replies]]`. Siehe
+[Arbeitsbereichsdateien](/docs/reference/workspace-files#mocks).

@@ -116,11 +116,12 @@ echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolo
 ```
 
 **Socket.IO.** `--socketio` habla Socket.IO sobre una URL `http(s)://` o `ws(s)://`. Cada línea de entrada es un
-evento: su nombre y luego sus argumentos JSON (`chat {"text": "hi"}`; un array son varios argumentos). Los eventos se
-imprimen como `name [arguments]` y las confirmaciones como `ack id [arguments]`.
+evento: su nombre y luego sus argumentos JSON (`chat {"text": "hi"}`; un array son varios argumentos). Un `?` después
+del nombre pide al servidor que confirme el evento: `message? {"text": "Grüezi!"}`. Los eventos se imprimen como
+`name [arguments]` y las confirmaciones como `ack id [arguments]`.
 
 ```sh
-echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+echo 'message? {"text": "Grüezi!"}' | echolot send http://localhost:3001 --socketio --namespace /support --listen 5
 ```
 
 Mira [solicitudes Socket.IO](/docs/requests/socket-io) para servidores con los que probarlo.
@@ -146,7 +147,7 @@ Mira [solicitudes Socket.IO](/docs/requests/socket-io) para servidores con los q
 | `--http2` | Envía solo con HTTP/2: ALPN sobre TLS, conocimiento previo sobre HTTP simple. |
 | `--http3` | Envía solo con HTTP/3, sobre QUIC: solo `https://`, sin proxies; macOS 27 o posterior, y Linux. |
 | `--subprotocol <name>` | Para URLs `ws://` y `wss://`: un subprotocolo que ofrecer. Repetible. |
-| `--socketio` | Habla Socket.IO; cada línea de entrada es `event [JSON arguments]`. |
+| `--socketio` | Habla Socket.IO; cada línea de entrada es `event [JSON arguments]`, o `event? [JSON arguments]` para pedir una confirmación. |
 | `--namespace <namespace>` | Para `--socketio`: el espacio de nombres al que unirse. Predeterminado: la ruta de la URL, o si no `/`. |
 | `--auth <json>` | Para `--socketio`: la carga de autenticación, un objeto JSON. |
 | `--socketio-version <version>` | Para `--socketio`: la versión de Socket.IO del servidor, `4` (también para 3) o `2`. Predeterminado 4. |

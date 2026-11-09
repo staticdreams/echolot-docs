@@ -93,6 +93,50 @@ mock.get("/me", (req, res) => {
 })
 ```
 
+## 소켓 [#sockets]
+
+JavaScript 경로는 자체 로직이 필요한 스트림을 위해 연결도 받을 수 있습니다.
+
+| 함수 | 받는 대상 |
+| --- | --- |
+| `mock.ws(path, handler)` | 그 경로로 오는 `GET`의 WebSocket 연결. |
+| `mock.sse(path, handler)` | 그 경로로 오는 `GET`. 경로가 끝낼 때까지 열려 있는 서버 전송 이벤트(`text/event-stream`)로 응답합니다. |
+
+핸들러는 소켓과 요청(`req.params`, `req.query`, `req.headers`, `req.path`)을 받습니다.
+
+| 소켓 | 하는 일 |
+| --- | --- |
+| `socket.send(value)` | 메시지를 보냅니다. 문자열은 그대로, 그 밖의 값은 JSON으로 보냅니다. 스트림에서는 `send(value, { event, id })`가 이벤트의 `event:`와 `id:` 필드를 설정합니다. |
+| `socket.on("message", text => …)` | 클라이언트가 보내는 메시지마다 실행됩니다(WebSocket). |
+| `socket.on("close", code => …)` | 클라이언트가 떠나면 실행됩니다. |
+| `socket.close(code, reason)` | 연결을 닫습니다(`4000` 같은 WebSocket 종료 코드). 스트림은 `stream.end()`로 끝냅니다. |
+
+모의 서버 경로에서 `setTimeout`과 `setInterval`은 실제로 기다리므로, 소켓이 자기 시간에 맞춰 말할 수 있습니다.
+
+```js
+mock.ws("/orders/:id/updates", (socket, req) => {
+  socket.send({ op: "hello", order: req.params.id })
+  socket.on("message", text => {
+    const message = JSON.parse(text)
+    if (message.op === "watch") {
+      setTimeout(() => socket.send({ op: "shipped", order: req.params.id }), 2000)
+    }
+  })
+})
+
+mock.sse("/stock", stream => {
+  let n = 0
+  const timer = setInterval(() => {
+    n += 1
+    stream.send({ n, sku: "TNT-MH-2P", available: 20 - n }, { event: "level", id: String(n) })
+    if (n === 10) { clearInterval(timer); stream.end() }
+  }, 1000)
+})
+```
+
+JavaScript 소켓은 직접 만든 [WebSocket 및 Socket.IO 경로](/docs/mocks/streams-and-sockets)보다 먼저 응답합니다. 모든 연결은
+양방향으로 오간 내용과 함께 로그의 한 줄이 됩니다. Socket.IO 네임스페이스와 MQTT 브로커는 직접 만들어야만 합니다.
+
 ## 제한 [#limits]
 
 경로는 [요청 스크립트](/docs/requests/scripts-and-tests)와 같은 샌드박스에서 실행되며 Node가 아닙니다. 파일 시스템과 네트워크를 사용할 수
@@ -106,7 +150,8 @@ mock.get("/me", (req, res) => {
 표시되며, 스크립트를 읽고 **스크립트 신뢰**를 클릭할 때까지 모의 서버가 시작되지 않습니다. Echolot 외부에서 다시 바뀌면 Echolot이 다시
 확인을 요청합니다.
 
-에이전트는 모의 서버의 경로를 읽을 수는 있지만 쓸 수는 없습니다.
+에이전트는 모의 서버의 경로를 읽을 수는 있지만 저장할 수는 없습니다. 경로를 제안할 수는 있습니다. 사용자는 에이전트의 이유와 바뀌는
+내용을 보며, **저장하고 신뢰**만 경로를 씁니다. [에이전트가 제안하는 스크립트](/docs/ai/agents#scripts-agents-propose)를 참고하세요.
 
 ## 명령줄에서 [#from-the-command-line]
 

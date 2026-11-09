@@ -61,7 +61,7 @@ posterior en un Mac.
 | [`echolot run`](/docs/cli/run) | Ejecuta un espacio de trabajo, algunas de sus carpetas o solicitudes, o una colección de Postman, con comprobaciones e informes. |
 | [`echolot validate`](/docs/cli/validate) | Comprueba que se lee cada archivo de un espacio de trabajo y que se resuelve cada solicitud. |
 | [`echolot import`, `echolot export`](/docs/cli/import-export) | Trae colecciones a un espacio de trabajo y escribe un espacio de trabajo como Postman, Insomnia, Bruno o Echolot. |
-| [`echolot mcp`](/docs/cli/mcp) | Comprueba servidores MCP, inicia sesión en ellos, sirve un espacio de trabajo a los agentes e imprime configuraciones de clientes. |
+| [`echolot mcp`](/docs/cli/mcp) | Comprueba y llama a servidores MCP, inicia sesión en ellos, sirve un espacio de trabajo a los agentes e imprime configuraciones de clientes. |
 | [`echolot spec`](/docs/cli/spec) | Analiza documentos OpenAPI con el linter, y comprueba y aplica los cambios de una especificación a la carpeta que la sigue. |
 | [`echolot graphql diff`](/docs/cli/graphql) | Compara dos esquemas GraphQL y califica cada cambio. |
 | [`echolot grpc`](/docs/cli/grpc) | Describe servicios gRPC y llama a sus métodos. |
@@ -86,7 +86,8 @@ subcomandos los reciben igual: `echolot mcp serve --help`.
 Los comandos que trabajan con un espacio de trabajo reciben su carpeta, la que contiene `workspace.toml`. Algunos la
 reciben como argumento (`echolot run Alpenglow.echolot`) y otros con `-w` o `--workspace`
 (`echolot flow list -w Alpenglow.echolot`); la página de cada comando dice cuál. Donde es opcional, se usa la carpeta
-actual.
+actual. Una carpeta sin `workspace.toml` que contiene exactamente un espacio de trabajo `*.echolot` cuenta como ese
+espacio de trabajo, así que `echolot mcp serve` sin ruta funciona desde la carpeta raíz de un proyecto.
 
 `--env` elige un entorno por el nombre de su archivo sin `.toml` (`staging`). `run`, `validate` y `flow` también
 aceptan su nombre (`Staging`). Sin `--env`, las solicitudes se resuelven con las variables del propio espacio de
@@ -144,7 +145,7 @@ echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
 | Código de salida | Significado |
 | --- | --- |
 | `0` | Todo funcionó y todas las comprobaciones se superaron. |
-| `1` | Algo falló: no hubo respuesta, una comprobación o prueba falló, se encontraron problemas (`validate`, `spec lint`), hay cambios incompatibles (`graphql diff`), un estado de gRPC distinto de OK, una conexión MQTT rechazada, un agente que no terminó. |
+| `1` | Algo falló: no hubo respuesta, una comprobación o prueba falló, se encontraron problemas (`validate`, `spec lint`), hay cambios incompatibles (`graphql diff`), un estado de gRPC distinto de OK o una respuesta que no se puede decodificar, una conexión MQTT rechazada, una llamada MCP que falló (`mcp call`), un agente que no terminó. |
 | `22` | Solo `echolot send`: el estado de la respuesta fue 400 o más, como con `curl --fail`. |
 | `64` | La propia línea de comandos era incorrecta: una opción desconocida, un archivo que falta, un entorno que no existe. Se imprime el motivo. |
 

@@ -114,7 +114,7 @@ Created flows/export-tents.flow.toml.
 ## echolot flow serve [#echolot-flow-serve]
 
 ```sh
-echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>] [--rotate-token]
 ```
 
 スケジュールのあるすべてのフローを期限が来たときに実行し、Webhookを持つフローのWebhookに、<kbd>⌃</kbd><kbd>C</kbd>で停止するまで応答します。
@@ -128,14 +128,15 @@ echolot flow serve -w Alpenglow.echolot --port 4100
 Serving Alpenglow (Ctrl-C stops it)
   schedule  Morning stock check: 0 6 * * *
   webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
-  token     3f9a…
+  token     3f9a… (this workspace's; send it as Authorization: Bearer; ?token= only for senders without headers, as URLs get logged; --rotate-token replaces it)
 ```
 
 実行のたびに、時刻、フロー、終了の仕方、所要時間を示す1行が出力されます。
 
-**Webhook。** 呼び出し元は、フローのWebhookのメソッドとパスに、トークンを `Authorization: Bearer <token>`、`X-Echolot-Token` ヘッダー、またはURLの `?token=` として付けて送信します。
+**Webhook。** 呼び出し元は、フローのWebhookのメソッドとパスに、トークンを `Authorization: Bearer <token>`、`X-Echolot-Token` ヘッダー、またはURLの `?token=`（ヘッダーを設定できない送信元専用です。URLはログに残るためです。入力になることはありません）として付けて送信します。
 フローの入力は、クエリとJSONボディから取得されます。`body` という名前の入力には、ボディ全体が渡されます。応答は、フローの出力（JSON）です。フローが失敗した場合はエラー付きの `500`、
-正しいトークンがない場合は `401`、どのフローにもないパスの場合は、存在するパスの一覧付きの `404` になります。
+正しいトークンがない場合は `401`、どのフローにもないパスの場合は、存在するパスの一覧付きの `404`、実行が開始されなかった場合は `409` になります
+（[トリガーによる実行の送信先](/docs/flows/running-and-triggers#where-triggered-runs-send)を参照）。
 
 ```sh
 curl -X POST http://127.0.0.1:4100/order-status \
@@ -144,7 +145,12 @@ curl -X POST http://127.0.0.1:4100/order-status \
   -d '{"orderId": "ord_7Hk2Lw"}'
 ```
 
-トークンは `--token`、なければ `ECHOLOT_WEBHOOK_TOKEN`、それもなければEcholotが出力する新しいトークンです。Webhookの実行は最大2分かかることがあります。8 MBを超えるボディは、全体が拒否されます。
+トークンは `--token`、なければ `ECHOLOT_WEBHOOK_TOKEN`、それもなければワークスペース自身のトークンです。
+このトークンは一度だけ作られてキーチェーンに保存され、アプリと共有されるため、渡したアドレスは再起動後も使えます。`--rotate-token` はワークスペースのトークンを
+新しいものに置き換えます。Webhookの実行は最大2分かかることがあります。8 MBを超えるボディは、全体が拒否されます。
+
+**環境。** スケジュールやWebhookで環境を指定しているフローは、常にその環境を使います。それ以外のフローでは、`--env` が環境になります。
+あなたの選択なので、保護された環境でも使われます。`--env` がない場合、リクエストが環境の変数を必要とするフローは実行されません。
 
 | オプション | 意味 |
 | --- | --- |
@@ -152,7 +158,8 @@ curl -X POST http://127.0.0.1:4100/order-status \
 | `--env <env>` | フローのリクエストが使う環境。 |
 | `--port <port>` | Webhookのポート。`0` は空いているポートを選びます。デフォルトは4100。 |
 | `--share` | このマシンだけでなく、すべてのネットワークインターフェースでWebhookに応答します：コンテナ向けです。 |
-| `--token <token>` | Webhookのトークン。デフォルトは `ECHOLOT_WEBHOOK_TOKEN`、なければ新しく生成して出力します。 |
+| `--token <token>` | Webhookのトークン。デフォルトは `ECHOLOT_WEBHOOK_TOKEN`、なければキーチェーンに保存されたワークスペース自身のトークンです。 |
+| `--rotate-token` | ワークスペースのWebhookトークンを新しいものに置き換えます。アプリもそのトークンを使います。 |
 
 アプリでのスケジュールとWebhookについては、[フローの実行とトリガー](/docs/flows/running-and-triggers)を参照してください。
 

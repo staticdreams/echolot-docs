@@ -123,9 +123,11 @@ seulement si vous les y autorisez.
   demandent toujours.
 - **Les secrets n’atteignent jamais un agent.** Les agents désignent les secrets par leur nom. Tout ce qu’un agent
   reçoit en retour, erreurs comprises, est débarrassé des valeurs secrètes, telles qu’écrites, en JSON, encodées en
-  pourcentage et en Base64. L’historique qu’un agent lit a ses identifiants masqués.
-- **Jamais proposés.** Les règles des agents, le proxy, les certificats, l’auth et les scripts ne sont pas des outils
-  que les agents peuvent utiliser.
+  pourcentage et en Base64. L’historique qu’un agent lit a ses identifiants masqués, tout comme
+  les champs d’identifiants des corps de réponse, par exemple un `access_token` que personne n’a enregistré.
+- **Jamais proposés.** Les règles des agents, le proxy, les certificats, l’auth et l’enregistrement de scripts ne sont
+  pas des outils que les agents peuvent utiliser. Un agent peut proposer un script : vous voyez sa raison et la
+  modification, et seul **Enregistrer et approuver** l’écrit et l’approuve.
 - **Chaque appel est enregistré.** L’historique montre qui a envoyé chaque requête, les agents par leur nom, et
   **Agents** dans la fenêtre liste les appels récents.
 

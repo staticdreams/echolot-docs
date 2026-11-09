@@ -59,8 +59,8 @@ URL、パラメータ、ヘッダー、ボディ、フォームのフィール�
 | **リクエスト** | `{{$requestHeader('', 'Content-Type')}}`、`{{$requestURL('auth/sign-in')}}`、`{{$requestJSONPath('', '$.lines[0].sku')}}` | このリクエスト（最初の引数が空）またはほかのリクエストの、送信されるとおりの一部分。 |
 | **エンコーディング** | `{{$base64('heidi:alpenglow')}}`、`{{$urlEncode('a b&c')}}`、`{{$jsonEscape('say "hi"')}}`、`{{$basicAuth('heidi', '{{password}}')}}`、`{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`、`{{$newline}}` | エンコードまたはデコードしたテキスト、エスケープ、Basic認証の値、署名したJWT。 |
 | **ハッシュと署名** | `{{$sha256("{{$requestBody('')}}")}}`、`{{$hmacSha256('{{key}}', 'message', 'base64')}}`、`{{$md5('text')}}` | ハッシュとHMAC。`base64`または`base64url`を指定しなければ16進数です。 |
-| **時間** | `{{$timestamp}}`、`{{$timestampMs}}`、`{{$isoTimestamp}}`、`{{$httpDate}}`、`{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | 送信時刻。Unix秒またはミリ秒、ISO 8601、HTTP日付、独自の形式で、秒単位のオフセットとタイムゾーンを指定できます。 |
-| **ランダム** | `{{$uuid}}`、`{{$randomInt(1, 6)}}`、`{{$randomString(16)}}`、`{{$randomHex(8)}}` | 送信のたびに新しいランダムな値。`$guid`と`$randomUUID`は`$uuid`の別名です。 |
+| **時間** | `{{$timestamp}}`、`{{$timestampMs}}`、`{{$isoTimestamp('-90s')}}`、`{{$httpDate}}`、`{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | 送信時刻。Unix秒またはミリ秒、ISO 8601、HTTP日付、独自の形式で、オフセットとタイムゾーンを指定できます。 |
+| **ランダム** | `{{$uuid}}`、`{{$sameUUID('order')}}`、`{{$randomInt(1, 6)}}`、`{{$randomString(16)}}`、`{{$randomHex(8)}}` | 送信のたびに新しいランダムな値。ただし`$sameUUID`は、同じ名前を指定した実行中のすべてのリクエストで同じ値です。`$guid`と`$randomUUID`は`$uuid`の別名です。 |
 | **ダミーデータ** | `{{$randomFullName}}`、`{{$randomEmail}}`、`{{$randomCity}}`、`{{$randomPrice}}`、`{{$randomLoremSentence}}`、`{{$randomDatePast}}` | 架空の名前、住所、会社、価格、日付、ダミーテキストなど。送信のたびに新しくなり、名前はPostmanと同じです。リストではサブメニューにまとまっています。[ダミーデータ](/docs/reference/dynamic-values#fake-data)を参照してください。 |
 | **テキスト** | `{{$lowercase('{{name}}')}}`、`{{$uppercase('chf')}}`、`{{$trim('{{code}}')}}` | 変換したテキスト。 |
 | **ファイルとシステム** | `{{$file('data/order.json')}}`、`{{$env('HOME')}}` | ファイルの内容（ワークスペースからの相対パス、または絶対パス）、またはEcholotプロセスの環境変数。 |
@@ -68,6 +68,12 @@ URL、パラメータ、ヘッダー、ボディ、フォームのフィール�
 `$env`はエージェントでは使えません。AIエージェントがリクエストを送信するとき、Macの環境変数はそこに入りません。
 
 Alpenglowの例では、**Orders › Create order**で使っています。`Idempotency-Key`ヘッダーが`{{$uuid}}`なので、注文のたびに新しい値になります。
+実行中の複数のリクエストで共有するキーには、`{{$sameUUID('order')}}`を使います。実行ごとに1回（実行の外ではウインドウごとに1回）作られ、
+`order`を指定したすべてのリクエストが同じ値を受け取ります。
+
+`$timestamp`、`$timestampMs`、`$isoTimestamp`は、送信の前後の時刻を表すオフセットを受け取ります。秒数、または`ms`、`s`、`m`、`h`、`d`、`w`付きの数値で、
+過去には`-`を付けます。`{{$isoTimestamp('-90s')}}`や`{{$timestamp('2h')}}`のように引用符で囲んで書きます。秒数だけの数値は`{{$timestamp(60)}}`のようにそのまま書けます。
+[リファレンス](/docs/reference/dynamic-values#time)を参照してください。
 
 ## ほかのリクエストのレスポンスの値 [#values-from-other-requests-responses]
 

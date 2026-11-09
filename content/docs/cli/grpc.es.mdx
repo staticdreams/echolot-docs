@@ -52,7 +52,7 @@ tipos de solicitud y de respuesta, y los campos de su solicitud.
 ## echolot grpc call [#echolot-grpc-call]
 
 ```sh
-echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--stream] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
 ```
 
 `<method>` es `package.Service/Method`. El mensaje es JSON, `{}` de forma predeterminada; `-d -` lo lee de la entrada
@@ -66,13 +66,26 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
 ```
 
 El estado, el número de mensajes recibidos y el tiempo van a la salida de error estándar. Un estado distinto de `OK`
-sale con 1.
+sale con 1. También una respuesta que no se puede decodificar con el esquema; la salida de error estándar sugiere
+entonces `--proto` con el archivo `.proto` del propio servicio.
+
+### Streams del servidor [#server-streams]
+
+Los mensajes de un método con streaming del servidor se imprimen a medida que llegan, un objeto JSON por línea, cuando
+la salida es un terminal o con `--stream`. Con la salida redirigida a otro comando y sin `--stream`, los mensajes se
+imprimen al terminar la llamada, como un único array JSON.
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/WatchStock \
+  -d '{"skus": ["TNT-MH-2P"]}' --proto Alpenglow.echolot/specs/inventory.proto --stream | jq .
+```
 
 | Opción | Significado |
 | --- | --- |
 | `-d`, `--data <json>` | El mensaje como JSON; `-` lo lee de la entrada estándar. Predeterminado `{}`. |
 | `--deadline <ms>` | El plazo en milisegundos, enviado como `grpc-timeout`. |
 | `--compress <algorithm>` | Comprime los mensajes enviados: `gzip` o `deflate`. Las respuestas comprimidas se leen en cualquier caso. |
+| `--stream` | Imprime los mensajes de un stream del servidor a medida que llegan, un objeto JSON por línea. Es lo predeterminado en un terminal. |
 | `--proto <file>` | Un archivo `.proto` que describe el servicio, con sus importaciones a su lado. Sin él, se pregunta a la reflexión del servidor. |
 | `-H`, `--header <header>` | Metadatos como `'Name: value'`. Repetible. |
 | `-k`, `--insecure` | Omite la verificación del certificado TLS. |
@@ -86,5 +99,5 @@ incorporados, así que un archivo `.proto` que los importa no necesita nada a su
 | Código | Cuándo |
 | --- | --- |
 | `0` | `describe` encontró los servicios; `call` terminó con el estado `OK`. |
-| `1` | No se pudo alcanzar o describir el servidor, o el estado de la llamada no fue `OK`. |
+| `1` | No se pudo alcanzar o describir el servidor, el estado de la llamada no fue `OK` o su respuesta no se pudo decodificar. |
 | `64` | Una opción incorrecta. |

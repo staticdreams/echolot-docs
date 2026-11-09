@@ -14,7 +14,7 @@ en un informe lo que no pudo traer.
 | **cURL** | Un comando `curl …`, pegado o en un archivo de texto | Una solicitud: método, dirección, cabeceras, cuerpo, autenticación Basic y ajustes como las redirecciones y las comprobaciones de TLS. |
 | **Postman** | Colecciones v2.0 y v2.1, entornos (`.json`) | Carpetas, solicitudes, autenticación, variables de la colección, scripts previos y de pruebas; los entornos pasan a ser [entornos](/docs/workspaces/environments). |
 | **Insomnia** | Exportaciones JSON v4, colecciones YAML v5 | Carpetas, solicitudes, autenticación, entornos. |
-| **OpenAPI** | OpenAPI 3.0 y 3.1, Swagger 2.0, JSON o YAML | Una solicitud por cada operación, con sus parámetros, un cuerpo de ejemplo y la autenticación de su esquema de seguridad. La dirección del servidor pasa a ser la variable `{{baseUrl}}`. |
+| **OpenAPI** | OpenAPI 3.0 y 3.1, Swagger 2.0, JSON o YAML | Una solicitud por cada operación, con sus parámetros, un cuerpo de ejemplo y la autenticación de su esquema de seguridad. La dirección del servidor pasa a ser la variable `{{baseUrl}}`, salvo que el espacio de trabajo ya tenga una variable de dirección base, como `{{baseURL}}`: entonces las solicitudes usan esa. |
 | **HAR** | HTTP Archive 1.2 de un navegador o de un proxy (`.har`) | Las llamadas a la API de la sesión, una carpeta por host cuando había varios. |
 | **Paw** | Documentos de Paw y RapidAPI para Mac (`.paw`) | Grupos, solicitudes, entornos; los valores dinámicos de Paw pasan a ser las [variables y valores dinámicos](/docs/requests/dynamic-values) de Echolot cuando es posible. |
 | **Bruno** | Una carpeta de colección (con `bruno.json` o archivos `.bru`) | Carpetas, solicitudes, autenticación, entornos, scripts y pruebas tal como están escritos. |

@@ -99,6 +99,51 @@ mock.get("/me", (req, res) => {
 })
 ```
 
+## Sockets
+
+Routes in JavaScript can take connections too, for streams that need logic of their own:
+
+| Function | Takes |
+| --- | --- |
+| `mock.ws(path, handler)` | WebSocket connections on a `GET` to the path. |
+| `mock.sse(path, handler)` | A `GET` to the path, answered with server-sent events (`text/event-stream`) held open until the route ends them. |
+
+The handler gets the socket and the request (`req.params`, `req.query`, `req.headers`, `req.path`):
+
+| Socket | What it does |
+| --- | --- |
+| `socket.send(value)` | Sends a message: a string as it is, anything else as JSON. For a stream, `send(value, { event, id })` sets the event's `event:` and `id:` fields. |
+| `socket.on("message", text => …)` | Runs for every message the client sends (WebSocket). |
+| `socket.on("close", code => …)` | Runs when the client leaves. |
+| `socket.close(code, reason)` | Closes the connection (a WebSocket close code, such as `4000`). For a stream, `stream.end()` ends it. |
+
+In mock routes, `setTimeout` and `setInterval` wait for real, so a socket can speak on its own time:
+
+```js
+mock.ws("/orders/:id/updates", (socket, req) => {
+  socket.send({ op: "hello", order: req.params.id })
+  socket.on("message", text => {
+    const message = JSON.parse(text)
+    if (message.op === "watch") {
+      setTimeout(() => socket.send({ op: "shipped", order: req.params.id }), 2000)
+    }
+  })
+})
+
+mock.sse("/stock", stream => {
+  let n = 0
+  const timer = setInterval(() => {
+    n += 1
+    stream.send({ n, sku: "TNT-MH-2P", available: 20 - n }, { event: "level", id: String(n) })
+    if (n === 10) { clearInterval(timer); stream.end() }
+  }, 1000)
+})
+```
+
+Sockets in JavaScript answer before the [WebSocket and Socket.IO routes](/docs/mocks/streams-and-sockets) made by
+hand. Every connection is a line of the log, with what went each way. Socket.IO namespaces and the MQTT broker are made
+by hand only.
+
 ## Limits
 
 Routes run in the same sandbox as [request scripts](/docs/requests/scripts-and-tests), not in Node: no file system and
@@ -112,7 +157,8 @@ Echolot run. Routes that came from outside, through Git, an import or another ap
 says **These scripts came from outside Echolot**, and the mock doesn't start until you read them and click **Trust
 Scripts**. If they change outside Echolot again, Echolot asks again.
 
-Agents can read a mock's routes but never write them.
+Agents can read a mock's routes but never save them. They can propose routes: you see their reason and what changes,
+and only **Save and Trust** writes them. See [scripts agents propose](/docs/ai/agents#scripts-agents-propose).
 
 ## From the command line
 

@@ -60,8 +60,8 @@ description: "타임스탬프, UUID, 해시, 인코딩, 파일, 다른 요청과
 | <strong>요청</strong> | `{{$requestHeader('', 'Content-Type')}}`, `{{$requestURL('auth/sign-in')}}`, `{{$requestJSONPath('', '$.lines[0].sku')}}` | 이 요청(첫 번째 인수가 비어 있음) 또는 다른 요청의, 보내질 때의 일부분. |
 | <strong>인코딩</strong> | `{{$base64('heidi:alpenglow')}}`, `{{$urlEncode('a b&c')}}`, `{{$jsonEscape('say "hi"')}}`, `{{$basicAuth('heidi', '{{password}}')}}`, `{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`, `{{$newline}}` | 인코딩 또는 디코딩된 텍스트, 이스케이프, Basic 인증 값, 서명된 JWT. |
 | <strong>해시 및 서명</strong> | `{{$sha256("{{$requestBody('')}}")}}`, `{{$hmacSha256('{{key}}', 'message', 'base64')}}`, `{{$md5('text')}}` | 해시와 HMAC. `base64`나 `base64url`을 지정하지 않으면 16진수입니다. |
-| <strong>시간</strong> | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | 보내는 시각을 Unix 초 또는 밀리초, ISO 8601, HTTP 날짜, 직접 정한 형식으로. 초 단위 오프셋과 시간대를 적용할 수 있습니다. |
-| <strong>무작위</strong> | `{{$uuid}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | 보낼 때마다 새로 만들어지는 무작위 값. `$guid`와 `$randomUUID`는 `$uuid`의 다른 이름입니다. |
+| <strong>시간</strong> | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp('-90s')}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | 보내는 시각을 Unix 초 또는 밀리초, ISO 8601, HTTP 날짜, 직접 정한 형식으로. 오프셋과 시간대를 적용할 수 있습니다. |
+| <strong>무작위</strong> | `{{$uuid}}`, `{{$sameUUID('order')}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | 보낼 때마다 새로 만들어지는 무작위 값. 단, `$sameUUID`는 한 실행에서 같은 이름을 지정한 모든 요청에 같은 값입니다. `$guid`와 `$randomUUID`는 `$uuid`의 다른 이름입니다. |
 | <strong>가짜 데이터</strong> | `{{$randomFullName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomLoremSentence}}`, `{{$randomDatePast}}` | 지어낸 이름, 주소, 회사, 가격, 날짜, lorem ipsum 등이며 보낼 때마다 새로 만들어집니다. 이름은 Postman의 이름을 따릅니다. 목록에서는 하위 메뉴로 묶여 있습니다. [가짜 데이터](/docs/reference/dynamic-values#fake-data)를 참고하십시오. |
 | <strong>텍스트</strong> | `{{$lowercase('{{name}}')}}`, `{{$uppercase('chf')}}`, `{{$trim('{{code}}')}}` | 변환된 텍스트. |
 | <strong>파일 및 시스템</strong> | `{{$file('data/order.json')}}`, `{{$env('HOME')}}` | 파일의 내용(작업 공간 기준 상대 경로 또는 절대 경로), 또는 Echolot 프로세스의 환경 변수. |
@@ -69,6 +69,12 @@ description: "타임스탬프, UUID, 해시, 인코딩, 파일, 다른 요청과
 `$env`는 에이전트에서 사용할 수 없습니다. AI 에이전트가 요청을 보낼 때 Mac의 환경 변수는 포함되지 않습니다.
 
 Alpenglow 예제에서는 <strong>Orders › Create order</strong>가 하나를 사용합니다. `Idempotency-Key` 헤더가 `{{$uuid}}`이므로 주문마다 새 값이 됩니다.
+한 실행의 여러 요청이 공유하는 키에는 `{{$sameUUID('order')}}`를 사용하십시오. 실행마다 한 번(실행 밖에서는 윈도우마다 한 번)
+만들어지며, `order`를 지정한 모든 요청이 같은 값을 받습니다.
+
+`$timestamp`, `$timestampMs`, `$isoTimestamp`는 보내는 시각의 앞이나 뒤를 위해 오프셋을 받습니다. 초 단위 숫자이거나 `ms`, `s`, `m`, `h`,
+`d`, `w`가 붙은 숫자이며, 과거는 `-`로 씁니다. `{{$isoTimestamp('-90s')}}`나 `{{$timestamp('2h')}}`처럼 따옴표 안에 쓰십시오. 초 단위
+숫자만 쓸 때는 `{{$timestamp(60)}}`처럼 따옴표 없이 써도 됩니다. [레퍼런스](/docs/reference/dynamic-values#time)를 참고하십시오.
 
 ## 다른 요청의 응답에서 가져오는 값 [#values-from-other-requests-responses]
 

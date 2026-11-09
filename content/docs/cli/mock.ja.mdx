@@ -73,6 +73,15 @@ Mock of Storefront: 3 routes at http://127.0.0.1:4321 (Ctrl-C stops it)
 各行には、応答したルートと、括弧内に返したレスポンスが表示されます。ボディ内のダミーの値は、リクエストごとに作り直されます。サーバなしでダミーデータを作るには、
 [echolot fake](/docs/cli/fake)を参照してください。
 
+ストリームとソケットもアプリと同じように動作します。Server-Sent Eventsをストリーミングするルート、WebSocketとSocket.IOのルート、
+そしてモックとともに専用のポートで起動するモックのMQTTブローカーです。
+
+```text
+Mock of Shop live: 2 routes at http://127.0.0.1:4019, MQTT broker at mqtt://127.0.0.1:1883 (Ctrl-C stops it)
+```
+
+[ストリーム、ソケット、MQTT](/docs/mocks/streams-and-sockets)を参照してください。
+
 ## オプション [#options]
 
 | オプション | 意味 |

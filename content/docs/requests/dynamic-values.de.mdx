@@ -72,8 +72,8 @@ nutzen: doppelte um ein Token, dessen Argumente in einfachen stehen, wie in der 
 | **Anfragen** | `{{$requestHeader('', 'Content-Type')}}`, `{{$requestURL('auth/sign-in')}}`, `{{$requestJSONPath('', '$.lines[0].sku')}}` | Teile dieser Anfrage (erstes Argument leer) oder einer anderen, so wie sie gesendet würden. |
 | **Codierung** | `{{$base64('heidi:alpenglow')}}`, `{{$urlEncode('a b&c')}}`, `{{$jsonEscape('say "hi"')}}`, `{{$basicAuth('heidi', '{{password}}')}}`, `{{$jwt('{"sub": "heidi"}', '{{jwtSecret}}')}}`, `{{$newline}}` | Codierten oder decodierten Text, Escapes, einen Basic-Auth-Wert, ein signiertes JWT. |
 | **Hashes und Signaturen** | `{{$sha256("{{$requestBody('')}}")}}`, `{{$hmacSha256('{{key}}', 'message', 'base64')}}`, `{{$md5('text')}}` | Hashes und HMACs, hexadezimal, sofern du nicht `base64` oder `base64url` verlangst. |
-| **Zeit** | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | Die Sendezeit in Unix-Sekunden oder -Millisekunden, ISO 8601, als HTTP-Datum oder in deinem eigenen Format, verschoben um einen Versatz in Sekunden und in einer Zeitzone. |
-| **Zufall** | `{{$uuid}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | Bei jedem Senden neue Zufallswerte. `$guid` und `$randomUUID` sind andere Namen für `$uuid`. |
+| **Zeit** | `{{$timestamp}}`, `{{$timestampMs}}`, `{{$isoTimestamp('-90s')}}`, `{{$httpDate}}`, `{{$date('yyyy-MM-dd', -86400, 'Europe/Zurich')}}` | Die Sendezeit in Unix-Sekunden oder -Millisekunden, ISO 8601, als HTTP-Datum oder in deinem eigenen Format, verschoben um einen Versatz und in einer Zeitzone. |
+| **Zufall** | `{{$uuid}}`, `{{$sameUUID('order')}}`, `{{$randomInt(1, 6)}}`, `{{$randomString(16)}}`, `{{$randomHex(8)}}` | Bei jedem Senden neue Zufallswerte, außer `$sameUUID`, das für jede Anfrage eines Laufs, die denselben Namen angibt, gleich ist. `$guid` und `$randomUUID` sind andere Namen für `$uuid`. |
 | **Beispieldaten** | `{{$randomFullName}}`, `{{$randomEmail}}`, `{{$randomCity}}`, `{{$randomPrice}}`, `{{$randomLoremSentence}}`, `{{$randomDatePast}}` | Erfundene Namen, Adressen, Firmen, Preise, Daten, Lorem ipsum und mehr, bei jedem Senden neu, unter den Namen von Postman. Die Liste gruppiert sie in Untermenüs. Siehe [Beispieldaten](/docs/reference/dynamic-values#fake-data). |
 | **Text** | `{{$lowercase('{{name}}')}}`, `{{$uppercase('chf')}}`, `{{$trim('{{code}}')}}` | Veränderten Text. |
 | **Dateien und System** | `{{$file('data/order.json')}}`, `{{$env('HOME')}}` | Den Inhalt einer Datei (ein Pfad relativ zum Arbeitsbereich oder ein absoluter Pfad) oder eine Umgebungsvariable des Echolot-Prozesses. |
@@ -82,7 +82,14 @@ nutzen: doppelte um ein Token, dessen Argumente in einfachen stehen, wie in der 
 außen vor.
 
 Das Alpenglow-Beispiel nutzt einen in **Orders › Create order**: Sein Header `Idempotency-Key` ist `{{$uuid}}`, sodass
-jede Bestellung neu ist.
+jede Bestellung neu ist. Für einen Schlüssel, den mehrere Anfragen eines Laufs teilen, nimm `{{$sameUUID('order')}}`: Er
+wird einmal pro Lauf erzeugt (und außerhalb von Läufen einmal pro Fenster), und jede Anfrage, die `order` nennt, bekommt
+denselben.
+
+`$timestamp`, `$timestampMs` und `$isoTimestamp` nehmen einen Versatz, für eine Zeit vor oder nach dem Senden: Sekunden
+oder eine Zahl mit `ms`, `s`, `m`, `h`, `d` oder `w`, mit `-` für die Vergangenheit. Schreib ihn in Anführungszeichen,
+`{{$isoTimestamp('-90s')}}` oder `{{$timestamp('2h')}}`; eine einfache Zahl von Sekunden darf allein stehen,
+`{{$timestamp(60)}}`. Siehe die [Referenz](/docs/reference/dynamic-values#time).
 
 ## Werte aus Antworten anderer Anfragen [#values-from-other-requests-responses]
 

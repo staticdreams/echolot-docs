@@ -37,15 +37,21 @@ Der erwartete Wert ist eine Vorlage, also funktionieren `{{variables}}` darin: *
 | **Antwortzeit (ms)** | Die Gesamtdauer des Austauschs in Millisekunden | ist kleiner als, ist höchstens, ist größer als, ist mindestens |
 | **Größe (Byte)** | Die Größe des Body in Byte | ist kleiner als, ist höchstens, ist größer als, ist mindestens |
 | **JSON Schema** | Den Body, gegen ein JSON Schema, das du einfügst | entspricht |
-| **GraphQL-Fehler** | Das `errors`-Array einer GraphQL-Antwort | ist gleich, ist kleiner als, ist größer als (ihre Anzahl); enthält, enthält nicht (ihre Meldungen) |
-| **MCP-Fehler** | Ob ein MCP-Aufruf fehlgeschlagen ist: `true` oder `false` | ist gleich |
+| **GraphQL-Fehler** | Das `errors`-Array einer GraphQL-Antwort | ist gleich, ist kleiner als, ist größer als (ihre Anzahl); enthält, enthält nicht (ihre Meldungen); existiert, existiert nicht (ob es welche gibt) |
+| **MCP-Fehler** | Ob ein MCP-Aufruf fehlgeschlagen ist, und wie: `false`, `tool`, `protocol` oder `true` | ist gleich, ist nicht gleich, ist einer von, existiert, existiert nicht |
 | **Ausgabeschema des Tools** | Den `structuredContent` des Ergebnisses eines MCP-Tools, gegen das eigene `outputSchema` des Tools | entspricht |
 | **OpenAPI-Spec** | Den Body, gegen das Schema der verknüpften OpenAPI-Spec für den Status der Antwort | entspricht |
 | **gRPC-Status** | Den Status eines gRPC-Aufrufs, nach Namen oder Code | ist gleich, ist nicht gleich, ist einer von |
+| **Wert in Nachrichten** | Den Wert an einem JSONPath in den Nachrichten, die eine WebSocket-, Socket.IO- oder MQTT-Sitzung empfangen hat | Dieselben wie bei **JSON-Wert** |
+| **Empfangene Nachrichten** | Wie viele Nachrichten die Sitzung empfangen hat | ist gleich, ist nicht gleich, ist kleiner als, ist höchstens, ist größer als, ist mindestens |
+| **Sitzungsende** | Wie die Gegenseite die Sitzung geschlossen hat: ihr Code und ihr Grund | existiert, existiert nicht, ist gleich, ist nicht gleich, ist einer von, enthält, enthält nicht, passt zu Regex |
+
+Die letzten drei gibt es nur bei WebSocket-, Socket.IO- und MQTT-Anfragen. Siehe
+[Prüfungen auf Echtzeit-Sitzungen](#checks-on-realtime-sessions).
 
 Eine neue Prüfung beginnt mit einem sinnvollen Wert: **Status** ist gleich `200`, **Antwortzeit (ms)** ist kleiner als
-`1000`, **GraphQL-Fehler** ist gleich `0`, **MCP-Fehler** ist gleich `false`, **gRPC-Status** ist gleich `OK` und
-**JSON Schema** mit `{"type": "object"}`.
+`1000`, **GraphQL-Fehler** ist gleich `0`, **MCP-Fehler** ist gleich `false`, **gRPC-Status** ist gleich `OK`,
+**Empfangene Nachrichten** ist mindestens `1` und **JSON Schema** mit `{"type": "object"}`.
 
 ### Wie Werte verglichen werden [#how-values-compare]
 
@@ -68,19 +74,59 @@ Body-Vergleiche sowie **JSON Schema** und **GraphQL-Fehler** lesen den ganzen Bo
 ### Prüfungen für andere Arten von Anfragen [#checks-for-other-kinds-of-request]
 
 - **GraphQL**: Server antworten auf Fehler mit Status 200, füge also **GraphQL-Fehler** ist gleich `0` hinzu, um sie zu
-  erkennen. Nutze **enthält**, um zu prüfen, dass eine bestimmte Meldung zurückkommt.
-- **MCP-Aufrufe**: **MCP-Fehler** ist gleich `false` besteht, wenn der Aufruf erfolgreich war. Es schlägt bei einem als
-  Fehler markierten Ergebnis und bei einem JSON-RPC-Fehler fehl, und die Meldung zeigt, was der Server gesagt hat.
+  erkennen. **existiert nicht** sagt dasselbe: Es besteht, wenn die Antwort keine Fehler hat, und **existiert**, wenn sie
+  mindestens einen hat. Nutze **enthält**, um zu prüfen, dass eine bestimmte Meldung zurückkommt.
+- **MCP-Aufrufe**: **MCP-Fehler** unterscheidet zwei Fehlschläge. `tool` ist ein Fehlschlag des Tools selbst, ein als
+  Fehler markiertes Ergebnis, das das Modell liest; `protocol` ist ein JSON-RPC-Fehler, wenn der Server abgestürzt ist
+  oder den Aufruf abgelehnt hat. **ist gleich** `false` besteht, wenn der Aufruf erfolgreich war, `true`, wenn er auf
+  eine der beiden Arten fehlschlug, und `tool` oder `protocol` nur bei diesem Fehlschlag. **existiert** und
+  **existiert nicht** fragen, ob er überhaupt fehlschlug. Eine fehlgeschlagene Prüfung zeigt, was der Server gesagt hat.
   **Ausgabeschema des Tools** prüft ein Tool-Ergebnis gegen das Schema, das das Tool deklariert; es schlägt fehl, wenn
   das Tool keines deklariert. Siehe [MCP-Anfragen](/docs/requests/mcp-requests).
 - **gRPC**: **gRPC-Status** nimmt Namen wie `OK` und `NOT_FOUND` oder Codes von 0 bis 16; `5`, `not_found` und
   `NOT_FOUND` sind derselbe Status. Eine fehlgeschlagene Prüfung zeigt die Statusmeldung. Siehe
   [gRPC](/docs/requests/grpc).
-- **OpenAPI-Spec**: Der Ordner der Anfrage (oder ein Ordner darüber) muss mit einer Spec verknüpft sein, und die
-  Anfrage muss einer ihrer Operationen folgen. Die Prüfung validiert dann den Body gegen das Schema, das die Spec für
-  den
-  zurückgekommenen Status dokumentiert. Ein Status, den die Spec ohne JSON-Body dokumentiert, besteht; ein
-  undokumentierter Status schlägt fehl. Siehe [Specs](/docs/specs).
+- **OpenAPI-Spec**: Der Ordner der Anfrage (oder ein Ordner darüber) muss mit einer Spec verknüpft sein, oder die
+  Anfrage muss mit `spec` in ihrer Datei eine eigene nennen, und die Anfrage muss einer ihrer Operationen folgen
+  (`spec-operation`). Die Prüfung validiert dann den Body gegen das Schema, das die Spec für den zurückgekommenen Status
+  dokumentiert. Ein Status, den die Spec ohne JSON-Body dokumentiert, besteht; ein undokumentierter Status schlägt fehl.
+  Siehe [Specs](/docs/specs).
+
+### Prüfungen auf Echtzeit-Sitzungen [#checks-on-realtime-sessions]
+
+WebSocket-, Socket.IO- und MQTT-Anfragen werden an ihrem Nachrichtenlog geprüft, das die Antwort einer beendeten
+Sitzung ist. Ohne dich, in der [Ausführung](/docs/requests/runner), in der Befehlszeile und für Agenten, verbindet sich
+eine solche Anfrage, sendet ihre gesicherten Nachrichten, hört zu und schließt dann, und die Prüfungen lesen, was
+zurückkam.
+
+- **Wert in Nachrichten** wendet einen JSONPath auf jede Nachricht an, die die Sitzung empfangen hat, jede als JSON
+  gelesen. Die Argumente eines Socket.IO-Ereignisses sind ein Array, `$[0].op` ist also das `op` seines ersten
+  Arguments; ein Text, der kein JSON ist, ist ein String. Die Prüfung besteht, wenn irgendeine empfangene Nachricht
+  besteht. Mit **existiert nicht**, **ist nicht gleich** oder **enthält nicht** besteht sie, wenn keine Nachricht
+  durchfällt. Nur empfangene Nachrichten zählen, nie die, die Echolot gesendet hat.
+- **Empfangene Nachrichten** zählt die Nachrichten, die die Sitzung empfangen hat.
+- **Sitzungsende** **existiert**, wenn die Gegenseite die Sitzung geschlossen hat. **ist gleich** und **ist einer von**
+  vergleichen ihren Close-Code (den Reason Code eines MQTT-Brokers) oder ihren Grund; die Zahlenvergleiche lesen den
+  Code; **enthält**, **enthält nicht** und **passt zu Regex** lesen Code und Grund als einen Text. Eine Sitzung, die
+  Echolot am Ende ihrer Zuhörzeit geschlossen hat, fällt bei jedem Vergleich durch außer bei **existiert nicht**.
+
+**Wert in Nachrichten** und **Empfangene Nachrichten** haben hinter dem Pfad ein Feld, **beliebig**, das sie auf
+bestimmte Nachrichten beschränkt: auf den Namen eines Socket.IO-Ereignisses (eine Bestätigung trägt den Namen des
+Ereignisses, auf das sie antwortet) oder einen MQTT-Topic-Filter, in dem `+` und `#` funktionieren. Lass es leer, um
+jede Nachricht zu nehmen. In der Anfragedatei ist es das `on` der Prüfung. So kann etwa **Realtime › Support chat**
+prüfen, dass die Person, die dich begrüßt, Heidi ist:
+
+```toml
+[[assertions]]
+target = "message"
+path = "$[0].agent"
+on = "welcome"
+check = "equals"
+expected = "Heidi"
+```
+
+Ein Server, der die Verbindung ablehnt, gibt diesen Anfragen in Durchläufen trotzdem eine Antwort, die sich prüfen
+lässt. Siehe [abgelehnte Verbindungen](/docs/requests/websocket-and-sse#refused-connections).
 
 ### Prüfungen aus einer Antwort hinzufügen [#add-checks-from-a-response]
 

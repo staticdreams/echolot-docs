@@ -57,6 +57,28 @@ it saved its value, or an orange warning with the reason when it didn't.
 | **Cookie** | A cookie the response sets, by name. | `session` |
 | **Status** | The status code. | |
 | **Body** | The whole body, as text. | |
+| **First message** | A JSONPath into the first message a WebSocket, Socket.IO or MQTT session received that has a value there. | `$.id` |
+| **Last message** | The same, in the last such message: the latest state a stream of updates reported. | `$[0].id` |
+
+### Values from realtime sessions
+
+**First message** and **Last message** are offered on WebSocket, Socket.IO and MQTT requests. They save their value
+when the request runs without you, in the [runner](/docs/requests/runner), from the command line and for agents:
+the request connects, sends its saved messages, listens, closes, and the captures read the message log. Each received
+message is read as JSON; a Socket.IO event's arguments are an array, so `$[0].id` is the `id` of its first argument.
+Only received messages count, never the ones Echolot sent.
+
+Beside the path, **on any** narrows the messages read: a Socket.IO event's name (an acknowledgement carries the name of
+the event it answers), or an MQTT topic filter, where `+` and `#` work. Leave it empty to read every message.
+
+```toml
+[[captures]]
+variable = "temperature"
+from = "last-message"
+path = "$.celsius"
+on = "warehouses/+/temperature"
+scope = "environment"
+```
 
 ## Environment or workspace
 

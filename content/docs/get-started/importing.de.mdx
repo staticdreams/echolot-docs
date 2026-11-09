@@ -14,7 +14,7 @@ Bericht, was es nicht übernehmen konnte.
 | **cURL** | Ein `curl …`-Befehl, eingesetzt oder in einer Textdatei | Eine Anfrage: Methode, Adresse, Header, Body, Basic-Auth und Einstellungen wie Weiterleitungen und TLS-Prüfungen. |
 | **Postman** | Collection v2.0 und v2.1, Umgebungen (`.json`) | Ordner, Anfragen, Auth, Collection-Variablen, Pre-Request- und Testskripte; Umgebungen werden zu [Umgebungen](/docs/workspaces/environments). |
 | **Insomnia** | JSON-Exporte v4, YAML-Collections v5 | Ordner, Anfragen, Auth, Umgebungen. |
-| **OpenAPI** | OpenAPI 3.0 und 3.1, Swagger 2.0, JSON oder YAML | Eine Anfrage für jede Operation, mit ihren Parametern, einem Beispiel-Body und der Auth ihres Security-Schemas. Die Serveradresse wird zur Variablen `{{baseUrl}}`. |
+| **OpenAPI** | OpenAPI 3.0 und 3.1, Swagger 2.0, JSON oder YAML | Eine Anfrage für jede Operation, mit ihren Parametern, einem Beispiel-Body und der Auth ihres Security-Schemas. Die Serveradresse wird zur Variablen `{{baseUrl}}`, es sei denn, der Arbeitsbereich hat schon eine Variable für die Basisadresse, etwa `{{baseURL}}`: Dann nutzen die Anfragen diese. |
 | **HAR** | HTTP Archive 1.2 aus einem Browser oder einem Proxy (`.har`) | Die API-Aufrufe der Sitzung, ein Ordner pro Host, wenn es mehrere waren. |
 | **Paw** | Dokumente von Paw und RapidAPI für Mac (`.paw`) | Gruppen, Anfragen, Umgebungen; die dynamischen Werte von Paw werden, wo möglich, zu Echolots [Variablen und dynamischen Werten](/docs/requests/dynamic-values). |
 | **Bruno** | Ein Collection-Ordner (mit `bruno.json` oder `.bru`-Dateien) | Ordner, Anfragen, Auth, Umgebungen, Skripte und Tests, wie sie geschrieben sind. |

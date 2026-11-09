@@ -72,6 +72,55 @@ message plus grand ferme la connexion avec le code 1009.
 Quand la connexion se ferme, la session est conservée dans l’[Historique](/docs/workspaces/history) : le handshake comme
 requête, et le journal des messages comme corps de la réponse.
 
+### Vérifications et captures [#checks-and-captures]
+
+L’onglet **Tests** propose trois vérifications sur le journal des messages : **Valeur dans les messages** (un JSONPath
+essayé sur chaque message reçu), **Messages reçus** et **Fermeture de la session** (le code et la raison de fermeture du
+serveur). Voir [vérifications sur les sessions en temps
+réel](/docs/requests/scripts-and-tests#checks-on-realtime-sessions). Les captures lisent les messages avec **Premier
+message** et **Dernier message** : voir [captures](/docs/requests/captures#values-from-realtime-sessions). Elles
+fonctionnent de la même façon pour les requêtes [Socket.IO](/docs/requests/socket-io) et [MQTT](/docs/requests/mqtt).
+
+### Arrêter d’écouter plus tôt [#stop-listening-early]
+
+Dans les exécutions, en ligne de commande et pour les agents, une session écoute jusqu’à la limite du stream,
+10 secondes sauf si `stream-limit` dit autre chose, ou jusqu’à ce que le serveur la ferme. Une condition d’arrêt y met
+fin dès que ce que vous attendez est arrivé. Définissez-la dans `[settings]` du fichier de la requête ; l’app n’a pas
+encore de champ pour cela.
+
+| Clé | S’arrête quand |
+| --- | --- |
+| `stop-after-messages` | Ce nombre de messages a été reçu. |
+| `stop-when` | Un message reçu a une valeur à ce JSONPath, par exemple `$.status`. |
+| `stop-when-equals` | Avec `stop-when` : la valeur est égale à celle-ci. Les `{{variables}}` y fonctionnent. |
+| `stop-after-acks` | `true` : chaque événement Socket.IO qui a demandé un accusé de réception l’a reçu, et chaque publication MQTT en QoS 1 ou 2 et chaque abonnement a reçu celui du broker. |
+| `stop-on` | Restreint `stop-after-messages` et `stop-when` aux messages d’un événement Socket.IO ou d’un filtre de topic MQTT. |
+
+La première condition remplie termine la session, et le journal dit pourquoi, par exemple
+`Stopped listening: 3 messages arrived`.
+
+```toml
+[settings]
+stream-limit = 30
+stop-when = "$.status"
+stop-when-equals = "shipped"
+```
+
+### Connexions refusées [#refused-connections]
+
+Quand le serveur refuse la connexion, une connexion faite à la main affiche l’erreur. Dans les exécutions, en ligne de
+commande et pour les agents, le refus est une réponse à la place : ses vérifications peuvent donc s’y attendre.
+
+- Un upgrade WebSocket refusé conserve la réponse du serveur : son état, comme `401`, et ses en-têtes.
+- Un serveur Socket.IO qui refuse de laisser le client rejoindre (`connect_error`) donne l’état `403`.
+- Un broker MQTT qui refuse la connexion donne un état selon sa raison : `401` pour un nom d’utilisateur ou un mot de
+  passe incorrect, `403` quand le client n’est pas autorisé ou est banni, `503` quand le broker est indisponible, occupé
+  ou au-delà d’une limite, et `400` pour toute autre raison.
+
+Le journal contient alors le refus, que **Fermeture de la session** lit comme une fermeture par le serveur : son code
+est l’état de l’upgrade ou le code de motif MQTT, et sa raison ce qu’a dit le serveur. Ainsi, **État** égal à `401`, ou
+**Fermeture de la session** contient `Not authorized`, réussit sur un refus que vous attendez.
+
 ## Server-sent events [#server-sent-events]
 
 Un flux de server-sent events est une réponse HTTP de type `text/event-stream` qui continue d’envoyer des événements.

@@ -253,7 +253,8 @@ secret = true
 | `name` | リクエストの名前。 |
 | `url` | クエリ文字列を含むURL。MCPの呼び出しを除くすべての種類にあります。 |
 | `docs` | リクエストのドキュメント（Markdown）。 |
-| `spec-operation` | 元になった仕様のオペレーション。`POST /auth/token`など。 |
+| `spec-operation` | 元になった、または従っている仕様のオペレーション。`POST /auth/token`など。`openapi`チェックはこれを読みます。 |
+| `spec` | `openapi`チェックが読む仕様。`specs/alpenglow.yaml`など。フォルダの仕様と異なる場合に使います。フォルダはその仕様に従いません。 |
 | `[[headers]]` | `name`、`value`、そしてオフにしたものには`enabled = false`。 |
 | `[[disabled-params]]` | オフにしたクエリパラメータ：`name`、`value`。オンのものはURLに入っています。 |
 | `[[disabled-form-fields]]` | オフにしたフォームフィールド：`name`、`value`。 |
@@ -296,6 +297,7 @@ graphql-variables = """
 | キー | 意味 |
 | --- | --- |
 | `query-file` | リクエストの横にある、クエリのファイル`<slug>.graphql`。 |
+| `shared-query` | `query-file`の代わりに：複数のリクエストが共有するクエリのファイル。ワークスペースのフォルダからの相対パスで、`queries/search-products.graphql`など。ワークスペース内の`.graphql`ファイルで、パスのどの名前もドットで始まらないもの。クエリを編集すると、このファイルに書き込まれます。 |
 | `operation` | クエリに複数ある場合に、実行するオペレーション。 |
 | `graphql-variables` | GraphQLの変数をJSONテキストで。古いファイルでは`variables`と呼ばれていました。 |
 | `schema` | チェックと補完に使うスキーマ：`specs/`内のファイル。 |
@@ -371,9 +373,10 @@ arguments = """
 
 | キー | 意味 |
 | --- | --- |
-| `target` | チェックの対象：`status`、`header`、`json`、`body`、`time`（ミリ秒）、`size`（バイト）、`schema`（JSON Schema）、`graphql-errors`、`mcp-error`、`mcp-output-schema`、`openapi`、`grpc-status`。 |
+| `target` | チェックの対象：`status`、`header`、`json`、`body`、`time`（ミリ秒）、`size`（バイト）、`schema`（JSON Schema）、`graphql-errors`、`mcp-error`、`mcp-output-schema`、`openapi`、`grpc-status`、WebSocket、Socket.IO、MQTTのリクエストでは`message`（受信したメッセージ内の値）、`message-count`、`close`。 |
 | `name` | `header`の場合：ヘッダーの名前。 |
-| `path` | `json`の場合：JSONPath。`$.items.length`など。 |
+| `path` | `json`と`message`の場合：JSONPath。`$.items.length`など。 |
+| `on` | `message`と`message-count`の場合：このSocket.IOイベントまたはMQTTトピックフィルタのメッセージだけを対象にします。 |
 | `check` | `equals`、`not-equals`、`contains`、`not-contains`、`less-than`、`at-most`、`greater-than`、`at-least`、`exists`、`not-exists`、`matches`（正規表現）、`is-type`、`is-one-of`、`matches-schema`。 |
 | `expected` | 比較する値。値が不要なチェックでは書かれません。 |
 | `enabled` | `false`でオフにします。 |
@@ -385,8 +388,9 @@ arguments = """
 | キー | 意味 |
 | --- | --- |
 | `variable` | 値を保存する変数。 |
-| `from` | `json`、`form`、`msgpack`、`xml`、`header`、`cookie`、`status`、`body`。 |
+| `from` | `json`、`form`、`msgpack`、`xml`、`header`、`cookie`、`status`、`body`、WebSocket、Socket.IO、MQTTのリクエストでは`message`（パスに値がある最初の受信メッセージ）または`last-message`（最後のもの）。 |
 | `path` | 値の場所：JSONPath、XPath、ヘッダーまたはCookieの名前。`status`と`body`にはありません。 |
+| `on` | `message`と`last-message`の場合：このSocket.IOイベントまたはMQTTトピックフィルタのメッセージだけを対象にします。 |
 | `scope` | `environment`（デフォルト：有効な環境）または`workspace`。 |
 | `secret` | `true`にすると、値をシークレットとしてキーチェーンに保存します。 |
 | `enabled` | `false`でオフにします。 |
@@ -406,8 +410,14 @@ arguments = """
 | `cookies` | `false`にすると、Cookieを送信も保存もしません。 |
 | `http-version` | `automatic`、`http1`、`http2`、`http3`。 |
 | `stream-limit` | イベントストリームやセッションを待ち受ける秒数。 |
+| `stop-after-messages` | あなたがいないときに実行されるセッションは、この数のメッセージを受信すると待ち受けを止めます。 |
+| `stop-when` | 受信したメッセージのこのJSONPathに値があると止めます。 |
+| `stop-when-equals` | `stop-when`と併用：値がこれに等しいときだけ止めます。 |
+| `stop-after-acks` | `true`：求めたすべてのSocket.IOの確認応答と、サブスクライブやQoS 1・2のパブリッシュに対するすべてのMQTTの確認応答が届くと止めます。 |
+| `stop-on` | `stop-after-messages`と`stop-when`を、Socket.IOイベントまたはMQTTトピックフィルタに絞り込みます。 |
 
-[リクエストの設定](/docs/requests/settings)を参照してください。
+[リクエストの設定](/docs/requests/settings)を、`stop-`キーについては
+[待ち受けを早めに止める](/docs/requests/websocket-and-sse#stop-listening-early)を参照してください。
 
 ### 認証 [#auth]
 
@@ -511,6 +521,11 @@ body = """{ "error": "no user {{request.params.id}}" }"""
 | `[[scenarios]]` | 仕様のオペレーションに選んだ応答：`operation`（`GET /pets`など）、`status`、`example`（例の名前）。 |
 | `[[routes]]` | 手書きのルート：`id`（ルートを変更しても変わりません）、`method`（または`ANY`）、`path`（パラメータは`{id}`）、`summary`、オフのルートには`enabled = false`、`response`（デフォルトのレスポンスの名前。省略すると最初のもの）、`request-content-type`と`request-body`（そこから作るリクエストが送信する内容）。 |
 | `[[routes.responses]]` | 上のルートの応答の1つ：`name`、`status`、`content-type`、`headers`（`name`と`value`）、`rules`（`source`は`path`、`query`、`header`、`body`のいずれか。`name`。`value`は、`*`で任意、空でなし）、`body`。 |
+| `kind`（`[[routes]]`内） | 接続を受け付けるルートでは`websocket`または`socketio`。HTTPでは省略します。[ストリーム、ソケット、MQTT](/docs/mocks/streams-and-sockets)を参照してください。 |
+| `repeat`、`ends`、`close`（`[[routes.responses]]`内） | ストリームの場合：イベントを再生する回数（`0`はクライアントが切断するまで。省略すると1）、その後に続くもの（`close`または`hold`。省略すると、Server-Sent Eventsは終了し、ソケットは開いたまま）、モックが自分で行うクローズ（`{ after-ms, code, reason }`）。 |
+| `[[routes.responses.events]]` | 応答のタイムラインのメッセージ1つ：`after-ms`（前のメッセージからの時間）、`event`（Server-Sent Eventの`event:`、またはSocket.IOのイベント）、`id`（Server-Sent Eventの`id:`）、`data`。 |
+| `[[routes.responses.replies]]` | メッセージに対するソケットの返答：`event`（Socket.IO）、`rules`（`body`のルールはメッセージを読みます）、`ack = true`（Socket.IOの確認応答に答える）、`close`、そして`[[routes.responses.replies.send]]`内のメッセージ（`events`と同じ形式）。 |
+| `[broker]` | モックのMQTTブローカー：`port`、`repeat`、`[[broker.publishes]]`内のタイムライン（`after-ms`、`topic`、`data`、`qos`、`retain`）、`[[broker.replies]]`内の返答（`filter`、`rules`、`[[broker.replies.send]]`のメッセージ）。 |
 
 `mocks/<slug>.js`には、モックのJavaScriptのルートが入っており、手書きのルートと仕様より先に応答します。
 仕様のオペレーションのレスポンスは、モックには保存されません。例は仕様に入ります。[モック](/docs/mocks)、[ルートとダミーデータ](/docs/mocks/routes)、[JavaScriptのルート](/docs/mocks/scripted-routes)を参照してください。
@@ -546,8 +561,8 @@ to = "signin.run"
 | --- | --- |
 | `name`、`description` | フローの名前と、その内容。 |
 | `[mcp]` | フローをツールとしてエージェントに提供します：`tool`（その名前）と`description`。 |
-| `[schedule]` | スケジュールで実行します：`every-minutes`、または`cron`（`"0 6 * * *"`など）。 |
-| `[webhook]` | リクエストが届いたときに実行します：`method`（デフォルトは`POST`）と`path`。 |
+| `[schedule]` | スケジュールで実行します：`every-minutes`、または`cron`（`"0 6 * * *"`など）、そして実行が使う環境`environment`（省略するとウインドウの環境。保護された環境は使いません）。 |
+| `[webhook]` | リクエストが届いたときに実行します：`method`（デフォルトは`POST`）、`path`、スケジュールと同様の`environment`。 |
 | `[[inputs]]` | 入力：`name`、`type`（`any`、`text`、`number`、`bool`、`object`、`list`、`secret`）、`description`、`default`、`required`。 |
 | `[[blocks]]` | ブロック：`id`、`kind`、`title`、`position`（キャンバス上の`[x, y]`）、`paused`、`color`、そして種類ごとの設定を持つ`[blocks.settings]`。 |
 | `[[wires]]` | 接続：`from`と`to`。それぞれ`block.port`。 |

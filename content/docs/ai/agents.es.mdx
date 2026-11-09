@@ -113,7 +113,7 @@ el asistente integrado, **Ajustes › Asistente › Preguntar antes** decide sob
 
 | Conjunto de herramientas | Qué pueden hacer los agentes con él |
 | --- | --- |
-| **Solicitudes** | Listar, leer, crear y enviar solicitudes; respuestas, historial, GraphQL, mocks en marcha |
+| **Solicitudes** | Listar, leer, crear y enviar solicitudes; respuestas, historial, GraphQL, mocks en marcha; proponer scripts para que los revises |
 | **Flujos** | Ejecutar los flujos que se ofrecen a los agentes, responder a lo que preguntan |
 | **Espacio de trabajo** | Crear, renombrar, mover, duplicar y eliminar carpetas y solicitudes; la autenticación de las carpetas; variables del espacio de trabajo; guardar datos recopilados como archivos |
 | **Entornos** | Crear, cambiar y eliminar entornos |
@@ -133,9 +133,24 @@ Cuando cambias los conjuntos de herramientas, las ventanas abiertas vuelven a se
 conectar tus clientes para obtenerlo.
 
 **Nunca se ofrecen**, en ningún conjunto: cambiar las reglas de los agentes, el proxy, los certificados, la
-autenticación del espacio de trabajo, los ajustes de carpeta más allá de su autenticación, los scripts (de solicitud,
-de carpeta y de mock) y la autenticación que obtiene o firma con secretos (OAuth 2.0, AWS, JWT y similares). Eso es
-solo tuyo.
+autenticación del espacio de trabajo, los ajustes de carpeta más allá de su autenticación, guardar scripts (de
+solicitud, de carpeta y de mock; en su lugar, los agentes los [proponen](#scripts-agents-propose)) y la autenticación
+que obtiene o firma con secretos (OAuth 2.0, AWS, JWT y similares). Eso es solo tuyo.
+
+Los agentes crean solicitudes de todo tipo: `create_request` acepta un `kind` (`http`, `graphql`, `websocket`,
+`socketio`, `mqtt`, `grpc` o `mcp`) y la parte propia de ese tipo, como una consulta GraphQL y sus variables, mensajes
+WebSocket, emisiones Socket.IO, suscripciones y mensajes MQTT, un método y un mensaje gRPC, o una llamada MCP;
+`update_request` los cambia. También fijan los `settings` de una solicitud (tiempo de espera, límite del stream, versión
+de HTTP, redirecciones, descompresión, cookies), nunca la verificación TLS ni el modo raw.
+
+Algunas cosas entran en el espacio de trabajo sin pasar por el modelo:
+
+- `import` lee un archivo del proyecto (dentro de la carpeta del espacio de trabajo o de la carpeta en la que está,
+  nunca una carpeta oculta, hasta 10 MB) u obtiene una URL, así que una especificación larga no se escribe token a
+  token.
+- `fetch_graphql_schema` guarda el esquema de un servidor GraphQL en `specs/` y vincula la solicitud a él.
+- `save_response` escribe en el espacio de trabajo el cuerpo de una respuesta, o un archivo que llevaba un mensaje
+  WebSocket, Socket.IO o MQTT.
 
 Los agentes pueden dar a solicitudes y carpetas autenticación **Bearer**, **Basic** o **Clave de API**, y hacer que las
 solicitudes conserven valores de sus respuestas (el token de un inicio de sesión para las solicitudes que le siguen):
@@ -188,6 +203,30 @@ Un host nuevo es el que ninguna solicitud ni entorno del espacio de trabajo usab
 Los datos que un agente ha leído podrían salir por él, así que siempre pregunta, igual que los envíos a un
 [entorno protegido](/docs/workspaces/protected-environments).
 
+## Scripts que proponen los agentes [#scripts-agents-propose]
+
+Los agentes nunca guardan código que se ejecuta. Cuando la respuesta es un script, como un script previo a la solicitud
+que la firma, un script de pruebas o las [rutas en JavaScript](/docs/mocks/scripted-routes) de un mock que guardan los
+pedidos de un cliente, un agente lo propone con `propose_script`, después de leer lo que hay con `read_scripts`. Puede proponer el
+script previo a la solicitud o de pruebas de una solicitud, de una carpeta o de todo el espacio de trabajo, o las rutas
+de un mock.
+
+Echolot comprueba antes el código: debe compilar, ocupar como mucho 64 KB y no escribir ninguna contraseña ni ningún
+token (los lee de variables). Después, una hoja te muestra el motivo del agente y lo que cambia, línea a línea:
+
+<Shot id="ai-script-proposal" alt="Un agente propone un script previo a la solicitud para una solicitud: su motivo y las líneas del script marcadas como añadidas, con Rechazar y Guardar y confiar" />
+
+- **Guardar y confiar** escribe el script y confía en ese código, así que se ejecuta sin volver a preguntar.
+- **Rechazar** lo deja todo como estaba, y lo mismo hace <kbd>⎋</kbd>. Ninguna tecla guarda una propuesta.
+
+Cada propuesta pregunta, digan lo que digan las reglas y **Preguntar antes**, y **Permitir en esta sesión** nunca cubre
+ninguna. Un script que cambiaste mientras la hoja estaba abierta no se sobrescribe; al agente se le dice que vuelva a
+mirar.
+
+Sin nadie a quien preguntar (`echolot mcp serve` por su cuenta, con una política que permite cambios), el script se
+guarda sin confianza: no se ejecuta hasta que abres el espacio de trabajo en Echolot y haces clic en
+**Confiar en los scripts** encima de él. Mira [scripts y pruebas](/docs/requests/scripts-and-tests).
+
 ## Reglas del espacio de trabajo [#workspace-rules]
 
 **Ajustes del espacio de trabajo › Agentes** (desde el menú del espacio de trabajo al pie de la barra lateral,
@@ -216,6 +255,11 @@ aceptarlas. Las reglas que fijas tú mismo en Ajustes del espacio de trabajo son
   en forma simple, JSON, codificada como URL y Base64. Los agentes ven las variables secretas solo por su nombre.
 - **Credenciales en el historial.** Los intercambios pasados llegan a los agentes con sus cabeceras de credenciales
   enmascaradas y sin la captura de la conexión.
+- **Credenciales en las respuestas.** Los campos del cuerpo de una respuesta con nombre de credencial (`access_token`,
+  `refresh_token`, `password`, `client_secret` y similares, pero no `token_type` ni `expires_in`) llegan enmascarados a
+  los agentes, aunque nadie los haya guardado como secreto.
+- **Credenciales en lo que escriben.** Un cuerpo que un agente envía o guarda no puede llevar una credencial en un campo
+  así: tiene que ser una `{{variable}}`.
 - **Tus secretos en el host de otro.** Si un envío de un agente se redirige a un host que el espacio de trabajo no usa,
   pierde por el camino sus cabeceras de credenciales.
 

@@ -119,9 +119,11 @@ wenn du sie lässt.
   **Für diese Sitzung erlauben**). Geschützte Umgebungen und neue Hosts fragen immer.
 - **Secrets erreichen einen Agenten nie.** Agenten verweisen mit Namen auf Secrets. Alles, was ein Agent zurückbekommt,
   auch Fehler, hat geheime Werte entfernt, wie geschrieben, in JSON, prozentcodiert und als Base64. Verlauf, den ein
-  Agent liest, hat maskierte Anmeldedaten.
-- **Nie angeboten.** Die Agentenrichtlinie, Proxy, Zertifikate, Auth und Skripte sind keine Tools, die Agenten nutzen
-  können.
+  Agent liest, hat maskierte Anmeldedaten, ebenso Felder mit Zugangsdaten in den Bodys von Antworten, etwa ein
+  `access_token`, das niemand gespeichert hat.
+- **Nie angeboten.** Die Agentenrichtlinie, Proxy, Zertifikate, Auth und das Sichern von Skripten sind keine Tools, die
+  Agenten nutzen können. Ein Agent kann ein Skript vorschlagen: Du siehst seine Begründung und die Änderung, und nur
+  **Sichern und vertrauen** schreibt es und vertraut ihm.
 - **Jeder Aufruf wird aufgezeichnet.** Der Verlauf zeigt, wer jede Anfrage gesendet hat, Agenten mit Namen, und
   **Agenten** im Fenster listet die letzten Aufrufe.
 

@@ -54,6 +54,46 @@ Echolot 会自己应答服务器的 ping。由分片拼接而成的消息最大�
 
 连接关闭时，会话保存在[历史记录](/docs/workspaces/history)中：握手作为请求，消息日志作为响应正文。
 
+### 检查和捕获 [#checks-and-captures]
+
+**测试**标签页对消息日志提供三项检查：**消息中的值**（在每条收到的消息上尝试一个 JSONPath）、**收到的消息数**和**会话关闭**（服务器的关闭码和原因）。
+参见[实时会话的检查](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)。捕获通过**第一条消息**和**最后一条消息**读取消息：
+参见[捕获](/docs/requests/captures#values-from-realtime-sessions)。它们对 [Socket.IO](/docs/requests/socket-io) 和 [MQTT](/docs/requests/mqtt) 请求的作用相同。
+
+### 提前停止监听 [#stop-listening-early]
+
+在运行中、从命令行运行时以及供智能体使用时，会话会一直监听到流限制（除非 `stream-limit` 另有设置，否则为 10 秒），或者直到服务器关闭它。
+停止条件会在你等待的内容一到就结束会话。请在请求文件的 `[settings]` 中设置它；App 中暂时还没有对应的栏。
+
+| 键 | 何时停止 |
+| --- | --- |
+| `stop-after-messages` | 收到了这么多条消息。 |
+| `stop-when` | 收到的消息在这个 JSONPath 上有值，比如 `$.status`。 |
+| `stop-when-equals` | 与 `stop-when` 搭配：该值等于此值。其中可以使用 `{{variables}}`。 |
+| `stop-after-acks` | `true`：每个请求确认的 Socket.IO 事件都得到了确认，并且每个 QoS 1 或 2 的 MQTT 发布和每个订阅都得到了 Broker 的确认。 |
+| `stop-on` | 将 `stop-after-messages` 和 `stop-when` 限定到某个 Socket.IO 事件或 MQTT 主题过滤器的消息。 |
+
+最先成立的条件会结束会话，日志会说明原因，比如 `Stopped listening: 3 messages arrived`。
+
+```toml
+[settings]
+stream-limit = 30
+stop-when = "$.status"
+stop-when-equals = "shipped"
+```
+
+### 被拒绝的连接 [#refused-connections]
+
+服务器拒绝连接时，手动连接会显示错误。在运行中、从命令行运行时以及供智能体使用时，拒绝则会成为一个响应，因此它的检查可以预期这种拒绝：
+
+- 被拒绝的 WebSocket 升级会保留服务器的应答：它的状态（比如 `401`）和标头。
+- 拒绝让客户端加入的 Socket.IO 服务器（`connect_error`）会给出状态 `403`。
+- 拒绝连接的 MQTT Broker 会按原因给出状态：用户名或密码错误时为 `401`，客户端未获授权或被封禁时为 `403`，Broker 不可用、繁忙或超出限制时为 `503`，
+  其他原因则为 `400`。
+
+此时日志会保存这次拒绝，**会话关闭**会把它读作由服务器进行的关闭：它的关闭码是升级的状态或 MQTT 原因码，原因则是服务器所说的内容。
+因此 **状态** 等于 `401`，或 **会话关闭** 包含 `Not authorized`，会在你预期的拒绝发生时通过。
+
 ## 服务器发送事件 [#server-sent-events]
 
 服务器发送事件流是类型为 `text/event-stream`、持续发送事件的 HTTP 响应。为它使用普通的 HTTP 请求即可：除了地址，无需任何设置。

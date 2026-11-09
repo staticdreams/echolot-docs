@@ -50,7 +50,7 @@ alpenglow.inventory.v1.Inventory
 ## echolot grpc call [#echolot-grpc-call]
 
 ```sh
-echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--stream] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
 ```
 
 `<method>` は `package.Service/Method` です。メッセージはJSONで、デフォルトは `{}` です。`-d -` で標準入力から読み込みます。クライアントストリーミングのメソッドでは配列を指定し、
@@ -63,12 +63,24 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
 ```
 
 ステータス、受信したメッセージの数、所要時間は標準エラーに出力されます。`OK` 以外のステータスでは、終了コード1で終了します。
+スキーマでデコードできない応答も同様で、その場合、標準エラーはサービス自身の `.proto` ファイルを `--proto` で指定するよう提案します。
+
+### サーバストリーム [#server-streams]
+
+サーバストリーミングのメソッドのメッセージは、出力先がターミナルの場合、または `--stream` を付けた場合、届いた順に1行に1つのJSONオブジェクトとして出力されます。
+出力をパイプに渡し、`--stream` を付けない場合は、呼び出しの終了後にメッセージがまとめて1つのJSON配列として出力されます。
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/WatchStock \
+  -d '{"skus": ["TNT-MH-2P"]}' --proto Alpenglow.echolot/specs/inventory.proto --stream | jq .
+```
 
 | オプション | 意味 |
 | --- | --- |
 | `-d`、`--data <json>` | JSONのメッセージ。`-` は標準入力から読み込みます。デフォルトは `{}`。 |
 | `--deadline <ms>` | ミリ秒単位のデッドライン。`grpc-timeout` として送信されます。 |
 | `--compress <algorithm>` | 送信するメッセージを圧縮します：`gzip` または `deflate`。圧縮された応答は、指定にかかわらず読み取れます。 |
+| `--stream` | サーバストリームのメッセージを、届いた順に1行に1つのJSONオブジェクトとして出力します。ターミナルではデフォルトです。 |
 | `--proto <file>` | サービスを記述する `.proto` ファイル。インポート先は同じ場所に置きます。指定しない場合は、サーバのリフレクションに問い合わせます。 |
 | `-H`、`--header <header>` | `'Name: value'` 形式のメタデータ。複数回指定できます。 |
 | `-k`、`--insecure` | TLS証明書の検証をスキップします。 |
@@ -82,5 +94,5 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
 | コード | 条件 |
 | --- | --- |
 | `0` | `describe` がサービスを見つけました。`call` がステータス `OK` で終了しました。 |
-| `1` | サーバに接続できないか記述できなかった、または呼び出しのステータスが `OK` ではありませんでした。 |
+| `1` | サーバに接続できないか記述できなかった、呼び出しのステータスが `OK` ではなかった、またはその応答をデコードできませんでした。 |
 | `64` | オプションが正しくありません。 |

@@ -14,6 +14,8 @@ zusammen:
   mit einem Body, der aus ihren Schemas entsteht. Anfragen, die gegen die Spec verstoßen, bekommen eine `400`, die sagt,
   warum; der Mock zeigt dir also auch, wenn ein Client etwas Falsches sendet.
 
+Routen können auch Server-Sent Events streamen und WebSocket- und Socket.IO-Verbindungen annehmen, und ein Mock kann
+daneben einen MQTT-Broker betreiben, für Live-Anzeigen. Siehe [Streams, Sockets und MQTT](/docs/mocks/streams-and-sockets).
 Für Antworten, die Code oder Zustand brauchen, kann ein Mock außerdem [Routen in JavaScript](/docs/mocks/scripted-routes)
 haben.
 
@@ -41,7 +43,8 @@ weg.
 ## Starten und stoppen [#starting-and-stopping]
 
 Klicke auf **Start** (<kbd>⌘</kbd><kbd>R</kbd>). Die Leiste oben zeigt die Adresse des Mocks, etwa
-`http://127.0.0.1:4010`. Stellt der Mock eine Spec bereit, deren Server-URL einen Pfad hat
+`http://127.0.0.1:4010`, und daneben die seines Brokers, wenn er [einen](/docs/mocks/streams-and-sockets#the-mqtt-broker)
+hat. Stellt der Mock eine Spec bereit, deren Server-URL einen Pfad hat
 (`https://demo.echolot.dev/v1`), endet die Adresse damit (`http://127.0.0.1:4010/v1`), und der Mock antwortet unter
 diesem Pfad; Anfragen dürfen ihn auch weglassen. Der Kopieren-Knopf neben der Adresse kopiert sie.
 
@@ -86,7 +89,7 @@ nicht nehmen: Echolot meldet das; wähle einen anderen Port.
 Eine Anfrage geht an die erste der folgenden Stellen, die für ihre Methode und ihren Pfad eine Antwort hat:
 
 1. Die [Routen in JavaScript](/docs/mocks/scripted-routes) des Mocks. Eine Route, die nichts festlegt, gibt die Anfrage
-   weiter.
+   weiter; seine Sockets (`mock.ws`, `mock.sse`) nehmen die Verbindungen an, auf die sie passen.
 2. Seine [von Hand angelegten Routen](/docs/mocks/routes). Eine Route kann mehrere Antworten haben; eine Anfrage kann
    eine nach Name oder Status anfordern, Regeln für die Anfrage wählen andere aus, und sonst antwortet die
    Standardantwort der Route.
@@ -169,5 +172,6 @@ Siehe [echolot mock](/docs/cli/mock). [`echolot fake`](/docs/cli/fake) erzeugt B
 Fixtures und Seed-Daten.
 
 Agenten können Mocks starten und ihre Protokolle über den MCP-Server von Echolot lesen und, wenn das Tool-Set **Mocks**
-an ist, Mocks erstellen, Routen hinzufügen und ändern, Beispieldaten erzeugen und Anfragen aus Routen erstellen. Siehe
-[Agenten](/docs/ai/agents).
+an ist, Mocks erstellen, Routen hinzufügen und ändern (auch Streams und Sockets), einen Broker hinzufügen,
+Beispieldaten erzeugen und Anfragen aus Routen erstellen. Routen in JavaScript können sie nicht sichern: Sie schlagen sie
+vor, und du prüfst sie, bevor sie laufen. Siehe [Agenten](/docs/ai/agents).

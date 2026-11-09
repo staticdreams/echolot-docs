@@ -80,6 +80,10 @@ description: "플로에 넣을 수 있는 모든 종류의 블록과 그 설정,
 | `result` | 출력 | 도구가 돌려준 값. |
 | `fail` | 출력 | 실패한 이유. |
 
+도구는 에이전트가 Echolot의 MCP 서버에서 알고 있는 이름으로도 지정할 수 있습니다. `run_requests`는 `run_collection`을 실행하고
+(`bail`은 `stop_on_failure`가 되며, 경로는 지정한 순서대로 실행됩니다), `list_requests`는 `list_workspace`를 실행합니다. 에이전트가
+이 이름으로 그린 플로는 그대로 실행됩니다.
+
 도구 블록은 다른 플로를 실행할 수 없습니다. 그럴 때는 플로 블록을 사용하세요.
 
 <Edition only="direct">

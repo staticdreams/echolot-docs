@@ -121,28 +121,36 @@ the key, the message and, optionally, the output.
 
 ## Time
 
-All of these are the moment the request is sent.
+All of these are the moment the request is sent, moved by an offset when you give one.
 
 | Value | Arguments | What it gives |
 | --- | --- | --- |
-| `$timestamp` | none | Unix time in seconds: `1793525000`. |
-| `$timestampMs` | none | Unix time in milliseconds: `1793525000123`. |
-| `$isoTimestamp` | none | ISO 8601 in UTC, with milliseconds: `2026-11-01T09:30:00.123Z`. |
+| `$timestamp` | Offset (optional) | Unix time in seconds: `1793525000`. `{{$timestamp(60)}}` is a minute from now. |
+| `$timestampMs` | Offset (optional) | Unix time in milliseconds: `1793525000123`. |
+| `$isoTimestamp` | Offset (optional) | ISO 8601 in UTC, with milliseconds: `2026-11-01T09:30:00.123Z`. `{{$isoTimestamp('-90s')}}` is 90 seconds ago. |
 | `$httpDate` | none | An HTTP date, for `Date` or `If-Modified-Since`: `Sun, 01 Nov 2026 09:30:00 GMT`. |
 | `$date` | Format, offset in seconds (optional), time zone (optional) | The time in a Unicode date pattern, moved by the offset, in the time zone (UTC unless given). `{{$date('yyyy-MM-dd')}}`, `{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
 
+The offset of `$timestamp`, `$timestampMs` and `$isoTimestamp` is a number of seconds, or a number with a unit: `ms`,
+`s`, `m`, `h`, `d` or `w`. A `-` moves it into the past, a `+` (or nothing) into the future: `'-90s'`, `'2h'`, `'-1d'`,
+`'1w'`. Write it in quotes, as text; a plain number of seconds may stand alone, as in `{{$timestamp(-3600)}}`. An offset
+that isn't one fails with a message saying what to write.
+
 ## Random
 
-A new value on every send.
+A new value on every send, except `$sameUUID`.
 
 | Value | Arguments | What it gives |
 | --- | --- | --- |
 | `$uuid` | none | A random UUID, in lower case. Also `$guid` and `$randomUUID`. `{{$uuid}}` |
+| `$sameUUID` | Name | A random UUID made once and given again wherever the same name asks for it: once per run (each iteration its own), and outside a run once per window, or once per command on the command line. `{{$sameUUID('order')}}` |
 | `$randomInt` | Minimum, maximum | A whole number between the two, both included. One argument is the maximum, from 0; none is 0 to 1000. `{{$randomInt(1, 5)}}` |
 | `$randomString` | Length, characters (optional) | Random characters, 16 unless given (up to 4096): letters and digits, or the characters given. `{{$randomString(8, 'ABCDEF0123456789')}}` |
 | `$randomHex` | Bytes | Random bytes in hex, 16 unless given (up to 2048); twice as many digits. `{{$randomHex(8)}}` |
 
-Alpenglow's **Create order** sends `Idempotency-Key: {{$uuid}}`, so every order it places is a new one.
+Alpenglow's **Create order** sends `Idempotency-Key: {{$uuid}}`, so every order it places is a new one. Where several
+requests of a run must send the same key, such as a request and its retry or a create and the update that follows,
+give them `{{$sameUUID('order')}}`: each run gets one new key, and every request that names `order` sends it.
 
 ## Fake data
 
@@ -152,7 +160,7 @@ so collections that use them send real values here. In the `{{` list they are un
 
 Arguments are optional; numbers go from -10^15 to 10^15. Mock bodies can also use `$uuid` (as `$randomUUID`),
 `$randomInt`, `$randomString`, `$randomHex`, `$timestamp`, `$timestampMs` and `$isoTimestamp` from [Random](#random)
-and [Time](#time). From Terminal, [`echolot fake`](/docs/cli/fake) fills a template with them.
+and [Time](#time), the time values with their offsets. From Terminal, [`echolot fake`](/docs/cli/fake) fills a template with them.
 
 ### Common
 

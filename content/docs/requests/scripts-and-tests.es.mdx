@@ -37,15 +37,21 @@ El valor esperado es una plantilla, así que las `{{variables}}` funcionan en é
 | **Tiempo de respuesta (ms)** | El tiempo total del intercambio, en milisegundos | es menor que, es como máximo, es mayor que, es como mínimo |
 | **Tamaño (bytes)** | El tamaño del cuerpo en bytes | es menor que, es como máximo, es mayor que, es como mínimo |
 | **JSON Schema** | El cuerpo, frente a un JSON Schema que pegas | coincide |
-| **Errores de GraphQL** | El array `errors` de una respuesta GraphQL | es igual a, es menor que, es mayor que (su número); contiene, no contiene (sus mensajes) |
-| **Error de MCP** | Si una llamada MCP falló: `true` o `false` | es igual a |
+| **Errores de GraphQL** | El array `errors` de una respuesta GraphQL | es igual a, es menor que, es mayor que (su número); contiene, no contiene (sus mensajes); existe, no existe (si hay alguno) |
+| **Error de MCP** | Si una llamada MCP falló, y cómo: `false`, `tool`, `protocol` o `true` | es igual a, no es igual a, es uno de, existe, no existe |
 | **Esquema de salida de la herramienta** | El `structuredContent` del resultado de una herramienta MCP, frente al `outputSchema` de la propia herramienta | coincide |
 | **Especificación OpenAPI** | El cuerpo, frente al esquema de la especificación OpenAPI vinculada para el estado de la respuesta | coincide |
 | **Estado gRPC** | El estado de una llamada gRPC, por nombre o código | es igual a, no es igual a, es uno de |
+| **Valor en mensajes** | El valor en un JSONPath de los mensajes que recibió una sesión WebSocket, Socket.IO o MQTT | Las mismas que **Valor JSON** |
+| **Mensajes recibidos** | Cuántos mensajes recibió la sesión | es igual a, no es igual a, es menor que, es como máximo, es mayor que, es como mínimo |
+| **Cierre de la sesión** | Cómo cerró la sesión el otro lado: su código y su motivo | existe, no existe, es igual a, no es igual a, es uno de, contiene, no contiene, coincide con la regex |
+
+Las tres últimas solo se ofrecen en las solicitudes WebSocket, Socket.IO y MQTT. Consulta
+[comprobaciones en sesiones en tiempo real](#checks-on-realtime-sessions).
 
 Una comprobación nueva empieza con un valor razonable: **Estado** igual a `200`, **Tiempo de respuesta (ms)** menor que
-`1000`, **Errores de GraphQL** igual a `0`, **Error de MCP** igual a `false`, **Estado gRPC** igual a `OK`, y
-**JSON Schema** con `{"type": "object"}`.
+`1000`, **Errores de GraphQL** igual a `0`, **Error de MCP** igual a `false`, **Estado gRPC** igual a `OK`, **Mensajes recibidos**
+como mínimo `1`, y **JSON Schema** con `{"type": "object"}`.
 
 ### Cómo se comparan los valores [#how-values-compare]
 
@@ -69,17 +75,57 @@ del cuerpo, y **JSON Schema** y **Errores de GraphQL**, leen el cuerpo entero y 
 ### Comprobaciones para otros tipos de solicitud [#checks-for-other-kinds-of-request]
 
 - **GraphQL**: los servidores responden a los errores con el estado 200, así que añade **Errores de GraphQL** igual a `0`
-  para detectarlos. Usa **contiene** para comprobar que vuelve un mensaje concreto.
-- **Llamadas MCP**: **Error de MCP** igual a `false` se supera cuando la llamada tuvo éxito. Falla con un resultado
-  marcado como error y con un error JSON-RPC, y el mensaje muestra lo que dijo el servidor. **Esquema de salida de la
-  herramienta** comprueba el resultado de una herramienta con el esquema que declara la herramienta; falla cuando la
+  para detectarlos. **no existe** dice lo mismo: se supera cuando la respuesta no tiene errores, y **existe** cuando
+  tiene al menos uno. Usa **contiene** para comprobar que vuelve un mensaje concreto.
+- **Llamadas MCP**: **Error de MCP** distingue dos fallos. `tool` es un fallo de la propia herramienta, un resultado
+  marcado como error que lee el modelo; `protocol` es un error JSON-RPC, cuando el servidor rompió o rechazó la llamada.
+  **es igual a** `false` se supera cuando la llamada tuvo éxito, `true` cuando falló de cualquiera de las dos formas, y
+  `tool` o `protocol` solo con ese fallo. **existe** y **no existe** preguntan si falló o no. Una comprobación fallida
+  muestra lo que dijo el servidor. **Esquema de salida de la herramienta** comprueba el resultado de una herramienta con el esquema que declara la herramienta; falla cuando la
   herramienta no declara ninguno. Consulta [Solicitudes MCP](/docs/requests/mcp-requests).
 - **gRPC**: **Estado gRPC** acepta nombres como `OK` y `NOT_FOUND` o códigos del 0 al 16; `5`, `not_found` y `NOT_FOUND`
   son el mismo estado. Una comprobación fallida muestra el mensaje del estado. Consulta [gRPC](/docs/requests/grpc).
 - **Especificación OpenAPI**: la carpeta de la solicitud (o una carpeta superior) debe estar vinculada a una
-  especificación, y la solicitud debe seguir una de sus operaciones. La comprobación valida entonces el cuerpo con el
+  especificación, o la solicitud debe nombrar la suya con `spec` en su archivo, y la solicitud debe seguir una de sus
+  operaciones (`spec-operation`). La comprobación valida entonces el cuerpo con el
   esquema que la especificación documenta para el estado que volvió. Un estado que la especificación documenta sin cuerpo
   JSON se supera; un estado no documentado falla. Consulta [Especificaciones](/docs/specs).
+
+### Comprobaciones en sesiones en tiempo real [#checks-on-realtime-sessions]
+
+Las solicitudes WebSocket, Socket.IO y MQTT se comprueban sobre su registro de mensajes, que es la respuesta de una
+sesión que ha terminado. Sin ti, en la [ejecución](/docs/requests/runner), desde la línea de comandos y para los
+agentes, una solicitud así se conecta, envía sus mensajes guardados, escucha y después cierra, y las comprobaciones leen
+lo que volvió.
+
+- **Valor en mensajes** prueba un JSONPath en cada mensaje que recibió la sesión, cada uno leído como JSON. Los
+  argumentos de un evento Socket.IO son un array, así que `$[0].op` es el `op` de su primer argumento; un texto que no
+  es JSON es una cadena. La comprobación se supera cuando algún mensaje recibido la supera. Con **no existe**, **no es
+  igual a** o **no contiene**, se supera cuando ningún mensaje falla. Solo cuentan los mensajes recibidos, nunca los que
+  envió Echolot.
+- **Mensajes recibidos** cuenta los mensajes que recibió la sesión.
+- **Cierre de la sesión** **existe** cuando el otro lado cerró la sesión. **es igual a** y **es uno de** comparan su
+  código de cierre (el código de motivo de un broker MQTT) o su motivo; las comparaciones numéricas leen el código;
+  **contiene**, **no contiene** y **coincide con la regex** leen el código y el motivo como un solo texto. Una sesión que
+  cerró Echolot, al final de su tiempo de escucha, falla todas las comparaciones salvo **no existe**.
+
+**Valor en mensajes** y **Mensajes recibidos** tienen un campo después de la ruta, **cualquiera**, que los limita a
+algunos mensajes: el nombre de un evento Socket.IO (una confirmación lleva el nombre del evento al que responde) o un
+filtro de topics MQTT, donde funcionan `+` y `#`. Déjalo vacío para tomar todos los mensajes. En el archivo de la
+solicitud es el `on` de la comprobación. Por ejemplo, **Realtime › Support chat** puede comprobar que el agente que te
+saluda es Heidi:
+
+```toml
+[[assertions]]
+target = "message"
+path = "$[0].agent"
+on = "welcome"
+check = "equals"
+expected = "Heidi"
+```
+
+Un servidor que rechaza la conexión sigue dando a estas solicitudes una respuesta que comprobar, en las ejecuciones.
+Consulta [conexiones rechazadas](/docs/requests/websocket-and-sse#refused-connections).
 
 ### Añade comprobaciones desde una respuesta [#add-checks-from-a-response]
 

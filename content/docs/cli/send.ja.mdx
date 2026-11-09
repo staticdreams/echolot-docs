@@ -105,10 +105,11 @@ echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolo
 ```
 
 **Socket.IO。** `--socketio` は、`http(s)://` または `ws(s)://` のURLでSocket.IOを使います。入力の各行は1つのイベントで、イベント名に続いて
-JSONの引数を書きます（`chat {"text": "hi"}`。配列は複数の引数になります）。イベントは `name [arguments]` の形式で、確認応答は `ack id [arguments]` の形式で出力されます。
+JSONの引数を書きます（`chat {"text": "hi"}`。配列は複数の引数になります）。
+イベント名の後に `?` を付けると、サーバにそのイベントの確認応答を求めます：`message? {"text": "Grüezi!"}`。イベントは `name [arguments]` の形式で、確認応答は `ack id [arguments]` の形式で出力されます。
 
 ```sh
-echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+echo 'message? {"text": "Grüezi!"}' | echolot send http://localhost:3001 --socketio --namespace /support --listen 5
 ```
 
 試せるサーバについては、[Socket.IOリクエスト](/docs/requests/socket-io)を参照してください。
@@ -134,7 +135,7 @@ echolot send http://localhost:3001 --socketio --namespace /support --auth '{"tok
 | `--http2` | HTTP/2のみで送信します：TLSではALPN、平文HTTPではprior knowledge。 |
 | `--http3` | QUIC上のHTTP/3のみで送信します：`https://` のみ、プロキシは使えません。macOS 27以降とLinuxで利用できます。 |
 | `--subprotocol <name>` | `ws://` と `wss://` のURL用：提示するサブプロトコル。複数回指定できます。 |
-| `--socketio` | Socket.IOを使います。入力の各行は `event [JSON arguments]` です。 |
+| `--socketio` | Socket.IOを使います。入力の各行は `event [JSON arguments]`、確認応答を求める場合は `event? [JSON arguments]` です。 |
 | `--namespace <namespace>` | `--socketio` 用：参加する名前空間。デフォルトはURLのパス、なければ `/`。 |
 | `--auth <json>` | `--socketio` 用：認証ペイロード（JSONオブジェクト）。 |
 | `--socketio-version <version>` | `--socketio` 用：サーバのSocket.IOバージョン。`4`（3も含む）または `2`。デフォルトは4。 |

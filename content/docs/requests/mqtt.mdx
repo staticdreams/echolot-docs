@@ -93,10 +93,28 @@ QoS 1 and 2 deliveries are acknowledged for you, both ways.
 When the connection closes, the session is kept in [History](/docs/workspaces/history), with the log as the response
 body, so checks on the **Body** work on it.
 
+## Checks, captures and runs
+
+The **Tests** tab's **Message value**, **Messages received** and **Session close** check the messages received, and
+the **First message** and **Last message** captures read them, each payload read as JSON. Narrow a check or capture to
+some topics with a topic filter in its **on any** field, such as `warehouses/+/temperature`. **Session close** reads
+the broker's reason code when it disconnects. See
+[checks on realtime sessions](/docs/requests/scripts-and-tests#checks-on-realtime-sessions).
+
+In runs, `stop-after-acks = true` in the request file's `[settings]` stops listening once the broker has acknowledged
+every subscribe and every publish at QoS 1 or 2. A broker that refuses the connection gives a status in runs, such as
+`401` for a bad user name or password. See [stop listening early](/docs/requests/websocket-and-sse#stop-listening-early)
+and [refused connections](/docs/requests/websocket-and-sse#refused-connections).
+
 ## MQTT 5.0
 
 The broker's reason codes appear by name in the log and when a connection is refused, such as `Success` or `Not
-authorized`, in both versions. With **MQTT 5.0** picked:
+authorized`, in both versions.
+
+When **MQTT 5.0** is picked and the broker refuses it, as a broker that speaks only 3.1.1 does, Echolot connects
+again with MQTT 3.1.1. The log's first line says which protocol it connected with.
+
+With **MQTT 5.0** picked:
 
 - **No local** on a subscription leaves out this client's own messages.
 - **Clean start** replaces 3.1.1's **Clean session**.

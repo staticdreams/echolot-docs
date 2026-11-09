@@ -40,6 +40,22 @@ query SearchProducts($text: String!, $first: Int = 10) {
 
 用 **发送** 或 <kbd>⌘</kbd><kbd>R</kbd> 发送。
 
+## 在请求之间共享查询 [#share-a-query-between-requests]
+
+每个 GraphQL 请求都把查询保存在自己的文件中，即请求旁边的 `<slug>.graphql`。当多个请求用不同的变量发送同一个操作时，它们可以改为共用一个查询文件。
+在每个请求的文件中用 `shared-query` 代替 `query-file` 指定它：
+
+```toml
+shared-query = "queries/search-products.graphql"
+```
+
+路径相对于工作区文件夹。它必须以 `.graphql` 结尾并位于工作区内，其中的文件夹名或文件名都不能以点开头。尚不存在的文件会被读作空查询；
+第一次存储时会写入该文件及其上层文件夹。
+
+使用共享查询的请求从该文件读取查询，在它的**查询**标签页中编辑会写入该文件，因此每个指定它的请求都会随之更改。**查询**标签页会在编辑器上方说明这一点：
+**共享查询 queries/search-products.graphql：在此编辑会对所有使用它的请求生效。** 选取**设为此请求专用**可为这个请求创建它自己的查询副本；
+共享文件和其他请求保持不变。
+
 ## 请求如何发送 [#how-the-request-is-sent]
 
 地址前面的 **GQL** 标记是一个菜单。在 **发送方式** 下：
@@ -100,7 +116,8 @@ Schema 菜单位于 **查询** 标签页的右侧。它显示 Schema 文件及�
 - **部分数据**：数据与错误一起返回，所以有些字段因失败而为 `null`。
 - **扩展**：响应的 `extensions`，例如追踪或成本信息。
 
-在 **测试** 标签页中添加一项等于 `0` 的 **GraphQL 错误** 检查，可让运行因它们而失败。见[脚本和测试](/docs/requests/scripts-and-tests)。
+在 **测试** 标签页中添加一项等于 `0` 的 **GraphQL 错误** 检查，可让运行因它们而失败；或者添加一项**不存在**的检查，响应没有错误时即通过。
+**存在**在至少有一个错误时通过，用于本应失败的请求。见[脚本和测试](/docs/requests/scripts-and-tests)。
 
 ## 订阅和增量交付 [#subscriptions-and-incremental-delivery]
 

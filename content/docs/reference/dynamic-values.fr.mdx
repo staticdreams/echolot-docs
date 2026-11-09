@@ -123,28 +123,37 @@ HMAC prend la clé, le message et, facultativement, la sortie.
 
 ## Temps [#time]
 
-Toutes ces valeurs correspondent au moment de l’envoi de la requête.
+Toutes ces valeurs correspondent au moment de l’envoi de la requête, décalé quand vous donnez un décalage.
 
 | Valeur | Arguments | Ce qu’elle donne |
 | --- | --- | --- |
-| `$timestamp` | aucun | Le temps Unix en secondes : `1793525000`. |
-| `$timestampMs` | aucun | Le temps Unix en millisecondes : `1793525000123`. |
-| `$isoTimestamp` | aucun | ISO 8601 en UTC, avec les millisecondes : `2026-11-01T09:30:00.123Z`. |
+| `$timestamp` | Décalage (facultatif) | Le temps Unix en secondes : `1793525000`. `{{$timestamp(60)}}` vaut dans une minute. |
+| `$timestampMs` | Décalage (facultatif) | Le temps Unix en millisecondes : `1793525000123`. |
+| `$isoTimestamp` | Décalage (facultatif) | ISO 8601 en UTC, avec les millisecondes : `2026-11-01T09:30:00.123Z`. `{{$isoTimestamp('-90s')}}` vaut il y a 90 secondes. |
 | `$httpDate` | aucun | Une date HTTP, pour `Date` ou `If-Modified-Since` : `Sun, 01 Nov 2026 09:30:00 GMT`. |
 | `$date` | Format, décalage en secondes (facultatif), fuseau horaire (facultatif) | L’heure dans un motif de date Unicode, décalée du décalage, dans le fuseau horaire (UTC sauf indication). `{{$date('yyyy-MM-dd')}}`, `{{$date('yyyy-MM-dd HH:mm', 3600, 'Europe/Zurich')}}` |
 
+Le décalage de `$timestamp`, `$timestampMs` et `$isoTimestamp` est un nombre de secondes, ou un nombre avec une unité :
+`ms`, `s`, `m`, `h`, `d` ou `w`. Un `-` le place dans le passé, un `+` (ou rien) dans le futur : `'-90s'`, `'2h'`,
+`'-1d'`, `'1w'`. Écrivez-le entre guillemets, comme du texte ; un simple nombre de secondes peut rester seul, comme
+dans `{{$timestamp(-3600)}}`. Un décalage qui n’en est pas un échoue avec un message qui dit quoi écrire.
+
 ## Aléatoire [#random]
 
-Une nouvelle valeur à chaque envoi.
+Une nouvelle valeur à chaque envoi, sauf `$sameUUID`.
 
 | Valeur | Arguments | Ce qu’elle donne |
 | --- | --- | --- |
 | `$uuid` | aucun | Un UUID aléatoire, en minuscules. Aussi `$guid` et `$randomUUID`. `{{$uuid}}` |
+| `$sameUUID` | Nom | Un UUID aléatoire créé une fois et redonné partout où le même nom le demande : une fois par exécution (chaque itération a le sien), et hors exécution une fois par fenêtre, ou une fois par commande en ligne de commande. `{{$sameUUID('order')}}` |
 | `$randomInt` | Minimum, maximum | Un nombre entier entre les deux, bornes comprises. Un argument est le maximum, à partir de 0 ; aucun donne 0 à 1000. `{{$randomInt(1, 5)}}` |
 | `$randomString` | Longueur, caractères (facultatif) | Des caractères aléatoires, 16 sauf indication (jusqu’à 4096) : des lettres et des chiffres, ou les caractères donnés. `{{$randomString(8, 'ABCDEF0123456789')}}` |
 | `$randomHex` | Octets | Des octets aléatoires en hexadécimal, 16 sauf indication (jusqu’à 2048) ; deux fois plus de chiffres. `{{$randomHex(8)}}` |
 
-**Create order** d’Alpenglow envoie `Idempotency-Key: {{$uuid}}` : chaque commande qu’il passe est donc nouvelle.
+**Create order** d’Alpenglow envoie `Idempotency-Key: {{$uuid}}` : chaque commande qu’il passe est donc nouvelle. Là
+où plusieurs requêtes d’une exécution doivent envoyer la même clé, comme une requête et sa nouvelle tentative ou une
+création et la mise à jour qui la suit, donnez-leur `{{$sameUUID('order')}}` : chaque exécution reçoit une nouvelle
+clé, et chaque requête qui nomme `order` l’envoie.
 
 ## Données fictives [#fake-data]
 
@@ -155,8 +164,8 @@ sont sous **Données fictives**, par catégorie.
 
 Les arguments sont facultatifs ; les nombres vont de -10^15 à 10^15. Les corps de mock peuvent aussi utiliser `$uuid`
 (sous la forme `$randomUUID`), `$randomInt`, `$randomString`, `$randomHex`, `$timestamp`, `$timestampMs` et
-`$isoTimestamp`, de [Aléatoire](#random) et de [Temps](#time). Depuis Terminal, [`echolot fake`](/docs/cli/fake) remplit un
-modèle avec elles.
+`$isoTimestamp`, de [Aléatoire](#random) et de [Temps](#time), les valeurs de temps avec leurs décalages. Depuis
+Terminal, [`echolot fake`](/docs/cli/fake) remplit un modèle avec elles.
 
 ### Courantes [#common]
 

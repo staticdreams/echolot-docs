@@ -110,3 +110,29 @@ spec and leaves its requests as they are.
 A folder can also follow a spec from outside the workspace, a file or a URL: right-click the folder in the Requests
 sidebar and choose **Link to OpenAPI Spec…**. The command-line tool checks and applies changes with `echolot spec
 check` and `echolot spec apply`.
+
+## Checking responses against a spec
+
+An **OpenAPI spec** check in a request's **Tests** tab validates the response against the schema the spec documents
+for its operation and status. See [scripts and tests](/docs/requests/scripts-and-tests). The request needs to know
+both:
+
+- The operation, `spec-operation` in the request's file, such as `GET /products/{sku}`. Requests made from a spec
+  have it.
+- The spec. It is the one its folder, or a folder above it, follows. A request can also name its own with `spec` in
+  its file, such as `spec = "specs/alpenglow.yaml"`. Then it checks against that spec without its folder following it,
+  so nothing in the folder is synced: useful for requests to a [mock](/docs/mocks), or for a few requests of a folder
+  made by hand.
+
+```toml
+spec = "specs/alpenglow.yaml"
+spec-operation = "GET /products/{sku}"
+```
+
+## Importing a spec into a workspace
+
+**File › Import…** with an OpenAPI document makes requests that start with `{{baseUrl}}`, and sets `baseUrl` from the
+spec's servers. When the workspace or one of its environments already has a base address variable (`baseUrl`,
+`baseURL`, `base_url`, `apiUrl` and the like), the requests use that one instead and the import sets none, so your
+environments decide where they go. The import report says so, with the spec's own server address.
+See [importing](/docs/get-started/importing).

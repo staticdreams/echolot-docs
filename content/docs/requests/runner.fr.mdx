@@ -54,10 +54,18 @@ Tous les types de requête peuvent s’exécuter :
 - Les requêtes HTTP, GraphQL et gRPC et les appels MCP sont envoyés et vérifiés comme les autres.
 - Les requêtes WebSocket, Socket.IO et MQTT se connectent, envoient leurs messages, événements ou publications
   enregistrés qui sont activés pour les exécutions (et MQTT s’abonne à ses filtres activés), écoutent pendant
-  10 secondes, puis ferment la connexion. Le journal des messages sert de réponse : les vérifications sur le **Corps**
-  fonctionnent donc dessus. Pour écouter plus ou moins longtemps, définissez `stream-limit` (en secondes) dans
-  `[settings]` du fichier de la requête.
+  10 secondes, puis ferment la connexion. Le journal des messages sert de réponse : les
+  [vérifications de messages](/docs/requests/scripts-and-tests#checks-on-realtime-sessions) et les vérifications sur
+  le **Corps** fonctionnent donc dessus. Pour écouter plus ou moins longtemps, définissez `stream-limit` (en secondes)
+  dans `[settings]` du fichier de la requête ; pour arrêter dès que la réponse attendue est arrivée, définissez une
+  [condition d’arrêt](/docs/requests/websocket-and-sse#stop-listening-early). Un serveur qui refuse la connexion donne
+  lui aussi une réponse avec un état : une vérification peut donc attendre le refus.
 - Un flux de server-sent events est conservé pendant 10 secondes, puis terminé.
+
+Une requête dont les `{{variables}}` n’ont pas de valeur dans l’environnement choisi n’est pas envoyée : elle échoue,
+et le résultat nomme la variable et l’environnement, par exemple
+`Not sent: {{baseURL}} is not defined in the environment “Staging” or above it.` Choisissez un autre environnement, ou
+définissez la variable.
 
 Un script de pré-requête peut ignorer une requête avec `pm.execution.skipRequest()` ; le résultat indique **Ignorée par
 un script de pré-requête**. Un script peut aussi sauter avec `pm.execution.setNextRequest("Request name")`, et mettre fin

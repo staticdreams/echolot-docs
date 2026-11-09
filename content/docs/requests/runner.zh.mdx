@@ -43,8 +43,13 @@ description: "运行一个文件夹、几个请求或整个工作区及其检查
 
 - HTTP、GraphQL 和 gRPC 请求以及 MCP 调用，与其他请求一样被发送和检查。
 - WebSocket、Socket.IO 和 MQTT 请求会连接，发送已为运行开启的已存储消息、事件或发布（MQTT 还会订阅它已启用的过滤器），监听 10 秒，然后关闭。消息日志就是响应，
-  所以对 **正文** 的检查也适用于它。要监听不同的时长，请在请求文件的 `[settings]` 中设置 `stream-limit`（单位为秒）。
+  所以[消息检查](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)和对 **正文** 的检查都适用于它。要监听不同的时长，请在请求文件的 `[settings]` 中设置
+  `stream-limit`（单位为秒）；要在等待的应答一到就停止，请设置[停止条件](/docs/requests/websocket-and-sse#stop-listening-early)。拒绝连接的服务器也会给出带状态的响应，
+  因此检查可以预期这种拒绝。
 - 服务器发送事件流会保持 10 秒，然后结束。
+
+`{{variables}}` 在所选环境中没有值的请求不会发送：它会失败，结果会指出变量和环境，比如
+`Not sent: {{baseURL}} is not defined in the environment “Staging” or above it.` 请选择其他环境，或定义该变量。
 
 请求前脚本可以用 `pm.execution.skipRequest()` 跳过某个请求；结果会显示 **已被请求前脚本跳过**。脚本也可以用 `pm.execution.setNextRequest("Request name")` 跳转，
 并用 `pm.execution.setNextRequest(null)` 结束运行。一直往回跳转的运行，会在一次迭代中发送 10,000 次之后被停止。

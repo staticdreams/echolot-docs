@@ -4,6 +4,10 @@
       "width": 1016,
       "height": 60
     },
+    "ai-script-proposal": {
+      "width": 670,
+      "height": 430
+    },
     "get-started-command-palette": {
       "width": 900,
       "height": 440
@@ -31,6 +35,18 @@
     "mcp-server-detail": {
       "width": 1200,
       "height": 775
+    },
+    "mocks-broker": {
+      "width": 880,
+      "height": 515
+    },
+    "mocks-route-editor": {
+      "width": 880,
+      "height": 534
+    },
+    "mocks-route-websocket": {
+      "width": 880,
+      "height": 556
     },
     "requests-graphql-query": {
       "width": 1200,
@@ -150,6 +166,10 @@
       "width": 1016,
       "height": 60
     },
+    "ai-script-proposal": {
+      "width": 670,
+      "height": 430
+    },
     "get-started-command-palette": {
       "width": 900,
       "height": 440
@@ -177,6 +197,18 @@
     "mcp-server-detail": {
       "width": 1200,
       "height": 775
+    },
+    "mocks-broker": {
+      "width": 880,
+      "height": 515
+    },
+    "mocks-route-editor": {
+      "width": 880,
+      "height": 534
+    },
+    "mocks-route-websocket": {
+      "width": 880,
+      "height": 556
     },
     "requests-graphql-query": {
       "width": 1200,
@@ -296,6 +328,10 @@
       "width": 1016,
       "height": 60
     },
+    "ai-script-proposal": {
+      "width": 670,
+      "height": 430
+    },
     "get-started-command-palette": {
       "width": 900,
       "height": 440
@@ -323,6 +359,18 @@
     "mcp-server-detail": {
       "width": 1200,
       "height": 775
+    },
+    "mocks-broker": {
+      "width": 880,
+      "height": 515
+    },
+    "mocks-route-editor": {
+      "width": 880,
+      "height": 534
+    },
+    "mocks-route-websocket": {
+      "width": 880,
+      "height": 556
     },
     "requests-graphql-query": {
       "width": 1200,
@@ -442,6 +490,10 @@
       "width": 1016,
       "height": 60
     },
+    "ai-script-proposal": {
+      "width": 670,
+      "height": 430
+    },
     "get-started-command-palette": {
       "width": 900,
       "height": 440
@@ -469,6 +521,18 @@
     "mcp-server-detail": {
       "width": 1200,
       "height": 775
+    },
+    "mocks-broker": {
+      "width": 880,
+      "height": 515
+    },
+    "mocks-route-editor": {
+      "width": 880,
+      "height": 534
+    },
+    "mocks-route-websocket": {
+      "width": 880,
+      "height": 556
     },
     "requests-graphql-query": {
       "width": 1200,
@@ -588,6 +652,10 @@
       "width": 1016,
       "height": 60
     },
+    "ai-script-proposal": {
+      "width": 670,
+      "height": 430
+    },
     "get-started-command-palette": {
       "width": 900,
       "height": 440
@@ -615,6 +683,18 @@
     "mcp-server-detail": {
       "width": 1200,
       "height": 775
+    },
+    "mocks-broker": {
+      "width": 880,
+      "height": 515
+    },
+    "mocks-route-editor": {
+      "width": 880,
+      "height": 534
+    },
+    "mocks-route-websocket": {
+      "width": 880,
+      "height": 556
     },
     "requests-graphql-query": {
       "width": 1200,
@@ -734,6 +814,10 @@
       "width": 1016,
       "height": 60
     },
+    "ai-script-proposal": {
+      "width": 670,
+      "height": 430
+    },
     "get-started-command-palette": {
       "width": 900,
       "height": 440
@@ -761,6 +845,18 @@
     "mcp-server-detail": {
       "width": 1200,
       "height": 775
+    },
+    "mocks-broker": {
+      "width": 880,
+      "height": 515
+    },
+    "mocks-route-editor": {
+      "width": 880,
+      "height": 534
+    },
+    "mocks-route-websocket": {
+      "width": 880,
+      "height": 556
     },
     "requests-graphql-query": {
       "width": 1200,
@@ -880,6 +976,10 @@
       "width": 1016,
       "height": 60
     },
+    "ai-script-proposal": {
+      "width": 670,
+      "height": 430
+    },
     "get-started-command-palette": {
       "width": 900,
       "height": 440
@@ -907,6 +1007,18 @@
     "mcp-server-detail": {
       "width": 1200,
       "height": 775
+    },
+    "mocks-broker": {
+      "width": 880,
+      "height": 515
+    },
+    "mocks-route-editor": {
+      "width": 880,
+      "height": 534
+    },
+    "mocks-route-websocket": {
+      "width": 880,
+      "height": 556
     },
     "requests-graphql-query": {
       "width": 1200,

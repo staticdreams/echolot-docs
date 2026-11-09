@@ -35,15 +35,21 @@ equals `{{productId}}`.
 | **Response time (ms)** | The total time of the exchange, in milliseconds | is less than, is at most, is greater than, is at least |
 | **Size (bytes)** | The body's size in bytes | is less than, is at most, is greater than, is at least |
 | **JSON Schema** | The body, against a JSON Schema you paste | matches |
-| **GraphQL errors** | The `errors` array of a GraphQL response | equals, is less than, is greater than (their number); contains, does not contain (their messages) |
-| **MCP error** | Whether an MCP call failed: `true` or `false` | equals |
+| **GraphQL errors** | The `errors` array of a GraphQL response | equals, is less than, is greater than (their number); contains, does not contain (their messages); exists, does not exist (whether there are any) |
+| **MCP error** | Whether an MCP call failed, and how: `false`, `tool`, `protocol` or `true` | equals, does not equal, is one of, exists, does not exist |
 | **Tool output schema** | An MCP tool result's `structuredContent`, against the tool's own `outputSchema` | matches |
 | **OpenAPI spec** | The body, against the linked OpenAPI spec's schema for the response's status | matches |
 | **gRPC status** | A gRPC call's status, by name or code | equals, does not equal, is one of |
+| **Message value** | The value at a JSONPath in the messages a WebSocket, Socket.IO or MQTT session received | The same as **JSON value** |
+| **Messages received** | How many messages the session received | equals, does not equal, is less than, is at most, is greater than, is at least |
+| **Session close** | How the other side closed the session: its code and reason | exists, does not exist, equals, does not equal, is one of, contains, does not contain, matches regex |
+
+The last three are offered only on WebSocket, Socket.IO and MQTT requests. See
+[checks on realtime sessions](#checks-on-realtime-sessions).
 
 A new check starts with a sensible value: **Status** equals `200`, **Response time (ms)** is less than `1000`,
-**GraphQL errors** equals `0`, **MCP error** equals `false`, **gRPC status** equals `OK`, and **JSON Schema** with
-`{"type": "object"}`.
+**GraphQL errors** equals `0`, **MCP error** equals `false`, **gRPC status** equals `OK`, **Messages received** is at
+least `1`, and **JSON Schema** with `{"type": "object"}`.
 
 ### How values compare
 
@@ -65,18 +71,54 @@ JSON checks work on bodies of any size.
 
 ### Checks for other kinds of request
 
-- **GraphQL**: servers answer errors with status 200, so add **GraphQL errors** equals `0` to catch them. Use
-  **contains** to check that a particular message comes back.
-- **MCP calls**: **MCP error** equals `false` passes when the call succeeded. It fails on a result marked as an
-  error and on a JSON-RPC error, and the message shows what the server said. **Tool output schema** checks a tool
-  result against the schema the tool declares; it fails when the tool declares none. See
-  [MCP requests](/docs/requests/mcp-requests).
+- **GraphQL**: servers answer errors with status 200, so add **GraphQL errors** equals `0` to catch them.
+  **does not exist** says the same: it passes when the response has no errors, and **exists** when it has at least
+  one. Use **contains** to check that a particular message comes back.
+- **MCP calls**: **MCP error** tells two failures apart. `tool` is a tool's own failure, a result marked as an error
+  that the model reads; `protocol` is a JSON-RPC error, when the server broke or refused the call. **equals** `false`
+  passes when the call succeeded, `true` when it failed either way, and `tool` or `protocol` only on that failure.
+  **exists** and **does not exist** ask whether it failed at all. A failed check shows what the server said. **Tool
+  output schema** checks a tool result against the schema the tool declares; it fails when the tool declares none.
+  See [MCP requests](/docs/requests/mcp-requests).
 - **gRPC**: **gRPC status** takes names such as `OK` and `NOT_FOUND` or codes from 0 to 16; `5`, `not_found` and
   `NOT_FOUND` are the same status. A failed check shows the status message. See [gRPC](/docs/requests/grpc).
-- **OpenAPI spec**: the request's folder (or a folder above it) must be linked to a spec, and the request must follow
-  one of its operations. The check then validates the body against the schema the spec documents for the status that
+- **OpenAPI spec**: the request's folder (or a folder above it) must be linked to a spec, or the request must name
+  its own with `spec` in its file, and the request must follow one of its operations (`spec-operation`). The check then validates the body against the schema the spec documents for the status that
   came back. A status the spec documents without a JSON body passes; an undocumented status fails. See
   [Specs](/docs/specs).
+
+### Checks on realtime sessions
+
+WebSocket, Socket.IO and MQTT requests are checked on their message log, which is the response of a session that has
+ended. Without you, in the [runner](/docs/requests/runner), from the command line and for agents, such a request
+connects, sends its saved messages, listens, then closes, and the checks read what came back.
+
+- **Message value** tries a JSONPath on every message the session received, each read as JSON. A Socket.IO event's
+  arguments are an array, so `$[0].op` is the `op` of its first argument; a text that isn't JSON is a string. The
+  check passes when any received message passes. With **does not exist**, **does not equal** or **does not contain**,
+  it passes when no message fails. Only received messages count, never the ones Echolot sent.
+- **Messages received** counts the messages the session received.
+- **Session close** **exists** when the other side closed the session. **equals** and **is one of** compare its close
+  code (an MQTT broker's reason code) or its reason; the number comparisons read the code; **contains**, **does not
+  contain** and **matches regex** read the code and the reason as one text. A session that Echolot closed, at the end
+  of its listening time, fails every comparison but **does not exist**.
+
+**Message value** and **Messages received** have a field after the path, **on any**, that narrows them to some
+messages: a Socket.IO event's name (an acknowledgement carries the name of the event it answers), or an MQTT topic
+filter, where `+` and `#` work. Leave it empty to take every message. In the request file it is the check's `on`.
+For example, **Realtime › Support chat** can check that the agent who greets you is Heidi:
+
+```toml
+[[assertions]]
+target = "message"
+path = "$[0].agent"
+on = "welcome"
+check = "equals"
+expected = "Heidi"
+```
+
+A server that refuses the connection still gives these requests a response to check, in runs. See
+[refused connections](/docs/requests/websocket-and-sse#refused-connections).
 
 ### Add checks from a response
 

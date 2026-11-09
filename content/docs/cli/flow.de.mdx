@@ -118,7 +118,7 @@ der Arbeitsfläche sagt, welche. Siehe [Vorlagen](/docs/flows/templates).
 ## echolot flow serve [#echolot-flow-serve]
 
 ```sh
-echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>]
+echolot flow serve --workspace <workspace> [--env <env>] [--port <port>] [--share] [--token <token>] [--rotate-token]
 ```
 
 Führt jeden Flow mit einem Zeitplan aus, wenn er fällig ist, und beantwortet die Webhooks der Flows, die einen haben,
@@ -133,16 +133,18 @@ echolot flow serve -w Alpenglow.echolot --port 4100
 Serving Alpenglow (Ctrl-C stops it)
   schedule  Morning stock check: 0 6 * * *
   webhook   POST http://127.0.0.1:4100/order-status  (Order status on webhook)
-  token     3f9a…
+  token     3f9a… (this workspace's; send it as Authorization: Bearer; ?token= only for senders without headers, as URLs get logged; --rotate-token replaces it)
 ```
 
 Jeder Lauf gibt eine Zeile mit der Zeit, dem Flow, wie er endete und wie lange er dauerte aus.
 
 **Webhooks.** Ein Aufrufer sendet die Methode und den Pfad des Webhooks des Flows, mit dem Token als
-`Authorization: Bearer <token>`, als Header `X-Echolot-Token` oder als `?token=` in der URL. Die Eingaben des Flows
-kommen aus der Query und aus einem JSON-Body; eine Eingabe namens `body` bekommt den ganzen Body. Die Antwort ist die
-Ausgabe des Flows als JSON, `500` mit dem Fehler, wenn der Flow fehlschlug, `401` ohne das richtige Token und `404` mit
-den vorhandenen Pfaden für einen Pfad, den kein Flow hat.
+`Authorization: Bearer <token>`, als Header `X-Echolot-Token` oder als `?token=` in der URL (nur für Absender, die
+keine Header setzen können, da URLs protokolliert werden; es wird nie zu einer Eingabe). Die Eingaben des Flows kommen
+aus der Query und aus einem JSON-Body; eine Eingabe namens `body` bekommt den ganzen Body. Die Antwort ist die Ausgabe
+des Flows als JSON, `500` mit dem Fehler, wenn der Flow fehlschlug, `401` ohne das richtige Token, `404` mit den
+vorhandenen Pfaden für einen Pfad, den kein Flow hat, und `409`, wenn der Lauf nicht gestartet wurde (siehe
+[wohin ausgelöste Läufe senden](/docs/flows/running-and-triggers#where-triggered-runs-send)).
 
 ```sh
 curl -X POST http://127.0.0.1:4100/order-status \
@@ -151,8 +153,14 @@ curl -X POST http://127.0.0.1:4100/order-status \
   -d '{"orderId": "ord_7Hk2Lw"}'
 ```
 
-Das Token ist `--token`, sonst `ECHOLOT_WEBHOOK_TOKEN`, sonst ein neues, das Echolot ausgibt. Der Lauf eines Webhooks darf
-bis zu zwei Minuten dauern; ein Body über 8 MB wird ganz abgelehnt.
+Das Token ist `--token`, sonst `ECHOLOT_WEBHOOK_TOKEN`, sonst das eigene des Arbeitsbereichs: einmal erzeugt, im
+Schlüsselbund aufbewahrt und mit der App geteilt, sodass Adressen, die du weitergegeben hast, Neustarts überstehen.
+`--rotate-token` ersetzt das Token des Arbeitsbereichs durch ein neues. Der Lauf eines Webhooks darf bis zu zwei Minuten
+dauern; ein Body über 8 MB wird ganz abgelehnt.
+
+**Umgebungen.** Ein Flow, dessen Zeitplan oder Webhook eine Umgebung nennt, nutzt immer diese. Für die anderen ist
+`--env` die Umgebung: deine Wahl, auch dann genutzt, wenn sie geschützt ist. Ohne `--env` wird ein Flow, dessen Anfragen
+Variablen einer Umgebung brauchen, nicht ausgeführt.
 
 | Option | Bedeutung |
 | --- | --- |
@@ -160,7 +168,8 @@ bis zu zwei Minuten dauern; ein Body über 8 MB wird ganz abgelehnt.
 | `--env <env>` | Die Umgebung, die die Anfragen der Flows nutzen. |
 | `--port <port>` | Der Port für Webhooks; `0` wählt einen freien. Standard 4100. |
 | `--share` | Webhooks auf jeder Netzwerkschnittstelle beantworten, nicht nur auf diesem Rechner: für Container. |
-| `--token <token>` | Das Token für Webhooks. Standard: `ECHOLOT_WEBHOOK_TOKEN`, sonst ein neues, das ausgegeben wird. |
+| `--token <token>` | Das Token für Webhooks. Standard: `ECHOLOT_WEBHOOK_TOKEN`, sonst das eigene des Arbeitsbereichs, im Schlüsselbund aufbewahrt. |
+| `--rotate-token` | Das Webhook-Token des Arbeitsbereichs durch ein neues ersetzen; die App nutzt es ebenfalls. |
 
 Zu Zeitplänen und Webhooks in der App siehe [Flows ausführen und Auslöser](/docs/flows/running-and-triggers).
 

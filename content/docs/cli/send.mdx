@@ -112,11 +112,12 @@ echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolo
 ```
 
 **Socket.IO.** `--socketio` speaks Socket.IO over an `http(s)://` or `ws(s)://` URL. Each input line is an event:
-its name, then its JSON arguments (`chat {"text": "hi"}`; an array is several arguments). Events print as
-`name [arguments]`, acknowledgements as `ack id [arguments]`.
+its name, then its JSON arguments (`chat {"text": "hi"}`; an array is several arguments). A `?` after the name asks
+the server to acknowledge the event: `message? {"text": "Grüezi!"}`. Events print as `name [arguments]`,
+acknowledgements as `ack id [arguments]`.
 
 ```sh
-echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+echo 'message? {"text": "Grüezi!"}' | echolot send http://localhost:3001 --socketio --namespace /support --listen 5
 ```
 
 See [Socket.IO requests](/docs/requests/socket-io) for servers to try this against.
@@ -142,7 +143,7 @@ See [Socket.IO requests](/docs/requests/socket-io) for servers to try this again
 | `--http2` | Send with HTTP/2 only: ALPN over TLS, prior knowledge over plain HTTP. |
 | `--http3` | Send with HTTP/3 only, over QUIC: `https://` only, no proxies; macOS 27 and later, and Linux. |
 | `--subprotocol <name>` | For `ws://` and `wss://` URLs: a subprotocol to offer. Repeatable. |
-| `--socketio` | Speak Socket.IO; each input line is `event [JSON arguments]`. |
+| `--socketio` | Speak Socket.IO; each input line is `event [JSON arguments]`, or `event? [JSON arguments]` to ask for an acknowledgement. |
 | `--namespace <namespace>` | For `--socketio`: the namespace to join. Default: the URL's path, else `/`. |
 | `--auth <json>` | For `--socketio`: the auth payload, a JSON object. |
 | `--socketio-version <version>` | For `--socketio`: the server's Socket.IO version, `4` (also for 3) or `2`. Default 4. |

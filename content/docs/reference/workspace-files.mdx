@@ -262,7 +262,8 @@ secret = true
 | `name` | The request's name. |
 | `url` | The URL, with its query string. Every kind but MCP calls has one. |
 | `docs` | The request's documentation, in Markdown. |
-| `spec-operation` | The spec operation it was made from, such as `POST /auth/token`. |
+| `spec-operation` | The spec operation it was made from or follows, such as `POST /auth/token`. `openapi` checks read it. |
+| `spec` | The spec its `openapi` checks read, such as `specs/alpenglow.yaml`, when it isn't its folder's. Its folder doesn't follow that spec. |
 | `[[headers]]` | `name`, `value`, and `enabled = false` for one that is off. |
 | `[[disabled-params]]` | Query parameters that are switched off: `name`, `value`. The ones that are on are in the URL. |
 | `[[disabled-form-fields]]` | Form fields that are switched off: `name`, `value`. |
@@ -305,6 +306,7 @@ graphql-variables = """
 | Key | Meaning |
 | --- | --- |
 | `query-file` | The file beside the request with the query, `<slug>.graphql`. |
+| `shared-query` | Instead of `query-file`: a query file several requests share, relative to the workspace folder, such as `queries/search-products.graphql`. A `.graphql` file inside the workspace, with no name in its path starting with a dot. Editing the query writes this file. |
 | `operation` | The operation to run, when the query has several. |
 | `graphql-variables` | The GraphQL variables, as JSON text. Older files call it `variables`. |
 | `schema` | The schema it is checked and completed against: a file in `specs/`. |
@@ -380,9 +382,10 @@ arguments = """
 
 | Key | Meaning |
 | --- | --- |
-| `target` | What is checked: `status`, `header`, `json`, `body`, `time` (milliseconds), `size` (bytes), `schema` (JSON Schema), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status`. |
+| `target` | What is checked: `status`, `header`, `json`, `body`, `time` (milliseconds), `size` (bytes), `schema` (JSON Schema), `graphql-errors`, `mcp-error`, `mcp-output-schema`, `openapi`, `grpc-status`, and for WebSocket, Socket.IO and MQTT requests `message` (a value in the messages received), `message-count` and `close`. |
 | `name` | For `header`: the header's name. |
-| `path` | For `json`: a JSONPath, such as `$.items.length`. |
+| `path` | For `json` and `message`: a JSONPath, such as `$.items.length`. |
+| `on` | For `message` and `message-count`: only the messages of this Socket.IO event or MQTT topic filter. |
 | `check` | `equals`, `not-equals`, `contains`, `not-contains`, `less-than`, `at-most`, `greater-than`, `at-least`, `exists`, `not-exists`, `matches` (a regular expression), `is-type`, `is-one-of`, `matches-schema`. |
 | `expected` | The value to compare with; not written for checks that need none. |
 | `enabled` | `false` switches it off. |
@@ -394,8 +397,9 @@ See [scripts and tests](/docs/requests/scripts-and-tests) for which checks each 
 | Key | Meaning |
 | --- | --- |
 | `variable` | The variable to store the value in. |
-| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status` or `body`. |
+| `from` | `json`, `form`, `msgpack`, `xml`, `header`, `cookie`, `status`, `body`, or for WebSocket, Socket.IO and MQTT requests `message` (the first message received with a value at the path) or `last-message` (the last one). |
 | `path` | Where the value is: a JSONPath, an XPath, a header or cookie name. Not for `status` and `body`. |
+| `on` | For `message` and `last-message`: only the messages of this Socket.IO event or MQTT topic filter. |
 | `scope` | `environment` (default: the active environment) or `workspace`. |
 | `secret` | `true` stores the value as a secret, in the Keychain. |
 | `enabled` | `false` switches it off. |
@@ -416,8 +420,14 @@ A response of 400 or more, or a value that isn't there, leaves the variable as i
 | `cookies` | `false` neither sends nor stores cookies. |
 | `http-version` | `automatic`, `http1`, `http2` or `http3`. |
 | `stream-limit` | Seconds to listen to an event stream or a session. |
+| `stop-after-messages` | A session run without you stops listening once this many messages were received. |
+| `stop-when` | It stops once a received message has a value at this JSONPath. |
+| `stop-when-equals` | With `stop-when`: only when the value equals this. |
+| `stop-after-acks` | `true`: it stops once every Socket.IO acknowledgement asked for, and every MQTT acknowledgement of a subscribe or a QoS 1 or 2 publish, has come. |
+| `stop-on` | Narrows `stop-after-messages` and `stop-when` to a Socket.IO event or an MQTT topic filter. |
 
-See [request settings](/docs/requests/settings).
+See [request settings](/docs/requests/settings), and
+[stop listening early](/docs/requests/websocket-and-sse#stop-listening-early) for the `stop-` keys.
 
 ### Auth
 
@@ -523,6 +533,11 @@ body = """{ "error": "no user {{request.params.id}}" }"""
 | `[[scenarios]]` | The answer chosen for an operation of the spec: `operation` (such as `GET /pets`), `status`, `example` (the example's name). |
 | `[[routes]]` | A route made by hand: `id` (stays the same while the route changes), `method` (or `ANY`), `path` (`{id}` for a parameter), `summary`, `enabled = false` for a route that is off, `response` (the name of the default response; the first when left out), `request-content-type` and `request-body` (what requests made from it send). |
 | `[[routes.responses]]` | One answer of the route above: `name`, `status`, `content-type`, `headers` (`name` and `value`), `rules` (`source` is `path`, `query`, `header` or `body`; `name`; `value`, with `*` for any and empty for none) and `body`. |
+| `kind` (in `[[routes]]`) | `websocket` or `socketio` for a route that takes connections; left out for HTTP. See [streams, sockets and MQTT](/docs/mocks/streams-and-sockets). |
+| `repeat`, `ends`, `close` (in `[[routes.responses]]`) | For a stream: how many times its events play (`0` until the client leaves; 1 when left out), what follows them (`close` or `hold`; left out, server-sent events end and sockets stay open), and a close the mock makes by itself (`{ after-ms, code, reason }`). |
+| `[[routes.responses.events]]` | One message of the response's timeline: `after-ms` (after the one before), `event` (a server-sent event's `event:` or the Socket.IO event), `id` (a server-sent event's `id:`) and `data`. |
+| `[[routes.responses.replies]]` | A socket's answer to a message: `event` (Socket.IO), `rules` (`body` rules read the message), `ack = true` (answer a Socket.IO acknowledgement), `close`, and its messages in `[[routes.responses.replies.send]]` (as `events`). |
+| `[broker]` | The mock's MQTT broker: `port`, `repeat`, its timeline in `[[broker.publishes]]` (`after-ms`, `topic`, `data`, `qos`, `retain`) and its answers in `[[broker.replies]]` (`filter`, `rules`, and `[[broker.replies.send]]` messages). |
 
 `mocks/<slug>.js` holds the mock's routes in JavaScript, which answer before the routes made by hand and the spec. For
 the spec's operations, responses never live in the mock: examples go into the spec. See [mocks](/docs/mocks),
@@ -560,8 +575,8 @@ to = "signin.run"
 | --- | --- |
 | `name`, `description` | The flow's name and what it does. |
 | `[mcp]` | Offers the flow to agents as a tool: `tool` (its name) and `description`. |
-| `[schedule]` | Runs it on a schedule: `every-minutes`, or `cron` (such as `"0 6 * * *"`). |
-| `[webhook]` | Runs it when a request arrives: `method` (default `POST`) and `path`. |
+| `[schedule]` | Runs it on a schedule: `every-minutes`, or `cron` (such as `"0 6 * * *"`), and `environment`, the environment its runs use (the window's when left out, never a protected one). |
+| `[webhook]` | Runs it when a request arrives: `method` (default `POST`), `path` and `environment`, as for a schedule. |
 | `[[inputs]]` | Its inputs: `name`, `type` (`any`, `text`, `number`, `bool`, `object`, `list`, `secret`), `description`, `default`, `required`. |
 | `[[blocks]]` | Its blocks: `id`, `kind`, `title`, `position` (`[x, y]` on the canvas), `paused`, `color`, and `[blocks.settings]` with the kind's settings. |
 | `[[wires]]` | Links: `from` and `to`, each `block.port`. |

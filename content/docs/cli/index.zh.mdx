@@ -51,7 +51,7 @@ description: "安装 echolot 命令，并了解所有命令共有的内容：机
 | [`echolot run`](/docs/cli/run) | 运行工作区、其中的部分文件夹或请求，或一个 Postman 集合，带检查和报告。 |
 | [`echolot validate`](/docs/cli/validate) | 检查工作区的每个文件都能读取、每个请求都能解析。 |
 | [`echolot import`、`echolot export`](/docs/cli/import-export) | 将集合导入工作区，并将工作区写出为 Postman、Insomnia、Bruno 或 Echolot 格式。 |
-| [`echolot mcp`](/docs/cli/mcp) | 检查 MCP 服务器、登录它们、向智能体提供工作区并打印客户端设置。 |
+| [`echolot mcp`](/docs/cli/mcp) | 检查和调用 MCP 服务器、登录它们、向智能体提供工作区并打印客户端设置。 |
 | [`echolot spec`](/docs/cli/spec) | 对 OpenAPI 文档做 Lint，并检查规范更改、将其应用到跟随规范的文件夹。 |
 | [`echolot graphql diff`](/docs/cli/graphql) | 比较两个 GraphQL Schema，并为每处更改评级。 |
 | [`echolot grpc`](/docs/cli/grpc) | 描述 gRPC 服务并调用它们的方法。 |
@@ -73,7 +73,8 @@ description: "安装 echolot 命令，并了解所有命令共有的内容：机
 ## 工作区和环境 [#workspaces-and-environments]
 
 操作工作区的命令接受它的文件夹，即其中有 `workspace.toml` 的那个文件夹。有的命令将它作为参数（`echolot run Alpenglow.echolot`），
-有的则用 `-w` 或 `--workspace`（`echolot flow list -w Alpenglow.echolot`）；每个命令的页面都会说明。可选时，使用当前文件夹。
+有的则用 `-w` 或 `--workspace`（`echolot flow list -w Alpenglow.echolot`）；每个命令的页面都会说明。可选时，使用当前文件夹。没有 `workspace.toml` 但恰好包含一个 `*.echolot` 工作区的文件夹会被视为该工作区，
+因此在项目的根文件夹中可以不带路径运行 `echolot mcp serve`。
 
 `--env` 用不带 `.toml` 的文件名（`staging`）选取环境。`run`、`validate` 和 `flow` 也接受环境的名称（`Staging`）。没有 `--env` 时，
 请求使用工作区自己的变量解析。参见[环境](/docs/workspaces/environments)。
@@ -122,7 +123,7 @@ echolot send https://demo.echolot.dev/v1/products/TNT-MH-2P | jq .name
 | 退出码 | 含义 |
 | --- | --- |
 | `0` | 一切正常，每项检查都通过。 |
-| `1` | 出了问题：没有响应、检查或测试失败、发现了问题（`validate`、`spec lint`）、有破坏性更改（`graphql diff`）、gRPC 状态不是 OK、MQTT 连接被拒绝、智能体没有完成。 |
+| `1` | 出了问题：没有响应、检查或测试失败、发现了问题（`validate`、`spec lint`）、有破坏性更改（`graphql diff`）、gRPC 状态不是 OK 或应答无法解码、MQTT 连接被拒绝、MCP 调用失败（`mcp call`）、智能体没有完成。 |
 | `22` | 仅限 `echolot send`：响应状态为 400 或更高，与 `curl --fail` 相同。 |
 | `64` | 命令行本身有误：未知选项、缺少文件、环境不存在。会打印原因。 |
 

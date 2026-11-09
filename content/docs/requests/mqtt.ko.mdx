@@ -85,9 +85,26 @@ QoS 1과 2의 전달은 양방향 모두 자동으로 확인 응답됩니다.
 
 연결이 닫히면 세션은 로그를 응답 본문으로 하여 [기록](/docs/workspaces/history)에 보관되므로 **본문**에 대한 검사가 동작합니다.
 
+## 검사, 캡처, 실행 [#checks-captures-and-runs]
+
+**테스트** 탭의 **메시지 값**, **받은 메시지 수**, **세션 종료** 검사는 받은 메시지를 검사하고, **첫 메시지**와 **마지막 메시지** 캡처는
+그 메시지를 읽습니다. 각 페이로드는 JSON으로 읽습니다. 검사나 캡처를 일부 토픽으로 좁히려면 **전체** 필드에
+`warehouses/+/temperature` 같은 토픽 필터를 씁니다. **세션 종료**는 브로커가 연결을 끊을 때의 사유 코드를 읽습니다.
+[실시간 세션 검사](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)를 참고하십시오.
+
+실행에서는 요청 파일의 `[settings]`에 `stop-after-acks = true`를 지정하면 브로커가 모든 구독과 QoS 1 또는 2의 모든 게시에 확인 응답한
+뒤 수신을 멈춥니다. 연결을 거부하는 브로커는 실행에서 상태를 줍니다. 예를 들어 사용자 이름이나 비밀번호가 잘못되면 `401`입니다.
+[일찍 수신 멈추기](/docs/requests/websocket-and-sse#stop-listening-early)와
+[거부된 연결](/docs/requests/websocket-and-sse#refused-connections)을 참고하십시오.
+
 ## MQTT 5.0 [#mqtt-50]
 
-브로커의 사유 코드는 두 버전 모두에서 로그와 연결이 거부될 때 `Success`나 `Not authorized` 같은 이름으로 표시됩니다. **MQTT 5.0**을 선택하면 다음과 같습니다.
+브로커의 사유 코드는 두 버전 모두에서 로그와 연결이 거부될 때 `Success`나 `Not authorized` 같은 이름으로 표시됩니다.
+
+**MQTT 5.0**을 선택했는데 3.1.1만 지원하는 브로커처럼 브로커가 이를 거부하면, Echolot은 MQTT 3.1.1로 다시 연결합니다. 로그의 첫 줄에
+어느 프로토콜로 연결했는지 표시됩니다.
+
+**MQTT 5.0**을 선택하면 다음과 같습니다.
 
 - 구독의 **No Local**은 이 클라이언트 자신의 메시지를 제외합니다.
 - **Clean Start**가 3.1.1의 **Clean Session**을 대신합니다.

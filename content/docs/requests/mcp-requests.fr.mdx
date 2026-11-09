@@ -88,7 +88,12 @@ Chaque appel est conservé dans l’[Historique](/docs/workspaces/history).
 
 Dans l’onglet **Tests** :
 
-- **Erreur MCP** égale à `false` réussit quand l’appel a abouti. Un échec affiche le message du serveur.
+- **Erreur MCP** indique comment un appel a échoué. Sa valeur est `false` quand l’appel a abouti, `tool` quand l’outil
+  lui-même a échoué (un résultat marqué comme erreur, qu’un modèle lit et dont il peut tenir compte), ou `protocol`
+  quand le serveur a répondu par une erreur JSON-RPC (il a cassé ou refusé l’appel). **est égal à** `true` prend l’un ou
+  l’autre échec. Ainsi, **Erreur MCP** égale à `false` réussit en cas de succès, et égale à `tool` réussit sur un outil
+  qui signale une entrée incorrecte comme il se doit. **existe** réussit sur tout échec et **n’existe pas** sur aucun.
+  Une vérification en échec affiche le message du serveur.
 - **Schéma de sortie de l’outil** compare le `structuredContent` du résultat au `outputSchema` que l’outil déclare. Elle
   échoue quand l’outil n’en déclare aucun, ou que le résultat n’a pas de `structuredContent`.
 - **Valeur JSON** vérifie n’importe quelle valeur du résultat, comme `$.structuredContent.results.length` supérieur à
@@ -104,5 +109,5 @@ Voir [scripts et tests](/docs/requests/scripts-and-tests) pour toutes les vérif
 
 ## Depuis la ligne de commande [#from-the-command-line]
 
-`echolot run` exécute les requêtes MCP enregistrées avec leurs vérifications, et `echolot mcp check` inspecte un
-serveur. Voir [echolot mcp](/docs/cli/mcp).
+`echolot run` exécute les requêtes MCP enregistrées avec leurs vérifications, `echolot mcp call` appelle un outil,
+lit une ressource ou récupère un prompt, et `echolot mcp check` inspecte un serveur. Voir [echolot mcp](/docs/cli/mcp).

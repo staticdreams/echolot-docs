@@ -52,9 +52,16 @@ Every kind of request can run:
 - HTTP, GraphQL and gRPC requests and MCP calls are sent and checked like any other.
 - WebSocket, Socket.IO and MQTT requests connect, send their saved messages, events or publishes that are switched
   on for runs (and MQTT subscribes to its enabled filters), listen for 10 seconds, then close. The message log is
-  the response, so checks on the **Body** work on it. To listen for a different time, set `stream-limit` (in
-  seconds) in the request file's `[settings]`.
+  the response, so [message checks](/docs/requests/scripts-and-tests#checks-on-realtime-sessions) and checks on the
+  **Body** work on it. To listen for a different time, set `stream-limit` (in seconds) in the request file's
+  `[settings]`; to stop as soon as the answer you wait for has come, set a
+  [stop condition](/docs/requests/websocket-and-sse#stop-listening-early). A server that refuses the connection
+  gives a response with a status too, so a check can expect the refusal.
 - A server-sent events stream is kept for 10 seconds, then ended.
+
+A request whose `{{variables}}` have no value in the chosen environment isn't sent: it fails, and the result names the
+variable and the environment, such as `Not sent: {{baseURL}} is not defined in the environment “Staging” or above
+it.` Choose another environment, or define the variable.
 
 A pre-request script can skip a request with `pm.execution.skipRequest()`; the result says **Skipped by a
 pre-request script**. A script can also jump with `pm.execution.setNextRequest("Request name")`, and end the run

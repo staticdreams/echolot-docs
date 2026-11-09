@@ -116,3 +116,29 @@ Spec folgt, und lässt seine Anfragen, wie sie sind.
 Ein Ordner kann auch einer Spec außerhalb des Arbeitsbereichs folgen, einer Datei oder einer URL: Klicke den Ordner in der
 Seitenleiste der Anfragen mit der rechten Maustaste an und wähle **Mit OpenAPI-Spec verknüpfen …**. Das
 Befehlszeilenwerkzeug prüft und wendet Änderungen mit `echolot spec check` und `echolot spec apply` an.
+
+## Antworten gegen eine Spec prüfen [#checking-responses-against-a-spec]
+
+Eine Prüfung **OpenAPI-Spec** im Tab **Tests** einer Anfrage validiert die Antwort gegen das Schema, das die Spec für
+ihre Operation und ihren Status dokumentiert. Siehe [Skripte und Tests](/docs/requests/scripts-and-tests). Die Anfrage
+muss beides kennen:
+
+- Die Operation, `spec-operation` in der Datei der Anfrage, etwa `GET /products/{sku}`. Anfragen, die aus einer Spec
+  entstanden sind, haben sie.
+- Die Spec. Es ist die, der ihr Ordner oder ein Ordner darüber folgt. Eine Anfrage kann auch mit `spec` in ihrer Datei
+  eine eigene nennen, etwa `spec = "specs/alpenglow.yaml"`. Dann prüft sie gegen diese Spec, ohne dass ihr Ordner ihr
+  folgt, sodass nichts im Ordner abgeglichen wird: nützlich für Anfragen an einen [Mock](/docs/mocks) oder für ein paar
+  von Hand angelegte Anfragen eines Ordners.
+
+```toml
+spec = "specs/alpenglow.yaml"
+spec-operation = "GET /products/{sku}"
+```
+
+## Eine Spec in einen Arbeitsbereich importieren [#importing-a-spec-into-a-workspace]
+
+**Datei › Importieren …** mit einem OpenAPI-Dokument erstellt Anfragen, die mit `{{baseUrl}}` beginnen, und setzt
+`baseUrl` aus den Servern der Spec. Hat der Arbeitsbereich oder eine seiner Umgebungen schon eine Variable für die
+Basisadresse (`baseUrl`, `baseURL`, `base_url`, `apiUrl` und dergleichen), nutzen die Anfragen stattdessen diese, und
+der Import setzt keine, sodass deine Umgebungen entscheiden, wohin sie gehen. Der Importbericht sagt das, mit der
+eigenen Serveradresse der Spec. Siehe [Importieren](/docs/get-started/importing).

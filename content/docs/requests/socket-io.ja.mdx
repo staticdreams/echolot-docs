@@ -63,6 +63,18 @@ Socket.IOのパケットが受け付ける添付ファイルは、最大1000個�
 
 接続が閉じると、セッションはログをレスポンスのボディとして[履歴](/docs/workspaces/history)に保存されます。
 
+## チェック、キャプチャ、実行 [#checks-captures-and-runs]
+
+**テスト**タブの**メッセージの値**、**受信メッセージ数**、**セッションの終了**はイベントログをチェックし、**最初のメッセージ**と**最後のメッセージ**の
+キャプチャはそれを読み取ります。各イベントの引数は1つのJSON配列として読まれるので、`$[0].text` は最初の引数の `text` です。
+チェックやキャプチャを1つのイベントに絞り込むには、その**すべて**フィールドにイベント名を入力します。確認応答は応答先のイベントの名前を持つので、
+`message` を指定すると、あなたの `message` イベントに対するサーバの確認応答も対象になります。
+[リアルタイムのセッションに対するチェック](/docs/requests/scripts-and-tests#checks-on-realtime-sessions)を参照してください。
+
+実行では、リクエストファイルの `[settings]` で `stop-after-acks = true` を指定すると、確認応答を求めたすべてのイベントが確認応答を受け取った時点で待ち受けを止めます。
+クライアントの参加を拒否したサーバは、実行ではステータス `403` を返すので、チェックでそれを期待できます。
+[待ち受けを早めに止める](/docs/requests/websocket-and-sse#stop-listening-early)と[拒否された接続](/docs/requests/websocket-and-sse#refused-connections)を参照してください。
+
 ## コマンドラインから [#from-the-command-line]
 
 `echolot send --socketio`は、ターミナルから接続します。入力した各行が、イベントとそのJSON引数になります。保存済みの`.sio.toml`リクエストも実行します。[echolot send](/docs/cli/send)を参照してください。

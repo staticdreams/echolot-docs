@@ -107,11 +107,11 @@ echo '{"op": "subscribe", "channel": "orders"}' | echolot send wss://demo.echolo
 ```
 
 **Socket.IO.** `--socketio`는 `http(s)://` 또는 `ws(s)://` URL에서 Socket.IO를 사용합니다. 입력의 각 줄은 이벤트이며, 이름 다음에 JSON
-인수가 옵니다(`chat {"text": "hi"}`. 배열은 인수 여러 개입니다). 이벤트는 `name [arguments]`로, 확인 응답은
-`ack id [arguments]`로 출력됩니다.
+인수가 옵니다(`chat {"text": "hi"}`. 배열은 인수 여러 개입니다). 이름 뒤의 `?`는 서버에 이벤트의 확인 응답을 요청합니다.
+`message? {"text": "Grüezi!"}`. 이벤트는 `name [arguments]`로, 확인 응답은 `ack id [arguments]`로 출력됩니다.
 
 ```sh
-echolot send http://localhost:3001 --socketio --namespace /support --auth '{"token": "demo"}'
+echo 'message? {"text": "Grüezi!"}' | echolot send http://localhost:3001 --socketio --namespace /support --listen 5
 ```
 
 시험해 볼 수 있는 서버는 [Socket.IO 요청](/docs/requests/socket-io)을 참조하십시오.
@@ -137,7 +137,7 @@ echolot send http://localhost:3001 --socketio --namespace /support --auth '{"tok
 | `--http2` | HTTP/2로만 보냅니다. TLS에서는 ALPN, 평문 HTTP에서는 사전 지식(prior knowledge)을 사용합니다. |
 | `--http3` | QUIC 위의 HTTP/3으로만 보냅니다. `https://`만 가능하고 프록시는 사용할 수 없습니다. macOS 27 이상과 Linux에서 사용할 수 있습니다. |
 | `--subprotocol <name>` | `ws://`, `wss://` URL에서 제안할 하위 프로토콜. 반복할 수 있습니다. |
-| `--socketio` | Socket.IO를 사용합니다. 입력의 각 줄은 `event [JSON arguments]`입니다. |
+| `--socketio` | Socket.IO를 사용합니다. 입력의 각 줄은 `event [JSON arguments]`이며, 확인 응답을 요청하려면 `event? [JSON arguments]`입니다. |
 | `--namespace <namespace>` | `--socketio`용: 참여할 네임스페이스. 기본값은 URL의 경로, 없으면 `/`입니다. |
 | `--auth <json>` | `--socketio`용: 인증 페이로드, JSON 객체. |
 | `--socketio-version <version>` | `--socketio`용: 서버의 Socket.IO 버전, `4`(3 포함) 또는 `2`. 기본값은 4입니다. |

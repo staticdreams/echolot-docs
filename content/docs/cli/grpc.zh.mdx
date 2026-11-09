@@ -48,7 +48,7 @@ alpenglow.inventory.v1.Inventory
 ## echolot grpc call [#echolot-grpc-call]
 
 ```sh
-echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--stream] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
 ```
 
 `<method>` 是 `package.Service/Method`。消息是 JSON，默认为 `{}`；`-d -` 从标准输入读取。对于客户端流方法，请给出一个数组：每个元素是一条消息。应答以 JSON 输出到标准输出。
@@ -59,13 +59,25 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
   --proto Alpenglow.echolot/specs/inventory.proto
 ```
 
-状态、收到的消息数和耗时输出到标准错误。状态不是 `OK` 时以 1 退出。
+状态、收到的消息数和耗时输出到标准错误。状态不是 `OK` 时以 1 退出。无法用 Schema 解码的应答也是如此；此时标准错误会建议用 `--proto`
+加上该服务自己的 `.proto` 文件。
+
+### 服务器流 [#server-streams]
+
+服务器流方法的消息在输出是终端时，或者带有 `--stream` 时，会在到达时逐条打印，每行一个 JSON 对象。输出通过管道传出且没有 `--stream` 时，
+消息会在调用结束后作为一个 JSON 数组打印出来。
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/WatchStock \
+  -d '{"skus": ["TNT-MH-2P"]}' --proto Alpenglow.echolot/specs/inventory.proto --stream | jq .
+```
 
 | 选项 | 含义 |
 | --- | --- |
 | `-d`、`--data <json>` | JSON 消息；`-` 表示从标准输入读取。默认 `{}`。 |
 | `--deadline <ms>` | 截止时间，单位毫秒，以 `grpc-timeout` 发送。 |
 | `--compress <algorithm>` | 压缩发送的消息：`gzip` 或 `deflate`。无论如何都能读取压缩的应答。 |
+| `--stream` | 在服务器流的消息到达时逐条打印，每行一个 JSON 对象。在终端中为默认。 |
 | `--proto <file>` | 描述该服务的 `.proto` 文件，其导入的文件放在它旁边。不带它时，会询问服务器的反射。 |
 | `-H`、`--header <header>` | 以 `'Name: value'` 形式给出的元数据。可重复。 |
 | `-k`、`--insecure` | 跳过 TLS 证书验证。 |
@@ -78,5 +90,5 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
 | 退出码 | 何时 |
 | --- | --- |
 | `0` | `describe` 找到了服务；`call` 以状态 `OK` 结束。 |
-| `1` | 无法连接或描述服务器，或调用的状态不是 `OK`。 |
+| `1` | 无法连接或描述服务器、调用的状态不是 `OK`，或者无法解码它的应答。 |
 | `64` | 选项有误。 |

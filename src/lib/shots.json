@@ -15,6 +15,10 @@
     "width": 1016,
     "height": 60
   },
+  "ai-script-proposal": {
+    "width": 670,
+    "height": 430
+  },
   "flows-approve-sheet": {
     "width": 460,
     "height": 155
@@ -87,13 +91,21 @@
     "width": 1200,
     "height": 775
   },
+  "mocks-broker": {
+    "width": 880,
+    "height": 515
+  },
   "mocks-route-editor": {
-    "width": 885,
-    "height": 548
+    "width": 880,
+    "height": 534
   },
   "mocks-route-rule": {
     "width": 878,
     "height": 282
+  },
+  "mocks-route-websocket": {
+    "width": 880,
+    "height": 556
   },
   "mocks-routes": {
     "width": 1009,

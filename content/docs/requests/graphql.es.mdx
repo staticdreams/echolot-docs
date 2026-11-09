@@ -45,6 +45,26 @@ Déjalo vacío si el documento tiene una sola operación.
 
 Envía con **Enviar** o con <kbd>⌘</kbd><kbd>R</kbd>.
 
+## Compartir una consulta entre solicitudes [#share-a-query-between-requests]
+
+Cada solicitud GraphQL guarda su consulta en su propio archivo, `<slug>.graphql` junto a la solicitud. Cuando varias
+solicitudes envían la misma operación con variables distintas, pueden compartir en su lugar un único archivo de
+consulta. Nómbralo en el archivo de cada solicitud con `shared-query`, en lugar de `query-file`:
+
+```toml
+shared-query = "queries/search-products.graphql"
+```
+
+La ruta es relativa a la carpeta del espacio de trabajo. Debe terminar en `.graphql` y quedarse dentro del espacio de
+trabajo, y ningún nombre de carpeta o archivo de la ruta puede empezar por punto. Un archivo que aún no existe se lee
+como una consulta vacía; el primer guardado lo escribe, junto con las carpetas que lo contienen.
+
+Una solicitud con una consulta compartida la lee de ese archivo, y un cambio en su pestaña **Consulta** escribe el
+archivo, así que todas las solicitudes que lo nombran lo siguen. La pestaña **Consulta** lo dice encima del editor:
+**Consulta compartida queries/search-products.graphql: un cambio aquí la modifica para cada solicitud que la usa.**
+Elige **Hacerla propia de esta solicitud** para dar a esta solicitud su propia copia de la consulta; el archivo
+compartido y las demás solicitudes quedan como están.
+
 ## Cómo se envía la solicitud [#how-the-request-is-sent]
 
 La insignia **GQL** antes de la dirección es un menú. Bajo **Enviar como**:
@@ -123,7 +143,8 @@ también lee lo que GraphQL dice junto a los datos:
 - **Extensiones**: las `extensions` de la respuesta, como la información de trazas o de coste.
 
 Añade una comprobación **Errores de GraphQL** igual a `0` en la pestaña **Pruebas** para que una ejecución falle por
-ellos. Consulta [scripts y pruebas](/docs/requests/scripts-and-tests).
+ellos, o una que **no existe**, que se supera cuando la respuesta no tiene errores. **existe** se supera cuando tiene al
+menos uno, para una solicitud que debería fallar. Consulta [scripts y pruebas](/docs/requests/scripts-and-tests).
 
 ## Suscripciones y entrega incremental [#subscriptions-and-incremental-delivery]
 

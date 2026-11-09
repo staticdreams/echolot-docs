@@ -7,6 +7,9 @@ description: "MQTTブローカー（バージョン3.1.1または5.0、TCP、TLS
 どちらもデフォルトではMQTT 5.0を使い、指定すれば3.1.1を使います。接続はTCP（`mqtt://`）、TLS（`mqtts://`）、WebSocket（`ws://`、`wss://`）のいずれかです。
 アプリでの同じ操作については、[MQTTリクエスト](/docs/requests/mqtt)を参照してください。
 
+`--mqtt-version` を指定しない場合、MQTT 5.0を拒否したブローカーには3.1.1でもう一度接続を試み、標準エラーにそのことが出力されます：
+`note: the broker refused MQTT 5; connecting with 3.1.1 (--mqtt-version 3.1.1 skips this)`。
+
 例では、Alpenglowのリクエスト **Warehouse sensors** と同じように、Mac上の `localhost` にあるブローカーを使います。デモAPIはMQTTを動かせません。
 
 ## echolot mqtt subscribe [#echolot-mqtt-subscribe]
@@ -69,7 +72,7 @@ QoS 1または2では、Echolotはブローカーがすべてのメッセージ�
 
 | オプション | 意味 |
 | --- | --- |
-| `--mqtt-version <version>` | プロトコルのバージョン：`5` または `3.1.1`。デフォルトは5。 |
+| `--mqtt-version <version>` | プロトコルのバージョン：`5` または `3.1.1`。デフォルトは5で、ブローカーが5を拒否した場合は3.1.1。 |
 | `--client-id <id>` | クライアントID。デフォルトは `echolot-` とランダムな接尾辞。 |
 | `-u`、`--user <name>` | ユーザ名。 |
 | `--password <password>` | パスワード。環境変数 `ECHOLOT_MQTT_PASSWORD` の使用をおすすめします。 |

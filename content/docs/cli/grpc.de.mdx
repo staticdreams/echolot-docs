@@ -53,7 +53,7 @@ Anfrage und Antwort und die Felder ihrer Anfrage.
 ## echolot grpc call [#echolot-grpc-call]
 
 ```sh
-echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
+echolot grpc call <url> <method> [--data <json>] [--deadline <ms>] [--compress <algorithm>] [--stream] [--proto <file>] [--header <header> ...] [--insecure] [--timeout <seconds>]
 ```
 
 `<method>` ist `package.Service/Method`. Die Nachricht ist JSON, standardmäßig `{}`; `-d -` liest sie aus der
@@ -67,13 +67,26 @@ echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/Reserv
 ```
 
 Der Status, die Zahl der empfangenen Nachrichten und die Zeit gehen in die Standardfehlerausgabe. Ein anderer Status als
-`OK` endet mit 1.
+`OK` endet mit 1. Ebenso eine Antwort, die sich mit dem Schema nicht dekodieren lässt; die Standardfehlerausgabe schlägt
+dann `--proto` mit der eigenen `.proto`-Datei des Service vor.
+
+### Server-Streams [#server-streams]
+
+Die Nachrichten einer Methode mit Server-Streaming werden ausgegeben, sobald sie ankommen, ein JSON-Objekt pro Zeile,
+wenn die Ausgabe ein Terminal ist oder mit `--stream`. Wird die Ausgabe weitergeleitet und fehlt `--stream`, werden die
+Nachrichten erst ausgegeben, wenn der Aufruf endet, als ein JSON-Array.
+
+```sh
+echolot grpc call http://localhost:50051 alpenglow.inventory.v1.Inventory/WatchStock \
+  -d '{"skus": ["TNT-MH-2P"]}' --proto Alpenglow.echolot/specs/inventory.proto --stream | jq .
+```
 
 | Option | Bedeutung |
 | --- | --- |
 | `-d`, `--data <json>` | Die Nachricht als JSON; `-` liest sie aus der Standardeingabe. Standard `{}`. |
 | `--deadline <ms>` | Die Deadline in Millisekunden, gesendet als `grpc-timeout`. |
 | `--compress <algorithm>` | Die gesendeten Nachrichten komprimieren: `gzip` oder `deflate`. Komprimierte Antworten werden in jedem Fall gelesen. |
+| `--stream` | Die Nachrichten eines Server-Streams ausgeben, sobald sie ankommen, ein JSON-Objekt pro Zeile. Der Standard in einem Terminal. |
 | `--proto <file>` | Eine `.proto`-Datei, die den Service beschreibt, mit ihren Imports daneben. Ohne sie wird die Reflection des Servers gefragt. |
 | `-H`, `--header <header>` | Metadaten als `'Name: value'`. Wiederholbar. |
 | `-k`, `--insecure` | Die Prüfung des TLS-Zertifikats überspringen. |
@@ -87,5 +100,5 @@ Der Status, die Zahl der empfangenen Nachrichten und die Zeit gehen in die Stand
 | Code | Wann |
 | --- | --- |
 | `0` | `describe` fand die Services; `call` endete mit dem Status `OK`. |
-| `1` | Der Server ließ sich nicht erreichen oder beschreiben, oder der Status des Aufrufs war nicht `OK`. |
+| `1` | Der Server ließ sich nicht erreichen oder beschreiben, der Status des Aufrufs war nicht `OK`, oder seine Antwort ließ sich nicht dekodieren. |
 | `64` | Eine falsche Option. |
