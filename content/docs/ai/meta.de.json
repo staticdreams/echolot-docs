@@ -3,6 +3,7 @@
   "pages": [
     "assistant",
     "agents",
+    "claude-code-plugin",
     "echo"
   ]
 }

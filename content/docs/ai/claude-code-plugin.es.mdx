@@ -1,0 +1,167 @@
+---
+title: "Plugin para Claude Code"
+description: "Instala el plugin de Echolot para Claude Code, para que Claude pruebe, depure, simule y automatice las API de tu proyecto a través de Echolot mientras desarrollas."
+---
+
+El plugin de Echolot enseña a Claude Code a trabajar con Echolot. El [servidor MCP](/docs/ai/agents) de Echolot da
+las herramientas a un agente; el plugin le dice a Claude cuándo usarlas y cómo: qué herramienta para qué protocolo,
+dónde va un espacio de trabajo en tu proyecto, cómo mantener las credenciales fuera de la conversación. Con él, una
+solicitud que Claude hace mientras desarrollas se guarda en tu espacio de trabajo, se comprueba, queda en el historial
+y es tuya para abrirla en la app, en lugar de un comando `curl` que desaparece cuando termina la sesión.
+
+## Qué añade el plugin [#what-the-plugin-adds]
+
+El plugin es una skill, llamada `echolot`, con sus archivos de referencia. Claude la carga cuando una tarea toca las
+API de tu proyecto.
+
+| Parte | Qué le da a Claude |
+| --- | --- |
+| La skill | Cuándo usar Echolot, cómo configurar un proyecto, el ciclo de cada solicitud (entorno, crear, enviar, comprobar, informar) y qué hacer cuando se rechaza una aprobación |
+| Referencia de configuración | Instalar Echolot, conectar el servidor MCP, políticas, conjuntos de herramientas y secretos |
+| Referencia de los archivos de solicitud | El TOML del espacio de trabajo para cada tipo de solicitud: HTTP, GraphQL, WebSocket, Socket.IO, MQTT, gRPC y MCP |
+| Recetas | Suites de pruebas de humo, documentos OpenAPI, paginación, comprobaciones en tiempo real, mocks, flujos, probar un servidor MCP, CI |
+| Un script | Crea un espacio de trabajo vacío con los entornos `local` y `production` |
+
+El plugin no contiene código que se ejecute por sí solo ni ningún servidor: Claude sigue llegando a Echolot a través
+del servidor MCP y de la [herramienta de línea de comandos](/docs/cli), con las aprobaciones y los límites descritos en
+[Agentes externos](/docs/ai/agents).
+
+## Antes de instalar [#before-you-install]
+
+Necesitas:
+
+- **Claude Code**, con plugins.
+- **La herramienta de línea de comandos de Echolot** en tu `PATH`, de modo que `echolot --version` funcione. Mira
+  [Herramienta de línea de comandos](/docs/cli).
+
+<Edition only="appstore">
+  La edición de la App Store no tiene herramienta de línea de comandos dentro de la app. Instala la herramienta de
+  línea de comandos por separado (**Obtener la herramienta de línea de comandos**, en **Ajustes › Agentes**, lleva a
+  las descargas); el plugin funciona con ella de la misma manera.
+</Edition>
+
+## Instalar el plugin [#install-the-plugin]
+
+<Steps>
+<Step>
+En Claude Code, añade el marketplace de Echolot:
+
+```text
+/plugin marketplace add staticdreams/echolot-claude-plugin
+```
+</Step>
+<Step>
+Instala el plugin desde él:
+
+```text
+/plugin install echolot@echolot
+```
+</Step>
+<Step>
+Pide a Claude que configure tu proyecto, como se explica a continuación. El plugin se instala una vez; cada proyecto
+se configura una vez.
+</Step>
+</Steps>
+
+Para obtener una versión más reciente, ejecuta `/plugin marketplace update echolot`. Para quitar el plugin, ejecuta
+`/plugin uninstall echolot@echolot`.
+
+## Configurar un proyecto [#set-up-a-project]
+
+En la carpeta de tu proyecto, pide a Claude:
+
+```text
+Configura Echolot para este proyecto
+```
+
+Claude hace entonces estas cosas, y nada más:
+
+1. Comprueba que `echolot` se ejecuta.
+2. Busca un espacio de trabajo en el proyecto, una carpeta que termina en `.echolot`. Si no hay ninguno, crea uno en
+   la raíz del proyecto, con un entorno `local` y otro `production`, y añade como variables los hosts que usa tu
+   proyecto.
+3. Te hace una pregunta: si quieres aprobar sus cambios en la app Echolot o dejar que trabaje sin supervisión. Mira
+   [Aprobaciones o sin supervisión](#approvals-or-unattended).
+4. Registra el servidor MCP de Echolot para el proyecto. Esto escribe `.mcp.json` en la raíz del proyecto:
+
+   ```sh
+   claude mcp add --scope project echolot -- echolot mcp serve ./alpenglow.echolot --toolsets all --env local
+   ```
+
+5. Se ofrece a añadir una nota breve al `CLAUDE.md` de tu proyecto, que dice que las llamadas a tus API pasan por
+   Echolot.
+
+Después se detiene y te dice qué hacer a continuación:
+
+1. Si elegiste las aprobaciones en la app, abre el espacio de trabajo en Echolot, activa **Permitir que los agentes
+   usen los espacios de trabajo abiertos** en **Ajustes › Agentes** y activa los conjuntos de herramientas que quieras
+   en **Herramientas para agentes**. La app ofrece **Solicitudes** y **Flujos** hasta que actives los demás.
+2. Reinicia Claude Code, o ejecuta `/mcp`, y aprueba el servidor del proyecto.
+
+Haz commit del espacio de trabajo y de `.mcp.json`. Ninguno de los dos contiene un secreto, y tus compañeros obtienen
+la misma configuración desde el repositorio.
+
+## Aprobaciones o sin supervisión [#approvals-or-unattended]
+
+El servidor MCP decide cómo funciona cuando se inicia.
+
+| Cómo funciona | Qué ocurre |
+| --- | --- |
+| El espacio de trabajo está abierto en Echolot y los agentes están activados | Las llamadas de Claude se ejecutan en la app. Un cambio, o un envío que podría cambiar datos, te pregunta en una hoja. Ves aparecer cada solicitud en la barra lateral. |
+| Por su cuenta, con `--policy permissive` | Los envíos y los cambios se ejecutan sin preguntar. Las eliminaciones se rechazan, igual que los envíos a entornos protegidos y a hosts nuevos. |
+| Por su cuenta, sin nombrar ninguna política | Las lecturas y los envíos seguros se ejecutan. Todo lo demás se rechaza. |
+
+Las aprobaciones en la app encajan con el tiempo en que desarrollas: ves lo que hace Claude y puedes rechazarlo. Sin
+supervisión encaja con una tarea larga que no quieres quedarte a mirar. Para pasar de un modo al otro, abre o cierra
+el espacio de trabajo en Echolot y ejecuta `/mcp` para volver a conectar. Mira
+[Por su cuenta](/docs/ai/agents#on-its-own) para las políticas.
+
+## Qué pedir [#what-to-ask-for]
+
+No hace falta que menciones Echolot. Una vez que un proyecto tiene un espacio de trabajo, Claude lo usa para las
+llamadas a las API de ese proyecto.
+
+| Tú pides | Qué hace Claude en Echolot |
+| --- | --- |
+| “Inicia sesión como el usuario de demostración y lista mis pedidos” | Guarda la contraseña como secreto, guarda una solicitud de inicio de sesión que conserva el token de su respuesta y envía la lista con ese token. El token nunca llega a la conversación. |
+| “Crea una suite de pruebas de humo para la API de pedidos” | Una carpeta con listar, obtener, crear, actualizar y un caso con fallo para cada uno, con comprobaciones, encadenados por los valores que conservan. Después ejecuta la carpeta e informa de lo que falló. |
+| “La página necesita una API de lista de deseos que aún no existe” | Un servidor mock, a partir de tu documento OpenAPI o con rutas hechas a mano y datos ficticios, y solicitudes para sus rutas. |
+| “¿Por qué falla este endpoint al cabo de un rato?” | Envía la solicitud una y otra vez, compara los intercambios en el historial y dice si la culpa es de la API o de la prueba. |
+| “Comprueba que los eventos de pedidos llegan por el WebSocket” | Abre la sesión, hace un pedido con otra solicitud y lee lo que recibió la sesión. |
+| “Prueba las herramientas de nuestro servidor MCP” | Añade el servidor, lo inspecciona y guarda una llamada para cada herramienta con comprobaciones sobre su resultado. |
+| “Inicia sesión, crea un pedido y consulta hasta que esté entregado” | Dibuja un flujo con esos bloques. Se ejecuta cuando lo apruebas. |
+| “Ejecuta las pruebas de la API en CI” | El comando `echolot run` para tu pipeline, con un informe y los nombres de los secretos que necesita. |
+
+Cada fila deja algo en el espacio de trabajo: solicitudes, comprobaciones, un mock o un flujo, que puedes abrir,
+cambiar y volver a ejecutar en Echolot.
+
+## Lo que Claude no hace [#what-claude-does-not-do]
+
+La skill obliga a Claude a cumplir estas reglas:
+
+- **Ninguna credencial en un archivo ni en la conversación.** Una contraseña o una clave que le das va a una variable
+  secreta al momento, y a partir de entonces solo aparece `{{su nombre}}`. Echolot conserva los tokens de la respuesta
+  de un inicio de sesión, y nunca pasan por Claude.
+- **Nada de eliminar**, salvo que hayas pedido que se elimine ese elemento.
+- **Ninguna prueba contra un entorno protegido o de producción**, salvo que lo hayas pedido. Los envíos a un entorno
+  protegido siempre te preguntan.
+- **Ningún script por iniciativa propia.** Los scripts son código en el que debes confiar: Claude propone uno y dice
+  dónde va, y Echolot te pregunta antes de que se ejecute.
+- **Nada más de lo que pediste.** “Configúralo” es solo la configuración. “Prueba este endpoint” son las solicitudes
+  y las comprobaciones de ese endpoint, no una suite.
+- **Ningún cambio de herramienta sin avisar.** Cuando se rechaza una aprobación o falta una herramienta, Claude dice
+  qué hace falta y espera. No recurre a `curl`.
+
+## Solución de problemas [#troubleshooting]
+
+- **Claude sigue usando `curl`.** Comprueba que el plugin está instalado (`/plugin`), que el proyecto tiene un espacio
+  de trabajo y que `/mcp` lista el servidor `echolot` como conectado. Si es así, añade la nota a tu `CLAUDE.md`: pide
+  a Claude “añade la nota de Echolot a CLAUDE.md”.
+- **Los cambios se rechazan y nada te pregunta.** El servidor está funcionando por su cuenta. Abre el espacio de
+  trabajo en Echolot, activa **Permitir que los agentes usen los espacios de trabajo abiertos** y ejecuta `/mcp` para
+  volver a conectar. O pide a Claude que cambie el servidor a la política permisiva.
+- **Claude dice que falta una herramienta.** Su conjunto de herramientas está desactivado. Actívalo en
+  **Ajustes › Agentes**, en **Herramientas para agentes**, y vuelve a conectar.
+- **Una solicitud que escribió Claude no aparece.** Un servidor que funciona por su cuenta lee el espacio de trabajo
+  cuando se inicia. Ejecuta `/mcp` y vuelve a conectar `echolot`. A través de la app, las solicitudes nuevas aparecen
+  al momento.

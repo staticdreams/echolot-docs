@@ -1,0 +1,161 @@
+---
+title: Claude Code plugin
+description: Install the Echolot plugin for Claude Code, so Claude tests, debugs, mocks and automates your project's APIs through Echolot while you build.
+---
+
+The Echolot plugin teaches Claude Code how to work with Echolot. Echolot's [MCP server](/docs/ai/agents) gives an
+agent the tools; the plugin tells Claude when to use them and how: which tool for which protocol, where a workspace
+goes in your project, how to keep credentials out of the conversation. With it, a request Claude makes while you
+build is saved in your workspace, checked, kept in history, and yours to open in the app, instead of a `curl`
+command that is gone when the session ends.
+
+## What the plugin adds
+
+The plugin is one skill, named `echolot`, with its reference files. Claude loads it when a task touches your
+project's APIs.
+
+| Part | What it gives Claude |
+| --- | --- |
+| The skill | When to use Echolot, how to set a project up, the loop for every request (environment, create, send, check, report), and what to do when an approval is refused |
+| Setup reference | Installing Echolot, connecting the MCP server, policies, toolsets and secrets |
+| Request files reference | The workspace's TOML for every kind of request: HTTP, GraphQL, WebSocket, Socket.IO, MQTT, gRPC and MCP |
+| Recipes | Smoke suites, OpenAPI documents, pagination, realtime checks, mocks, flows, testing an MCP server, CI |
+| A script | Makes an empty workspace with `local` and `production` environments |
+
+The plugin holds no code that runs on its own and no server: Claude still reaches Echolot through the MCP server
+and the [command-line tool](/docs/cli), with the approvals and limits described in
+[External agents](/docs/ai/agents).
+
+## Before you install
+
+You need:
+
+- **Claude Code**, with plugins.
+- **Echolot's command-line tool** on your `PATH`, so that `echolot --version` works. See
+  [Command-line tool](/docs/cli).
+
+<Edition only="appstore">
+  The App Store edition has no command-line tool inside the app. Install the command-line tool on its own
+  (**Get the Command-Line Tool** in **Settings › Agents** leads to the downloads); the plugin works with it in the
+  same way.
+</Edition>
+
+## Install the plugin
+
+<Steps>
+<Step>
+In Claude Code, add the Echolot marketplace:
+
+```text
+/plugin marketplace add staticdreams/echolot-claude-plugin
+```
+</Step>
+<Step>
+Install the plugin from it:
+
+```text
+/plugin install echolot@echolot
+```
+</Step>
+<Step>
+Ask Claude to set your project up, as below. You install the plugin once; you set up each project once.
+</Step>
+</Steps>
+
+To get a newer version, run `/plugin marketplace update echolot`. To remove the plugin, run
+`/plugin uninstall echolot@echolot`.
+
+## Set up a project
+
+In your project's folder, ask Claude:
+
+```text
+Set up Echolot for this project
+```
+
+Claude then does these things, and nothing else:
+
+1. Checks that `echolot` runs.
+2. Looks for a workspace in the project, a folder ending in `.echolot`. If there is none, it makes one at the
+   project's root, with a `local` and a `production` environment, and adds the hosts your project uses as variables.
+3. Asks you one question: whether you want to approve its changes in the Echolot app, or let it work unattended.
+   See [Approvals or unattended](#approvals-or-unattended).
+4. Registers Echolot's MCP server for the project. This writes `.mcp.json` at the project's root:
+
+   ```sh
+   claude mcp add --scope project echolot -- echolot mcp serve ./alpenglow.echolot --toolsets all --env local
+   ```
+
+5. Offers to add a short note to your project's `CLAUDE.md`, saying that calls to your APIs go through Echolot.
+
+Then it stops and tells you what to do next:
+
+1. If you chose approvals in the app, open the workspace in Echolot, turn on **Let agents use open workspaces** in
+   **Settings › Agents**, and turn on the toolsets you want under **Tools for agents**. The app offers **Requests**
+   and **Flows** until you turn the others on.
+2. Restart Claude Code, or run `/mcp`, and approve the project's server.
+
+Commit the workspace and `.mcp.json`. Neither holds a secret, and your teammates get the same setup from the
+repository.
+
+## Approvals or unattended
+
+The MCP server decides how it runs when it starts.
+
+| How it runs | What happens |
+| --- | --- |
+| The workspace is open in Echolot, and agents are on | Claude's calls run in the app. A change, or a send that could change data, asks you in a sheet. You see each request appear in the sidebar. |
+| On its own, with `--policy permissive` | Sends and changes run without asking. Deletes are refused, and so are sends to protected environments and new hosts. |
+| On its own, with no policy named | Reads and safe sends run. Everything else is refused. |
+
+Approvals in the app suit the time you are developing: you watch what Claude does and you can refuse it. Unattended
+suits a long task you don't want to sit through. To change from one to the other, open or close the workspace in
+Echolot and run `/mcp` to reconnect. See [On its own](/docs/ai/agents#on-its-own) for the policies.
+
+## What to ask for
+
+You don't need to mention Echolot. Once a project has a workspace, Claude uses it for calls to that project's APIs.
+
+| You ask | What Claude does in Echolot |
+| --- | --- |
+| "Sign in as the demo user and list my orders" | Stores the password as a secret, saves a sign-in request that keeps the token from its response, and sends the list with that token. The token never reaches the conversation. |
+| "Make a smoke suite for the orders API" | A folder with list, get, create, update and one failing case for each, with checks, chained by the values they keep. Then it runs the folder and reports what failed. |
+| "The page needs a wishlist API that doesn't exist yet" | A mock server, from your OpenAPI document or with routes made by hand and fake data, and requests for its routes. |
+| "Why does this endpoint fail after a while?" | Sends the request again and again, compares the exchanges in history, and says whether the API or the test is at fault. |
+| "Check that the order events arrive on the WebSocket" | Opens the session, places an order with another request, and reads what the session received. |
+| "Test our MCP server's tools" | Adds the server, inspects it, and saves a call for each tool with checks on its result. |
+| "Sign in, create an order, and poll until it is delivered" | Draws a flow with those blocks. It runs once you approve it. |
+| "Run the API tests in CI" | The `echolot run` command for your pipeline, with a report and the names of the secrets it needs. |
+
+Each row leaves something in the workspace: requests, checks, a mock or a flow, which you can open, change and run
+again in Echolot.
+
+## What Claude does not do
+
+The skill holds Claude to these rules:
+
+- **No credential in a file or in the conversation.** A password or key you give it goes into a secret variable at
+  once, and from then on only `{{its name}}` appears. Tokens are kept from a sign-in's response by Echolot and never
+  pass through Claude.
+- **No deleting**, unless you asked for that item to be deleted.
+- **No tests against a protected or production environment**, unless you asked. Sends to a protected environment
+  always ask you.
+- **No scripts of its own accord.** Scripts are code you must trust: Claude proposes one and says where it goes, and
+  Echolot asks you before it runs.
+- **No more than you asked for.** "Set it up" is the setup only. "Test this endpoint" is the requests and checks for
+  that endpoint, not a suite.
+- **No silent change of tool.** When an approval is refused or a tool is missing, Claude says what is needed and
+  waits. It does not fall back to `curl`.
+
+## Troubleshooting
+
+- **Claude still uses `curl`.** Check that the plugin is installed (`/plugin`), that the project has a workspace, and
+  that `/mcp` lists the `echolot` server as connected. If it is, add the note to your `CLAUDE.md`: ask Claude to
+  "add the Echolot note to CLAUDE.md".
+- **Changes are refused, and nothing asks you.** The server is running on its own. Open the workspace in Echolot, turn
+  on **Let agents use open workspaces**, and run `/mcp` to reconnect. Or ask Claude to switch the server to the
+  permissive policy.
+- **Claude says a tool is missing.** Its toolset is off. Turn it on in **Settings › Agents**, under **Tools for
+  agents**, and reconnect.
+- **A request Claude wrote doesn't appear.** A server running on its own reads the workspace when it starts. Run
+  `/mcp` and reconnect `echolot`. Through the app, new requests appear at once.

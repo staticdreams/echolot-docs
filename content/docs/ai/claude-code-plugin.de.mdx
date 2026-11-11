@@ -1,0 +1,166 @@
+---
+title: "Plug-in für Claude Code"
+description: "Installiere das Echolot-Plug-in für Claude Code, damit Claude die APIs deines Projekts über Echolot testet, debuggt, mockt und automatisiert, während du entwickelst."
+---
+
+Das Echolot-Plug-in bringt Claude Code bei, mit Echolot zu arbeiten. Der [MCP-Server](/docs/ai/agents) von Echolot gibt
+einem Agenten die Tools; das Plug-in sagt Claude, wann und wie es sie nutzt: welches Tool für welches Protokoll, wohin
+ein Arbeitsbereich in deinem Projekt gehört, wie Zugangsdaten aus der Unterhaltung herausbleiben. Damit wird eine
+Anfrage, die Claude stellt, während du entwickelst, in deinem Arbeitsbereich gesichert, geprüft, im Verlauf festgehalten
+und lässt sich von dir in der App öffnen, statt ein `curl`-Befehl zu sein, der mit dem Ende der Sitzung verschwindet.
+
+## Was das Plug-in mitbringt [#what-the-plugin-adds]
+
+Das Plug-in ist ein einziger Skill namens `echolot` mit seinen Referenzdateien. Claude lädt ihn, wenn eine Aufgabe die
+APIs deines Projekts berührt.
+
+| Teil | Was er Claude gibt |
+| --- | --- |
+| Der Skill | Wann Echolot zu nutzen ist, wie ein Projekt eingerichtet wird, der Ablauf für jede Anfrage (Umgebung, erstellen, senden, prüfen, berichten) und was zu tun ist, wenn eine Genehmigung abgelehnt wird |
+| Referenz zur Einrichtung | Echolot installieren, den MCP-Server verbinden, Richtlinien, Tool-Sets und Secrets |
+| Referenz zu den Anfragedateien | Das TOML des Arbeitsbereichs für jede Art von Anfrage: HTTP, GraphQL, WebSocket, Socket.IO, MQTT, gRPC und MCP |
+| Rezepte | Smoke-Suiten, OpenAPI-Dokumente, Paginierung, Echtzeit-Prüfungen, Mocks, Flows, das Testen eines MCP-Servers, CI |
+| Ein Skript | Legt einen leeren Arbeitsbereich mit den Umgebungen `local` und `production` an |
+
+Das Plug-in enthält keinen Code, der von selbst läuft, und keinen Server: Claude erreicht Echolot weiterhin über den
+MCP-Server und das [Befehlszeilentool](/docs/cli), mit den Genehmigungen und Limits, die unter
+[Externe Agenten](/docs/ai/agents) beschrieben sind.
+
+## Vor der Installation [#before-you-install]
+
+Du brauchst:
+
+- **Claude Code** mit Plug-ins.
+- **Das Befehlszeilentool von Echolot** in deinem `PATH`, sodass `echolot --version` funktioniert. Siehe
+  [Befehlszeilentool](/docs/cli).
+
+<Edition only="appstore">
+  Die Version aus dem App Store hat kein Befehlszeilentool in der App. Installiere das Befehlszeilentool einzeln
+  (**Befehlszeilentool laden** in **Einstellungen › Agenten** führt zu den Downloads); das Plug-in arbeitet damit auf
+  dieselbe Weise.
+</Edition>
+
+## Plug-in installieren [#install-the-plugin]
+
+<Steps>
+<Step>
+Füge in Claude Code den Marketplace von Echolot hinzu:
+
+```text
+/plugin marketplace add staticdreams/echolot-claude-plugin
+```
+</Step>
+<Step>
+Installiere daraus das Plug-in:
+
+```text
+/plugin install echolot@echolot
+```
+</Step>
+<Step>
+Bitte Claude, dein Projekt einzurichten, wie unten beschrieben. Das Plug-in installierst du einmal; jedes Projekt
+richtest du einmal ein.
+</Step>
+</Steps>
+
+Eine neuere Version bekommst du mit `/plugin marketplace update echolot`. Um das Plug-in zu entfernen, führe
+`/plugin uninstall echolot@echolot` aus.
+
+## Projekt einrichten [#set-up-a-project]
+
+Bitte Claude im Ordner deines Projekts:
+
+```text
+Richte Echolot für dieses Projekt ein
+```
+
+Claude tut dann Folgendes und sonst nichts:
+
+1. Prüft, ob `echolot` läuft.
+2. Sucht im Projekt nach einem Arbeitsbereich, einem Ordner, der auf `.echolot` endet. Gibt es keinen, legt es einen
+   im Stammordner des Projekts an, mit den Umgebungen `local` und `production`, und fügt die Hosts, die dein Projekt
+   nutzt, als Variablen hinzu.
+3. Stellt dir eine Frage: ob du seine Änderungen in der Echolot-App genehmigen oder es unbeaufsichtigt arbeiten lassen
+   willst. Siehe [Genehmigungen oder unbeaufsichtigt](#approvals-or-unattended).
+4. Registriert den MCP-Server von Echolot für das Projekt. Das schreibt `.mcp.json` in den Stammordner des Projekts:
+
+   ```sh
+   claude mcp add --scope project echolot -- echolot mcp serve ./alpenglow.echolot --toolsets all --env local
+   ```
+
+5. Bietet an, einen kurzen Hinweis in die `CLAUDE.md` deines Projekts einzutragen, der sagt, dass Aufrufe deiner APIs
+   über Echolot laufen.
+
+Dann hält es an und sagt dir, was als Nächstes zu tun ist:
+
+1. Hast du Genehmigungen in der App gewählt, öffne den Arbeitsbereich in Echolot, schalte **Agenten geöffnete
+   Arbeitsbereiche nutzen lassen** in **Einstellungen › Agenten** ein und schalte unter **Tools für Agenten** die
+   Tool-Sets ein, die du willst. Die App bietet **Anfragen** und **Flows** an, bis du die anderen einschaltest.
+2. Starte Claude Code neu oder führe `/mcp` aus und genehmige den Server des Projekts.
+
+Committe den Arbeitsbereich und `.mcp.json`. Keines von beiden enthält ein Secret, und dein Team bekommt aus dem
+Repository dieselbe Einrichtung.
+
+## Genehmigungen oder unbeaufsichtigt [#approvals-or-unattended]
+
+Der MCP-Server entscheidet beim Start, wie er läuft.
+
+| Wie er läuft | Was passiert |
+| --- | --- |
+| Der Arbeitsbereich ist in Echolot geöffnet und Agenten sind eingeschaltet | Die Aufrufe von Claude laufen in der App. Eine Änderung oder eine Anfrage, die Daten ändern könnte, fragt dich in einem Blatt. Du siehst jede Anfrage in der Seitenleiste erscheinen. |
+| Auf eigene Faust, mit `--policy permissive` | Anfragen und Änderungen laufen ohne Rückfrage. Löschen wird abgelehnt, ebenso Anfragen an geschützte Umgebungen und an neue Hosts. |
+| Auf eigene Faust, ohne genannte Richtlinie | Lesezugriffe und sichere Anfragen laufen. Alles andere wird abgelehnt. |
+
+Genehmigungen in der App passen zu der Zeit, in der du entwickelst: Du siehst, was Claude tut, und kannst es ablehnen.
+Unbeaufsichtigt passt zu einer langen Aufgabe, bei der du nicht dabeisitzen willst. Um vom einen zum anderen zu
+wechseln, öffne oder schließe den Arbeitsbereich in Echolot und führe `/mcp` aus, um neu zu verbinden. Die Richtlinien
+stehen unter [Auf eigene Faust](/docs/ai/agents#on-its-own).
+
+## Worum du bitten kannst [#what-to-ask-for]
+
+Du musst Echolot nicht erwähnen. Sobald ein Projekt einen Arbeitsbereich hat, nutzt Claude ihn für Aufrufe der APIs
+dieses Projekts.
+
+| Du bittest | Was Claude in Echolot tut |
+| --- | --- |
+| „Melde dich als Demo-Nutzer an und liste meine Bestellungen auf“ | Legt das Passwort als Secret ab, sichert eine Anmeldeanfrage, die das Token aus ihrer Antwort behält, und sendet die Liste mit diesem Token. Das Token erreicht die Unterhaltung nie. |
+| „Erstelle eine Smoke-Suite für die Bestell-API“ | Ein Ordner mit Auflisten, Abrufen, Erstellen, Aktualisieren und je einem fehlschlagenden Fall, mit Prüfungen, verkettet über die Werte, die sie behalten. Dann führt es den Ordner aus und berichtet, was fehlgeschlagen ist. |
+| „Die Seite braucht eine Wunschlisten-API, die es noch nicht gibt“ | Ein Mock-Server, aus deinem OpenAPI-Dokument oder mit von Hand angelegten Routen und Beispieldaten, und Anfragen für seine Routen. |
+| „Warum schlägt dieser Endpunkt nach einer Weile fehl?“ | Sendet die Anfrage wieder und wieder, vergleicht die Austausche im Verlauf und sagt, ob der Fehler bei der API oder beim Test liegt. |
+| „Prüfe, ob die Bestellereignisse auf dem WebSocket ankommen“ | Öffnet die Sitzung, gibt mit einer anderen Anfrage eine Bestellung auf und liest, was die Sitzung empfangen hat. |
+| „Teste die Tools unseres MCP-Servers“ | Fügt den Server hinzu, prüft ihn und sichert für jedes Tool einen Aufruf mit Prüfungen seines Ergebnisses. |
+| „Melde dich an, erstelle eine Bestellung und frage ab, bis sie geliefert ist“ | Zeichnet einen Flow mit diesen Blöcken. Er läuft, sobald du ihn genehmigst. |
+| „Führe die API-Tests in der CI aus“ | Der Befehl `echolot run` für deine Pipeline, mit einem Bericht und den Namen der Secrets, die er braucht. |
+
+Jede Zeile hinterlässt etwas im Arbeitsbereich: Anfragen, Prüfungen, einen Mock oder einen Flow, die du in Echolot
+öffnen, ändern und erneut ausführen kannst.
+
+## Was Claude nicht tut [#what-claude-does-not-do]
+
+Der Skill verpflichtet Claude auf diese Regeln:
+
+- **Keine Zugangsdaten in einer Datei oder in der Unterhaltung.** Ein Passwort oder Schlüssel, den du ihm gibst, kommt
+  sofort in eine geheime Variable, und von da an erscheint nur noch `{{ihr Name}}`. Tokens behält Echolot aus der
+  Antwort einer Anmeldung, und sie gehen nie durch Claude.
+- **Kein Löschen**, es sei denn, du hast darum gebeten, genau dieses Objekt zu löschen.
+- **Keine Tests gegen eine geschützte oder eine Produktionsumgebung**, es sei denn, du hast darum gebeten. Anfragen an
+  eine geschützte Umgebung fragen dich immer.
+- **Keine Skripte aus eigenem Antrieb.** Skripte sind Code, dem du vertrauen musst: Claude schlägt eines vor und sagt,
+  wohin es gehört, und Echolot fragt dich, bevor es läuft.
+- **Nicht mehr, als du verlangt hast.** „Richte es ein“ ist nur die Einrichtung. „Teste diesen Endpunkt“ sind die
+  Anfragen und Prüfungen für diesen Endpunkt, keine Suite.
+- **Kein stiller Wechsel des Werkzeugs.** Wird eine Genehmigung abgelehnt oder fehlt ein Tool, sagt Claude, was nötig
+  ist, und wartet. Es weicht nicht auf `curl` aus.
+
+## Fehlerbehebung [#troubleshooting]
+
+- **Claude nutzt weiterhin `curl`.** Prüfe, ob das Plug-in installiert ist (`/plugin`), ob das Projekt einen
+  Arbeitsbereich hat und ob `/mcp` den Server `echolot` als verbunden aufführt. Wenn ja, trage den Hinweis in deine
+  `CLAUDE.md` ein: Bitte Claude: „Füge den Echolot-Hinweis in CLAUDE.md ein“.
+- **Änderungen werden abgelehnt, und nichts fragt dich.** Der Server läuft auf eigene Faust. Öffne den Arbeitsbereich
+  in Echolot, schalte **Agenten geöffnete Arbeitsbereiche nutzen lassen** ein und führe `/mcp` aus, um neu zu
+  verbinden. Oder bitte Claude, den Server auf die permissive Richtlinie umzustellen.
+- **Claude sagt, ein Tool fehle.** Sein Tool-Set ist aus. Schalte es in **Einstellungen › Agenten** unter **Tools für
+  Agenten** ein und verbinde neu.
+- **Eine Anfrage, die Claude geschrieben hat, erscheint nicht.** Ein Server, der auf eigene Faust läuft, liest den
+  Arbeitsbereich beim Start. Führe `/mcp` aus und verbinde `echolot` neu. Über die App erscheinen neue Anfragen sofort.
