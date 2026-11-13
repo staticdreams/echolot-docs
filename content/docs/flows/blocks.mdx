@@ -449,22 +449,82 @@ Ports: `value` in, `value` out. **Morning stock check** ends with Notify **Resto
 
 ### Write File
 
-Writes what came in to a file inside the workspace folder.
+Saves what came in as a file, in the format you choose: a table for a spreadsheet, a report to read, data for
+another program.
 
 | Setting | What it does |
 | --- | --- |
-| **Path** | Relative to the workspace folder, such as `exports/items.json` (required). Templates allowed. |
-| **Format** | `json` (formatted), `text` or `csv`. Default `json`. |
+| **Path** | Relative to the workspace folder, such as `exports/users.xlsx` (required). Templates allowed. |
+| **Format** | `auto` (the default) goes by the path's extension. Or one of the formats below. |
+| **Existing** | What happens when the file is already there: `replace` (the default), `append`, `keep-both` or `fail`. |
+| **Columns** | A table's columns, in order, separated by commas: `id, name, email`. Every key, in name order, when empty. Templates allowed. |
+| **Formulas** | For CSV and TSV: `escape` (the default) or `keep`. See [Formulas](#formulas-in-csv). |
+| **Save** | `workspace` (the default) writes to the path. `ask` lets you choose the place when the block runs. |
 
 | Port | Side | What it carries |
 | --- | --- | --- |
 | `value` | in | What to write. |
-| `path` | out | The file's path, relative to the workspace. |
-| `fail` | out | Why it could not be written. |
+| `path` | out | Where the file is: relative to the workspace folder, or the whole path of a place you chose. |
+| `fail` | out | Why it was not written. |
 
-A file already there is replaced. The workspace's own files are off limits: the `requests`, `flows`, `environments`,
-`mocks`, `mcp-servers` and `specs` folders, `workspace.toml` and hidden files. For CSV, a list of objects becomes
-one row per object with a column per key; anything else is written one value per line.
+#### Formats
+
+| Format | Extension | What is written |
+| --- | --- | --- |
+| `json` | `.json`, and any other | The value, formatted, keys in name order. |
+| `json-lines` | `.jsonl`, `.ndjson` | A list: one compact JSON value per line. |
+| `text` | `.txt`, `.log` | Text as it is; JSON for a list or an object. Shape it with a [Template](#template) block first. |
+| `markdown` | `.md` | Text as it is. A list of objects becomes a table, a list of plain values a bulleted list. |
+| `csv` | `.csv` | A table, cells quoted where they need it. |
+| `tsv` | `.tsv` | A table with tabs between cells. Tabs and line breaks inside a cell become spaces. |
+| `xlsx` | `.xlsx` | An Excel workbook. Numbers and true/false are cells of their kind, everything else is text. The header is bold and stays in place. |
+| `html` | `.html` | A page that stands alone, with the table or the text. Opens in any browser, and prints. |
+
+A value becomes a table the same way in every format that has rows:
+
+- A list of objects: a row for each, a column for each key.
+- One object: one row.
+- A list of lists: a row for each list, without a header (in Markdown, the first row heads the table).
+- A list of plain values: one column.
+
+Values in a flow keep no key order, so columns come in name order. Name them in **Columns** to choose which are
+written and in what order. A nested list or object in a cell is written as JSON.
+
+In a workbook, an object whose values are all lists gives a sheet for each key: `{ "Users": [...], "Orders": [...] }`
+is a workbook with the sheets **Orders** and **Users**. A whole number longer than 15 digits (an ID) is written as
+text, because a spreadsheet would round it.
+
+#### A file that is already there
+
+- `replace`: the new file takes its place.
+- `append`: what came in is added after what the file holds; a table's rows go in without their header. Use it
+  for a log, or an export that grows run by run. It works for text, Markdown, CSV, TSV and JSON Lines; a JSON
+  document, a workbook and a page are written whole, and the flow's problems say so.
+- `keep-both`: the file stays and the new one gets a number: `report 2.csv`.
+- `fail`: the block's `fail` output fires and the file stays as it is.
+
+#### Formulas in CSV [#formulas-in-csv]
+
+A spreadsheet runs a CSV cell that starts with `=`, `+`, `-` or `@` as a formula, and what a flow exports is often
+somebody else's data. With `escape`, such text gets an apostrophe in front (`'=SUM(A1:A9)`), so opening the file
+runs nothing. Numbers that came as numbers are never touched. Choose `keep` when another program reads the file and
+the text must stay as it came. A workbook needs none of this: its text cells are text.
+
+#### Where the file goes
+
+With **Save** on `workspace`, the file is written to the path, inside the workspace folder. The workspace's own
+files are off limits: the `requests`, `flows`, `environments`, `mocks`, `mcp-servers` and `specs` folders,
+`workspace.toml` and hidden files.
+
+With **Save** on `ask`, Echolot asks you where to save when the block runs: a save panel in the app, a question on
+the terminal for `echolot flow run`. The path's name is the one suggested. Only a run you start asks. A run that an
+agent, a schedule or a webhook starts, and `echolot flow run --no-input`, write to the path in the workspace folder
+instead.
+
+After a run, select the block: **Show in Finder** (**Show in Explorer** on Windows) and **Open** are under
+**Last run** in the inspector.
+
+To hand a result to another flow instead of a file, wire it into a [Flow](#flow) block.
 
 ## Values between blocks
 

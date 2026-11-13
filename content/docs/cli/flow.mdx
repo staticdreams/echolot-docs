@@ -63,6 +63,9 @@ Morning stock check: passed in 152 ms
 - `--input name=value` sets an input, as text converted to the input's type. Give it once per input.
 - When a flow needs a person (an input without a value, an **Approve** block), Echolot asks in the terminal.
   `--no-input` never asks: the flow fails there instead, which is what you want in CI.
+- A [Write File](/docs/flows/blocks#write-file) block set to ask where to save asks for a path in the terminal;
+  Return takes the suggested name in the current folder. With `--no-input`, or when the input is not a terminal,
+  the file goes to the block's path in the workspace folder.
 - `--json` prints the whole run record as JSON instead of the progress lines.
 
 ```sh
